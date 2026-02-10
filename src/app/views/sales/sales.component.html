@@ -1,0 +1,162 @@
+<div class="mt-2">
+  <div
+    class="flex justify-content-between align-items-center flex-wrap my-3 gap-2"
+  >
+    <g-title title="Ventas" style="margin-top: -1rem"></g-title>
+    <div class="flex">
+      <p-button
+        label="Vender"
+        borderRadius="10px"
+        icon="ml-4 fa-solid fa-sack-dollar"
+        (onClick)="btnCreateNewSale()"
+      >
+      </p-button>
+    </div>
+  </div>
+
+  <div class="container">
+    <g-table
+      [type]="'basic'"
+      [items]="paymentList"
+      globalFilterFields="partner.name"
+      (requestData)="reqDataSale($event)"
+      placeholder="Buscar por nombre del socio..."
+      [columns]="initialColumns"
+      [maxlengthFilter]="30"
+      [filterElements]="filterElements"
+    >
+      <ng-template #actionTemplate let-rowData>
+        <td
+          class="flex justify-content-center"
+          (click)="btnGoSale(rowData)"
+          onKeyPress
+        >
+          <i class="pi pi-angle-right"></i>
+        </td>
+      </ng-template>
+    </g-table>
+  </div>
+</div>
+
+<!-- Payment -->
+<g-modal
+  [show]="modalPayment"
+  [closeOnEscape]="false"
+  [showCloseIcon]="false"
+  [showHeader]="false"
+  [width]="'780px'"
+>
+  <ng-template pTemplate="content">
+    <div>
+      <div class="pt-6 pb-5 px-4 md:px-6">
+        <div class="flex justify-content-between">
+          <div class="flex flex-column">
+            <h2 class="m-0 mb-2 mr-3">Detalle de pago</h2>
+            <p
+              *ngIf="paymentDetail.status !== 'Completed'"
+              class="body3 mt-2 mr-3"
+            >
+              Por favor complete la información para pagar
+            </p>
+          </div>
+          <i
+            class="fa-solid fa-xmark cursor-pointer"
+            style="font-size: 24px"
+            (click)="goBack()"
+            onkeypress
+          ></i>
+        </div>
+      </div>
+      <div class="pb-2 px-4 md:px-6">
+        <div class="grid font-bold">
+          <div class="field col-12 py-0">
+            <label for="payment">Método de pago*</label>
+            <p-dropdown
+              id="payment"
+              [options]="listPaymentMethod"
+              optionLabel="paymentMethodName"
+              optionValue="paymentMethodId"
+              [style]="{ width: '100%' }"
+              [(ngModel)]="paymentDetail.paymentMethodId"
+              placeholder="Selecciona"
+              [disabled]="true"
+              appendTo="body"
+            ></p-dropdown>
+          </div>
+          <div class="field col-12 py-0 md:col-6 pr-2 lg:pr-5">
+            <label for="price_">Valor:</label>
+            <p-inputNumber
+              pInputNumber
+              id="price_"
+              [max]="99999999"
+              [maxFractionDigits]="0"
+              class="w-full"
+              [style]="{ width: '100%' }"
+              [(ngModel)]="paymentDetail.amount"
+              [disabled]="true"
+            ></p-inputNumber>
+          </div>
+          <div class="field col-12 py-0 md:col-6">
+            <label for="paymentDate_">Fecha:</label>
+            <p-calendar
+              id="paymentDate_"
+              [(ngModel)]="paymentDetail.paymentDate"
+              dateFormat="dd/mm/yy"
+              [showIcon]="true"
+              styleClass="w-full"
+              [inputStyle]="{ 'border-right': 'none' }"
+              placeholder="dd/mm/aaaa"
+              appendTo="body"
+              [disabled]="true"
+            >
+              <ng-template pTemplate="triggericon">
+                <i class="fa fa-solid fa-calendar-days" aria-hidden="true"></i>
+              </ng-template>
+            </p-calendar>
+          </div>
+          <div class="field col-12 py-0">
+            <label for="paymentUser">Recibido por:</label>
+            <input
+              id="paymentUser"
+              [(ngModel)]="paymentDetail.user.name"
+              type="text"
+              maxlength="100"
+              placeholder="Escribe"
+              class="w-full p-inputtext"
+              [disabled]="true"
+              [value]="'Daniel CS'"
+              pInputText
+            />
+          </div>
+        </div>
+        <div *ngIf="paymentDetail.status !== 'Completed'">
+          <g-card-payment
+            [price]="pendingValue"
+            [status]="paymentDetail.status"
+            (modelEmiter)="setPayment($event)"
+          ></g-card-payment>
+        </div>
+      </div>
+    </div>
+
+    <div class="lines"></div>
+    <div class="flex flex-wrap-reverse my-4 pt-1 justify-content-center gap-1">
+      <p-button
+        class="flex p-button-outlined mr-0 md:mr-1 lg:mr-3"
+        styleClass="p-button-outlined"
+        label="Atrás"
+        [style]="{ width: '260px' }"
+        (onClick)="goBack()"
+      ></p-button>
+      <p-button
+        *ngIf="paymentDetail.status !== 'Completed'"
+        class="flex"
+        label="{{ true ? 'Realizar pago' : 'Realizar abono' }}"
+        [style]="{ width: '260px' }"
+        [disabled]="!payment.now || payment.amount! == 0"
+        (onClick)="savePayment()"
+      ></p-button>
+    </div>
+  </ng-template>
+</g-modal>
+<!-- Payment -->

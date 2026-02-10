@@ -1,0 +1,135 @@
+<div
+  class="surface-0 py-3 flex align-items-center pl-0 pr-3 md:pr-0 md:px-5 menubar"
+>
+  <div class="flex justify-content-between align-items-center w-full">
+    <span
+      *ngIf="isLogo"
+      style="font-size: 35px"
+      class="fa-solid fa-dumbbell text-primary hidden md:block"
+      routerLink="/hub/home"
+    ></span>
+    <div
+      class="flex justify-content-center align-items-center menu block md:hidden bg-primary"
+    >
+      <p-button
+        class="p-button-sidebar"
+        styleClass="p-button-sidebar"
+        icon="fa-solid fa-bars"
+        (onClick)="showSidebar.emit(true)"
+      ></p-button>
+    </div>
+    <div>
+      <h1>{{ title }}</h1>
+    </div>
+    <div class="flex align-items-center">
+      <div class="hidden sm:block">
+        <h3 class="p-0 m-0">{{ name }}</h3>
+        <h5 class="p-0 m-0 title-regular">{{ email }}</h5>
+      </div>
+      <div
+        (click)="op.toggle($event)"
+        onkeypress
+        class="flex mb-2 ml-3 cursor-pointer"
+      >
+        <i
+          class="fa-regular fa-bell"
+          [ngClass]="{
+            'text-red-400':
+              birthdayPartners.length > 0 || partnersList.length > 0
+          }"
+          style="font-size: 22px"
+        ></i>
+      </div>
+      <div
+        (click)="menu.toggle($event)"
+        onkeypress
+        class="flex mb-2 ml-3 cursor-pointer"
+      >
+        <i class="fa-solid fa-ellipsis-vertical" style="font-size: 22px"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p-menu #menu [model]="items" [popup]="true"></p-menu>
+
+<p-overlayPanel #op [style]="{ 'max-height': '400px', overflow: 'auto' }">
+  <div class="flex flex-column gap-3 w-18rem">
+    <div *ngIf="birthdayPartners.length == 0 && partnersList.length == 0">
+      <span
+        class="font-medium text-color block mb-3 pb-1 border-bottom-1 border-400"
+        >No tienes notificaciones
+      </span>
+    </div>
+    <div *ngIf="birthdayPartners.length > 0">
+      <span
+        class="font-medium text-color block mb-3 pb-1 cursor-pointer border-bottom-1 border-400"
+        (click)="birthdays = !birthdays"
+        onkeypress
+        >Cumpleaños de hoy
+      </span>
+      <ul *ngIf="birthdays" class="list-none p-0 m-0 flex flex-column gap-3">
+        <li
+          *ngFor="let partner of birthdayPartners"
+          class="flex align-items-center gap-2"
+        >
+          <div class="image-container">
+            <img [src]="partner.photo" class="image-container" alt />
+          </div>
+          <div>
+            <h5 class="font-medium text-color">{{ partner.name }}</h5>
+            <div class="flex mt-1">
+              <i
+                class="fa-solid fa-phone-flip mr-2 mt-1 text-gray-400"
+                style="font-size: 12px"
+              ></i>
+              <p class="m-0 body5 text-gray-400">{{ partner.cellPhone }}</p>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+    <div *ngIf="partnersList.length > 0">
+      <span
+        class="font-medium text-color block mb-3 pb-1 cursor-pointer border-bottom-1 border-400"
+        (click)="partners = !partners"
+        onkeypress
+        >Socios activos que no han ingresado
+      </span>
+      <ul *ngIf="partners" class="list-none p-0 m-0 flex flex-column gap-3">
+        <li
+          *ngFor="let partner of partnersList"
+          class="flex align-items-center gap-2"
+        >
+          <div class="image-container">
+            <img [src]="partner.photo" class="image-container" alt />
+          </div>
+          <div>
+            <h5 class="font-medium text-color">{{ partner.name }}</h5>
+            <div class="flex mt-1">
+              <div class="flex">
+                <i
+                  class="fa-solid fa-phone-flip mr-2 mt-1 text-gray-400"
+                  style="font-size: 12px"
+                ></i>
+                <p class="m-0 body5 text-gray-400">
+                  {{ partner.cellPhone }}
+                </p>
+              </div>
+              <div class="flex ml-3">
+                <i
+                  *ngIf="partner.accessTime"
+                  class="fa-solid fa-person-running mr-2 mt-1 text-gray-400"
+                  style="font-size: 12px"
+                ></i>
+                <p class="m-0 body5 text-gray-400">
+                  {{ partner.accessTime | date : "dd/MM/yyyy" }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</p-overlayPanel>

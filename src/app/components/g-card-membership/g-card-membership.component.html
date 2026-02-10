@@ -1,0 +1,61 @@
+<div class="container px-3 md:px-5 lg:px-6">
+  <div class="flex justify-content-between">
+    <div class="flex">
+      <div
+        class="mr-2 mt-1 point"
+        [ngClass]="{
+            active: data?.status == 'Active',
+            inactive: data?.status == 'Inactive',
+          }"
+      ></div>
+      <p class="m-0 text-gray-400">
+        {{
+          data?.status! === "Active"
+            ? capitalize("Activo")
+            : capitalize("Inactivo")
+        }}
+      </p>
+    </div>
+    <div class="flex">
+      <i
+        class="fa-solid fa-pen-to-square text-primary"
+        style="margin-top: 2px; font-size: 30px"
+      ></i>
+    </div>
+  </div>
+  <div class="flex justify-content-between mt-3">
+    <div class="flex flex-column">
+      <h2 class="m-0 title-medium" style="line-height: 30px">
+        {{ data?.name }}
+      </h2>
+      <p class="m-0 body5 mt-1 text-gray-400">
+        {{ data?.membershipTypeName?.substring(0, 78) }}
+      </p>
+    </div>
+  </div>
+  <div class="flex flex-wrap mt-6">
+    <div *ngIf="data?.membershipTypeId === 1" class="flex">
+      <p class="m-0 text-bold mr-2">Sessiones:</p>
+      <p class="m-0 mr-3">{{ data?.cantSessions }}</p>
+    </div>
+    <div
+      *ngIf="data?.membershipTypeId === 1 || data?.membershipTypeId === 2"
+      class="flex"
+    >
+      <p class="m-0 text-bold mr-2">Precio:</p>
+      <p class="m-0 mr-3">
+        $ {{ data?.price | currency : "COP" : "" : "1.0-0" : "es-CO" }}
+      </p>
+    </div>
+    <div
+      *ngIf="data?.membershipTypeId === 1 || data?.membershipTypeId === 2"
+      class="flex"
+    >
+      <p class="m-0 text-bold mr-2">Vencimiento:</p>
+      <p class="m-0">{{ data?.expiresName }}</p>
+    </div>
+    <div *ngIf="data?.membershipTypeId === 3" class="flex">
+      <p class="m-0 text-bold mr-2">Sin Vencimiento</p>
+    </div>
+  </div>
+</div>

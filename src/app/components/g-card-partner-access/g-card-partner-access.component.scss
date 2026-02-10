@@ -1,0 +1,27 @@
+.body {
+  padding: 37px 35px 35px 35px;
+}
+
+.image-container {
+  width: 150px; /* Tamaño del contenedor */
+  height: 150px;
+  border-radius: 50%; /* Hace que el contenedor sea redondo */
+  overflow: hidden; /* Oculta los bordes de la imagen */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ajusta la imagen para que se vea bien dentro del círculo */
+}
+
+.active {
+  color: var(--red-400);
+}
+
+.inactive {
+  background: var(--red-400);
+}

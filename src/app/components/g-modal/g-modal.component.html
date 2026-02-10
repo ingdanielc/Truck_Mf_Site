@@ -1,0 +1,34 @@
+<div>
+  <p-dialog
+    [modal]="true"
+    [(visible)]="show"
+    [closable]="showCloseIcon"
+    (visibleChange)="showChange.emit($event); closeModal(null, true)"
+    [closeOnEscape]="closeOnEscape"
+    [style]="{
+      width: width,
+      height: height,
+      'max-width': maxWidth,
+      'min-height': minHeight,
+      margin: '2ch',
+    }"
+    [responsive]="true"
+    [showHeader]="showHeader"
+    [maximizable]="false"
+    [resizable]="false"
+  >
+    <!-- Content Section -->
+    <ng-container *ngIf="content">
+      <ng-template pTemplate="content">
+        <div *ngIf="showCloseIcon" class="dialog-header">
+          <span
+            (click)="showChange.emit($event); closeModal(null, true)"
+            onkeypress
+            class="g-dialog-content-icon"
+          ></span>
+        </div>
+        <ng-template [ngTemplateOutlet]="content"></ng-template>
+      </ng-template>
+    </ng-container>
+  </p-dialog>
+</div>

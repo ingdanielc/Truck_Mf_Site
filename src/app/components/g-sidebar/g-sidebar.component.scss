@@ -1,0 +1,62 @@
+/* Estilos del overlay */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Oscurece el fondo */
+  z-index: 999;
+}
+
+/* Sidebar en la parte inferior */
+.sidebar {
+  position: fixed;
+  bottom: -100%;
+  left: 0;
+  width: 100%;
+  max-height: 650px;
+  background: #ffffff;
+  box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.2);
+  transition: bottom 0.3s ease-in-out;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+/* Mostrar sidebar cuando está activo */
+.sidebar.show {
+  bottom: 0;
+}
+
+/* 🔹 Header fijo con bordes redondeados arriba */
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+/* Botón de cerrar */
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* 🔹 Contenido con scroll */
+.sidebar-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0px 15px 0px 15px;
+  max-height: calc(650px - 50px);
+}

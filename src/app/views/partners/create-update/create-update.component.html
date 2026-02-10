@@ -1,0 +1,313 @@
+<div class="container">
+  <div class="flex justify-content-between align-items-center">
+    <div class="col p-0">
+      <g-title title="{{ principalTitle }}"></g-title>
+    </div>
+  </div>
+  <div class="flex justify-content-center">
+    <div
+      class="flex w-full my-4 bg-white border-round-2xl pb-4 px-1 md:px-3 lg:px-8"
+      style="max-width: 1145px; min-width: 300px"
+    >
+      <div class="col-12 p-0 mt-8 px-2 md:px-3 lg:px-5">
+        <div class="flex justify-content-between">
+          <h2 class="m-0">Información personal</h2>
+          <p class="body5 text-medium text-gray-400">*Campos obligatorios</p>
+        </div>
+        <div class="flex flex-wrap justify-content-between">
+          <p class="body3 mt-3 mr-3">
+            Por favor complete la información para
+            {{ principalTitle === "Crear socio" ? "crear" : "modificar" }} un
+            socio
+          </p>
+          <p-button
+            *ngIf="principalTitle !== 'Crear socio'"
+            class="flex"
+            styleClass="p-button-outlined"
+            icon="fa-solid fa-ban"
+            label="Deshabilitar"
+            [style]="{ width: '192px' }"
+          ></p-button>
+        </div>
+        <form class="grid mt-5 font-bold" [formGroup]="partnerForm">
+          <div class="flex justify-content-center w-full mb-3 ml-8 sm:ml-0">
+            <div class="flex flex-column">
+              <div class="flex flex-wrap webcam">
+                <webcam
+                  class="flex mr-4 image-container mt-1"
+                  [height]="320"
+                  [width]="320"
+                  [trigger]="triggerObservable"
+                  (imageCapture)="handleImage($event)"
+                  [videoOptions]="videoOptions"
+                  [allowCameraSwitch]="allowCameraSwitch"
+                  [imageQuality]="1"
+                  (initError)="handleInitError($event)"
+                ></webcam>
+
+                <div
+                  class="flex flex-column align-items-center justify-content-center gap-3 mr-4"
+                >
+                  <p-button
+                    class="p-button-sidebar"
+                    styleClass="p-button-sidebar"
+                    icon="fa-solid fa-camera"
+                    (onClick)="triggerSnapshot()"
+                  ></p-button>
+                </div>
+
+                <div class="image-container mt-1" *ngIf="partner.photo">
+                  <img src="{{ partner.photo }}" alt />
+                </div>
+                <div class="image-container mt-1" *ngIf="!partner.photo">
+                  <img src="{{ photoDefault }}" alt />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field col-12 md:col-6 pr-2 lg:pr-5">
+            <label for="documentTypeId">Tipo de documento*</label>
+            <p-dropdown
+              id="documentTypeId"
+              [options]="listTypeDocument"
+              optionLabel="documentTypeName"
+              optionValue="documentTypeId"
+              [style]="{ width: '100%' }"
+              placeholder="Selecciona"
+              [(ngModel)]="partner.documentTypeId"
+              formControlName="documentTypeId"
+              [ngClass]="{
+                'ng-invalid ng-dirty': isInvalid('documentTypeId')
+              }"
+              (onBlur)="getPartner()"
+              appendTo="body"
+            ></p-dropdown>
+            <small
+              *ngIf="isInvalid('documentTypeId')"
+              class="p-error font-normal block"
+              ><i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+
+          <div class="field col-12 md:col-6">
+            <label for="documentNumber">Número de documento*</label>
+            <p-inputNumber
+              pInputNumber
+              id="documentNumber"
+              [max]="999999999999999"
+              [maxFractionDigits]="0"
+              placeholder="Escribe"
+              class="w-full"
+              [style]="{ width: '100%' }"
+              [(ngModel)]="partner.documentNumber"
+              formControlName="documentNumber"
+              [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('documentNumber') }"
+              (onBlur)="getPartner()"
+            ></p-inputNumber>
+            <small
+              *ngIf="isInvalid('documentNumber')"
+              class="p-error font-normal block"
+              ><i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+
+          <div class="field col-12">
+            <label for="name">Nombre*</label>
+            <input
+              id="name"
+              type="text"
+              maxlength="100"
+              placeholder="Escribe"
+              class="w-full p-inputtext"
+              [(ngModel)]="partner.name"
+              formControlName="name"
+              [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('name') }"
+              pInputText
+            />
+            <small *ngIf="isInvalid('name')" class="p-error font-normal block"
+              ><i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+
+          <div class="field col-12 md:col-6">
+            <label for="birthdate">Fecha de nacimiento*</label>
+            <div class="p-0 pr-0 lg:pr-5">
+              <p-calendar
+                id="birthdate"
+                [(ngModel)]="partner.birthdate"
+                (ngModelChange)="calculateAge()"
+                formControlName="birthdate"
+                dateFormat="dd/mm/yy"
+                [showIcon]="true"
+                [minDate]="minDate"
+                [maxDate]="today"
+                styleClass="w-full age-calendar"
+                [inputStyle]="{
+                  'border-right': 'none',
+                  'border-bottom-left-radius': '0px'
+                }"
+                placeholder="dd/mm/aaaa"
+              >
+                <ng-template pTemplate="triggericon">
+                  <i
+                    class="fa fa-solid fa-calendar-days"
+                    aria-hidden="true"
+                  ></i>
+                </ng-template>
+              </p-calendar>
+              <div
+                class="flex px-3 justify-content-start align-items-center border-right-1 border-bottom-1 border-left-1 border-400"
+                style="
+                  height: 40px;
+                  border-bottom-right-radius: 6px;
+                  border-bottom-left-radius: 6px;
+                  background-color: var(--surface-b);
+                "
+              >
+                <p class="text-regular"><b>Edad: </b> {{ calculateAge() }}</p>
+              </div>
+            </div>
+            <small
+              *ngIf="isInvalid('birthDate')"
+              class="p-error font-normal block"
+              ><i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+
+          <div class="field col-12 md:col-6">
+            <label for="genderId">Género*</label>
+            <p-dropdown
+              id="genderId"
+              [options]="listGender"
+              optionLabel="genderName"
+              optionValue="genderId"
+              [style]="{ width: '100%' }"
+              [(ngModel)]="partner.genderId"
+              placeholder="Selecciona"
+              formControlName="genderId"
+              [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('genderId') }"
+              appendTo="body"
+            ></p-dropdown>
+            <small
+              *ngIf="isInvalid('genderId')"
+              class="p-error font-normal block"
+              ><i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+
+          <div class="field col-12 md:col-6 pr-2 lg:pr-5">
+            <label for="cityId">Ciudad</label>
+            <p-dropdown
+              id="cityId"
+              optionLabel="cityName"
+              optionValue="cityId"
+              [options]="listCity"
+              [(ngModel)]="partner.cityId"
+              formControlName="cityId"
+              [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('cityId') }"
+              placeholder="Selecciona"
+              [style]="{ width: '100%' }"
+            ></p-dropdown>
+            <small
+              *ngIf="isInvalid('cityId')"
+              class="p-error font-normal block"
+            >
+              <i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+
+          <div class="field col-12 md:col-6">
+            <label for="address">Dirección</label>
+            <input
+              id="address"
+              type="text"
+              maxlength="100"
+              placeholder="Escribe"
+              class="w-full p-inputtext"
+              [(ngModel)]="partner.address"
+              formControlName="address"
+              [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('address') }"
+              pInputText
+            />
+            <small
+              *ngIf="isInvalid('address')"
+              class="p-error font-normal block"
+            >
+              <i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+
+          <h2 class="m-0 mt-2 col-12 mb-4">Información de contacto</h2>
+
+          <div class="field col-12 md:col-6 pr-2 lg:pr-5">
+            <label for="cel">Número de celular*</label>
+            <p-inputNumber
+              id="cellPhone"
+              [(ngModel)]="partner.cellPhone"
+              formControlName="cellPhone"
+              placeholder="Escribe"
+              [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('cellPhone') }"
+              [useGrouping]="false"
+              [style]="{ width: '100%' }"
+            ></p-inputNumber>
+            <small
+              *ngIf="isInvalid('cellPhone')"
+              class="p-error font-normal block"
+              ><i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+
+          <div class="field col-12 md:col-6">
+            <label for="email">Correo electrónico</label>
+            <input
+              id="email"
+              type="email"
+              maxlength="100"
+              placeholder="Escribe"
+              class="w-full p-inputtext"
+              [(ngModel)]="partner.email"
+              formControlName="email"
+              [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('email') }"
+              pInputText
+            />
+            <small *ngIf="isInvalid('email')" class="p-error font-normal block"
+              ><i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+
+          <h2 class="m-0 mt-2 col-12 mb-4">Biometría</h2>
+
+          <div
+            class="flex fingerprint ml-2 mr-3"
+            (click)="captureFingerprint()"
+            onkeypress
+          >
+            <i
+              class="fa-solid fa-fingerprint text-primary"
+              style="font-size: 40px"
+            ></i>
+          </div>
+          <div *ngIf="hasFingerprint" class="flex fingerprint ml-2"></div>
+        </form>
+
+        <div
+          class="flex flex-wrap-reverse col-12 justify-content-end p-0 mt-5 gap-1"
+        >
+          <p-button
+            class="flex p-button-outlined mr-0 md:mr-1 lg:mr-3"
+            styleClass="p-button-outlined"
+            label="Atrás"
+            [style]="{ width: '260px' }"
+            (onClick)="goBack()"
+          ></p-button>
+          <p-button
+            label="{{ principalTitle }}"
+            [disabled]="!this.partnerForm.valid"
+            (onClick)="savePartner()"
+          ></p-button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,281 @@
+<!-- Modal Detail -->
+<g-modal
+  [show]="show"
+  [closeOnEscape]="false"
+  [showCloseIcon]="true"
+  [showHeader]="false"
+  maxWidth="900px"
+  (showChange)="show = $event; showEmiter.emit(false)"
+>
+  <ng-template pTemplate="content">
+    <div class="pt-6 pb-5 px-4 md:px-6">
+      <div class="flex justify-content-between">
+        <h1 class="mb-30 w-full">{{ partner?.name }}</h1>
+        <i
+          class="fa-solid fa-xmark cursor-pointer"
+          style="font-size: 24px"
+          (click)="show = false; showEmiter.emit(false)"
+          onkeypress
+        ></i>
+      </div>
+
+      <p-panel header="Información Personal">
+        <ng-template pTemplate="icons">
+          <i
+            class="fa-solid fa-pen-to-square text-primary mr-5"
+            style="font-size: 25px"
+            onkeypress
+          ></i>
+        </ng-template>
+
+        <div class="flex flex-column lg:flex-row">
+          <div class="flex flex-column ml-2 mr-4 lg:mr-7">
+            <div class="flex justify-content-center">
+              <div class="image-container">
+                <img src="{{ partner?.photo }}" alt />
+              </div>
+            </div>
+            <div class="flex mt-3 justify-content-center">
+              <div
+                class="mr-2 mt-1 point"
+                [ngClass]="{
+                  active: partner?.status == 'Active',
+                  inactive: partner?.status == 'Inactive'
+                }"
+              ></div>
+              <p class="m-0 text-gray-400">
+                {{
+                  partner?.status! === "Active"
+                    ? capitalize("Activo")
+                    : capitalize("Inactivo")
+                }}
+              </p>
+            </div>
+          </div>
+          <div class="flex flex-grow-1 flex-column gap-2">
+            <div
+              class="flex flex-wrap item border-bottom-1"
+              style="border-color: var(--gray-150)"
+            >
+              <div class="flex col-12 sm:col-6 p-0">
+                <i class="fa-regular fa-address-card mr-3 text-gray-900"></i>
+                <p class="m-0 body5 text-semibold">Número de documento</p>
+              </div>
+              <div class="flex ml-5 sm:ml-0">
+                <p class="m-0 body5 text-gray-400">
+                  {{
+                    partner?.documentNumber
+                      | currency : "COP" : "" : "1.0-0" : "es-CO"
+                  }}
+                </p>
+              </div>
+            </div>
+            <div
+              class="flex flex-wrap item mt-1 border-bottom-1"
+              style="border-color: var(--gray-150)"
+            >
+              <div class="flex col-12 sm:col-6 p-0">
+                <i class="fa-solid fa-cake-candles mr-3 text-gray-900"></i>
+                <p class="m-0 body5 text-semibold">Fecha de nacimiento</p>
+              </div>
+              <div class="flex ml-5 sm:ml-0"></div>
+              <p class="m-0 body5 text-gray-400">
+                {{ partner?.birthdate | date : "dd/MM/yyyy" }} -
+                {{ partner?.age }} años
+              </p>
+            </div>
+            <div
+              class="flex flex-wrap item mt-1 border-bottom-1"
+              style="border-color: var(--gray-150)"
+            >
+              <div class="flex col-12 sm:col-6 p-0">
+                <i class="fa-solid fa-phone-flip mr-3 text-gray-900"></i>
+                <p class="m-0 body5 text-semibold">Número de celular</p>
+              </div>
+              <div class="flex ml-5 sm:ml-0">
+                <p class="m-0 body5 text-gray-400">
+                  {{ partner?.cellPhone }}
+                </p>
+              </div>
+            </div>
+            <div
+              *ngIf="partner?.email"
+              class="flex flex-wrap item mt-1 border-bottom-1"
+              style="border-color: var(--gray-150)"
+            >
+              <div class="flex col-12 sm:col-6 p-0">
+                <i class="fa-regular fa-envelope mr-3 text-gray-900"></i>
+                <p class="m-0 body5 text-semibold">Correo electrónico</p>
+              </div>
+              <div class="flex ml-5 sm:ml-0">
+                <p class="m-0 body5 text-gray-400">
+                  {{ partner?.email }}
+                </p>
+              </div>
+            </div>
+            <div
+              *ngIf="partner?.cityName || partner?.address"
+              class="flex flex-wrap item mt-1"
+            >
+              <div class="flex col-12 sm:col-6 p-0">
+                <i class="fa-solid fa-map-location-dot mr-3 text-gray-900"></i>
+                <p class="m-0 body5 text-semibold">Dirección</p>
+              </div>
+              <div class="flex ml-5 sm:ml-0">
+                <p class="m-0 body5 text-gray-400">
+                  {{ partner?.cityName ? partner?.cityName : "" }}
+                  {{ partner?.cityName && partner?.address ? "-" : " " }}
+                  {{ partner?.address ? partner?.address : "" }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </p-panel>
+      <div class="mt-2"></div>
+      <p-panel header="Membresias" [toggleable]="true">
+        <ng-template pTemplate="icons">
+          <i
+            class="fa-solid fa-clipboard-check text-primary mr-2"
+            style="font-size: 25px"
+            onkeypress
+          ></i>
+        </ng-template>
+        <div class="flex flex-column">
+          <div
+            *ngFor="let membership of listMembership"
+            class="flex flex-wrap mt-1 w-full"
+          >
+            <div
+              class="flex border-bottom-1 border-gray-300 py-2 px-1 justify-content-between align-items-center w-full"
+            >
+              <div class="flex">
+                <i
+                  class="fa-solid fa-clipboard-check mr-2"
+                  [ngClass]="{
+                    'text-primary-400': membership.status == 'Active',
+                    'text-red-400': membership.status == 'Inactive'
+                  }"
+                ></i>
+                <p class="m-0 body5 text-gray-900 mr-2 text-semibold">
+                  {{ membership.membership.name }}
+                </p>
+              </div>
+              <div *ngIf="isDisabled(membership)" class="flex">
+                <div
+                  class="toggle-switch"
+                  [class.active]="membership.status == 'Active'"
+                  (click)="toggleMembership($event, membership)"
+                  onkeypress
+                >
+                  <div class="toggle-circle"></div>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-wrap px-1 py-2">
+              <div class="flex">
+                <p class="m-0 body5 text-gray-400 mr-3">
+                  Fecha Inicio: {{ membership.startDate | date : "dd/MM/yyyy" }}
+                </p>
+              </div>
+              <div class="flex">
+                <p class="m-0 body5 text-gray-400 mr-3">
+                  Fecha de Finalización:
+                  {{ membership.expirationDate | date : "dd/MM/yyyy" }}
+                </p>
+              </div>
+              <div class="flex">
+                <p
+                  *ngIf="membership.cantSessions"
+                  class="m-0 body5 text-gray-400"
+                >
+                  Tiene: {{ membership.cantSessions }} sesiones
+                </p>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="listMembership.length == 0" class="flex mt-1">
+            <i class="fa-solid fa-clipboard-check mr-2 text-red-400"></i>
+            <p class="m-0 body5 text-gray-400 mr-2">
+              El socio aún no ha tiene membresías
+            </p>
+          </div>
+        </div>
+      </p-panel>
+      <div class="mt-2"></div>
+      <p-panel header="Detalle de Ingresos" [toggleable]="true">
+        <ng-template pTemplate="icons">
+          <i
+            class="fa-solid fa-unlock-keyhole text-primary mr-2"
+            style="font-size: 25px"
+            onkeypress
+          ></i>
+        </ng-template>
+        <div class="flex flex-column">
+          <div
+            *ngFor="let access of listAccessControl; let i = index"
+            class="flex flex-wrap"
+          >
+            <div class="flex flex-wrap px-1">
+              <div class="flex">
+                <i
+                  class="fa-solid fa-person-running mr-2"
+                  style="font-size: 18px; margin-top: 3px"
+                  [ngClass]="{
+                    'text-primary-400': access.status == 'Granted',
+                    'text-red-400': access.status == 'Denied'
+                  }"
+                ></i>
+                <p class="m-0 body5 text-gray-400 text-semibold py-0 mr-2 mt-1">
+                  Fecha de ingreso:
+                </p>
+              </div>
+              <div class="flex ml-4 sm:ml-0">
+                <p class="m-0 body5 text-gray-400 mr-4 py-0 mt-1">
+                  {{ access.accessTime | date : "dd/MM/yyyy hh:mm a" }}
+                </p>
+              </div>
+            </div>
+            <div class="flex ml-4 pl-1 sm:ml-0 sm:pl-0">
+              <p class="m-0 body5 text-gray-400 text-semibold py-0 mr-2 mt-1">
+                Estado:
+              </p>
+              <p class="m-0 body5 text-gray-400 mr-4 py-0 mt-1">
+                {{ access.status === "Granted" ? "Permitido" : "Denegado" }}
+              </p>
+            </div>
+          </div>
+          <div *ngIf="listAccessControl.length == 0" class="flex mt-1">
+            <i class="fa-solid fa-person-running mr-2 text-gray-400"></i>
+            <p class="m-0 body5 text-gray-400 mr-2">
+              El socio aún no ha registrado ingresos
+            </p>
+          </div>
+        </div>
+      </p-panel>
+      <div class="mt-2"></div>
+      <p-panel header="Rutinas" [toggleable]="true">
+        <ng-template pTemplate="icons">
+          <i
+            class="fa-solid fa-child-reaching text-primary mr-2"
+            style="font-size: 25px"
+            onkeypress
+          ></i>
+        </ng-template>
+        <p>Lorem ipsum dolor sit amet...</p>
+      </p-panel>
+      <div class="mt-2"></div>
+    </div>
+    <div class="lines"></div>
+    <!-- botones -->
+    <div class="flex justify-content-center my-4">
+      <p-button
+        class="flex"
+        styleClass="p-button-outlined"
+        label="Atrás"
+        [style]="{ width: '260px', height: '46px' }"
+        (onClick)="show = false; showEmiter.emit(false)"
+      ></p-button>
+    </div>
+  </ng-template>
+</g-modal>

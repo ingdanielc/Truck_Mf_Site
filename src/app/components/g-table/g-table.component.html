@@ -1,0 +1,1099 @@
+<div class="flex flex-column" [ngSwitch]="type">
+  <div *ngSwitchDefault>
+    <p-table
+      #dt
+      [columns]="columns"
+      [value]="items.content"
+      [(selection)]="itemsSelectds"
+      responsiveLayout="scroll"
+      [paginator]="true"
+      [rowHover]="true"
+      [rows]="10"
+      [currentPageReportTemplate]="currentPageReportTemplate"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [responsive]="true"
+      [resizableColumns]="true"
+      [showCurrentPageReport]="true"
+      [loading]="loading"
+      styleClass="p-datatable-striped bg-white border-1 border-round-2xl border border-400"
+      [totalRecords]="items.totalElements"
+      [scrollable]="true"
+      [virtualScroll]="virtualScroll"
+      [virtualScrollItemSize]="10"
+      [lazy]="true"
+      (onLazyLoad)="loadData($event)"
+      class="col-12"
+    >
+      <!-- caption Table  -->
+      <ng-template pTemplate="caption">
+        <div class="flex">
+          <span class="p-input-icon-left w-full">
+            <i class="pi pi-search"></i>
+            <input
+              pInputText
+              pAutoFocus
+              class="p-inputtext w-full"
+              [style]="{ height: '46px', 'max-width': '380px' }"
+              [autofocus]="true"
+              placeholder="{{ placeholder }}"
+              paddingLeft="35px"
+              [(ngModel)]="model"
+              (input)="applyFilterGlobal(model)"
+              maxLength="maxlengthFilter"
+            />
+          </span>
+        </div>
+      </ng-template>
+      <!-- End caption Table  -->
+
+      <!-- header Table  -->
+      <ng-template pTemplate="header" let-columns>
+        <tr>
+          <th [id]="i" *ngFor="let col of columns; index as i" class="">
+            <div class="flex flex-column ml-4 justify-content-center">
+              <div class="flex align-items-center">
+                <div>
+                  <h3 class="m-0 p-0">{{ col.header }}</h3>
+                </div>
+                <!-- filter -->
+                <div>
+                  <p-columnFilter
+                    #myFilters
+                    [id]="i"
+                    [hideOnClear]="hideFilter"
+                    class="column-filter"
+                    *ngIf="col.filter"
+                    [field]="col.field"
+                    matchMode="in"
+                    display="menu"
+                    [showMatchModes]="false"
+                    [showOperator]="false"
+                    [showAddButton]="false"
+                    [showApplyButton]="false"
+                    [showClearButton]="false"
+                  >
+                    <ng-template pTemplate="filtericon">
+                      <div style="width: 16px; height: 16px">
+                        <span
+                          class="fa-solid fa-filter"
+                          [ngClass]="{
+                            'text-primary': isActiveFilter(col.field),
+                            'text-gray-400': !isActiveFilter(col.field)
+                          }"
+                        ></span>
+                      </div>
+                    </ng-template>
+
+                    <ng-template
+                      pTemplate="filter"
+                      let-value
+                      let-filter="filterCallback"
+                    >
+                      <!-- closeFilter -->
+                      <div
+                        class="flex pos-close-button pt-2 pb-0 m-0 px-14"
+                        *ngIf="
+                          col.close ||
+                          filterValues[col.field].radioButtonModel == null
+                        "
+                      >
+                        <i
+                          class="m-1 fa-solid fa-xmark"
+                          (click)="onCloseFilter(col.field)"
+                          onkeypress
+                        ></i>
+                      </div>
+
+                      <div class="px-14">
+                        <h6
+                          *ngIf="
+                            filterValues[col.field]?.radioButtonModel ==
+                            undefined
+                          "
+                          class="mb-4 filter-title fz-20"
+                        >
+                          Buscar
+                        </h6>
+
+                        <div *ngIf="col.filterType === 'basic'" class="mb-4">
+                          <p class="mb-1 mt-1">Buscar registros iguales a:</p>
+                          <p-dropdown
+                            *ngIf="col.type !== 'date'"
+                            placeholder="Select"
+                            [(ngModel)]="filterValues[col.field]!.valueEqualTo"
+                            [options]="filterElements[col.field]"
+                            optionLabel="selectValue"
+                            optionValue="selectValue"
+                            [required]="false"
+                          ></p-dropdown>
+                          <p-calendar
+                            *ngIf="col.type == 'date'"
+                            id="endDate"
+                            [(ngModel)]="filterValues[col.field]!.valueEqualTo"
+                            dateFormat="dd/mm/yy"
+                            [showIcon]="true"
+                            [maxDate]="maxDate"
+                            styleClass="w-full"
+                            [inputStyle]="{ 'border-right': 'none' }"
+                            placeholder="dd/mm/aaaa"
+                            appendTo="body"
+                          >
+                            <ng-template pTemplate="triggericon">
+                              <i
+                                class="fa fa-solid fa-calendar-days"
+                                aria-hidden="true"
+                              ></i>
+                            </ng-template>
+                          </p-calendar>
+                        </div>
+
+                        <div *ngIf="col.filterType !== 'basic'">
+                          <div
+                            class="flex justify-content-between"
+                            style="width: 260px"
+                          >
+                            <h4 class="mb-2 mt-1">Buscar registros:</h4>
+                            <i
+                              *ngIf="
+                                filterValues[col.field]?.radioButtonModel !==
+                                  undefined &&
+                                filterValues[col.field]?.radioButtonModel !==
+                                  null
+                              "
+                              class="m-1 fa-solid fa-xmark"
+                              (click)="onCloseFilter(col.field)"
+                              onkeypress
+                            ></i>
+                          </div>
+
+                          <g-radio-button
+                            classGeneral="mb-4"
+                            [model]="filterValues[col.field]?.radioButtonModel"
+                            (modelChange)="
+                              changeSelectionFilter($event, col.field)
+                            "
+                            [opcionTrue]="'Similar a'"
+                            [opcionFalse]="'Igual a'"
+                            name="radioFilter"
+                            type="options-inline"
+                            [readonly]="false"
+                          >
+                          </g-radio-button>
+
+                          <div
+                            *ngIf="
+                              filterValues[col.field]?.radioButtonModel != null
+                            "
+                          >
+                            <div
+                              *ngIf="filterValues[col.field]?.radioButtonModel"
+                              class="mb-4"
+                            >
+                              <input
+                                pInputText
+                                [style]="{ width: '260px', height: '46px' }"
+                                type="text"
+                                [(ngModel)]="
+                                  filterValues[col.field]!.valueSimilarTo
+                                "
+                              />
+                            </div>
+
+                            <div
+                              *ngIf="!filterValues[col.field].radioButtonModel"
+                              class="mb-4"
+                            >
+                              <p-dropdown
+                                [id]="col.field"
+                                [(ngModel)]="
+                                  filterValues[col.field]!.valueEqualTo
+                                "
+                                (ngModelChange)="
+                                  filterValuesChange.emit({
+                                    valueFilter: $event,
+                                    colField: col.field
+                                  })
+                                "
+                                [options]="filterElements[col.field]"
+                                placeholder="Seleccione"
+                                optionLabel="selectValue"
+                                optionValue="selectValue"
+                                [required]="false"
+                              >
+                              </p-dropdown>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        *ngIf="
+                          filterValues[col.field]?.valueEqualTo ||
+                          (col.filterType !== 'basic' &&
+                            filterValues[col.field]?.radioButtonModel != null)
+                        "
+                        class="flex justify-content-between px-14"
+                      >
+                        <p-button
+                          label="Limpiar"
+                          class="p-button-outlined"
+                          styleClass="p-button-outlined"
+                          [style]="{ width: '120px', height: '46px' }"
+                          (onClick)="cleanFilter(col.field)"
+                          [disabled]="
+                            !(
+                              filterValues[col.field].valueEqualTo ||
+                              filterValues[col.field].valueSimilarTo
+                            )
+                          "
+                          [loading]="btnCleanFilterIsLoanding"
+                        ></p-button>
+                        <p-button
+                          label="Aplicar"
+                          class="btn-filter"
+                          [style]="{ width: '120px', height: '46px' }"
+                          (onClick)="applyFilter(col.field)"
+                          [disabled]="
+                            !(
+                              filterValues[col.field].valueEqualTo ||
+                              filterValues[col.field].valueSimilarTo
+                            )
+                          "
+                          [loading]="btnApplyFilterIsLoanding"
+                        ></p-button>
+                      </div>
+                    </ng-template>
+                  </p-columnFilter>
+                </div>
+                <div [pSortableColumn]="col.field">
+                  <p-sortIcon [field]="col.field"></p-sortIcon>
+                </div>
+              </div>
+            </div>
+          </th>
+          <td>
+            <!-- Relleno Accion's -->
+          </td>
+        </tr>
+      </ng-template>
+      <!-- End header Table -->
+
+      <!-- Body Table -->
+      <ng-template
+        pTemplate="body"
+        let-rowData
+        let-columns="columns"
+        let-rowIndex="rowIndex"
+      >
+        <tr *ngIf="dataLoaded" [pSelectableRow]="rowData">
+          <td
+            *ngFor="let col of columns; let index = index"
+            style="max-width: 200px; height: 65px"
+          >
+            <div class="flex flex-column ml-4 justify-content-center body3">
+              <div class="flex" *ngIf="col.pipe; else elseCol">
+                <!-- Pipe Status -->
+                <div *ngIf="col.pipe === 'status'">
+                  <div
+                    class="tag"
+                    [ngClass]="{
+                      completed:
+                        rowData[col.field] === 'Completed' ||
+                        rowData[col.field] === true,
+                      partial:
+                        rowData[col.field] === 'Partial' ||
+                        rowData[col.field] === true,
+                      pending:
+                        rowData[col.field] === 'Pending' ||
+                        rowData[col.field] === false,
+                      cancelled: rowData[col.field] === 'Cancelled'
+                    }"
+                  >
+                    <!-- Display based on type -->
+                    <ng-container
+                      *ngIf="isBoolean(rowData[col.field]); else displayString"
+                    >
+                      {{ rowData[col.field] | status }}
+                    </ng-container>
+                    <ng-template #displayString>
+                      {{ rowData[col.field] }}
+                    </ng-template>
+                  </div>
+                </div>
+
+                <!-- Pipe Date -->
+                <div *ngIf="col.pipe === 'date'" class="cell-content">
+                  {{ rowData[col.field] | date : "dd/MM/yyyy hh:mm a" }}
+                </div>
+              </div>
+              <ng-template #elseCol>
+                <div *ngIf="col.type == 'number'; else textContent">
+                  <div class="cell-content text-right mr-5">
+                    {{
+                      rowData[col.field]
+                        | currency : "COP" : "symbol" : "1.0-0" : "es-CO"
+                    }}
+                  </div>
+                </div>
+                <ng-template #textContent>
+                  <div class="cell-content">
+                    {{ getColumnField(rowData, col.field) }}
+                  </div>
+                </ng-template>
+              </ng-template>
+            </div>
+          </td>
+
+          <td>
+            <ng-container
+              *ngTemplateOutlet="
+                actionTemplate;
+                context: { $implicit: rowData }
+              "
+            ></ng-container>
+          </td>
+        </tr>
+
+        <tr *ngIf="!dataLoaded" style="height: 46px">
+          <td *ngFor="let col of columns; let even = even">
+            <div class="skeleton">
+              <p-skeleton />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <!-- End Body Table -->
+      <ng-template pTemplate="footer">
+        <tr>
+          <td colspan="3" class="text-right font-bold p-3">
+            <h3>Total:</h3>
+          </td>
+          <td class="font-bold p-3">
+            <h3 class="ml-4 text-right mr-5">
+              {{
+                totalPayment | currency : "COP" : "symbol" : "1.0-0" : "es-CO"
+              }}
+            </h3>
+          </td>
+          <td class="font-bold p-3">
+            <h3 class="ml-4 text-right mr-5">
+              {{
+                balancePayment | currency : "COP" : "symbol" : "1.0-0" : "es-CO"
+              }}
+            </h3>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <div *ngSwitchCase="'basic'">
+    <div>
+      <!-- caption Table  -->
+      <div
+        *ngIf="showGlobalFilter"
+        class="flex flex-wrap justify-content-between align-items-center"
+      >
+        <div class="flex mb-3 w-full">
+          <span class="p-input-icon-left w-full">
+            <i class="pi pi-search"></i>
+            <input
+              pInputText
+              pAutoFocus
+              class="p-inputtext w-full"
+              [style]="{ height: '46px', 'max-width': '380px' }"
+              [autofocus]="true"
+              placeholder="{{ placeholder }}"
+              paddingLeft="35px"
+              [(ngModel)]="model"
+              (input)="applyFilterGlobal(model)"
+              maxLength="maxlengthFilter"
+            />
+          </span>
+        </div>
+        <div *ngIf="captionTemplate" class="mb-3 mr-2">
+          <ng-container *ngTemplateOutlet="captionTemplate"></ng-container>
+        </div>
+      </div>
+      <!-- End caption Table  -->
+
+      <!-- filter Mobile -->
+      <!-- cuando no tiene filter ocultar el filter -->
+      <div
+        *ngIf="hasColumnFilter()"
+        (click)="filterVisible = true"
+        onkeypress
+        class="flex align-items-center border-1 border-round mb-3 px-2 border-gray-400 cursor-pointer lg:hidden"
+        style="width: 192px; height: 48px"
+      >
+        <p>Filtrar por...</p>
+      </div>
+      <!-- END filter Mobile -->
+
+      <!-- Chip filter -->
+      <div *ngIf="hasActiveChips" class="flex flex-wrap gap-2 mb-3 lg:hidden">
+        <ng-container *ngFor="let col of columns">
+          <ng-container *ngIf="isActiveFilter(col.field)">
+            <p-chip
+              class="cursor-pointer"
+              [label]="getChipLabel(col)"
+              (onRemove)="cleanFilter(col.field)"
+              [removable]="true"
+              styleClass="border-1 border-gray-400"
+            >
+              <ng-template pTemplate="removeicon">
+                <div class="flex justify-items-center">
+                  <i class="pi pi-times-circle"></i>
+                </div>
+              </ng-template>
+            </p-chip>
+          </ng-container>
+        </ng-container>
+      </div>
+      <!-- END Chip filter -->
+    </div>
+
+    <!-- Muestra Skeletons cuando loading es true -->
+    <div
+      *ngIf="shouldShowSkeleton"
+      class="border-1 border-round border border-200 p-2 py-1"
+    >
+      <table style="width: 100%; border-collapse: collapse; border-spacing: 0">
+        <thead>
+          <tr>
+            <th
+              *ngFor="let col of columns"
+              style="padding: 10px; background: #f5f5f5; border-right: none"
+            >
+              <p-skeleton width="100%" height="1.5rem"></p-skeleton>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let _ of [].constructor(skeletonRows); let last = last"
+            [ngStyle]="{ 'border-bottom': last ? 'none' : '1px solid #ddd' }"
+            style="height: 63px"
+          >
+            <td *ngFor="let col of columns" style="padding: 10px; border: none">
+              <p-skeleton width="100%" height="43px"></p-skeleton>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p-table
+      #dt
+      [columns]="columns"
+      [value]="isFilter ? items.content : items"
+      [(selection)]="itemsSelectds"
+      [paginator]="
+        isFilter ? items?.totalElements > rows : items?.length > rows
+      "
+      [rowHover]="rowHover"
+      [rows]="rows"
+      [currentPageReportTemplate]="currentPageReportTemplate"
+      [rowsPerPageOptions]="rowsPerPageOptions"
+      [responsive]="true"
+      [resizableColumns]="false"
+      [showCurrentPageReport]="true"
+      [totalRecords]="isFilter ? items?.totalElements : items?.length"
+      [scrollable]="false"
+      [virtualScroll]="isFilter ? virtualScroll : false"
+      [virtualScrollItemSize]="10"
+      [lazy]="isFilter"
+      styleClass="bg-white border-round border border-200 px-2 pt-2 lg:p-datatable-sm custom-table {{
+        classTable
+      }} {{ hasActiveChips ? '' : 'border-1' }} {{
+        isSmallScreen ? 'hide-rows-per-page' : ''
+      }}"
+      (onLazyLoad)="isFilter ? loadData($event) : null"
+      responsiveLayout="stack"
+      [breakpoint]="'991px'"
+      emptyMessage="No results found"
+    >
+      <!-- header Table  -->
+      <ng-template pTemplate="header" let-columns let-i="index">
+        <tr *ngIf="!shouldShowSkeleton">
+          <th
+            [id]="i"
+            *ngFor="let col of columns; index as i"
+            [ngClass]="{ 'border-round-left': i === 0 }"
+            class="bg-gray-100 p-0"
+            style="height: 41px"
+          >
+            <div class="flex flex-column ml-4 justify-content-center">
+              <div class="flex align-items-center">
+                <div>
+                  <h3 class="m-0 p-0 body5 title-semibold">{{ col.header }}</h3>
+                </div>
+                <!-- filter -->
+                <div>
+                  <p-columnFilter
+                    #myFilters
+                    [id]="i"
+                    [hideOnClear]="hideFilter"
+                    class="column-filter"
+                    *ngIf="col.filter"
+                    [field]="col.field"
+                    matchMode="in"
+                    display="menu"
+                    [showMatchModes]="false"
+                    [showOperator]="false"
+                    [showAddButton]="false"
+                    [showApplyButton]="false"
+                    [showClearButton]="false"
+                  >
+                    <ng-template pTemplate="filtericon">
+                      <div
+                        class="flex justify-content-center"
+                        style="width: 12px; height: 12px"
+                      >
+                        <span
+                          class="fa-solid fa-filter"
+                          [ngClass]="{
+                            'text-primary': isActiveFilter(col.field),
+                            'text-gray-400': !isActiveFilter(col.field)
+                          }"
+                        ></span>
+                      </div>
+                    </ng-template>
+
+                    <ng-template
+                      pTemplate="filter"
+                      let-value
+                      let-filter="filterCallback"
+                    >
+                      <!-- closeFilter -->
+                      <div
+                        class="flex pos-close-button pt-2 pb-0 m-0 px-14"
+                        *ngIf="
+                          col.close ||
+                          filterValues[col.field].radioButtonModel == null
+                        "
+                      >
+                        <i
+                          class="m-1 fa-solid fa-xmark"
+                          (click)="onCloseFilter(col.field)"
+                          onkeypress
+                        ></i>
+                      </div>
+
+                      <div class="px-14">
+                        <h6
+                          *ngIf="
+                            filterValues[col.field]?.radioButtonModel ==
+                            undefined
+                          "
+                          class="mb-4 filter-title fz-20"
+                        >
+                          Buscar
+                        </h6>
+
+                        <div [ngSwitch]="col.filterType">
+                          <div *ngSwitchDefault>
+                            <div
+                              class="flex justify-content-between"
+                              style="width: 260px"
+                            >
+                              <h4 class="mb-2 mt-1">Buscar registros:</h4>
+                              <i
+                                *ngIf="
+                                  filterValues[col.field]?.radioButtonModel !==
+                                    undefined &&
+                                  filterValues[col.field]?.radioButtonModel !==
+                                    null
+                                "
+                                class="m-1 fa-solid fa-xmark"
+                                (click)="onCloseFilter(col.field)"
+                                onkeypress
+                              ></i>
+                            </div>
+
+                            <g-radio-button
+                              classGeneral="mb-4"
+                              [model]="
+                                filterValues[col.field]?.radioButtonModel
+                              "
+                              (modelChange)="
+                                changeSelectionFilter($event, col.field)
+                              "
+                              [opcionTrue]="'Similar a'"
+                              [opcionFalse]="'Igual a'"
+                              name="radioFilter"
+                              type="options-inline"
+                              [readonly]="false"
+                            >
+                            </g-radio-button>
+
+                            <div
+                              *ngIf="
+                                filterValues[col.field]?.radioButtonModel !=
+                                null
+                              "
+                            >
+                              <div
+                                *ngIf="
+                                  filterValues[col.field]?.radioButtonModel
+                                "
+                                class="mb-4"
+                              >
+                                <input
+                                  [id]="col.field"
+                                  pInputText
+                                  [style]="{ width: '260px', height: '46px' }"
+                                  type="text"
+                                  [required]="false"
+                                  [(ngModel)]="
+                                    filterValues[col.field]!.valueSimilarTo
+                                  "
+                                />
+                              </div>
+
+                              <div
+                                *ngIf="
+                                  !filterValues[col.field].radioButtonModel
+                                "
+                                class="mb-4"
+                              >
+                                <p-dropdown
+                                  [id]="col.field"
+                                  [(ngModel)]="
+                                    filterValues[col.field]!.valueEqualTo
+                                  "
+                                  (ngModelChange)="
+                                    filterValuesChange.emit({
+                                      valueFilter: $event,
+                                      colField: col.field
+                                    })
+                                  "
+                                  [options]="filterElements[col.field]"
+                                  placeholder="Seleccione"
+                                  optionLabel="selectValue"
+                                  optionValue="selectValue"
+                                  [required]="false"
+                                >
+                                </p-dropdown>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div *ngSwitchCase="'basic'" class="mb-4">
+                            <p class="mb-1 mt-1">Buscar registros iguales a:</p>
+                            <p-dropdown
+                              *ngIf="col.type !== 'date'"
+                              placeholder="Seleccione"
+                              [(ngModel)]="
+                                filterValues[col.field]!.valueEqualTo
+                              "
+                              [options]="filterElements[col.field]"
+                              optionLabel="selectValue"
+                              optionValue="selectValue"
+                              [required]="false"
+                            ></p-dropdown>
+                            <p-calendar
+                              *ngIf="col.type == 'date'"
+                              id="endDate"
+                              [(ngModel)]="
+                                filterValues[col.field]!.valueEqualTo
+                              "
+                              dateFormat="dd/mm/yy"
+                              [showIcon]="true"
+                              [maxDate]="maxDate"
+                              styleClass="w-full"
+                              [inputStyle]="{ 'border-right': 'none' }"
+                              placeholder="dd/mm/aaaa"
+                              appendTo="body"
+                            >
+                              <ng-template pTemplate="triggericon">
+                                <i
+                                  class="fa fa-solid fa-calendar-days"
+                                  aria-hidden="true"
+                                ></i>
+                              </ng-template>
+                            </p-calendar>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        *ngIf="
+                          filterValues[col.field]?.valueEqualTo ||
+                          (col.filterType !== 'basic' &&
+                            filterValues[col.field]?.radioButtonModel != null)
+                        "
+                        class="flex justify-content-between px-14"
+                      >
+                        <p-button
+                          label="Limpiar"
+                          class="p-button-outlined"
+                          styleClass="p-button-outlined"
+                          [style]="{ width: '120px', height: '46px' }"
+                          (onClick)="cleanFilter(col.field)"
+                          [disabled]="
+                            !(
+                              filterValues[col.field].valueEqualTo ||
+                              filterValues[col.field].valueSimilarTo
+                            )
+                          "
+                          [loading]="btnCleanFilterIsLoanding"
+                        ></p-button>
+                        <p-button
+                          label="Aplicar"
+                          class="btn-filter"
+                          [style]="{ width: '120px', height: '46px' }"
+                          (onClick)="applyFilter(col.field)"
+                          [disabled]="
+                            !(
+                              filterValues[col.field].valueEqualTo ||
+                              filterValues[col.field].valueSimilarTo
+                            )
+                          "
+                          [loading]="btnApplyFilterIsLoanding"
+                        ></p-button>
+                      </div>
+                    </ng-template>
+                  </p-columnFilter>
+                </div>
+                <div
+                  [pSortableColumn]="col.field"
+                  class="flex justify-content-center align-content-center"
+                  *ngIf="showSortIcon"
+                >
+                  <p-sortIcon [field]="col.field" class="sortIcon"></p-sortIcon>
+                </div>
+              </div>
+            </div>
+          </th>
+          <th
+            *ngIf="actionTemplate"
+            id="accion"
+            class="bg-gray-100 border-round-right flex justify-content-center align-items-center p-0"
+            [id]="i"
+            style="height: 41px"
+          >
+            <h3 class="m-0 p-0 body5 title-semibold">
+              <ng-container
+                *ngTemplateOutlet="actionHeaderTemplate"
+              ></ng-container>
+            </h3>
+            <!-- Relleno Accion's -->
+          </th>
+        </tr>
+      </ng-template>
+      <!-- End header Table -->
+
+      <!-- Body Table -->
+      <ng-template
+        pTemplate="body"
+        let-rowData
+        let-rowIndex="rowIndex"
+        let-columns="columns"
+      >
+        <tr *ngIf="!shouldShowSkeleton" [pSelectableRow]="rowData">
+          <!-- Acciones Mobile -->
+          <td class="relative justify-content-end p-0 pt-1 pr-2 lg:hidden">
+            <div class="absolute" style="top: 15px">
+              <ng-container
+                *ngTemplateOutlet="
+                  actionTemplate;
+                  context: { $implicit: rowData }
+                "
+              ></ng-container>
+            </div>
+          </td>
+          <!-- Array Items -->
+          <td
+            *ngFor="let col of columns; let index = index"
+            [ngClass]="{
+              'sac-last':
+                rowIndex ==
+                (isFilter ? items.content?.length - 1 : items?.length - 1)
+            }"
+            class="border-bottom-1 border-200 py-1 md:py-3 px-2 md:px-3"
+          >
+            <div
+              class="flex flex-column items-center ml-0 md:ml-2 justify-content-start body5"
+            >
+              <!-- ✅ Mostrar el título en móviles para cualquier tipo de dato -->
+              <h5 class="lg:hidden block my-2">
+                {{ col.header }}
+              </h5>
+
+              <div class="flex">
+                <!-- Pipelines -->
+                <div class="flex" *ngIf="col.pipe; else elseCol">
+                  <!-- ✅ Pipe Status con título -->
+                  <div
+                    *ngIf="col.pipe === 'status'"
+                    class="cell-content flex flex-column"
+                  >
+                    <div
+                      class="tag"
+                      [ngClass]="{
+                        completed:
+                          rowData[col.field] === 'Completed' ||
+                          rowData[col.field] === true,
+                        partial:
+                          rowData[col.field] === 'Partial' ||
+                          rowData[col.field] === true,
+                        pending:
+                          rowData[col.field] === 'Pending' ||
+                          rowData[col.field] === false,
+                        cancelled: rowData[col.field] === 'Cancelled'
+                      }"
+                    >
+                      <ng-container
+                        *ngIf="
+                          isBoolean(rowData[col.field]);
+                          else displayString
+                        "
+                      >
+                        {{ rowData[col.field] | status }}
+                      </ng-container>
+                      <ng-template #displayString>
+                        {{ rowData[col.field] }}
+                      </ng-template>
+                    </div>
+                  </div>
+
+                  <!-- ✅ Pipe Date con título -->
+                  <div
+                    *ngIf="col.pipe === 'date'"
+                    class="cell-content flex flex-column"
+                  >
+                    <div>
+                      {{ rowData[col.field] | date : "dd/MM/yyyy hh:mm a" }}
+                    </div>
+                  </div>
+                </div>
+
+                <ng-template #elseCol>
+                  <!-- ✅ Número con título -->
+                  <div
+                    *ngIf="col.type == 'number'; else textContent"
+                    class="cell-content flex flex-column"
+                  >
+                    <div>
+                      {{
+                        rowData[col.field]
+                          | currency : "COP" : "symbol" : "1.0-0" : "es-CO"
+                      }}
+                    </div>
+                  </div>
+
+                  <!-- ✅ Texto con título -->
+                  <ng-template #textContent>
+                    <div class="cell-content flex flex-column">
+                      <div
+                        *ngIf="
+                          !getColumnField(rowData, col.field);
+                          else normalText
+                        "
+                      >
+                        <div class="lg:hidden block">---</div>
+                      </div>
+
+                      <ng-template #normalText>
+                        <div>{{ getColumnField(rowData, col.field) }}</div>
+                      </ng-template>
+                    </div>
+                  </ng-template>
+                </ng-template>
+                <span
+                  *ngIf="rowData.isNewRecord && col.pointColor"
+                  class="mx-2 mt-2 point {{ col.pointColor }}"
+                ></span>
+              </div>
+            </div>
+          </td>
+          <!-- Acciones Desktop -->
+          <td
+            *ngIf="actionTemplate"
+            [ngClass]="{
+              'sac-last':
+                rowIndex ==
+                (isFilter ? items.content?.length - 1 : items?.length - 1)
+            }"
+            class="border-bottom-1 border-200 py-2"
+          >
+            <div class="lg:block hidden">
+              <ng-container
+                *ngTemplateOutlet="
+                  actionTemplate;
+                  context: { $implicit: rowData }
+                "
+              ></ng-container>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td
+            [attr.colspan]="
+              actionTemplate ? columns.length + 1 : columns.length
+            "
+            class="text-center p-3 border-0"
+            style="height: 70px"
+          >
+            <p class="text-gray-500 body5">No se encontraron resultados</p>
+          </td>
+        </tr>
+      </ng-template>
+
+      <!-- End Body Table -->
+    </p-table>
+
+    <g-sidebar
+      [(visible)]="filterVisible"
+      title="Filtrar por"
+      class="lg:hidden block"
+      (onHide)="filterVisible = false"
+    >
+      <div class="flex flex-column justify-content-between w-full h-full">
+        <div>
+          <p-accordion [multiple]="true" [(activeIndex)]="activeIndexes">
+            <ng-container *ngFor="let col of columns; let index = index">
+              <p-accordionTab
+                *ngIf="col.filter"
+                contentStyleClass="bg-transparent border-noround border-0"
+                headerStyleClass="bg-transparent border-noround border-0 p-0 py-2"
+              >
+                <ng-template pTemplate="header">
+                  <div
+                    class="flex align-items-center justify-content-between w-full"
+                  >
+                    <span class="vertical-align-middle">{{ col.header }}</span>
+                    <i
+                      class="pi mr-2"
+                      [ngClass]="
+                        isTabOpen(index) ? 'pi-angle-up' : 'pi-angle-down'
+                      "
+                    ></i>
+                  </div>
+                </ng-template>
+                <ng-template pTemplate="content">
+                  <div [ngSwitch]="col.filterType">
+                    <div *ngSwitchDefault>
+                      <h4 class="mb-2 mt-1">Buscar registros:</h4>
+                      <g-radio-button
+                        classGeneral="mb-4 mr-8"
+                        [model]="pendingFilters[col.field].radioButtonModel"
+                        (modelChange)="
+                          updatePendingFilter(col.field, $event, 'radio')
+                        "
+                        [opcionTrue]="'Similar a'"
+                        [opcionFalse]="'Igual a'"
+                        name="radioFilter"
+                        type="options-inline"
+                        [readonly]="false"
+                      ></g-radio-button>
+
+                      <div
+                        *ngIf="
+                          pendingFilters[col.field]?.radioButtonModel != null
+                        "
+                      >
+                        <div
+                          *ngIf="pendingFilters[col.field]?.radioButtonModel"
+                          class="mb-4"
+                        >
+                          <input
+                            pInputText
+                            [style]="{ width: '100%', height: '46px' }"
+                            type="text"
+                            [required]="false"
+                            [(ngModel)]="
+                              pendingFilters[col.field]!.valueSimilarTo
+                            "
+                          />
+                        </div>
+                        <div
+                          *ngIf="!pendingFilters[col.field]?.radioButtonModel"
+                          class="mb-4"
+                        >
+                          <p-dropdown
+                            *ngIf="col.type !== 'date'"
+                            placeholder="Seleccione"
+                            [(ngModel)]="
+                              pendingFilters[col.field]!.valueEqualTo
+                            "
+                            (modelChange)="
+                              updatePendingFilter(col.field, $event, 'equal')
+                            "
+                            [options]="filterElements[col.field]"
+                            optionLabel="selectValue"
+                            optionValue="selectValue"
+                            [required]="false"
+                            [style]="{ width: '100%', height: '46px' }"
+                          ></p-dropdown>
+                        </div>
+                      </div>
+                    </div>
+                    <div *ngSwitchCase="'basic'">
+                      <p class="mb-1">Buscar registros iguales a:</p>
+                      <p-dropdown
+                        *ngIf="col.type !== 'date'"
+                        placeholder="Seleccione"
+                        [(ngModel)]="pendingFilters[col.field]!.valueEqualTo"
+                        [options]="filterElements[col.field]"
+                        optionLabel="selectValue"
+                        optionValue="selectValue"
+                        [required]="false"
+                        [style]="{ width: '100%', height: '46px' }"
+                      ></p-dropdown>
+                      <p-calendar
+                        *ngIf="col.type == 'date'"
+                        id="endDate"
+                        [(ngModel)]="pendingFilters[col.field]!.valueEqualTo"
+                        dateFormat="dd/mm/yy"
+                        [showIcon]="true"
+                        [maxDate]="maxDate"
+                        styleClass="w-full"
+                        [inputStyle]="{ 'border-right': 'none' }"
+                        placeholder="dd/mm/aaaa"
+                        appendTo="body"
+                      >
+                        <ng-template pTemplate="triggericon">
+                          <i
+                            class="fa fa-solid fa-calendar-days"
+                            aria-hidden="true"
+                          ></i>
+                        </ng-template>
+                      </p-calendar>
+                    </div>
+                  </div>
+                </ng-template>
+              </p-accordionTab>
+              <div
+                *ngIf="index < columns.length - 1 && col.filter"
+                class="border-1 border-gray-400"
+              ></div>
+            </ng-container>
+          </p-accordion>
+        </div>
+        <div
+          class="flex justify-content-between px-3 pb-3 mt-3"
+          *ngIf="hasActiveFilters"
+        >
+          <p-button
+            label="Limpiar"
+            class="p-button-outlined"
+            styleClass="p-button-outlined"
+            [style]="{ width: '120px', height: '46px' }"
+            (onClick)="clearAllFilters()"
+          ></p-button>
+          <p-button
+            label="Aplicar"
+            class="btn-filter"
+            [style]="{ width: '120px', height: '46px' }"
+            (onClick)="applyAllFilters()"
+          ></p-button>
+        </div>
+      </div>
+    </g-sidebar>
+  </div>
+</div>

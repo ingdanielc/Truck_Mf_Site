@@ -1,0 +1,50 @@
+{
+  "name": "truck-mf-site",
+  "version": "0.0.31",
+  "scripts": {
+    "ng": "ng",
+    "start": "npm run serve:single-spa:Truck-Mf-Site",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "build-test": "ng test --code-coverage --watch=false --browsers=ChromeHeadless",
+    "build:single-spa:Truck-Mf-Site": "ng build Truck-Mf-Site --configuration production",
+    "serve:single-spa:Truck-Mf-Site": "ng s --project Truck-Mf-Site --disable-host-check --port 4202 --live-reload false"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/animations": "^15.2.0",
+    "@angular/common": "^15.2.0",
+    "@angular/compiler": "^15.2.0",
+    "@angular/core": "^15.2.0",
+    "@angular/forms": "^15.2.0",
+    "@angular/platform-browser": "^15.2.0",
+    "@angular/platform-browser-dynamic": "^15.2.0",
+    "@angular/router": "^15.2.0",
+    "jsencrypt": "^3.3.2",
+    "ngx-cookie-service": "^15.0.0",
+    "ngx-webcam": "^0.4.1",
+    "node-forge": "^1.3.1",
+    "primeng": "^15.4.1",
+    "rxjs": "~7.8.0",
+    "single-spa": ">=4.0.0",
+    "single-spa-angular": "^8.1.1",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.12.0"
+  },
+  "devDependencies": {
+    "@angular-builders/custom-webpack": "15.0.0",
+    "@angular-devkit/build-angular": "^15.2.11",
+    "@angular/cli": "~15.2.11",
+    "@angular/compiler-cli": "^15.2.0",
+    "@types/jasmine": "~4.3.0",
+    "jasmine-core": "~4.5.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.1.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.0.0",
+    "style-loader": "^3.3.1",
+    "typescript": "~4.9.4"
+  }
+}

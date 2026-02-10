@@ -1,0 +1,268 @@
+<g-modal
+  [show]="show"
+  [closeOnEscape]="false"
+  [showCloseIcon]="false"
+  [showHeader]="false"
+  [width]="'780px'"
+>
+  <ng-template pTemplate="content">
+    <div>
+      <div class="pt-6 pb-5 px-4 md:px-6">
+        <div class="flex justify-content-between">
+          <div class="flex flex-column">
+            <div class="flex">
+              <h2 class="m-0 mb-2 mr-3">Asociar membresía</h2>
+              <i
+                class="fa-solid fa-circle-info"
+                style="font-size: 24px"
+                (click)="toggleInfo()"
+                onkeypress
+              ></i>
+            </div>
+
+            <p class="body3 mt-2 mr-3">
+              Por favor complete la información para asociar una membresía
+            </p>
+          </div>
+          <i
+            class="fa-solid fa-xmark cursor-pointer"
+            style="font-size: 24px"
+            (click)="show = false; showEmiter.emit(false)"
+            onkeypress
+          ></i>
+        </div>
+      </div>
+      <div class="pb-3 px-4 md:px-6">
+        <div *ngIf="showInfo" class="mb-4 flex flex-column">
+          <p-panel
+            header="Descuenta por Asistencia y Duración"
+            [toggleable]="false"
+          >
+            <p>
+              Esta modalidad se aplica para tiqueteras. Cada vez que el socio
+              asiste a una clase, se deduce automáticamente una sesión de su
+              tiquetera si utiliza el control de acceso. Si no es así, los
+              administradores pueden realizar esta deducción de manera manual.
+              Si el socio no asiste a todas las clases disponibles antes de la
+              fecha de vencimiento, las sesiones restantes se considerarán
+              consumidas.
+            </p>
+          </p-panel>
+          <p-panel
+            header="Únicamente por Duración"
+            [toggleable]="false"
+            class="mt-2"
+          >
+            <p>
+              En este caso, la membresía se basa exclusivamente en el tiempo,
+              sin considerar la asistencia.
+            </p>
+          </p-panel>
+          <p-panel header="Ilimitado" [toggleable]="false" class="mt-2">
+            <p>
+              Esta modalidad otorga el derecho a formar parte del gimnasio y no
+              restringe el control de acceso (Únicamente administradores).
+            </p>
+          </p-panel>
+        </div>
+        <form class="grid font-bold" [formGroup]="membershipForm">
+          <div class="field col-12 py-0">
+            <label for="partner">Socio*</label>
+            <p-dropdown
+              id="partner"
+              [options]="listPartner"
+              optionLabel="name"
+              optionValue="id"
+              [style]="{ width: '100%' }"
+              [(ngModel)]="partner.id"
+              placeholder="Selecciona"
+              formControlName="partner"
+              [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('partner') }"
+              appendTo="body"
+              [disabled]="disabledFields"
+            ></p-dropdown>
+            <small
+              *ngIf="isInvalid('partner')"
+              class="p-error font-normal block"
+              ><i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+
+          <div class="field col-12 py-0">
+            <label for="membership">Membresía*</label>
+            <p-dropdown
+              id="membership"
+              [options]="listMembership"
+              optionLabel="name"
+              optionValue="id"
+              [style]="{ width: '100%' }"
+              [(ngModel)]="membershipId"
+              placeholder="Selecciona"
+              formControlName="membership"
+              [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('membership') }"
+              appendTo="body"
+              [disabled]="disabledFields"
+              (ngModelChange)="setMembership()"
+            ></p-dropdown>
+            <small
+              *ngIf="isInvalid('membership')"
+              class="p-error font-normal block"
+            >
+              <i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+
+          <div
+            *ngIf="membership.membershipTypeId === 1"
+            class="field col-12 md:col-6 pr-5 py-0"
+          >
+            <label for="cantSessions">Cantidad de sesiones*</label>
+            <p-inputNumber
+              pInputNumber
+              id="cantSessions"
+              [max]="99999999"
+              [maxFractionDigits]="0"
+              placeholder="Escribe"
+              class="w-full"
+              [style]="{ width: '100%' }"
+              [(ngModel)]="membership.cantSessions"
+              formControlName="cantSessions"
+              [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('cantSessions') }"
+            ></p-inputNumber>
+            <small
+              *ngIf="isInvalid('cantSessions')"
+              class="p-error font-normal block"
+            >
+              <i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+
+          <div
+            *ngIf="
+              membership.membershipTypeId === 1 ||
+              membership.membershipTypeId === 2
+            "
+            class="field col-12 py-0"
+            [ngClass]="{ 'md:col-6': membership.membershipTypeId === 1 }"
+          >
+            <label for="price">Precio*</label>
+            <p-inputNumber
+              pInputNumber
+              id="price"
+              [max]="99999999"
+              [maxFractionDigits]="0"
+              placeholder="Escribe"
+              class="w-full"
+              [style]="{ width: '100%' }"
+              [(ngModel)]="membership.price"
+              formControlName="price"
+              [ngClass]="{ 'ng-invalid ng-dirty': isInvalid('price') }"
+            ></p-inputNumber>
+            <small *ngIf="isInvalid('price')" class="p-error font-normal block"
+              ><i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+
+          <div
+            *ngIf="
+              membership.membershipTypeId === 1 ||
+              membership.membershipTypeId === 2
+            "
+            class="field col-12 md:col-6 pr-2 lg:pr-3"
+          >
+            <label for="startDate">Fecha de inicio</label>
+            <div class="p-0">
+              <p-calendar
+                id="startDate"
+                [(ngModel)]="partnerMembership.startDate"
+                formControlName="startDate"
+                dateFormat="dd/mm/yy"
+                [showIcon]="true"
+                styleClass="w-full"
+                [inputStyle]="{ 'border-right': 'none' }"
+                placeholder="dd/mm/aaaa"
+                appendTo="body"
+              >
+                <ng-template pTemplate="triggericon">
+                  <i
+                    class="fa fa-solid fa-calendar-days"
+                    aria-hidden="true"
+                  ></i>
+                </ng-template>
+              </p-calendar>
+            </div>
+            <small
+              *ngIf="isInvalid('startDate')"
+              class="p-error font-normal block"
+              ><i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+          <div
+            *ngIf="
+              membership.membershipTypeId === 1 ||
+              membership.membershipTypeId === 2
+            "
+            class="field col-12 md:col-6"
+          >
+            <label for="expirationDate">Fecha de finalización</label>
+            <div class="p-0">
+              <p-calendar
+                id="expirationDate"
+                [(ngModel)]="partnerMembership.expirationDate"
+                formControlName="expirationDate"
+                dateFormat="dd/mm/yy"
+                [showIcon]="true"
+                [minDate]="partnerMembership.startDate!"
+                styleClass="w-full"
+                [inputStyle]="{ 'border-right': 'none' }"
+                placeholder="dd/mm/aaaa"
+                appendTo="body"
+              >
+                <ng-template pTemplate="triggericon">
+                  <i
+                    class="fa fa-solid fa-calendar-days"
+                    aria-hidden="true"
+                  ></i>
+                </ng-template>
+              </p-calendar>
+            </div>
+            <small
+              *ngIf="isInvalid('expirationDate')"
+              class="p-error font-normal block"
+              ><i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+            </small>
+          </div>
+        </form>
+        <div
+          *ngIf="
+            membership.membershipTypeId === 1 ||
+            membership.membershipTypeId === 2
+          "
+        >
+          <g-card-payment
+            [price]="membership.price"
+            (modelEmiter)="setPayment($event)"
+          ></g-card-payment>
+        </div>
+      </div>
+    </div>
+
+    <div class="lines"></div>
+    <div class="flex flex-wrap-reverse my-4 pt-1 justify-content-center gap-1">
+      <p-button
+        class="flex p-button-outlined mr-0 md:mr-1 lg:mr-3"
+        styleClass="p-button-outlined"
+        label="Atrás"
+        [style]="{ width: '260px' }"
+        (onClick)="goBack()"
+      ></p-button>
+      <p-button
+        class="flex"
+        label="Asociar membresía"
+        [style]="{ width: '260px' }"
+        [disabled]="!this.membershipForm.valid"
+        (onClick)="asociateMembership()"
+      ></p-button>
+    </div>
+  </ng-template>
+</g-modal>

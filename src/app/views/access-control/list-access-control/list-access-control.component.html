@@ -1,0 +1,99 @@
+<div class="mt-2">
+  <div
+    class="flex justify-content-between align-items-center flex-wrap mt-3 gap-2"
+  >
+    <g-title title="Ingresos" style="margin-top: -1rem"></g-title>
+    <div class="flex flex-wrap gap-2">
+      <p-button
+        class="mr-3"
+        label="Registrar ingreso"
+        borderRadius="10px"
+        icon="ml-4 fa-solid fa-unlock-keyhole"
+        (onClick)="btnCreateAccess()"
+      >
+      </p-button>
+      <p-button
+        label="Crear socio"
+        borderRadius="10px"
+        icon="ml-4 fa-solid fa-user-plus"
+        (onClick)="btnCreateNewPartner()"
+      >
+      </p-button>
+    </div>
+  </div>
+
+  <div class="container py-2 mt-4 mb-5 px-3 md:px-5">
+    <!-- Details -->
+    <div class="flex flex-wrap mt-2 justify-content-between align-items-end">
+      <div class="flex" style="width: 420px">
+        <span class="p-input-icon-left w-full">
+          <i class="pi pi-search"></i>
+          <input
+            pInputText
+            pAutoFocus
+            class="p-inputtext w-full"
+            [style]="{ height: '48px' }"
+            [autofocus]="true"
+            placeholder="Buscar por nombre de socio..."
+            paddingLeft="35px"
+            [(ngModel)]="partnerFilter"
+            (input)="applyFilterPartner(partnerFilter!)"
+            maxLength="maxlengthFilter"
+          />
+        </span>
+      </div>
+      <!-- Filter -->
+      <div class="flex mt-1 w-full sm:w-auto">
+        <g-filter
+          class="w-full sm:w-auto"
+          [listStatus]="listStatus"
+          [statusFilter]="statusFilter"
+          [listTypes]="listTypes"
+          [typesFilter]="typesFilter"
+          [labelFiltro]="labelFiltro"
+          [range]="true"
+          (selectedStatus)="statusFilter = $event"
+          (selectedTypes)="typesFilter = $event"
+          (selectedStartDate)="startDate = $event"
+          (selectedEndDate)="endDate = $event"
+          (apply)="applyFilter()"
+          (clean)="cleanFilter()"
+        ></g-filter>
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <div class="grid">
+        <div *ngFor="let access of listAccessControl" class="col lg:col-6">
+          <g-card-partner
+            [data]="access.partner"
+            [lastAccess]="access"
+            [showOptions]="false"
+            (clickEmiter)="detailPartner(access.partner)"
+            (mouseenter)="hover = true"
+            (mouseleave)="hover = false"
+            [hover]="hover"
+          ></g-card-partner>
+        </div>
+      </div>
+      <div class="mt-5">
+        <p-paginator
+          (onPageChange)="onPageChange($event)"
+          [styleClass]="'noBorder'"
+          [first]="first"
+          [rows]="rows"
+          [totalRecords]="totalElements"
+          [rowsPerPageOptions]="[10, 20, 50]"
+          [showCurrentPageReport]="true"
+          [currentPageReportTemplate]="currentPageReportTemplate"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+
+<g-card-partner-detail
+  [partner]="partner"
+  [show]="showModalDetail"
+  (showEmiter)="showModalDetail = $event"
+></g-card-partner-detail>

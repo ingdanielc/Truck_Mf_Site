@@ -1,0 +1,89 @@
+<div
+  class="container px-3 md:px-5 lg:px-6"
+  (click)="clickEmiter.emit(true)"
+  onkeypress
+>
+  <div class="flex justify-content-between">
+    <div class="flex">
+      <div
+        class="mr-2 mt-1 point"
+        [ngClass]="{
+              active: data?.status == 'Active',
+              inactive: data?.status == 'Inactive',
+            }"
+      ></div>
+      <p class="m-0 text-gray-400">
+        {{
+          data?.status! === "Active"
+            ? capitalize("Activo")
+            : capitalize("Inactivo")
+        }}
+      </p>
+    </div>
+    <div class="flex">
+      <div
+        class="toggle-switch"
+        [class.active]="inactivateUser"
+        (click)="toggleUser($event)"
+        onkeypress
+      >
+        <div class="toggle-circle"></div>
+      </div>
+    </div>
+  </div>
+  <div class="flex justify-content-between mt-3">
+    <div class="flex flex-column">
+      <h2 class="m-0 title-medium" style="line-height: 30px">
+        {{ data?.name }}
+      </h2>
+      <p class="m-0 body5 mt-1 text-gray-400">
+        {{ data?.email }}
+      </p>
+    </div>
+  </div>
+  <div class="flex flex-wrap mt-6">
+    <div *ngIf="data!.userRoles[0] && data!.userRoles[0].role.id" class="flex">
+      <p class="m-0 text-bold mr-2">Rol:</p>
+      <p class="m-0">{{ data!.userRoles[0].role.name }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmar cambio de estado -->
+<g-modal
+  [show]="showConfirm"
+  [showCloseIcon]="false"
+  [maxWidth]="'650px'"
+  [minHeight]="'270px'"
+>
+  <ng-template pTemplate="content" style="gap: 8px; overflow: hidden">
+    <div class="flex align-items-left mx-1 pt-2 pr-3 mt-4 md:mt-6 pl-4 md:pl-6">
+      <h2 class="m-0 mb-2">
+        ¿Está seguro que desea
+        {{ !inactivateUser ? "activar" : "desactivar" }} el usuario?
+      </h2>
+    </div>
+    <p class="body4 ml-1 mt-1 pr-3 pl-4 md:pl-6 mb-3 md:mb-4">
+      Se {{ !inactivateUser ? "activará" : "desactivará" }} el usuario
+      {{ data?.name }}
+    </p>
+    <div class="pt-2 mt-3 md:mt-6">
+      <div class="lines"></div>
+      <div
+        class="flex flex-wrap-reverse justify-content-center mb-3 mt-4 gap-1"
+      >
+        <p-button
+          class="flex p-button-outlined mr-0 md:mr-1 lg:mr-3"
+          styleClass="p-button-outlined"
+          label="Atrás"
+          (onClick)="goBack($event)"
+        ></p-button>
+        <p-button
+          class="flex mx-2"
+          label="{{ !inactivateUser ? 'Activar' : 'Desactivar' }}"
+          (onClick)="modifyUser($event)"
+        ></p-button>
+      </div>
+    </div>
+  </ng-template>
+</g-modal>

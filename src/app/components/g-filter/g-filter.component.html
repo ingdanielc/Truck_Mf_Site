@@ -1,0 +1,114 @@
+<div class="flex custom-dropdown" [class.open]="isOpen">
+  <!-- Botón que abre el dropdown -->
+  <p-dropdown
+    class="w-full"
+    [panelStyleClass]="'ocultar-panel'"
+    placeholder="Filtrar por..."
+    [style]="{ width: '100%' }"
+    (click)="toggleDropdown()"
+    onkeypress
+  ></p-dropdown>
+
+  <!-- Contenido desplegable -->
+  <div *ngIf="isOpen" class="dropdown-content">
+    <h5 class="ml-3 my-3 py-1 title-semibold">Estado</h5>
+    <div *ngFor="let status of listStatus">
+      <div class="flex justify-content-between mx-3 px-1 my-3">
+        <label for="{{ status.label }}" class="body5"
+          >{{ status.label }}
+        </label>
+        <p-checkbox [(ngModel)]="statusFilterCh" [value]="status.value" />
+      </div>
+    </div>
+
+    <div *ngIf="!range">
+      <h5 class="ml-3 mt-3 py-1 title-semibold">{{ labelFiltro }}</h5>
+      <div *ngFor="let type of listTypes">
+        <div class="flex justify-content-between mx-3 px-1 my-3">
+          <label for="{{ type.name }}" class="body5">{{ type.name }} </label>
+          <p-checkbox [(ngModel)]="typesFilterCh" [value]="type.id" />
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="range">
+      <h5 class="ml-3 mt-3 mb-1 py-1 title-semibold">Fecha Inicio</h5>
+      <div class="mx-3 p-0">
+        <p-calendar
+          id="startDate"
+          [(ngModel)]="startDate"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          [maxDate]="maxDate"
+          styleClass="w-full"
+          [inputStyle]="{ 'border-right': 'none' }"
+          placeholder="dd/mm/aaaa"
+          appendTo="body"
+        >
+          <ng-template pTemplate="triggericon">
+            <i class="fa fa-solid fa-calendar-days" aria-hidden="true"></i>
+          </ng-template>
+        </p-calendar>
+      </div>
+      <small *ngIf="isInvalid('startDate')" class="p-error font-normal block"
+        ><i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+      </small>
+      <h5 class="ml-3 mt-3 mb-1 py-1 title-semibold">Fecha Fin</h5>
+      <div class="mx-3 p-0">
+        <p-calendar
+          id="endDate"
+          [(ngModel)]="endDate"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          [minDate]="startDate"
+          [maxDate]="maxDate"
+          styleClass="w-full"
+          [inputStyle]="{ 'border-right': 'none' }"
+          placeholder="dd/mm/aaaa"
+          appendTo="body"
+        >
+          <ng-template pTemplate="triggericon">
+            <i class="fa fa-solid fa-calendar-days" aria-hidden="true"></i>
+          </ng-template>
+        </p-calendar>
+      </div>
+      <small *ngIf="isInvalid('endDate')" class="p-error font-normal block"
+        ><i class="pi pi-info-circle mr-2"></i>{{ errorText }}
+      </small>
+    </div>
+
+    <!-- Botones en la parte inferior -->
+    <div class="flex flex-column dropdown-footer mt-3">
+      <p-button
+        label="Filtrar"
+        classLabel="title-medium"
+        [style]="{ width: '100%' }"
+        borderRadius="5px"
+        (onClick)="applyFilter()"
+        [disabled]="
+          statusFilterCh.length === 0 &&
+          typesFilterCh.length === 0 &&
+          statusFilter.length === 0 &&
+          typesFilter.length === 0 &&
+          !startDate &&
+          !endDate
+        "
+      ></p-button>
+      <p-button
+        label="Limpiar"
+        class="p-button-outlined"
+        styleClass="p-button-outlined"
+        [style]="{ width: '100%' }"
+        classLabel="title-medium"
+        borderRadius="5px"
+        (onClick)="cleanFilter()"
+        [disabled]="
+          statusFilterCh.length === 0 &&
+          typesFilterCh.length === 0 &&
+          !startDate &&
+          !endDate
+        "
+      ></p-button>
+    </div>
+  </div>
+</div>
