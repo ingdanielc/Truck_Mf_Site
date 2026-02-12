@@ -17,6 +17,6 @@ const routes: Routes = [
 @NgModule({
   imports: [RouterModule.forRoot(routes, { useHash: false })],
   exports: [RouterModule],
-  providers: [{ provide: APP_BASE_HREF, useValue: '/gym' }],
+  providers: [{ provide: APP_BASE_HREF, useValue: '/truck' }],
 })
 export class AppRoutingModule {}

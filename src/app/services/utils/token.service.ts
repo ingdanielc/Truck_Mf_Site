@@ -20,7 +20,7 @@ export class TokenService {
     this.cookieService.delete(
       'token',
       '/',
-      '.gym.ccsoluciones.com.co'
+      '.truck.ccsoluciones.com.co'
     );
   }
 
