@@ -1,0 +1,161 @@
+.security-container {
+  min-height: 100vh;
+
+  // Theme-aware color variables (overriding or supplementing BS)
+  --search-bg: rgba(var(--bs-emphasis-color-rgb), 0.03);
+  --card-bg: var(--bs-body-bg);
+  --card-hover-bg: rgba(var(--bs-primary-rgb), 0.02);
+  --pill-bg: rgba(var(--bs-emphasis-color-rgb), 0.03);
+
+  [data-bs-theme="dark"] & {
+    --search-bg: rgba(255, 255, 255, 0.05);
+    --card-bg: #1a1d21;
+    --pill-bg: #15171a;
+  }
+}
+
+.shadow-primary {
+  box-shadow: 0 4px 15px rgba(var(--bs-primary-rgb), 0.3);
+}
+
+.search-wrapper {
+  input {
+    background-color: var(--search-bg);
+    border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05);
+    transition: all 0.3s ease;
+
+    &:focus {
+      background-color: var(--bs-body-bg);
+      border-color: var(--bs-primary);
+      box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.1);
+    }
+  }
+}
+
+.filter-pills {
+  background-color: var(--pill-bg);
+  display: inline-flex;
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05);
+
+  .btn {
+    border: none;
+    color: var(--bs-secondary-color);
+    font-weight: 500;
+
+    &.active {
+      background-color: var(--search-bg);
+      color: var(--bs-primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    &:hover:not(.active) {
+      color: var(--bs-emphasis-color);
+    }
+  }
+}
+
+.user-card {
+  background-color: var(--card-bg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
+
+  &:hover {
+    transform: translateY(-5px);
+    background-color: var(--card-hover-bg);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  }
+}
+
+.avatar-circle {
+  width: 60px;
+  height: 60px;
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+}
+
+.status-indicator {
+  width: 14px;
+  height: 14px;
+}
+
+.op-50 {
+  opacity: 0.5;
+}
+
+.op-10 {
+  opacity: 0.1;
+}
+
+.hover-op-100:hover {
+  opacity: 1;
+}
+
+.conductor-badge {
+  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  color: var(--bs-primary);
+  letter-spacing: 0.05em;
+  font-size: 0.7rem;
+}
+
+.propietario-badge {
+  background-color: rgba(var(--bs-info-rgb), 0.1);
+  color: var(--bs-info);
+  letter-spacing: 0.05em;
+  font-size: 0.7rem;
+}
+
+// Design-specific colors for badges if needed
+[data-bs-theme="dark"] {
+  .propietario-badge {
+    background-color: rgba(131, 56, 236, 0.15); // Purple from design
+    color: #9d4edd;
+  }
+
+  .conductor-badge {
+    background-color: rgba(58, 134, 255, 0.15); // Blue from design
+    color: #3a86ff;
+  }
+
+  .action-btn {
+    background-color: #15171a;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+
+    &:hover {
+      background-color: #212529;
+    }
+  }
+}
+
+.action-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.transition-all {
+  transition: all 0.2s ease;
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-card {
+  animation: fadeIn 0.4s ease-out backwards;
+}
+
+@for $i from 1 through 10 {
+  .col:nth-child(#{$i}) .user-card {
+    animation-delay: #{$i * 0.05}s;
+  }
+}

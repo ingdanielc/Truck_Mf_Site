@@ -1,0 +1,128 @@
+<div class="security-container py-4 px-3 px-md-5">
+  <!-- Header Section -->
+  <header class="row align-items-center mb-5 gx-0">
+    <div class="col">
+      <h1 class="display-6 fw-bold mb-1">Listado de Usuarios</h1>
+      <p class="text-secondary mb-0">
+        Gestión centralizada de conductores y propietarios
+      </p>
+    </div>
+    <div class="col-auto">
+      <button
+        class="btn btn-primary d-flex align-items-center px-4 py-2 rounded-3 shadow-primary"
+      >
+        <i class="fa-solid fa-user-plus me-2"></i>NUEVO USUARIO
+      </button>
+    </div>
+  </header>
+
+  <!-- Search and Filters Section -->
+  <div class="row align-items-center mb-4 g-3">
+    <div class="col-12 col-lg-7">
+      <div class="search-wrapper position-relative">
+        <i
+          class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
+        ></i>
+        <input
+          type="text"
+          class="form-control ps-5 py-3 rounded-3"
+          placeholder="Buscar por nombre, email o ID..."
+        />
+      </div>
+    </div>
+    <div class="col-12 col-lg-5 d-flex justify-content-lg-end">
+      <div class="filter-pills p-1 rounded-3">
+        @for (filter of filters; track filter) {
+          <button
+            class="btn btn-sm px-4 py-2 rounded-2 transition-all"
+            [class.active]="activeFilter === filter"
+            (click)="setFilter(filter)"
+          >
+            {{ filter }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Users Grid -->
+  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-5">
+    @for (user of users; track user.id) {
+      <div class="col">
+        <div class="user-card card h-100 border-0 rounded-4 shadow-sm">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-start justify-content-between mb-3">
+              <div class="avatar-wrapper position-relative">
+                <div
+                  class="avatar-circle rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center overflow-hidden"
+                >
+                  @if (user.avatar) {
+                    <img
+                      [src]="user.avatar"
+                      [alt]="user.name"
+                      class="img-fluid"
+                    />
+                  } @else {
+                    <i class="fa-solid fa-user fs-4 text-secondary"></i>
+                  }
+                </div>
+                <span
+                  class="status-indicator position-absolute bottom-0 end-0 border border-3 border-white rounded-circle"
+                  [class.bg-success]="user.status === 'online'"
+                  [class.bg-secondary]="user.status === 'offline'"
+                  [class.bg-warning]="user.status === 'away'"
+                ></span>
+              </div>
+              <button
+                class="btn btn-link text-body p-0 border-0 shadow-none op-50 hover-op-100"
+              >
+                <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
+              </button>
+            </div>
+
+            <div class="mb-4">
+              <h5 class="fw-bold mb-0">{{ user.name }}</h5>
+              <p class="small text-secondary mb-0">{{ user.email }}</p>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between">
+              <span
+                class="badge px-3 py-2 rounded-pill font-monospace fw-bold"
+                [class.conductor-badge]="user.roleType === 'conductor'"
+                [class.propietario-badge]="user.roleType === 'propietario'"
+              >
+                {{ user.role }}
+              </span>
+              <button
+                class="btn btn-dark btn-sm rounded-3 p-2 shadow-none action-btn"
+              >
+                <i class="fa-solid fa-pencil"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <hr class="op-10 mb-4" />
+
+  <!-- Footer Section -->
+  <footer class="row align-items-center g-3">
+    <div class="col">
+      <p class="text-secondary small mb-0">Mostrando 6 de 128 usuarios</p>
+    </div>
+    <div class="col-auto d-flex gap-2">
+      <button
+        class="btn btn-outline-secondary px-3 py-2 rounded-3 small fw-bold"
+      >
+        Anterior
+      </button>
+      <button
+        class="btn btn-outline-secondary px-3 py-2 rounded-3 small fw-bold"
+      >
+        Siguiente
+      </button>
+    </div>
+  </footer>
+</div>
