@@ -3,8 +3,9 @@ import { Router } from '@angular/router';
 import pkg from 'package.json';
 
 @Component({
-  selector: 'app-site',
-  templateUrl: './app.component.html',
+    selector: 'app-site',
+    templateUrl: './app.component.html',
+    standalone: false
 })
 export class AppComponent implements OnInit {
   title: string = 'CashTruck';
