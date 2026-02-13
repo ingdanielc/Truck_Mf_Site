@@ -1,0 +1,46 @@
+<div class="user-card card h-100 border-0 rounded-4 shadow-sm">
+  <div class="card-body p-4">
+    <div class="d-flex align-items-start justify-content-between mb-3">
+      <div class="avatar-wrapper position-relative">
+        <div
+          class="avatar-circle rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center overflow-hidden"
+        >
+          @if (user.avatar) {
+            <img [src]="user.avatar" [alt]="user.name" class="img-fluid" />
+          } @else {
+            <i class="fa-solid fa-user fs-4 text-secondary"></i>
+          }
+        </div>
+        <span
+          class="status-indicator position-absolute bottom-0 end-0 border border-3 border-white rounded-circle"
+          [class.bg-success]="user.status === 'online'"
+          [class.bg-secondary]="user.status === 'offline'"
+          [class.bg-warning]="user.status === 'away'"
+        ></span>
+      </div>
+      <button
+        class="btn btn-link text-body p-0 border-0 shadow-none op-50 hover-op-100"
+      >
+        <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
+      </button>
+    </div>
+
+    <div class="mb-4">
+      <h5 class="fw-bold mb-0">{{ user.name }}</h5>
+      <p class="small text-secondary mb-0">{{ user.email }}</p>
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between">
+      <span
+        class="badge px-3 py-2 rounded-pill font-monospace fw-bold"
+        [class.conductor-badge]="user.roleType === 'conductor'"
+        [class.propietario-badge]="user.roleType === 'propietario'"
+      >
+        {{ user.role }}
+      </span>
+      <button class="btn btn-dark btn-sm rounded-3 p-2 shadow-none action-btn">
+        <i class="fa-solid fa-pencil"></i>
+      </button>
+    </div>
+  </div>
+</div>

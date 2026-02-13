@@ -1,0 +1,98 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.user-card {
+  --card-bg: var(--bs-body-bg);
+  --card-hover-bg: rgba(var(--bs-primary-rgb), 0.02);
+
+  [data-bs-theme="dark"] & {
+    --card-bg: #1a1d21;
+  }
+
+  background-color: var(--card-bg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
+  animation: fadeIn 0.4s ease-out backwards;
+
+  &:hover {
+    transform: translateY(-5px);
+    background-color: var(--card-hover-bg);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  }
+}
+
+.avatar-circle {
+  width: 60px;
+  height: 60px;
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+}
+
+.status-indicator {
+  width: 14px;
+  height: 14px;
+}
+
+.op-50 {
+  opacity: 0.5;
+}
+
+.hover-op-100:hover {
+  opacity: 1;
+}
+
+.conductor-badge {
+  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  color: var(--bs-primary);
+  letter-spacing: 0.05em;
+  font-size: 0.7rem;
+}
+
+.propietario-badge {
+  background-color: rgba(var(--bs-info-rgb), 0.1);
+  color: var(--bs-info);
+  letter-spacing: 0.05em;
+  font-size: 0.7rem;
+}
+
+[data-bs-theme="dark"] {
+  .propietario-badge {
+    background-color: rgba(131, 56, 236, 0.15);
+    color: #9d4edd;
+  }
+
+  .conductor-badge {
+    background-color: rgba(58, 134, 255, 0.15);
+    color: #3a86ff;
+  }
+
+  .action-btn {
+    background-color: #15171a;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+
+    &:hover {
+      background-color: #212529;
+    }
+  }
+}
+
+.action-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

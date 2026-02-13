@@ -9,20 +9,13 @@ import {
   Sort,
 } from 'src/app/models/model-filter-table';
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  roleType: 'conductor' | 'propietario' | 'otro';
-  status: 'online' | 'offline' | 'away';
-  avatar?: string;
-}
+import { User } from './interfaces/user.interface';
+import { GCardUserComponent } from '../../components/g-card-user/g-card-user.component';
 
 @Component({
   selector: 'app-security',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, GCardUserComponent],
   templateUrl: './security.component.html',
   styleUrls: ['./security.component.scss'],
 })
