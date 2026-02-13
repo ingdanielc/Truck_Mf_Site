@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import pkg from 'package.json';
 
 @Component({
-    selector: 'app-site',
-    templateUrl: './app.component.html',
-    standalone: false
+  selector: 'app-site',
+  templateUrl: './app.component.html',
+  imports: [RouterOutlet],
+  standalone: true,
 })
 export class AppComponent implements OnInit {
   title: string = 'CashTruck';
