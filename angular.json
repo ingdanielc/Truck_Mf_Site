@@ -83,7 +83,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "Truck-Mf-Site:build"
+            "buildTarget": "Truck-Mf-Site:build"
           }
         },
         "test": {
