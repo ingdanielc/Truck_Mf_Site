@@ -7,10 +7,10 @@ import pkg from 'package.json';
   templateUrl: './app.component.html',
 })
 export class AppComponent implements OnInit {
-  title: string = 'Strem Force';
+  title: string = 'CashTruck';
   version = pkg.version;
   isLogoMenuBar: boolean = true;
-  tituloMenuBarText: string = 'Xtrem Force';
+  tituloMenuBarText: string = 'CashTruck';
   moduleCode: number = 1;
   activeRoute: string = '';
   showFooter: boolean = false;
