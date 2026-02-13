@@ -48,13 +48,10 @@ export class SecurityComponent implements OnInit {
     );
     this.securityService.getUserFilter(filter).subscribe({
       next: (response: any) => {
-        console.log('aqui');
         if (response?.data?.content) {
-          console.log('aqui2');
           this.users = response.data.content.map((u: ModelUser) =>
             this.mapUser(u),
           );
-          console.log(this.users);
         }
       },
       error: (err) => {
