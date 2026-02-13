@@ -15,7 +15,7 @@ export class GSidebarComponent implements OnInit {
   @Input() userRole: string = 'Administrador';
   @Input() notificationsCount: number = 5;
   @Output() toggleMenu = new EventEmitter<void>();
-
+  currentTheme: 'light' | 'dark' = 'dark';
   isUserMenuOpen: boolean = false;
 
   constructor(
@@ -23,7 +23,28 @@ export class GSidebarComponent implements OnInit {
     private readonly router: Router,
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
+    if (savedTheme) {
+      this.currentTheme = savedTheme;
+    } else {
+      const prefersDark = globalThis.matchMedia(
+        '(prefers-color-scheme: dark)',
+      ).matches;
+      this.currentTheme = prefersDark ? 'dark' : 'light';
+    }
+    this.applyTheme();
+  }
+
+  toggleTheme() {
+    this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('theme', this.currentTheme);
+    this.applyTheme();
+  }
+
+  private applyTheme() {
+    document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
+  }
 
   toggleUserMenu() {
     this.isUserMenuOpen = !this.isUserMenuOpen;

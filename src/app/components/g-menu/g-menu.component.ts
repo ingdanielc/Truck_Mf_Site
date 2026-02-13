@@ -20,7 +20,6 @@ export class GMenuComponent implements OnInit {
   @Input() tituloMenuBar: string = 'CashTruck';
   @Input() isLogoMenuBar: boolean = true;
   @Input() isCollapsed: boolean = false;
-  currentTheme: 'light' | 'dark' = 'dark';
   isMobileOpen: boolean = false;
 
   menuItems: MenuItem[] = [
@@ -56,18 +55,7 @@ export class GMenuComponent implements OnInit {
 
   constructor() {}
 
-  ngOnInit(): void {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
-    if (savedTheme) {
-      this.currentTheme = savedTheme;
-    } else {
-      const prefersDark = globalThis.matchMedia(
-        '(prefers-color-scheme: dark)',
-      ).matches;
-      this.currentTheme = prefersDark ? 'dark' : 'light';
-    }
-    this.applyTheme();
-  }
+  ngOnInit(): void {}
 
   toggleCollapse() {
     this.isCollapsed = !this.isCollapsed;
@@ -79,15 +67,5 @@ export class GMenuComponent implements OnInit {
 
   closeMobileMenu() {
     this.isMobileOpen = false;
-  }
-
-  toggleTheme() {
-    this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
-    localStorage.setItem('theme', this.currentTheme);
-    this.applyTheme();
-  }
-
-  private applyTheme() {
-    document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
   }
 }

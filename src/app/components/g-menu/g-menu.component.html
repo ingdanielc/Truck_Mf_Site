@@ -55,26 +55,8 @@
       </ul>
     </nav>
 
-    <!-- Footer / Theme & Collapse Toggle -->
+    <!-- Footer / Collapse Toggle -->
     <div class="sidebar-footer p-3 border-top border-secondary">
-      <!-- Theme Toggle -->
-      <button
-        class="btn btn-link text-white d-flex align-items-center p-0 text-decoration-none w-100 mb-3"
-        (click)="toggleTheme()"
-        [title]="
-          'Cambiar a tema ' + (currentTheme === 'light' ? 'oscuro' : 'claro')
-        "
-      >
-        <i
-          class="fa-solid transition-all"
-          [class.fa-moon]="currentTheme === 'light'"
-          [class.fa-sun]="currentTheme === 'dark'"
-        ></i>
-        <span class="ms-3 text-nowrap transition-fade" *ngIf="!isCollapsed">
-          Tema {{ currentTheme === "light" ? "Oscuro" : "Claro" }}
-        </span>
-      </button>
-
       <!-- Collapse Toggle -->
       <button
         class="btn btn-link text-white d-flex align-items-center p-0 text-decoration-none w-100"

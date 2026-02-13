@@ -11,6 +11,23 @@
   </i>
 
   <div class="d-flex align-items-center ms-auto">
+    <!-- Theme Toggle -->
+    <div class="theme-wrapper me-3 me-md-4">
+      <button
+        class="btn btn-link text-body p-0 text-decoration-none"
+        (click)="toggleTheme()"
+        [title]="
+          'Cambiar a tema ' + (currentTheme === 'light' ? 'oscuro' : 'claro')
+        "
+      >
+        <i
+          class="fa-solid fs-5 transition-all"
+          [class.fa-moon]="currentTheme === 'light'"
+          [class.fa-sun]="currentTheme === 'dark'"
+        ></i>
+      </button>
+    </div>
+
     <!-- Notifications -->
     <div class="notifications-wrapper me-3 me-md-4">
       <button
