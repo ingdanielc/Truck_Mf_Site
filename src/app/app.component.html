@@ -1,15 +1,16 @@
-<div>
-  <!-- <g-menu
-    [version]="version"
-    [showSidebar]="true"
-    [showFooter]="showFooter"
-    [isLogoMenuBar]="isLogoMenuBar"
-    [tituloMenuBar]="tituloMenuBarText"
-    [moduleCode]="moduleCode"
-  >
-    <router-outlet></router-outlet>
-  </g-menu> -->
-</div>
+<g-menu
+  #menu
+  [version]="version"
+  [isLogoMenuBar]="isLogoMenuBar"
+  [tituloMenuBar]="tituloMenuBarText"
+>
+  <div class="d-flex flex-column w-100 h-100 overflow-hidden">
+    <g-sidebar (toggleMenu)="menu.toggleMobileMenu()"></g-sidebar>
+    <div class="flex-grow-1 overflow-auto p-3 p-md-4">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</g-menu>
 
 <!-- Mensajes -->
 <!-- <p-toast></p-toast> -->

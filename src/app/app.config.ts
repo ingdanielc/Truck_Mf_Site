@@ -8,6 +8,7 @@ import {
 } from '@angular/common/http';
 import { APP_BASE_HREF, registerLocaleData } from '@angular/common';
 import localeEsCo from '@angular/common/locales/es-CO';
+import { CookieService } from 'ngx-cookie-service';
 
 import { routes } from './app.routes';
 import { HttpHeadersInterceptor } from './services/utils/http-headers.service';
@@ -25,6 +26,7 @@ export const appConfig: ApplicationConfig = {
       useClass: HttpHeadersInterceptor,
       multi: true,
     },
+    CookieService,
     { provide: APP_BASE_HREF, useValue: '/truck' },
   ],
 };

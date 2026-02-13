@@ -1,0 +1,82 @@
+<header
+  class="g-sidebar d-flex align-items-center justify-content-between justify-content-md-end px-3 px-md-4 border-bottom"
+>
+  <!-- Mobile Toggle -->
+  <i
+    class="btn btn-link text-body p-0 me-3 d-md-none"
+    (click)="toggleMenu.emit()"
+    onkeypress
+  >
+    <i class="fa-solid fa-bars fs-4"></i>
+  </i>
+
+  <div class="d-flex align-items-center ms-auto">
+    <!-- Notifications -->
+    <div class="notifications-wrapper me-3 me-md-4">
+      <button
+        class="btn btn-link position-relative p-0 text-decoration-none text-body"
+      >
+        <i class="fa-solid fa-bell fs-5"></i>
+        <span
+          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+          *ngIf="notificationsCount > 0"
+        >
+          {{ notificationsCount }}
+        </span>
+      </button>
+    </div>
+
+    <!-- User Profile Dropdown -->
+    <div class="user-profile-wrapper position-relative">
+      <div
+        class="d-flex align-items-center cursor-pointer p-1 rounded hover-bg"
+        (click)="toggleUserMenu()"
+        onkeypress
+      >
+        <div
+          class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+        >
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <div class="ms-2 d-none d-md-block">
+          <div class="fw-bold small line-height-1">{{ userName }}</div>
+          <div class="text-secondary smaller">{{ userRole }}</div>
+        </div>
+        <i
+          class="fa-solid fa-chevron-down ms-2 ms-md-3 smaller transition-all"
+          [class.rotate-180]="isUserMenuOpen"
+        ></i>
+      </div>
+
+      <!-- Dropdown Menu -->
+      <div
+        class="user-dropdown-menu bg-body border rounded shadow-sm position-absolute end-0 mt-2 z-3"
+        *ngIf="isUserMenuOpen"
+      >
+        <ul class="list-unstyled m-0 p-1">
+          <li>
+            <button
+              class="btn btn-link text-body w-100 text-start text-decoration-none p-2 rounded hover-bg d-flex align-items-center"
+              (click)="goToProfile()"
+            >
+              <i class="fa-solid fa-user-gear me-2 smaller"></i>
+              <span class="small text-nowrap">Perfil</span>
+            </button>
+          </li>
+          <li>
+            <hr class="dropdown-divider m-1" />
+          </li>
+          <li>
+            <button
+              class="btn btn-link text-danger w-100 text-start text-decoration-none p-2 rounded hover-bg d-flex align-items-center"
+              (click)="logout()"
+            >
+              <i class="fa-solid fa-right-from-bracket me-2 smaller"></i>
+              <span class="small text-nowrap">Salir</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</header>

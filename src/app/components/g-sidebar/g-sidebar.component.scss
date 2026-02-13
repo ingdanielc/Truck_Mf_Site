@@ -1,0 +1,60 @@
+.g-sidebar {
+  height: 64.5px;
+  background-color: var(--bs-body-bg);
+  transition: height 0.3s ease;
+
+  @media (max-width: 768px) {
+    height: 60px;
+  }
+}
+
+.avatar {
+  width: 35px;
+  height: 35px;
+}
+
+.smaller {
+  font-size: 0.75rem;
+}
+
+.line-height-1 {
+  line-height: 1.2;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.hover-bg:hover {
+  background-color: rgba(var(--bs-emphasis-color-rgb), 0.05);
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.transition-all {
+  transition: all 0.2s ease;
+}
+
+.user-dropdown-menu {
+  min-width: 160px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.badge {
+  font-size: 0.6rem;
+  padding: 0.35em 0.5em;
+}

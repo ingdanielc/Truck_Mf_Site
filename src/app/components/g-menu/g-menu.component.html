@@ -1,0 +1,102 @@
+<div class="d-flex h-screen overflow-hidden">
+  <!-- Mobile Backdrop -->
+  <div
+    class="mobile-backdrop d-md-none"
+    *ngIf="isMobileOpen"
+    (click)="closeMobileMenu()"
+    onkeypress
+  ></div>
+
+  <!-- Sidebar -->
+  <aside
+    class="sidebar bg-dark text-white d-flex flex-column transition-all"
+    [class.collapsed]="isCollapsed"
+    [class.mobile-open]="isMobileOpen"
+  >
+    <!-- Header/Logo -->
+    <div
+      class="sidebar-header d-flex align-items-center p-3 border-bottom border-secondary mb-3"
+    >
+      <div
+        class="logo-container d-flex align-items-center justify-content-center bg-primary rounded p-2 me-2"
+        *ngIf="isLogoMenuBar"
+      >
+        <i class="fa-solid fa-truck-fast text-white"></i>
+      </div>
+      <span
+        class="fs-5 fw-bold text-nowrap transition-fade"
+        *ngIf="!isCollapsed"
+      >
+        {{ tituloMenuBar }}
+      </span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-grow-1 overflow-auto px-2">
+      <ul class="nav nav-pills flex-column gap-1">
+        @for (item of menuItems; track item.label) {
+          <li class="nav-item">
+            <a
+              [routerLink]="item.route"
+              routerLinkActive="active"
+              class="nav-link text-white d-flex align-items-center p-2 rounded transition-all"
+              [title]="isCollapsed ? item.label : ''"
+            >
+              <i [class]="item.icon + ' fs-5 fixed-width-icon'"></i>
+              <span
+                class="ms-3 text-nowrap transition-fade"
+                *ngIf="!isCollapsed"
+              >
+                {{ item.label }}
+              </span>
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
+
+    <!-- Footer / Theme & Collapse Toggle -->
+    <div class="sidebar-footer p-3 border-top border-secondary">
+      <!-- Theme Toggle -->
+      <button
+        class="btn btn-link text-white d-flex align-items-center p-0 text-decoration-none w-100 mb-3"
+        (click)="toggleTheme()"
+        [title]="
+          'Cambiar a tema ' + (currentTheme === 'light' ? 'oscuro' : 'claro')
+        "
+      >
+        <i
+          class="fa-solid transition-all"
+          [class.fa-moon]="currentTheme === 'light'"
+          [class.fa-sun]="currentTheme === 'dark'"
+        ></i>
+        <span class="ms-3 text-nowrap transition-fade" *ngIf="!isCollapsed">
+          Tema {{ currentTheme === "light" ? "Oscuro" : "Claro" }}
+        </span>
+      </button>
+
+      <!-- Collapse Toggle -->
+      <button
+        class="btn btn-link text-white d-flex align-items-center p-0 text-decoration-none w-100"
+        (click)="toggleCollapse()"
+      >
+        <i
+          class="fa-solid transition-all"
+          [class.fa-angles-left]="!isCollapsed"
+          [class.fa-angles-right]="isCollapsed"
+        ></i>
+        <span class="ms-3 text-nowrap transition-fade" *ngIf="!isCollapsed">
+          Colapsar
+        </span>
+      </button>
+      <div class="mt-2 small text-secondary text-center" *ngIf="!isCollapsed">
+        v{{ version }}
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-grow-1 overflow-auto bg-body-tertiary">
+    <ng-content></ng-content>
+  </main>
+</div>
