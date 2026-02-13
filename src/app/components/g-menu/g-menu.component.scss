@@ -29,8 +29,11 @@
     bottom: 0;
     transform: translateX(-100%);
     box-shadow: none;
-    width: 260px !important;
-    min-width: 260px !important;
+    width: 260px;
+
+    &.collapsed {
+      width: 70px;
+    }
 
     &.mobile-open {
       transform: translateX(0);
