@@ -7,7 +7,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { SecurityService } from '../../services/security/security.service';
-import { ModelUser } from '../../models/user-model';
+import { ModelUser, ModelUserRoles } from '../../models/user-model';
 import {
   Filter,
   ModelFilterTable,
@@ -139,17 +139,66 @@ export class SecurityComponent implements OnInit {
     }
   }
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (this.userForm.valid) {
-      console.log('User created:', this.userForm.value);
-      // Logic to save user would go here
-      this.toastService.showSuccess(
-        'Gestión de Usuarios',
-        'Usuario creado exitosamente!',
-      );
-      this.toggleOffcanvas();
+      try {
+        const formValue = this.userForm.value;
+
+        // Hash password if needed - following service capabilities
+        const hashedPassword = await this.securityService.getHashSHA512(
+          formValue.password,
+        );
+
+        // Map form to ModelUser
+        const newUser = new ModelUser(
+          null,
+          formValue.name,
+          formValue.email,
+          hashedPassword,
+          [
+            new ModelUserRoles(null, {
+              id: this.getRoleId(formValue.role),
+              name: formValue.role,
+            }),
+          ],
+          'Active',
+        );
+
+        this.securityService.createUser(newUser).subscribe({
+          next: () => {
+            this.toastService.showSuccess(
+              'Gestión de Usuarios',
+              'Usuario creado exitosamente!',
+            );
+            this.loadUsers();
+            this.toggleOffcanvas();
+          },
+          error: (err) => {
+            console.error('Error creating user:', err);
+            this.toastService.showError(
+              'Error',
+              'No se pudo crear el usuario. Por favor, intente de nuevo.',
+            );
+          },
+        });
+      } catch (error) {
+        console.error('Error in onSubmit:', error);
+      }
     } else {
       this.userForm.markAllAsTouched();
+    }
+  }
+
+  private getRoleId(roleName: string): number {
+    switch (roleName.toUpperCase()) {
+      case 'ADMINISTRADOR':
+        return 1;
+      case 'PROPIETARIO':
+        return 2;
+      case 'CONDUCTOR':
+        return 3;
+      default:
+        return 0;
     }
   }
 }
