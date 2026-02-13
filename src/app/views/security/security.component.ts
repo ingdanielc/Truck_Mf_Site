@@ -1,5 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { SecurityService } from '../../services/security/security.service';
 import { ModelUser } from '../../models/user-model';
 import {
@@ -11,11 +17,12 @@ import {
 
 import { User } from './interfaces/user.interface';
 import { GCardUserComponent } from '../../components/g-card-user/g-card-user.component';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-security',
   standalone: true,
-  imports: [CommonModule, GCardUserComponent],
+  imports: [CommonModule, GCardUserComponent, ReactiveFormsModule],
   templateUrl: './security.component.html',
   styleUrls: ['./security.component.scss'],
 })
@@ -26,7 +33,34 @@ export class SecurityComponent implements OnInit {
   rows: number = 10;
   page: number = 0;
 
-  constructor(private readonly securityService: SecurityService) {}
+  userForm: FormGroup;
+  isOffcanvasOpen: boolean = false;
+  availableRoles: string[] = ['CONDUCTOR', 'PROPIETARIO', 'ADMINISTRADOR'];
+
+  constructor(
+    private readonly securityService: SecurityService,
+    private readonly toastService: ToastService,
+    private readonly fb: FormBuilder,
+  ) {
+    this.userForm = this.fb.group(
+      {
+        name: ['', [Validators.required]],
+        email: ['', [Validators.required, Validators.email]],
+        password: ['', [Validators.required, Validators.minLength(6)]],
+        confirmPassword: ['', [Validators.required]],
+        role: ['', [Validators.required]],
+      },
+      {
+        validators: this.passwordMatchValidator,
+      },
+    );
+  }
+
+  private passwordMatchValidator(g: FormGroup) {
+    return g.get('password')?.value === g.get('confirmPassword')?.value
+      ? null
+      : { mismatch: true };
+  }
 
   ngOnInit(): void {
     this.loadUsers();
@@ -73,8 +107,49 @@ export class SecurityComponent implements OnInit {
     return 'otro';
   }
 
+  get strength(): number {
+    const pwd = this.userForm.get('password')?.value || '';
+    if (!pwd) return 0;
+    let s = 0;
+    if (pwd.length >= 6) s++;
+    if (/[A-Z]/.test(pwd)) s++;
+    if (/[0-9]/.test(pwd)) s++;
+    if (/[^A-Za-z0-9]/.test(pwd)) s++;
+    return s;
+  }
+
+  get strengthLabel(): string {
+    const s = this.strength;
+    if (s === 0) return '';
+    if (s <= 1) return 'DÉBIL';
+    if (s === 2) return 'MEDIA';
+    if (s === 3) return 'BUENA';
+    return 'FUERTE';
+  }
+
   setFilter(filter: string): void {
     this.activeFilter = filter;
     // In a real scenario, you might want to call loadUsers with a filter object
+  }
+
+  toggleOffcanvas(): void {
+    this.isOffcanvasOpen = !this.isOffcanvasOpen;
+    if (!this.isOffcanvasOpen) {
+      this.userForm.reset();
+    }
+  }
+
+  onSubmit(): void {
+    if (this.userForm.valid) {
+      console.log('User created:', this.userForm.value);
+      // Logic to save user would go here
+      this.toastService.showSuccess(
+        'Gestión de Usuarios',
+        'Usuario creado exitosamente!',
+      );
+      this.toggleOffcanvas();
+    } else {
+      this.userForm.markAllAsTouched();
+    }
   }
 }
