@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { User } from '../../views/security/interfaces/user.interface';
 
@@ -11,4 +11,9 @@ import { User } from '../../views/security/interfaces/user.interface';
 })
 export class GCardUserComponent {
   @Input() user!: User;
+  @Output() edit = new EventEmitter<User>();
+
+  onEditClick(): void {
+    this.edit.emit(this.user);
+  }
 }

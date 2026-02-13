@@ -50,16 +50,19 @@
   <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-5">
     @for (user of users; track user.id) {
       <div class="col">
-        <g-card-user [user]="user"></g-card-user>
+        <g-card-user
+          [user]="user"
+          (edit)="toggleOffcanvas($event)"
+        ></g-card-user>
       </div>
     }
   </div>
 
   <hr class="op-10 mb-4" />
 
-  <!-- Footer Section -->
+  <!-- Pagination -->
   <footer class="row align-items-center g-3">
-    <div class="col">
+    <div class="col-12 col-md-6 text-center text-md-start">
       <p class="text-secondary small mb-0">Mostrando 6 de 128 usuarios</p>
     </div>
     <div class="col-auto d-flex gap-2">
@@ -76,16 +79,22 @@
     </div>
   </footer>
 
-  <!-- Create User Offcanvas -->
+  <!-- Create/Edit User Offcanvas -->
   <div
     class="custom-offcanvas shadow-lg border-start transition-all"
     [class.open]="isOffcanvasOpen"
   >
     <div class="offcanvas-header p-4 pb-0 d-flex justify-content-between">
       <div>
-        <h2 class="h4 fw-bold mb-1">Crear usuario</h2>
+        <h2 class="h4 fw-bold mb-1">
+          {{ editingUser ? "Editar usuario" : "Crear usuario" }}
+        </h2>
         <p class="text-secondary small">
-          Por favor complete la información para crear un usuario
+          {{
+            editingUser
+              ? "Actualice la información del usuario"
+              : "Por favor complete la información para crear un usuario"
+          }}
         </p>
       </div>
       <button
@@ -132,7 +141,9 @@
 
         <div class="row g-3 mb-3">
           <div class="col-6">
-            <label class="form-label small fw-bold mb-2">Contraseña*</label>
+            <label class="form-label small fw-bold mb-2">
+              Contraseña{{ editingUser ? "" : "*" }}
+            </label>
             <div class="input-group position-relative">
               <input
                 type="password"
@@ -150,9 +161,9 @@
             </div>
           </div>
           <div class="col-6">
-            <label class="form-label small fw-bold mb-2"
-              >Confirmar contraseña*</label
-            >
+            <label class="form-label small fw-bold mb-2">
+              Confirmar contraseña{{ editingUser ? "" : "*" }}
+            </label>
             <div class="input-group position-relative">
               <input
                 type="password"
@@ -228,7 +239,7 @@
             class="btn btn-primary flex-fill py-2 rounded-3 fw-bold shadow-primary"
             [disabled]="userForm.invalid"
           >
-            Crear usuario
+            {{ editingUser ? "Guardar cambios" : "Crear usuario" }}
           </button>
         </div>
       </form>

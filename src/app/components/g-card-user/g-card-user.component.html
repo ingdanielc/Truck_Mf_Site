@@ -38,7 +38,10 @@
       >
         {{ user.role }}
       </span>
-      <button class="btn btn-dark btn-sm rounded-3 p-2 shadow-none action-btn">
+      <button
+        class="btn btn-dark btn-sm rounded-3 p-2 shadow-none action-btn"
+        (click)="onEditClick()"
+      >
         <i class="fa-solid fa-pencil"></i>
       </button>
     </div>

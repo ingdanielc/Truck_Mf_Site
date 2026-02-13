@@ -35,6 +35,7 @@ export class SecurityComponent implements OnInit {
 
   userForm: FormGroup;
   isOffcanvasOpen: boolean = false;
+  editingUser: User | null = null;
   availableRoles: string[] = ['CONDUCTOR', 'PROPIETARIO', 'ADMINISTRADOR'];
 
   constructor(
@@ -132,10 +133,31 @@ export class SecurityComponent implements OnInit {
     // In a real scenario, you might want to call loadUsers with a filter object
   }
 
-  toggleOffcanvas(): void {
+  toggleOffcanvas(user?: User): void {
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
-    if (!this.isOffcanvasOpen) {
-      this.userForm.reset();
+    if (this.isOffcanvasOpen) {
+      if (user) {
+        this.editingUser = user;
+        this.userForm.patchValue({
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        });
+        // Password is not required when editing
+        this.userForm.get('password')?.setValidators([Validators.minLength(6)]);
+        this.userForm.get('confirmPassword')?.setValidators([]);
+      } else {
+        this.editingUser = null;
+        this.userForm.reset();
+        this.userForm
+          .get('password')
+          ?.setValidators([Validators.required, Validators.minLength(6)]);
+        this.userForm
+          .get('confirmPassword')
+          ?.setValidators([Validators.required]);
+      }
+      this.userForm.get('password')?.updateValueAndValidity();
+      this.userForm.get('confirmPassword')?.updateValueAndValidity();
     }
   }
 
@@ -143,41 +165,44 @@ export class SecurityComponent implements OnInit {
     if (this.userForm.valid) {
       try {
         const formValue = this.userForm.value;
+        let password = formValue.password;
 
-        // Hash password if needed - following service capabilities
-        const hashedPassword = await this.securityService.getHashSHA512(
-          formValue.password,
-        );
+        if (password) {
+          password = await this.securityService.getHashSHA512(password);
+        }
 
-        // Map form to ModelUser
-        const newUser = new ModelUser(
-          null,
+        const userRoles = [
+          new ModelUserRoles(null, {
+            id: this.getRoleId(formValue.role),
+            name: formValue.role,
+          }),
+        ];
+
+        const userToSave = new ModelUser(
+          this.editingUser?.id || null,
           formValue.name,
           formValue.email,
-          hashedPassword,
-          [
-            new ModelUserRoles(null, {
-              id: this.getRoleId(formValue.role),
-              name: formValue.role,
-            }),
-          ],
-          'Active',
+          password || undefined,
+          userRoles,
+          this.editingUser?.status === 'online' ? 'Active' : 'Inactive', // Simplification
         );
 
-        this.securityService.createUser(newUser).subscribe({
+        this.securityService.createUser(userToSave).subscribe({
           next: () => {
             this.toastService.showSuccess(
               'Gestión de Usuarios',
-              'Usuario creado exitosamente!',
+              this.editingUser
+                ? 'Usuario actualizado exitosamente!'
+                : 'Usuario creado exitosamente!',
             );
             this.loadUsers();
             this.toggleOffcanvas();
           },
           error: (err) => {
-            console.error('Error creating user:', err);
+            console.error('Error saving user:', err);
             this.toastService.showError(
               'Error',
-              'No se pudo crear el usuario. Por favor, intente de nuevo.',
+              'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
             );
           },
         });
