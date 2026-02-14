@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
   environmentType: 'local',
-  _APIUrl: 'http://168.231.93.145:8083',
-  subscription: 'gym-api-key',
+  _APIUrl: 'http://truck.ccsoluciones.com.co:8089',
+  subscription: 'truck-api-key',
 };
