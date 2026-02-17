@@ -18,11 +18,11 @@
           [class.bg-warning]="user.status === 'away'"
         ></span>
       </div>
-      <button
+      <span
         class="btn btn-link text-body p-0 border-0 shadow-none op-50 hover-op-100"
       >
         <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
-      </button>
+      </span>
     </div>
 
     <div class="mb-4">
@@ -35,15 +35,17 @@
         class="badge px-3 py-2 rounded-pill font-monospace fw-bold"
         [class.conductor-badge]="user.roleType === 'conductor'"
         [class.propietario-badge]="user.roleType === 'propietario'"
+        [class.admin-badge]="user.roleType === 'administrador'"
       >
         {{ user.role }}
       </span>
-      <button
+      <span
         class="btn btn-dark btn-sm rounded-3 p-2 shadow-none action-btn"
         (click)="onEditClick()"
+        onkeypress
       >
         <i class="fa-solid fa-pencil"></i>
-      </button>
+      </span>
     </div>
   </div>
 </div>

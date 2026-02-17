@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
   FormGroup,
+  FormsModule,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
 import { SecurityService } from '../../services/security/security.service';
-import { ModelUser, ModelUserRoles } from '../../models/user-model';
+import { ModelRole, ModelUser, ModelUserRoles } from '../../models/user-model';
 import {
   Filter,
   ModelFilterTable,
@@ -22,21 +23,24 @@ import { ToastService } from '../../services/toast.service';
 @Component({
   selector: 'app-security',
   standalone: true,
-  imports: [CommonModule, GCardUserComponent, ReactiveFormsModule],
+  imports: [CommonModule, GCardUserComponent, ReactiveFormsModule, FormsModule],
   templateUrl: './security.component.html',
   styleUrls: ['./security.component.scss'],
 })
 export class SecurityComponent implements OnInit {
   users: User[] = [];
+  allUsers: User[] = [];
+  totalUsers: number = 0;
+  searchTerm: string = '';
   activeFilter: string = 'Todos';
-  filters: string[] = ['Todos', 'Conductores', 'Propietarios'];
+  filters: string[] = ['Todos'];
   rows: number = 10;
   page: number = 0;
 
   userForm: FormGroup;
   isOffcanvasOpen: boolean = false;
   editingUser: User | null = null;
-  availableRoles: string[] = ['CONDUCTOR', 'PROPIETARIO', 'ADMINISTRADOR'];
+  availableRoles: ModelRole[] = [];
 
   constructor(
     private readonly securityService: SecurityService,
@@ -64,11 +68,40 @@ export class SecurityComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadRoles();
     this.loadUsers();
+  }
+
+  loadRoles(): void {
+    this.securityService.getAllRoles().subscribe({
+      next: (response: any) => {
+        // Assuming the response structure, adjust if necessary based on actual API
+        if (Array.isArray(response)) {
+          this.availableRoles = response;
+        } else if (response?.data) {
+          this.availableRoles = response.data;
+        } else {
+          console.warn('Unexpected roles response format', response);
+        }
+
+        this.filters = [
+          'Todos',
+          ...this.availableRoles
+            .map((r) => r.name)
+            .filter((name): name is string => !!name),
+        ];
+      },
+      error: (err) => {
+        console.error('Error loading roles:', err);
+      },
+    });
   }
 
   loadUsers(): void {
     let filtros: Filter[] = [];
+    if (this.activeFilter !== 'Todos') {
+      filtros.push(new Filter('userRoles.role.name', '=', this.activeFilter));
+    }
     let filter = new ModelFilterTable(
       filtros,
       new Pagination(this.rows, this.page),
@@ -77,9 +110,14 @@ export class SecurityComponent implements OnInit {
     this.securityService.getUserFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
-          this.users = response.data.content.map((u: ModelUser) =>
+          this.totalUsers = response.data.totalElements || 0;
+          this.allUsers = response.data.content.map((u: ModelUser) =>
             this.mapUser(u),
           );
+          this.applyFilter();
+        } else {
+          this.allUsers = [];
+          this.users = [];
         }
       },
       error: (err) => {
@@ -89,7 +127,7 @@ export class SecurityComponent implements OnInit {
   }
 
   private mapUser(u: ModelUser): User {
-    const roleName = 'Propietario'; //u.userRoles?.[0]?.role?.name || 'OTRO';
+    const roleName = u.userRoles?.[0]?.role?.name || 'OTRO';
     return {
       id: u.id || 0,
       name: u.name || 'Sin nombre',
@@ -101,10 +139,13 @@ export class SecurityComponent implements OnInit {
     };
   }
 
-  private getRoleType(roleName: string): 'conductor' | 'propietario' | 'otro' {
+  private getRoleType(
+    roleName: string,
+  ): 'conductor' | 'propietario' | 'administrador' | 'otro' {
     const name = roleName.toLowerCase();
     if (name.includes('conductor')) return 'conductor';
     if (name.includes('propietario')) return 'propietario';
+    if (name.includes('administrador')) return 'administrador';
     return 'otro';
   }
 
@@ -130,7 +171,20 @@ export class SecurityComponent implements OnInit {
 
   setFilter(filter: string): void {
     this.activeFilter = filter;
-    // In a real scenario, you might want to call loadUsers with a filter object
+    this.loadUsers();
+  }
+
+  applyFilter(): void {
+    if (!this.searchTerm) {
+      this.users = [...this.allUsers];
+    } else {
+      const term = this.searchTerm.toLowerCase();
+      this.users = this.allUsers.filter(
+        (u) =>
+          u.name.toLowerCase().includes(term) ||
+          u.email.toLowerCase().includes(term),
+      );
+    }
   }
 
   toggleOffcanvas(user?: User): void {
@@ -138,10 +192,14 @@ export class SecurityComponent implements OnInit {
     if (this.isOffcanvasOpen) {
       if (user) {
         this.editingUser = user;
+        const role = this.availableRoles.find(
+          (r) => r.name?.toUpperCase() === user.role?.toUpperCase(),
+        );
+
         this.userForm.patchValue({
           name: user.name,
           email: user.email,
-          role: user.role,
+          role: role ? role.name : user.role,
         });
         // Password is not required when editing
         this.userForm.get('password')?.setValidators([Validators.minLength(6)]);
@@ -149,6 +207,15 @@ export class SecurityComponent implements OnInit {
       } else {
         this.editingUser = null;
         this.userForm.reset();
+
+        // Preselect 'ADMINISTRADOR'
+        const adminRole = this.availableRoles.find(
+          (r) => r.name?.toUpperCase() === 'ADMINISTRADOR',
+        );
+        this.userForm.patchValue({
+          role: adminRole ? adminRole.name : 'ADMINISTRADOR',
+        });
+
         this.userForm
           .get('password')
           ?.setValidators([Validators.required, Validators.minLength(6)]);
@@ -158,22 +225,30 @@ export class SecurityComponent implements OnInit {
       }
       this.userForm.get('password')?.updateValueAndValidity();
       this.userForm.get('confirmPassword')?.updateValueAndValidity();
+      this.userForm.get('role')?.disable();
     }
   }
 
   async onSubmit(): Promise<void> {
     if (this.userForm.valid) {
       try {
-        const formValue = this.userForm.value;
+        const formValue = this.userForm.getRawValue();
         let password = formValue.password;
 
         if (password) {
           password = await this.securityService.getHashSHA512(password);
         }
 
+        const selectedRole = this.availableRoles.find(
+          (r) =>
+            r.name === formValue.role ||
+            r.name?.toUpperCase() === formValue.role?.toUpperCase(),
+        );
+        const roleId = selectedRole ? selectedRole.id : null;
+
         const userRoles = [
           new ModelUserRoles(null, {
-            id: this.getRoleId(formValue.role),
+            id: roleId,
             name: formValue.role,
           }),
         ];
@@ -211,19 +286,6 @@ export class SecurityComponent implements OnInit {
       }
     } else {
       this.userForm.markAllAsTouched();
-    }
-  }
-
-  private getRoleId(roleName: string): number {
-    switch (roleName.toUpperCase()) {
-      case 'ADMINISTRADOR':
-        return 1;
-      case 'PROPIETARIO':
-        return 2;
-      case 'CONDUCTOR':
-        return 3;
-      default:
-        return 0;
     }
   }
 }

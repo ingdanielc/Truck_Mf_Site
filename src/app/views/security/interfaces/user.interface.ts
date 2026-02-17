@@ -3,7 +3,7 @@ export interface User {
   name: string;
   email: string;
   role: string;
-  roleType: 'conductor' | 'propietario' | 'otro';
+  roleType: 'conductor' | 'propietario' | 'administrador' | 'otro';
   status: 'online' | 'offline' | 'away';
   avatar?: string;
 }

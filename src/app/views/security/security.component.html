@@ -27,7 +27,9 @@
         <input
           type="text"
           class="form-control ps-5 py-3 rounded-3"
-          placeholder="Buscar por nombre, email o ID..."
+          placeholder="Buscar por nombre o correo electrónico..."
+          (input)="applyFilter()"
+          [(ngModel)]="searchTerm"
         />
       </div>
     </div>
@@ -63,7 +65,9 @@
   <!-- Pagination -->
   <footer class="row align-items-center g-3">
     <div class="col-12 col-md-6 text-center text-md-start">
-      <p class="text-secondary small mb-0">Mostrando 6 de 128 usuarios</p>
+      <p class="text-secondary small mb-0">
+        Mostrando {{ users.length }} de {{ totalUsers }} usuarios
+      </p>
     </div>
     <div class="col-auto d-flex gap-2">
       <button
@@ -97,20 +101,24 @@
           }}
         </p>
       </div>
-      <button
+      <span
         class="btn btn-link text-body p-0 border-0 shadow-none op-70 hover-op-100"
         (click)="toggleOffcanvas()"
+        onkeypress
       >
         <i class="fa-solid fa-xmark fs-4"></i>
-      </button>
+      </span>
     </div>
 
     <div class="offcanvas-body p-4 pt-4">
       <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
         <div class="mb-4">
-          <label class="form-label small fw-bold mb-2">Nombre*</label>
+          <label for="name" class="form-label small fw-bold mb-2"
+            >Nombre*</label
+          >
           <div class="input-group">
             <input
+              id="name"
               type="text"
               class="form-control rounded-3 py-2 px-3"
               formControlName="name"
@@ -123,11 +131,12 @@
         </div>
 
         <div class="mb-4">
-          <label class="form-label small fw-bold mb-2"
+          <label for="email" class="form-label small fw-bold mb-2"
             >Correo electrónico*</label
           >
           <div class="input-group">
             <input
+              id="email"
               type="email"
               class="form-control rounded-3 py-2 px-3"
               formControlName="email"
@@ -141,11 +150,12 @@
 
         <div class="row g-3 mb-3">
           <div class="col-6">
-            <label class="form-label small fw-bold mb-2">
+            <label for="password" class="form-label small fw-bold mb-2">
               Contraseña{{ editingUser ? "" : "*" }}
             </label>
             <div class="input-group position-relative">
               <input
+                id="password"
                 type="password"
                 class="form-control rounded-3 py-2 px-3 pe-5"
                 formControlName="password"
@@ -161,11 +171,12 @@
             </div>
           </div>
           <div class="col-6">
-            <label class="form-label small fw-bold mb-2">
+            <label for="confirmPassword" class="form-label small fw-bold mb-2">
               Confirmar contraseña{{ editingUser ? "" : "*" }}
             </label>
             <div class="input-group position-relative">
               <input
+                id="confirmPassword"
                 type="password"
                 class="form-control rounded-3 py-2 px-3 pe-5"
                 formControlName="confirmPassword"
@@ -211,8 +222,9 @@
         </div>
 
         <div class="mb-4">
-          <label class="form-label small fw-bold mb-2">Rol*</label>
+          <label for="role" class="form-label small fw-bold mb-2">Rol*</label>
           <select
+            id="role"
             class="form-select rounded-3 py-2 px-3"
             formControlName="role"
             [class.is-invalid]="
@@ -220,8 +232,8 @@
             "
           >
             <option value="" disabled selected>Selecciona</option>
-            @for (role of availableRoles; track role) {
-              <option [value]="role">{{ role }}</option>
+            @for (role of availableRoles; track role.id) {
+              <option [value]="role.name">{{ role.name }}</option>
             }
           </select>
         </div>

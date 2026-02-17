@@ -56,10 +56,22 @@
   font-size: 0.7rem;
 }
 
+.admin-badge {
+  background-color: rgba(var(--bs-danger-rgb), 0.1);
+  color: var(--bs-danger);
+  letter-spacing: 0.05em;
+  font-size: 0.7rem;
+}
+
 [data-bs-theme="dark"] {
   .propietario-badge {
     background-color: rgba(131, 56, 236, 0.15);
     color: #9d4edd;
+  }
+
+  .admin-badge {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
   }
 
   .conductor-badge {
