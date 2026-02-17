@@ -1,0 +1,486 @@
+<div class="owners-container py-4 bg-body">
+  <div class="row mb-4 gy-3 align-items-center">
+    <div class="col-12 col-md">
+      <h1 class="h3 fw-bold mb-1 text-body">Listado de Propietarios</h1>
+      <p class="text-body-secondary mb-0 text-truncate">
+        Gestión administrativa de socios CashTruck
+      </p>
+    </div>
+    <div class="col-12 col-md-auto">
+      <div class="d-flex flex-column flex-sm-row gap-3">
+        <div class="search-wrapper position-relative flex-grow-1">
+          <i
+            class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary"
+          ></i>
+          <input
+            type="text"
+            class="form-control ps-5 py-2 rounded-3 w-100"
+            placeholder="Buscar por nombre o ID..."
+            [(ngModel)]="searchTerm"
+            (input)="applyFilter()"
+          />
+        </div>
+        <button
+          class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+          (click)="toggleOffcanvas()"
+        >
+          <i class="fa-solid fa-user-plus me-2"></i>Agregar Propietario
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Total Propietarios
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-body">{{ totalPartners }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3"
+          >
+            <i class="fa-solid fa-users fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Activos
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-success">{{ activePartners }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-success bg-opacity-10 text-success rounded-4 p-3"
+          >
+            <i class="fa-solid fa-check-circle fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Inactivos
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-warning">{{ inactivePartners }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-warning bg-opacity-10 text-warning rounded-4 p-3"
+          >
+            <i class="fa-solid fa-history fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Owners Grid -->
+  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4 mb-4">
+    @for (partner of partners; track partner.id) {
+      <div class="col">
+        <app-g-owner-card
+          [partner]="partner"
+          (edit)="toggleOffcanvas($event)"
+        ></app-g-owner-card>
+      </div>
+    }
+  </div>
+
+  <!-- Footer/Pagination -->
+  <div
+    class="d-flex justify-content-between align-items-center text-body-secondary small"
+  >
+    <p class="mb-0">
+      Mostrando 1 a {{ partners.length }} de {{ totalPartners }} propietarios
+    </p>
+    <nav aria-label="Navegación de propietarios">
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item disabled">
+          <a
+            class="page-link rounded-start-3"
+            href="#"
+            tabindex="-1"
+            aria-disabled="true"
+          >
+            <i class="fa-solid fa-chevron-left"></i>
+          </a>
+        </li>
+        <li class="page-item active" aria-current="page">
+          <a class="page-link" href="#">1</a>
+        </li>
+        <li class="page-item"><a class="page-link" href="#">2</a></li>
+        <li class="page-item"><a class="page-link" href="#">3</a></li>
+        <li class="page-item disabled"><span class="page-link">...</span></li>
+        <li class="page-item"><a class="page-link" href="#">214</a></li>
+        <li class="page-item">
+          <a class="page-link rounded-end-3" href="#">
+            <i class="fa-solid fa-chevron-right"></i>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Mobile Floating Action Button -->
+  <button
+    class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
+    aria-label="Agregar Propietario"
+    (click)="toggleOffcanvas()"
+  >
+    <i class="fa-solid fa-plus fs-4"></i>
+  </button>
+
+  <!-- Create/Edit Owner Offcanvas -->
+  <div
+    class="custom-offcanvas shadow-lg border-start transition-all"
+    [class.open]="isOffcanvasOpen"
+  >
+    <div class="offcanvas-header p-4 pb-0 d-flex justify-content-between">
+      <div>
+        <h2 class="h4 fw-bold mb-1">
+          {{ editingOwner ? "Editar Propietario" : "Crear Propietario" }}
+        </h2>
+        <p class="text-secondary small">
+          {{
+            editingOwner
+              ? "Actualice la información del propietario"
+              : "Complete los datos para dar de alta un nuevo propietario"
+          }}
+        </p>
+      </div>
+      <span
+        class="btn btn-link text-body p-0 border-0 shadow-none op-70 hover-op-100"
+        (click)="toggleOffcanvas()"
+        onkeypress
+      >
+        <i class="fa-solid fa-xmark fs-4"></i>
+      </span>
+    </div>
+
+    <div class="offcanvas-body p-4 pt-4">
+      <form [formGroup]="ownerForm" (ngSubmit)="onSubmit()">
+        <!-- Photo Upload Section -->
+        <div class="text-center mb-4">
+          <div class="photo-upload-wrapper mx-auto position-relative">
+            <div
+              class="photo-circle bg-body-secondary d-flex align-items-center justify-content-center"
+            >
+              <i class="fa-solid fa-camera fs-3 text-body-secondary"></i>
+            </div>
+            <span
+              type="button"
+              class="btn btn-primary btn-sm rounded-circle position-absolute photo-edit-btn"
+            >
+              <i class="fa-solid fa-pencil"></i>
+            </span>
+          </div>
+          <p class="text-secondary small mt-2">Foto de perfil</p>
+        </div>
+
+        <!-- Personal Information Section -->
+        <div class="mb-4">
+          <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+            <i class="fa-solid fa-user me-2"></i>Información Personal
+          </h6>
+
+          <div class="mb-3">
+            <label for="name" class="form-label small fw-bold mb-2"
+              >Nombre completo*</label
+            >
+            <input
+              id="name"
+              type="text"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="name"
+              placeholder="Ej: Juan Pérez"
+              [class.is-invalid]="
+                ownerForm.get('name')?.invalid && ownerForm.get('name')?.touched
+              "
+            />
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label for="documentType" class="form-label small fw-bold mb-2"
+                >Tipo de Documento*</label
+              >
+              <select
+                id="documentType"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="documentType"
+                [class.is-invalid]="
+                  ownerForm.get('documentType')?.invalid &&
+                  ownerForm.get('documentType')?.touched
+                "
+              >
+                <option value="" disabled selected>Selecciona</option>
+                <option value="CC">Cédula de Ciudadanía (CC)</option>
+                <option value="CE">Cédula de Extranjería (CE)</option>
+                <option value="NIT">NIT</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label for="documentNumber" class="form-label small fw-bold mb-2"
+                >Número de Documento*</label
+              >
+              <input
+                id="documentNumber"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="documentNumber"
+                placeholder="Ej: 1010101010"
+                [class.is-invalid]="
+                  ownerForm.get('documentNumber')?.invalid &&
+                  ownerForm.get('documentNumber')?.touched
+                "
+              />
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label for="cellPhone" class="form-label small fw-bold mb-2"
+                >Email (Celular)*</label
+              >
+              <input
+                id="cellPhone"
+                type="tel"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="cellPhone"
+                placeholder="+57"
+                [class.is-invalid]="
+                  ownerForm.get('cellPhone')?.invalid &&
+                  ownerForm.get('cellPhone')?.touched
+                "
+              />
+            </div>
+            <div class="col-6">
+              <label for="birthdate" class="form-label small fw-bold mb-2"
+                >Fecha de nacimiento*</label
+              >
+              <input
+                id="birthdate"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="birthdate"
+                placeholder="mm/dd/yyyy"
+                [class.is-invalid]="
+                  ownerForm.get('birthdate')?.invalid &&
+                  ownerForm.get('birthdate')?.touched
+                "
+              />
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label for="city" class="form-label small fw-bold mb-2"
+                >Ciudad*</label
+              >
+              <select
+                id="city"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="city"
+                [class.is-invalid]="
+                  ownerForm.get('city')?.invalid &&
+                  ownerForm.get('city')?.touched
+                "
+              >
+                <option value="" disabled selected>Seleccionar ciudad</option>
+                <option value="Bogotá">Bogotá</option>
+                <option value="Medellín">Medellín</option>
+                <option value="Cali">Cali</option>
+                <option value="Barranquilla">Barranquilla</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label for="gender" class="form-label small fw-bold mb-2"
+                >Sexo*</label
+              >
+              <select
+                id="gender"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="gender"
+                [class.is-invalid]="
+                  ownerForm.get('gender')?.invalid &&
+                  ownerForm.get('gender')?.touched
+                "
+              >
+                <option value="" disabled selected>Selecciona</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="vehicleCount" class="form-label small fw-bold mb-2"
+              >Máximo de Vehículos*</label
+            >
+            <input
+              id="vehicleCount"
+              type="number"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="vehicleCount"
+              placeholder="3"
+              [class.is-invalid]="
+                ownerForm.get('vehicleCount')?.invalid &&
+                ownerForm.get('vehicleCount')?.touched
+              "
+            />
+          </div>
+        </div>
+
+        <!-- Access Data Section -->
+        <div class="mb-4">
+          <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+            <i class="fa-solid fa-lock me-2"></i>Datos de Acceso
+          </h6>
+
+          <div class="mb-3">
+            <label for="email" class="form-label small fw-bold mb-2"
+              >Email*</label
+            >
+            <input
+              id="email"
+              type="email"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="email"
+              placeholder="correo@ejemplo.com"
+              [class.is-invalid]="
+                ownerForm.get('email')?.invalid &&
+                ownerForm.get('email')?.touched
+              "
+            />
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label for="password" class="form-label small fw-bold mb-2">
+                Contraseña{{ editingOwner ? "" : "*" }}
+              </label>
+              <div class="input-group position-relative">
+                <input
+                  id="password"
+                  type="password"
+                  class="form-control rounded-3 py-2 px-3 pe-5"
+                  formControlName="password"
+                  placeholder="Escribe"
+                  [class.is-invalid]="
+                    ownerForm.get('password')?.invalid &&
+                    ownerForm.get('password')?.touched
+                  "
+                />
+                <i
+                  class="fa-solid fa-ellipsis position-absolute top-50 end-0 translate-middle-y me-3 text-secondary op-50"
+                ></i>
+              </div>
+            </div>
+            <div class="col-6">
+              <label
+                for="confirmPassword"
+                class="form-label small fw-bold mb-2"
+              >
+                Confirmar contraseña{{ editingOwner ? "" : "*" }}
+              </label>
+              <div class="input-group position-relative">
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  class="form-control rounded-3 py-2 px-3 pe-5"
+                  formControlName="confirmPassword"
+                  placeholder="Escribe"
+                  [class.is-invalid]="
+                    ownerForm.hasError('mismatch') &&
+                    ownerForm.get('confirmPassword')?.touched
+                  "
+                />
+                <i
+                  class="fa-solid fa-ellipsis position-absolute top-50 end-0 translate-middle-y me-3 text-secondary op-50"
+                ></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Password Strength Meter -->
+          <div class="password-strength-wrapper mb-4">
+            <div class="d-flex gap-2 mb-2">
+              <div
+                class="strength-segment flex-fill"
+                [class.active]="strength >= 1"
+              ></div>
+              <div
+                class="strength-segment flex-fill"
+                [class.active]="strength >= 2"
+              ></div>
+              <div
+                class="strength-segment flex-fill"
+                [class.active]="strength >= 3"
+              ></div>
+              <div
+                class="strength-segment flex-fill"
+                [class.active]="strength >= 4"
+              ></div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="small text-secondary fw-bold op-70"
+                >Seguridad de contraseña</span
+              >
+              <span class="small fw-bold text-primary">{{
+                strengthLabel
+              }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="offcanvas-footer border-top pt-4 mt-auto d-flex gap-3">
+          <button
+            type="button"
+            class="btn btn-outline-primary flex-fill py-2 rounded-3 fw-bold"
+            (click)="toggleOffcanvas()"
+          >
+            Atrás
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary flex-fill py-2 rounded-3 fw-bold shadow-primary d-flex align-items-center justify-content-center"
+            [disabled]="ownerForm.invalid"
+          >
+            {{ editingOwner ? "Guardar cambios" : "Crear propietario" }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Backdrop -->
+  <div
+    class="offcanvas-backdrop transition-all d-none d-md-block"
+    *ngIf="isOffcanvasOpen"
+    (click)="toggleOffcanvas()"
+    onkeypress
+  ></div>
+</div>

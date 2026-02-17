@@ -1,0 +1,70 @@
+<div
+  class="card h-100 border-0 rounded-4 shadow-sm bg-body-tertiary owner-card"
+>
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <div class="position-relative">
+        <div
+          class="avatar rounded-circle overflow-hidden bg-body-secondary d-flex align-items-center justify-content-center"
+        >
+          @if (partner.photo) {
+            <img
+              [src]="partner.photo"
+              alt="{{ partner.name }}"
+              class="w-100 h-100 object-fit-cover"
+            />
+          } @else {
+            <i class="fa-solid fa-user fs-4 text-body-secondary"></i>
+          }
+        </div>
+        <span
+          class="status-dot position-absolute p-1 rounded-circle border border-3 border-body"
+          [ngClass]="statusClass"
+        ></span>
+      </div>
+      <span
+        class="btn btn-link text-body-secondary p-0 border-0 shadow-none op-50 hover-op-100"
+      >
+        <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
+      </span>
+    </div>
+
+    <h5 class="card-title fw-bold mb-1 text-body">{{ partner.name }}</h5>
+    <p class="card-text text-body-secondary small mb-3">{{ partner.email }}</p>
+
+    <div class="d-flex flex-column gap-2 mb-4">
+      <div class="d-flex align-items-center text-body-secondary small">
+        <i class="fa-solid fa-id-card me-2 opacity-50" style="width: 16px"></i>
+        <span>{{ partner.documentNumber }}</span>
+      </div>
+      <div class="d-flex align-items-center text-body-secondary small">
+        <i
+          class="fa-solid fa-mobile-screen me-2 opacity-50"
+          style="width: 16px"
+        ></i>
+        <span>{{ partner.cellPhone }}</span>
+      </div>
+      <div class="d-flex align-items-center text-body-secondary small">
+        <i class="fa-solid fa-calendar me-2 opacity-50" style="width: 16px"></i>
+        <span>{{ partner.birthdate }} ({{ partner.age }} años)</span>
+      </div>
+    </div>
+
+    <div
+      class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top border-secondary-subtle"
+    >
+      <span
+        class="badge bg-body-secondary text-body-secondary fw-normal px-2 py-1 rounded-2 small"
+      >
+        Vehículos: 0
+      </span>
+      <span
+        (click)="onEditClick()"
+        class="text-primary text-decoration-none small fw-bold d-flex align-items-center link-hover cursor-pointer"
+        onkeypress
+      >
+        Ver Detalles <i class="fa-solid fa-arrow-right ms-1"></i>
+      </span>
+    </div>
+  </div>
+</div>

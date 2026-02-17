@@ -1,0 +1,49 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.owner-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+    border-color: rgba(var(--bs-primary-rgb), 0.2) !important;
+  }
+}
+
+.avatar {
+  width: 64px;
+  height: 64px;
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+}
+
+.status-dot {
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.op-50 {
+  opacity: 0.5;
+}
+
+.hover-op-100:hover {
+  opacity: 1;
+}
+
+.link-hover {
+  transition: all 0.2s ease;
+
+  &:hover {
+    letter-spacing: 0.02em;
+    transform: translateX(3px);
+  }
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
