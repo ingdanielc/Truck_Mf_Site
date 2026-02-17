@@ -27,7 +27,7 @@ export class GMenuComponent implements OnInit {
     {
       label: 'Propietarios',
       icon: 'fa-solid fa-user-tie',
-      route: '/site/partners',
+      route: '/site/owners',
     },
     { label: 'Vehículos', icon: 'fa-solid fa-truck', route: '/site/vehicles' },
     { label: 'Viajes', icon: 'fa-solid fa-route', route: '/site/trips' },
