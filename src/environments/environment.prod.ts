@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
   environmentType: 'prod',
-  _APIUrl: 'http://ccsoluciones.com.co:8089',
+  _APIUrl: 'https://truck.ccsoluciones.com.co',
   subscription: 'truck-api-key',
 };
