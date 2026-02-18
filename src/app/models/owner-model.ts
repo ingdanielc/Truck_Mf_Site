@@ -1,4 +1,4 @@
-export class ModelPartner {
+export class ModelOwner {
   constructor(
     public id?: number | null,
     public photo?: string,
@@ -6,17 +6,15 @@ export class ModelPartner {
     public documentTypeName?: number,
     public documentNumber?: string,
     public name?: string,
-    public cellPhone?: string,
     public email?: string,
+    public cellPhone?: string,
     public cityId?: number,
     public cityName?: string,
-    public address?: string,
+    public genderId?: number,
     public birthdate?: any,
     public age?: number,
-    public genderId?: number,
+    public vehicles?: number,
     public status?: string,
-    public accessTime?: Date,
-    public partnerMembership: any[] = []
-
+    //public partnerMembership: any[] = []
   ) {}
 }

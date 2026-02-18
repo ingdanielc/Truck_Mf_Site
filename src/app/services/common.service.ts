@@ -37,10 +37,6 @@ export class CommonService {
     return this.http.get<any>(`${this.basePath}/getDocumentTypes`);
   }
 
-  getExpires() {
-    return this.http.get<any>(`${this.basePath}/getExpires`);
-  }
-
   getGenders() {
     return this.http.get<any>(`${this.basePath}/getGenders`);
   }
@@ -49,7 +45,11 @@ export class CommonService {
     return this.http.get<any>(`${this.basePath}/getCities`);
   }
 
-  getListPaymentMethod() {
-    return this.http.get<any>(`${this.basePath}/getPaymentMethods`);
+  getExpenseTypes() {
+    return this.http.get<any>(`${this.basePath}/getExpenseTypes`);
+  }
+
+  getVehicleBrands() {
+    return this.http.get<any>(`${this.basePath}/getVehicleBrands`);
   }
 }

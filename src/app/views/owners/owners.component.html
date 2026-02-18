@@ -43,7 +43,7 @@
             <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
               Total Propietarios
             </p>
-            <h2 class="h1 fw-bold mb-0 text-body">{{ totalPartners }}</h2>
+            <h2 class="h1 fw-bold mb-0 text-body">{{ totalOwners }}</h2>
           </div>
           <div
             class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3"
@@ -64,7 +64,7 @@
             <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
               Activos
             </p>
-            <h2 class="h1 fw-bold mb-0 text-success">{{ activePartners }}</h2>
+            <h2 class="h1 fw-bold mb-0 text-success">{{ activeOwners }}</h2>
           </div>
           <div
             class="icon-shape bg-success bg-opacity-10 text-success rounded-4 p-3"
@@ -85,7 +85,7 @@
             <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
               Inactivos
             </p>
-            <h2 class="h1 fw-bold mb-0 text-warning">{{ inactivePartners }}</h2>
+            <h2 class="h1 fw-bold mb-0 text-warning">{{ inactiveOwners }}</h2>
           </div>
           <div
             class="icon-shape bg-warning bg-opacity-10 text-warning rounded-4 p-3"
@@ -99,10 +99,10 @@
 
   <!-- Owners Grid -->
   <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4 mb-4">
-    @for (partner of partners; track partner.id) {
+    @for (owner of owners; track owner.id) {
       <div class="col">
         <app-g-owner-card
-          [partner]="partner"
+          [owner]="owner"
           (edit)="toggleOffcanvas($event)"
         ></app-g-owner-card>
       </div>
@@ -114,7 +114,7 @@
     class="d-flex justify-content-between align-items-center text-body-secondary small"
   >
     <p class="mb-0">
-      Mostrando 1 a {{ partners.length }} de {{ totalPartners }} propietarios
+      Mostrando 1 a {{ owners.length }} de {{ totalOwners }} propietarios
     </p>
     <nav aria-label="Navegación de propietarios">
       <ul class="pagination pagination-sm mb-0">

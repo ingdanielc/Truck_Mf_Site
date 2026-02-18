@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModelPartner } from 'src/app/models/partner-model';
+import { ModelOwner } from 'src/app/models/owner-model';
 
 @Component({
   selector: 'app-g-owner-card',
@@ -10,11 +10,11 @@ import { ModelPartner } from 'src/app/models/partner-model';
   styleUrls: ['./g-owner-card.component.scss'],
 })
 export class GOwnerCardComponent {
-  @Input() partner!: ModelPartner;
-  @Output() edit = new EventEmitter<ModelPartner>();
+  @Input() owner!: ModelOwner;
+  @Output() edit = new EventEmitter<ModelOwner>();
 
   onEditClick(): void {
-    this.edit.emit(this.partner);
+    this.edit.emit(this.owner);
   }
 
   get badgeClass(): string {
@@ -25,6 +25,6 @@ export class GOwnerCardComponent {
   }
 
   get statusClass(): string {
-    return this.partner.status === 'Active' ? 'bg-success' : 'bg-secondary';
+    return this.owner.status === 'Active' ? 'bg-success' : 'bg-secondary';
   }
 }

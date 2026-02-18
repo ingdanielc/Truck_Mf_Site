@@ -7,8 +7,15 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { ModelPartner } from 'src/app/models/partner-model';
+import { ModelOwner } from 'src/app/models/owner-model';
 import { GOwnerCardComponent } from '../../components/g-owner-card/g-owner-card.component';
+import {
+  Filter,
+  ModelFilterTable,
+  Pagination,
+  Sort,
+} from 'src/app/models/model-filter-table';
+import { OwnerService } from 'src/app/services/owner.service';
 
 @Component({
   selector: 'app-owners',
@@ -23,21 +30,24 @@ import { GOwnerCardComponent } from '../../components/g-owner-card/g-owner-card.
   styleUrls: ['./owners.component.scss'],
 })
 export class OwnersComponent implements OnInit {
-  partners: ModelPartner[] = [];
-  allPartners: ModelPartner[] = [];
-  totalPartners: number = 0;
-  activePartners: number = 0;
-  inactivePartners: number = 0;
+  owners: ModelOwner[] = [];
+  allOwners: ModelOwner[] = [];
+  totalOwners: number = 0;
+  activeOwners: number = 0;
+  inactiveOwners: number = 0;
   searchTerm: string = '';
   page: number = 1;
   rows: number = 10;
 
   // Offcanvas and Form
   isOffcanvasOpen: boolean = false;
-  editingOwner: ModelPartner | null = null;
+  editingOwner: ModelOwner | null = null;
   ownerForm: FormGroup;
 
-  constructor(private readonly fb: FormBuilder) {
+  constructor(
+    private readonly fb: FormBuilder,
+    private readonly ownerService: OwnerService,
+  ) {
     this.ownerForm = this.fb.group(
       {
         name: ['', [Validators.required]],
@@ -88,7 +98,7 @@ export class OwnersComponent implements OnInit {
     return 'FUERTE';
   }
 
-  toggleOffcanvas(owner?: ModelPartner): void {
+  toggleOffcanvas(owner?: ModelOwner): void {
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
     if (this.isOffcanvasOpen) {
       if (owner) {
@@ -139,104 +149,45 @@ export class OwnersComponent implements OnInit {
   }
 
   loadPartners(): void {
-    // Mock Data
-    const mockPartners: ModelPartner[] = [
-      {
-        id: 1,
-        name: 'Alejandro Ramírez',
-        email: 'alejandro.ramirez@example.com',
-        documentNumber: '1.023.456.789',
-        cellPhone: '+57 300 456 7890',
-        birthdate: '15-03-1985',
-        age: 39,
-        status: 'Active',
-        photo: 'assets/images/avatars/01.png',
-        cityId: 1,
-        cityName: 'Bogotá',
-        partnerMembership: [],
+    let filtros: Filter[] = [];
+    let filter = new ModelFilterTable(
+      filtros,
+      new Pagination(this.rows, this.page),
+      new Sort('id', true),
+    );
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (response: any) => {
+        console.log('asd: ', response);
+        if (response?.data?.content) {
+          this.totalOwners = response.data.totalElements || 0;
+          this.allOwners = response.data.content;
+          // .map((u: ModelOwner) =>
+          //   this.mapOwner(u),
+          // );
+          this.applyFilter();
+        } else {
+          this.allOwners = [];
+          this.owners = [];
+        }
       },
-      {
-        id: 2,
-        name: 'Valeria Gómez',
-        email: 'valeria.gomez@example.com',
-        documentNumber: '1.112.987.654',
-        cellPhone: '+57 312 888 2233',
-        birthdate: '22-07-1990',
-        age: 34,
-        status: 'Active',
-        cityId: 2,
-        cityName: 'Medellín',
-        partnerMembership: [],
+      error: (err) => {
+        console.error('Error loading users:', err);
       },
-      {
-        id: 3,
-        name: 'Ricardo Gutiérrez',
-        email: 'ricardo.gutierrez@example.com',
-        documentNumber: '79.432.100',
-        cellPhone: '+57 315 990 1122',
-        birthdate: '08-11-1978',
-        age: 46,
-        status: 'Inactive',
-        cityId: 3,
-        cityName: 'Cali',
-        partnerMembership: [],
-      },
-      {
-        id: 4,
-        name: 'Luis Fernando Soto',
-        email: 'luis.soto@example.com',
-        documentNumber: '900.234.111-5',
-        cellPhone: '+57 601 234 5678',
-        birthdate: '30-05-1982',
-        age: 42,
-        status: 'Active',
-        cityId: 1,
-        cityName: 'Bogotá',
-        partnerMembership: [],
-      },
-      {
-        id: 5,
-        name: 'Marta Cecilia López',
-        email: 'marta.lopez@example.com',
-        documentNumber: '43.222.111',
-        cellPhone: '+57 320 555 1234',
-        birthdate: '12-01-1995',
-        age: 29,
-        status: 'Active',
-        cityId: 4,
-        cityName: 'Barranquilla',
-        partnerMembership: [],
-      },
-      {
-        id: 6,
-        name: 'Eduardo Martínez',
-        email: 'eduardo.martinez@example.com',
-        documentNumber: '1.036.777.222',
-        cellPhone: '+57 311 222 3344',
-        birthdate: '25-09-1988',
-        age: 36,
-        status: 'Inactive',
-        cityId: 1,
-        cityName: 'Bogotá',
-        partnerMembership: [],
-      },
-    ];
-
-    this.allPartners = mockPartners;
+    });
     this.calculateStats();
     this.applyFilter();
   }
 
   calculateStats(): void {
-    this.totalPartners = this.allPartners.length;
-    this.activePartners = this.allPartners.filter(
+    this.totalOwners = this.allOwners.length;
+    this.activeOwners = this.allOwners.filter(
       (p) => p.status === 'Active',
     ).length;
-    this.inactivePartners = this.totalPartners - this.activePartners;
+    this.inactiveOwners = this.totalOwners - this.activeOwners;
   }
 
   applyFilter(): void {
-    let filtered = this.allPartners;
+    let filtered = this.allOwners;
 
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
@@ -248,6 +199,6 @@ export class OwnersComponent implements OnInit {
       );
     }
 
-    this.partners = filtered;
+    this.owners = filtered;
   }
 }

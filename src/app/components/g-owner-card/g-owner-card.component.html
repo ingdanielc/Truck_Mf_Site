@@ -7,10 +7,10 @@
         <div
           class="avatar rounded-circle overflow-hidden bg-body-secondary d-flex align-items-center justify-content-center"
         >
-          @if (partner.photo) {
+          @if (owner.photo) {
             <img
-              [src]="partner.photo"
-              alt="{{ partner.name }}"
+              [src]="owner.photo"
+              alt="{{ owner.name }}"
               class="w-100 h-100 object-fit-cover"
             />
           } @else {
@@ -29,24 +29,24 @@
       </span>
     </div>
 
-    <h5 class="card-title fw-bold mb-1 text-body">{{ partner.name }}</h5>
-    <p class="card-text text-body-secondary small mb-3">{{ partner.email }}</p>
+    <h5 class="card-title fw-bold mb-1 text-body">{{ owner.name }}</h5>
+    <p class="card-text text-body-secondary small mb-3">{{ owner.email }}</p>
 
     <div class="d-flex flex-column gap-2 mb-4">
       <div class="d-flex align-items-center text-body-secondary small">
         <i class="fa-solid fa-id-card me-2 opacity-50" style="width: 16px"></i>
-        <span>{{ partner.documentNumber }}</span>
+        <span>{{ owner.documentNumber }}</span>
       </div>
       <div class="d-flex align-items-center text-body-secondary small">
         <i
           class="fa-solid fa-mobile-screen me-2 opacity-50"
           style="width: 16px"
         ></i>
-        <span>{{ partner.cellPhone }}</span>
+        <span>{{ owner.cellPhone }}</span>
       </div>
       <div class="d-flex align-items-center text-body-secondary small">
         <i class="fa-solid fa-calendar me-2 opacity-50" style="width: 16px"></i>
-        <span>{{ partner.birthdate }} ({{ partner.age }} años)</span>
+        <span>{{ owner.birthdate }} ({{ owner.age }} años)</span>
       </div>
     </div>
 
