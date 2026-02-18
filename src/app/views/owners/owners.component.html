@@ -215,11 +215,19 @@
               type="text"
               class="form-control rounded-3 py-2 px-3"
               formControlName="name"
+              maxlength="150"
               placeholder="Ej: Juan Pérez"
               [class.is-invalid]="
                 ownerForm.get('name')?.invalid && ownerForm.get('name')?.touched
               "
             />
+            @if (
+              ownerForm.get("name")?.invalid && ownerForm.get("name")?.touched
+            ) {
+              <div class="text-danger small mt-1">
+                Este campo es obligatorio para continuar
+              </div>
+            }
           </div>
 
           <div class="row g-3 mb-3">
@@ -237,10 +245,18 @@
                 "
               >
                 <option value="" disabled selected>Selecciona</option>
-                <option value="CC">Cédula de Ciudadanía (CC)</option>
-                <option value="CE">Cédula de Extranjería (CE)</option>
-                <option value="NIT">NIT</option>
+                <option *ngFor="let type of documentTypes" [value]="type.id">
+                  {{ type.name }}
+                </option>
               </select>
+              @if (
+                ownerForm.get("documentType")?.invalid &&
+                ownerForm.get("documentType")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
             </div>
             <div class="col-6">
               <label for="documentNumber" class="form-label small fw-bold mb-2"
@@ -252,30 +268,49 @@
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="documentNumber"
                 placeholder="Ej: 1010101010"
+                (keypress)="allowOnlyNumbers($event)"
                 [class.is-invalid]="
                   ownerForm.get('documentNumber')?.invalid &&
                   ownerForm.get('documentNumber')?.touched
                 "
               />
+              @if (
+                ownerForm.get("documentNumber")?.invalid &&
+                ownerForm.get("documentNumber")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
             </div>
           </div>
 
           <div class="row g-3 mb-3">
             <div class="col-6">
               <label for="cellPhone" class="form-label small fw-bold mb-2"
-                >Email (Celular)*</label
+                >Celular*</label
               >
               <input
                 id="cellPhone"
                 type="tel"
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="cellPhone"
-                placeholder="+57"
+                placeholder="XXX XXX XX XX"
+                (input)="formatCellPhone($event)"
+                maxlength="13"
                 [class.is-invalid]="
                   ownerForm.get('cellPhone')?.invalid &&
                   ownerForm.get('cellPhone')?.touched
                 "
               />
+              @if (
+                ownerForm.get("cellPhone")?.invalid &&
+                ownerForm.get("cellPhone")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
             </div>
             <div class="col-6">
               <label for="birthdate" class="form-label small fw-bold mb-2"
@@ -283,15 +318,22 @@
               >
               <input
                 id="birthdate"
-                type="text"
+                type="date"
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="birthdate"
-                placeholder="mm/dd/yyyy"
                 [class.is-invalid]="
                   ownerForm.get('birthdate')?.invalid &&
                   ownerForm.get('birthdate')?.touched
                 "
               />
+              @if (
+                ownerForm.get("birthdate")?.invalid &&
+                ownerForm.get("birthdate")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
             </div>
           </div>
 
@@ -310,15 +352,21 @@
                 "
               >
                 <option value="" disabled selected>Seleccionar ciudad</option>
-                <option value="Bogotá">Bogotá</option>
-                <option value="Medellín">Medellín</option>
-                <option value="Cali">Cali</option>
-                <option value="Barranquilla">Barranquilla</option>
+                <option *ngFor="let city of cities" [value]="city.id">
+                  {{ city.name }}
+                </option>
               </select>
+              @if (
+                ownerForm.get("city")?.invalid && ownerForm.get("city")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
             </div>
             <div class="col-6">
               <label for="gender" class="form-label small fw-bold mb-2"
-                >Sexo*</label
+                >Genero*</label
               >
               <select
                 id="gender"
@@ -330,9 +378,18 @@
                 "
               >
                 <option value="" disabled selected>Selecciona</option>
-                <option value="M">Masculino</option>
-                <option value="F">Femenino</option>
+                <option *ngFor="let gender of genders" [value]="gender.id">
+                  {{ gender.name }}
+                </option>
               </select>
+              @if (
+                ownerForm.get("gender")?.invalid &&
+                ownerForm.get("gender")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
             </div>
           </div>
 
@@ -351,6 +408,14 @@
                 ownerForm.get('vehicleCount')?.touched
               "
             />
+            @if (
+              ownerForm.get("vehicleCount")?.invalid &&
+              ownerForm.get("vehicleCount")?.touched
+            ) {
+              <div class="text-danger small mt-1">
+                Este campo es obligatorio para continuar
+              </div>
+            }
           </div>
         </div>
 
@@ -362,7 +427,7 @@
 
           <div class="mb-3">
             <label for="email" class="form-label small fw-bold mb-2"
-              >Email*</label
+              >Correo electrónico*</label
             >
             <input
               id="email"
@@ -375,6 +440,13 @@
                 ownerForm.get('email')?.touched
               "
             />
+            @if (
+              ownerForm.get("email")?.invalid && ownerForm.get("email")?.touched
+            ) {
+              <div class="text-danger small mt-1">
+                Este campo es obligatorio para continuar
+              </div>
+            }
           </div>
 
           <div class="row g-3 mb-3">
@@ -398,6 +470,14 @@
                   class="fa-solid fa-ellipsis position-absolute top-50 end-0 translate-middle-y me-3 text-secondary op-50"
                 ></i>
               </div>
+              @if (
+                ownerForm.get("password")?.invalid &&
+                ownerForm.get("password")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
             </div>
             <div class="col-6">
               <label
@@ -422,6 +502,14 @@
                   class="fa-solid fa-ellipsis position-absolute top-50 end-0 translate-middle-y me-3 text-secondary op-50"
                 ></i>
               </div>
+              @if (
+                ownerForm.hasError("mismatch") &&
+                ownerForm.get("confirmPassword")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Las contraseñas no coinciden
+                </div>
+              }
             </div>
           </div>
 

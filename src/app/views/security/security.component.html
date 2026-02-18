@@ -128,6 +128,11 @@
               "
             />
           </div>
+          @if (userForm.get("name")?.invalid && userForm.get("name")?.touched) {
+            <div class="text-danger small mt-1">
+              Este campo es obligatorio para continuar
+            </div>
+          }
         </div>
 
         <div class="mb-4">
@@ -146,6 +151,13 @@
               "
             />
           </div>
+          @if (
+            userForm.get("email")?.invalid && userForm.get("email")?.touched
+          ) {
+            <div class="text-danger small mt-1">
+              Este campo es obligatorio para continuar
+            </div>
+          }
         </div>
 
         <div class="row g-3 mb-3">
@@ -169,6 +181,14 @@
                 class="fa-solid fa-ellipsis position-absolute top-50 end-0 translate-middle-y me-3 text-secondary op-50"
               ></i>
             </div>
+            @if (
+              userForm.get("password")?.invalid &&
+              userForm.get("password")?.touched
+            ) {
+              <div class="text-danger small mt-1">
+                Este campo es obligatorio para continuar
+              </div>
+            }
           </div>
           <div class="col-6">
             <label for="confirmPassword" class="form-label small fw-bold mb-2">
@@ -190,6 +210,14 @@
                 class="fa-solid fa-ellipsis position-absolute top-50 end-0 translate-middle-y me-3 text-secondary op-50"
               ></i>
             </div>
+            @if (
+              userForm.hasError("mismatch") &&
+              userForm.get("confirmPassword")?.touched
+            ) {
+              <div class="text-danger small mt-1">
+                Las contraseñas no coinciden
+              </div>
+            }
           </div>
         </div>
 
@@ -236,6 +264,11 @@
               <option [value]="role.name">{{ role.name }}</option>
             }
           </select>
+          @if (userForm.get("role")?.invalid && userForm.get("role")?.touched) {
+            <div class="text-danger small mt-1">
+              Este campo es obligatorio para continuar
+            </div>
+          }
         </div>
 
         <div class="offcanvas-footer border-top pt-4 mt-auto d-flex gap-3">

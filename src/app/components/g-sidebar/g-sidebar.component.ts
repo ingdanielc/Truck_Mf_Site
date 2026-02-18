@@ -24,6 +24,12 @@ export class GSidebarComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    const payload = this.tokenService.getPayload();
+    if (payload) {
+      this.userName = payload.unique_name || payload.name || 'Usuario';
+      this.userRole = payload.role || 'Rol';
+    }
+
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
     if (savedTheme) {
       this.currentTheme = savedTheme;

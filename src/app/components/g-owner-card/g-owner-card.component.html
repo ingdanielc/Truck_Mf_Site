@@ -42,11 +42,16 @@
           class="fa-solid fa-mobile-screen me-2 opacity-50"
           style="width: 16px"
         ></i>
-        <span>{{ owner.cellPhone }}</span>
+        <span>{{ formattedCellPhone }}</span>
       </div>
       <div class="d-flex align-items-center text-body-secondary small">
         <i class="fa-solid fa-calendar me-2 opacity-50" style="width: 16px"></i>
-        <span>{{ owner.birthdate }} ({{ owner.age }} años)</span>
+        <span
+          >{{ owner.birthdate | date: "dd/MM/yyyy" }} ({{
+            owner.age
+          }}
+          años)</span
+        >
       </div>
     </div>
 
@@ -60,10 +65,11 @@
       </span>
       <span
         (click)="onEditClick()"
-        class="text-primary text-decoration-none small fw-bold d-flex align-items-center link-hover cursor-pointer"
+        class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
+        style="width: 40px"
         onkeypress
       >
-        Ver Detalles <i class="fa-solid fa-arrow-right ms-1"></i>
+        <i class="fa-solid fa-pencil"></i>
       </span>
     </div>
   </div>
