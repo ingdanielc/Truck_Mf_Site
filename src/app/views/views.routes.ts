@@ -8,4 +8,9 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./owners/owners.component').then((m) => m.OwnersComponent),
   },
+  {
+    path: 'vehicles',
+    loadComponent: () =>
+      import('./vehicles/vehicles.component').then((m) => m.VehiclesComponent),
+  },
 ];

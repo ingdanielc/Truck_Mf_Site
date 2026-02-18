@@ -1,0 +1,394 @@
+<div class="vehicles-container py-4 bg-body">
+  <div class="row mb-4 gy-3 align-items-center">
+    <div class="col-12 col-md">
+      <h1 class="h3 fw-bold mb-1 text-body">Gestión de Vehículos</h1>
+      <p class="text-body-secondary mb-0 text-truncate">
+        Control y administración de la flota CashTruck
+      </p>
+    </div>
+    <div class="col-12 col-md-auto">
+      <div class="d-flex flex-column flex-sm-row gap-3">
+        <div class="search-wrapper position-relative flex-grow-1">
+          <i
+            class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary"
+          ></i>
+          <input
+            type="text"
+            class="form-control ps-5 py-2 rounded-3 w-100"
+            placeholder="Buscar por placa, marca o modelo..."
+            [(ngModel)]="searchTerm"
+            (input)="applyFilter()"
+          />
+        </div>
+        <button
+          class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+          (click)="toggleOffcanvas()"
+        >
+          <i class="fa-solid fa-plus me-2"></i>Agregar Vehículo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Total Vehículos
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-body">{{ totalVehicles }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3"
+          >
+            <i class="fa-solid fa-truck-moving fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Disponibles
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-success">
+              {{ availableVehicles }}
+            </h2>
+          </div>
+          <div
+            class="icon-shape bg-success bg-opacity-10 text-success rounded-4 p-3"
+          >
+            <i class="fa-solid fa-circle-check fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              En Servicio
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-warning">{{ occupiedVehicles }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-warning bg-opacity-10 text-warning rounded-4 p-3"
+          >
+            <i class="fa-solid fa-clock-rotate-left fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vehicles Grid -->
+  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4">
+    @for (vehicle of vehicles; track vehicle.id) {
+      <div class="col">
+        <app-g-vehicle-card
+          [vehicle]="vehicle"
+          (edit)="toggleOffcanvas($event)"
+        ></app-g-vehicle-card>
+      </div>
+    }
+  </div>
+
+  <!-- Mobile Floating Action Button -->
+  <button
+    class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
+    aria-label="Agregar Vehículo"
+    (click)="toggleOffcanvas()"
+  >
+    <i class="fa-solid fa-plus fs-4"></i>
+  </button>
+
+  <!-- Create/Edit Vehicle Offcanvas -->
+  <div
+    class="custom-offcanvas shadow-lg border-start transition-all"
+    [class.open]="isOffcanvasOpen"
+  >
+    <div class="offcanvas-header p-4 pb-0 d-flex justify-content-between">
+      <div>
+        <h2 class="h4 fw-bold mb-1">
+          {{ editingVehicle ? "Editar Vehículo" : "Crear Vehículo" }}
+        </h2>
+        <p class="text-secondary small">
+          {{
+            editingVehicle
+              ? "Actualice la información técnica del vehículo"
+              : "Complete los datos para registrar un nuevo vehículo"
+          }}
+        </p>
+      </div>
+      <span
+        class="btn btn-link text-body p-0 border-0 shadow-none op-70 hover-op-100"
+        (click)="toggleOffcanvas()"
+        onkeypress
+      >
+        <i class="fa-solid fa-xmark fs-4"></i>
+      </span>
+    </div>
+
+    <div class="offcanvas-body p-4 pt-4">
+      <form [formGroup]="vehicleForm" (ngSubmit)="onSubmit()">
+        <!-- Photo Upload Section -->
+        <div class="text-center mb-4">
+          <div class="photo-upload-wrapper mx-auto position-relative">
+            <div
+              class="photo-circle bg-body-secondary d-flex align-items-center justify-content-center overflow-hidden"
+            >
+              @if (vehicleForm.get("photo")?.value) {
+                <img
+                  [src]="vehicleForm.get('photo')?.value"
+                  class="img-fluid w-100 h-100 object-fit-cover"
+                  alt="Vehículo"
+                />
+              } @else {
+                <i class="fa-solid fa-truck fs-3 text-body-secondary"></i>
+              }
+            </div>
+            <span
+              type="button"
+              class="btn btn-primary btn-sm rounded-circle position-absolute photo-edit-btn"
+            >
+              <i class="fa-solid fa-pencil"></i>
+            </span>
+          </div>
+          <p class="text-secondary small mt-2">Fotografía del vehículo</p>
+        </div>
+
+        <!-- General Info Section -->
+        <div class="mb-4">
+          <h6
+            class="text-primary fw-bold mb-3 d-flex align-items-center title-section"
+          >
+            <i class="fa-solid fa-info-circle me-2"></i>INFORMACIÓN GENERAL
+          </h6>
+
+          <div class="row g-3">
+            <div class="col-6 mb-3">
+              <label for="brand" class="form-label small fw-bold mb-2"
+                >Marca</label
+              >
+              <input
+                id="brand"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="brand"
+                placeholder="Ej: Mercedes-Benz"
+                [class.is-invalid]="
+                  vehicleForm.get('brand')?.invalid &&
+                  vehicleForm.get('brand')?.touched
+                "
+              />
+              @if (
+                vehicleForm.get("brand")?.invalid &&
+                vehicleForm.get("brand")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio
+                </div>
+              }
+            </div>
+
+            <div class="col-6 mb-3">
+              <label for="model" class="form-label small fw-bold mb-2"
+                >Modelo</label
+              >
+              <input
+                id="model"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="model"
+                placeholder="Ej: Actros 2645"
+                [class.is-invalid]="
+                  vehicleForm.get('model')?.invalid &&
+                  vehicleForm.get('model')?.touched
+                "
+              />
+              @if (
+                vehicleForm.get("model")?.invalid &&
+                vehicleForm.get("model")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio
+                </div>
+              }
+            </div>
+
+            <div class="col-6 mb-3">
+              <label for="year" class="form-label small fw-bold mb-2"
+                >Año</label
+              >
+              <input
+                id="year"
+                type="number"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="year"
+                placeholder="2024"
+                [class.is-invalid]="
+                  vehicleForm.get('year')?.invalid &&
+                  vehicleForm.get('year')?.touched
+                "
+              />
+              @if (
+                vehicleForm.get("year")?.invalid &&
+                vehicleForm.get("year")?.touched
+              ) {
+                <div class="text-danger small mt-1">Año inválido</div>
+              }
+            </div>
+
+            <div class="col-6 mb-3">
+              <label for="color" class="form-label small fw-bold mb-2"
+                >Color</label
+              >
+              <input
+                id="color"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="color"
+                placeholder="Ej: Blanco"
+                [class.is-invalid]="
+                  vehicleForm.get('color')?.invalid &&
+                  vehicleForm.get('color')?.touched
+                "
+              />
+              @if (
+                vehicleForm.get("color")?.invalid &&
+                vehicleForm.get("color")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Technical Specs Section -->
+        <div class="mb-4">
+          <h6
+            class="text-primary fw-bold mb-3 d-flex align-items-center title-section"
+          >
+            <i class="fa-solid fa-gear me-2"></i>ESPECIFICACIONES TÉCNICAS
+          </h6>
+
+          <div class="row g-3">
+            <div class="col-6 mb-3">
+              <label for="plate" class="form-label small fw-bold mb-2"
+                >Placa / Matricula</label
+              >
+              <input
+                id="plate"
+                type="text"
+                class="form-control rounded-3 py-2 px-3 text-uppercase"
+                formControlName="plate"
+                placeholder="ABC-1234"
+                [class.is-invalid]="
+                  vehicleForm.get('plate')?.invalid &&
+                  vehicleForm.get('plate')?.touched
+                "
+              />
+              @if (
+                vehicleForm.get("plate")?.invalid &&
+                vehicleForm.get("plate")?.touched
+              ) {
+                <div class="text-danger small mt-1">Placa obligatoria</div>
+              }
+            </div>
+
+            <div class="col-6 mb-3">
+              <label for="motorNumber" class="form-label small fw-bold mb-2"
+                >Nro. de Motor</label
+              >
+              <input
+                id="motorNumber"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="motorNumber"
+                placeholder="MOT-998877"
+              />
+            </div>
+
+            <div class="col-6 mb-3">
+              <label for="chassisNumber" class="form-label small fw-bold mb-2"
+                >Nro. de Chasis</label
+              >
+              <input
+                id="chassisNumber"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="chassisNumber"
+                placeholder="CHS-112233"
+              />
+            </div>
+
+            <div class="col-6 mb-3">
+              <label for="axleCount" class="form-label small fw-bold mb-2"
+                >Nro. de Ejes</label
+              >
+              <input
+                id="axleCount"
+                type="number"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="axleCount"
+                placeholder="Ej: 3"
+                [class.is-invalid]="
+                  vehicleForm.get('axleCount')?.invalid &&
+                  vehicleForm.get('axleCount')?.touched
+                "
+              />
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="offcanvas-footer border-top pt-4 mt-auto d-flex gap-3 align-items-center"
+        >
+          <button
+            type="button"
+            class="btn btn-link text-secondary text-decoration-none fw-bold"
+            (click)="toggleOffcanvas()"
+          >
+            ATRÁS
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary flex-fill py-2 rounded-3 fw-bold shadow-primary d-flex align-items-center justify-content-center"
+            [disabled]="vehicleForm.invalid"
+          >
+            <i class="fa-solid fa-save me-2"></i>
+            {{ editingVehicle ? "GUARDAR CAMBIOS" : "CREAR VEHÍCULO" }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Backdrop -->
+  <div
+    class="offcanvas-backdrop transition-all d-none d-md-block"
+    *ngIf="isOffcanvasOpen"
+    (click)="toggleOffcanvas()"
+    onkeypress
+  ></div>
+</div>

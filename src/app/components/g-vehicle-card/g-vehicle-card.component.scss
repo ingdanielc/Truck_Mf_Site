@@ -1,0 +1,151 @@
+.vehicle-card {
+  --card-bg: var(--bs-body-bg);
+  --card-hover-bg: rgba(var(--bs-primary-rgb), 0.02);
+
+  [data-bs-theme="dark"] & {
+    --card-bg: #1a1d21;
+  }
+
+  background-color: var(--card-bg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
+
+  &:hover {
+    transform: translateY(-5px);
+    background-color: var(--card-hover-bg);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  .image-container {
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+
+    .image-wrapper {
+      width: 100%;
+      height: 100%;
+      background-color: rgba(var(--bs-emphasis-color-rgb), 0.03);
+
+      .vehicle-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      right: -2px !important;
+      top: -2px !important;
+
+      &.dot-available {
+        background-color: #10b981;
+      }
+
+      &.dot-busy {
+        background-color: #ef4444;
+      }
+
+      &.dot-default {
+        background-color: #6b7280;
+      }
+    }
+  }
+
+  .plate-number {
+    letter-spacing: 0.5px;
+    color: var(--bs-body-color);
+  }
+
+  .status-badge {
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+
+    &.status-available {
+      background-color: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+    }
+
+    &.status-busy {
+      background-color: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+    }
+
+    &.status-default {
+      background-color: rgba(107, 114, 128, 0.1);
+      color: #9ca3af;
+    }
+  }
+
+  .brand-model {
+    font-size: 0.95rem;
+    opacity: 0.8;
+  }
+
+  .year {
+    letter-spacing: 0.5px;
+    opacity: 0.6;
+  }
+
+  .stat-item {
+    i {
+      font-size: 0.85rem;
+    }
+  }
+
+  .link-primary {
+    &:hover {
+      color: var(--bs-primary-focus-shadow);
+    }
+  }
+
+  .transition-all {
+    transition: all 0.2s ease;
+  }
+
+  .op-10 {
+    opacity: 0.1;
+  }
+
+  .op-60 {
+    opacity: 0.6;
+  }
+
+  .op-30 {
+    opacity: 0.3;
+  }
+
+  .action-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    transition: all 0.2s ease;
+  }
+}
+
+[data-bs-theme="dark"] {
+  .vehicle-card {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+
+    &:hover {
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .image-wrapper {
+      background-color: #24282d;
+    }
+
+    .action-btn {
+      background-color: #15171a;
+      border-color: rgba(255, 255, 255, 0.05);
+
+      &:hover {
+        background-color: #212529;
+      }
+    }
+  }
+}
