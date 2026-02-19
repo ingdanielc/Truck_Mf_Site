@@ -33,7 +33,11 @@ export class GMenuComponent implements OnInit, OnDestroy {
       route: '/site/owners',
     },
     { label: 'Vehículos', icon: 'fa-solid fa-truck', route: '/site/vehicles' },
-    { label: 'Conductores', icon: 'fa-solid fa-truck', route: '/site/drivers' },
+    {
+      label: 'Conductores',
+      icon: 'fa-solid fa-address-card',
+      route: '/site/drivers',
+    },
     { label: 'Viajes', icon: 'fa-solid fa-route', route: '/site/trips' },
     {
       label: 'Gastos',

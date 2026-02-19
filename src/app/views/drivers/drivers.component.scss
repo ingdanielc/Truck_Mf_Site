@@ -1,0 +1,145 @@
+:host {
+  display: block;
+}
+
+.drivers-container {
+  min-height: 100vh;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  transition: all 0.3s ease;
+
+  @media (min-width: 768px) {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+.search-wrapper {
+  i {
+    z-index: 10;
+  }
+}
+
+.stat-card {
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05) !important;
+  }
+}
+
+.icon-shape {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  z-index: 1040;
+}
+
+.custom-offcanvas {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 600px;
+  z-index: 1050;
+  background: var(--bs-body-bg);
+  transform: translateX(100%);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+  border-left: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.open {
+    transform: translateX(0);
+  }
+
+  .offcanvas-body {
+    overflow-y: auto;
+  }
+
+  .form-control,
+  .form-select {
+    background: rgba(var(--bs-emphasis-color-rgb), 0.03);
+    border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+
+    &:focus {
+      background: var(--bs-body-bg);
+      border-color: var(--bs-primary);
+      box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.1);
+    }
+  }
+
+  .btn-outline-primary {
+    border-color: rgba(var(--bs-primary-rgb), 0.5);
+    color: var(--bs-primary);
+
+    &:hover {
+      background: var(--bs-primary);
+      color: white;
+    }
+  }
+}
+
+.offcanvas-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1045;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.photo-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin: 0 auto;
+  border: 3px solid var(--bs-border-color);
+}
+
+.photo-edit-btn {
+  bottom: 0;
+  right: calc(50% - 50px);
+}
+
+.strength-segment {
+  height: 4px;
+  background: var(--bs-border-color);
+  border-radius: 2px;
+
+  &.active {
+    background: var(--bs-primary);
+  }
+}
+
+.transition-all {
+  transition: all 0.3s ease-in-out;
+}
