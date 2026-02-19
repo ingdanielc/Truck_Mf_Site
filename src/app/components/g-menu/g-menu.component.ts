@@ -1,6 +1,14 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { TokenService } from '../../services/token.service';
+import { SecurityService } from '../../services/security/security.service';
+import {
+  Filter,
+  ModelFilterTable,
+  Pagination,
+  Sort,
+} from '../../models/model-filter-table';
 
 interface MenuItem {
   label: string;
@@ -22,7 +30,7 @@ export class GMenuComponent implements OnInit {
   @Input() isCollapsed: boolean = false;
   isMobileOpen: boolean = false;
 
-  menuItems: MenuItem[] = [
+  private readonly allMenuItems: MenuItem[] = [
     { label: 'Dashboard', icon: 'fa-solid fa-gauge', route: '/hub/home' },
     {
       label: 'Propietarios',
@@ -30,6 +38,7 @@ export class GMenuComponent implements OnInit {
       route: '/site/owners',
     },
     { label: 'Vehículos', icon: 'fa-solid fa-truck', route: '/site/vehicles' },
+    { label: 'Conductores', icon: 'fa-solid fa-truck', route: '/site/drivers' },
     { label: 'Viajes', icon: 'fa-solid fa-route', route: '/site/trips' },
     {
       label: 'Gastos',
@@ -53,9 +62,64 @@ export class GMenuComponent implements OnInit {
     },
   ];
 
-  constructor() {}
+  menuItems: MenuItem[] = [];
 
-  ngOnInit(): void {}
+  constructor(
+    private readonly tokenService: TokenService,
+    private readonly securityService: SecurityService,
+  ) {}
+
+  ngOnInit(): void {
+    this.menuItems = [...this.allMenuItems];
+    this.loadUserRole();
+  }
+
+  private loadUserRole(): void {
+    const payload = this.tokenService.getPayload();
+    if (payload) {
+      const userId = payload.nameid || payload.id || payload.sub;
+      if (userId) {
+        const filter = new ModelFilterTable(
+          [new Filter('id', '=', userId)],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        );
+
+        this.securityService.getUserFilter(filter).subscribe({
+          next: (response: any) => {
+            if (response?.data?.content?.length > 0) {
+              const user = response.data.content[0];
+              const role = (
+                user.userRoles?.[0]?.role?.name || ''
+              ).toUpperCase();
+              this.filterMenu(role);
+            }
+          },
+          error: (err: any) => {
+            console.error('Error loading role for menu:', err);
+          },
+        });
+      }
+    }
+  }
+
+  private filterMenu(role: string): void {
+    if (role.includes('ADMINISTRADOR')) {
+      this.menuItems = this.allMenuItems;
+    } else if (role.includes('PROPIETARIO')) {
+      this.menuItems = this.allMenuItems.filter(
+        (item) => item.label !== 'Propietarios' && item.label !== 'Seguridad',
+      );
+    } else if (role.includes('CONDUCTOR')) {
+      this.menuItems = this.allMenuItems.filter(
+        (item) =>
+          item.label !== 'Propietarios' &&
+          item.label !== 'Seguridad' &&
+          item.label !== 'Conductores' &&
+          item.label !== 'Configuración',
+      );
+    }
+  }
 
   toggleCollapse() {
     this.isCollapsed = !this.isCollapsed;
