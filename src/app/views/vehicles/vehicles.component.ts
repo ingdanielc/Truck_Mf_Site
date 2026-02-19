@@ -8,9 +8,16 @@ import {
   Validators,
 } from '@angular/forms';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
+import {
+  Filter,
+  ModelFilterTable,
+  Pagination,
+  Sort,
+} from 'src/app/models/model-filter-table';
 import { GVehicleCardComponent } from '../../components/g-vehicle-card/g-vehicle-card.component';
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { CommonService } from 'src/app/services/common.service';
+import { ToastService } from 'src/app/services/toast.service';
 
 @Component({
   selector: 'app-vehicles',
@@ -48,6 +55,7 @@ export class VehiclesComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly vehicleService: VehicleService,
     private readonly commonService: CommonService,
+    private readonly toastService: ToastService,
   ) {
     this.generateYears();
     this.vehicleForm = this.fb.group({
@@ -89,6 +97,7 @@ export class VehiclesComponent implements OnInit {
       next: (response: any) => {
         if (response?.data) {
           this.brands = response.data;
+          this.mapBrandNames();
         }
       },
       error: (error: any) => {
@@ -103,14 +112,14 @@ export class VehiclesComponent implements OnInit {
       if (vehicle) {
         this.editingVehicle = vehicle;
         this.vehicleForm.patchValue({
-          brand: vehicle.brand,
+          brand: vehicle.vehicleBrandId,
           model: vehicle.model,
           year: vehicle.year,
           color: vehicle.color,
           plate: vehicle.plate,
-          motorNumber: vehicle.motorNumber,
+          motorNumber: vehicle.engineNumber,
           chassisNumber: vehicle.chassisNumber,
-          axleCount: vehicle.axleCount,
+          axleCount: vehicle.numberOfAxles,
         });
       } else {
         this.editingVehicle = null;
@@ -127,53 +136,82 @@ export class VehiclesComponent implements OnInit {
 
   onSubmit(): void {
     if (this.vehicleForm.valid) {
-      const formValue = this.vehicleForm.value;
-      console.log('Form submitted:', formValue);
-      // Actual implementation would call vehicleService.createVehicle
-      this.toggleOffcanvas();
+      try {
+        const formValue = this.vehicleForm.getRawValue();
+
+        const vehicleToSave: ModelVehicle = {
+          id: this.editingVehicle?.id || undefined,
+          photo: formValue.photo || '',
+          plate: formValue.plate,
+          vehicleBrandId: formValue.brand,
+          model: formValue.model,
+          year: formValue.year,
+          color: formValue.color,
+          engineNumber: formValue.motorNumber,
+          chassisNumber: formValue.chassisNumber,
+          numberOfAxles: formValue.axleCount,
+          status: this.editingVehicle?.status || 'Activo',
+        };
+
+        console.log('v: ', vehicleToSave);
+        this.vehicleService.createVehicle(vehicleToSave).subscribe({
+          next: () => {
+            this.toastService.showSuccess(
+              'Gestión de Vehículos',
+              this.editingVehicle
+                ? 'Vehículo actualizado exitosamente!'
+                : 'Vehículo creado exitosamente!',
+            );
+            this.loadVehicles();
+            this.toggleOffcanvas();
+          },
+          error: (err) => {
+            console.error('Error saving vehicle:', err);
+            this.toastService.showError(
+              'Error',
+              'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
+            );
+          },
+        });
+      } catch (error) {
+        console.error('Error in onSubmit:', error);
+      }
+    } else {
+      this.vehicleForm.markAllAsTouched();
     }
   }
 
   loadVehicles(): void {
-    // Mocking some data for demonstration
-    this.allVehicles = [
-      {
-        id: 1,
-        brand: 'Toyota',
-        model: 'Hilux L200',
-        year: 2022,
-        plate: 'ABC-1234',
-        status: 'Disponible',
-        km: '42k',
-        fuelCapacity: '80%',
-        color: 'Blanco',
-        motorNumber: 'MOT-123',
-        chassisNumber: 'CHS-123',
-        axleCount: 2,
+    let filtros: Filter[] = [];
+    let filter = new ModelFilterTable(
+      filtros,
+      new Pagination(this.rows, this.page),
+      new Sort('id', true),
+    );
+    this.vehicleService.getVehicleFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content) {
+          this.totalVehicles = response.data.totalElements || 0;
+          this.allVehicles = response.data.content;
+          this.mapBrandNames();
+          this.calculateStats();
+          this.applyFilter();
+        } else {
+          this.allVehicles = [];
+          this.vehicles = [];
+          this.calculateStats();
+        }
       },
-      {
-        id: 2,
-        brand: 'Mercedes-Benz',
-        model: 'Actros 2645',
-        year: 2024,
-        plate: 'XYZ-9876',
-        status: 'Ocupado',
-        km: '15k',
-        fuelCapacity: '45%',
-        color: 'Gris',
-        motorNumber: 'MOT-456',
-        chassisNumber: 'CHS-456',
-        axleCount: 3,
+      error: (err) => {
+        console.error('Error loading vehicles:', err);
       },
-    ];
-    this.calculateStats();
-    this.applyFilter();
+    });
   }
 
   calculateStats(): void {
     this.totalVehicles = this.allVehicles.length;
     this.availableVehicles = this.allVehicles.filter(
-      (v) => v.status?.toLowerCase() === 'disponible',
+      (v) => v.status?.toLowerCase() === 'activo',
     ).length;
     this.occupiedVehicles = this.totalVehicles - this.availableVehicles;
   }
@@ -185,12 +223,25 @@ export class VehiclesComponent implements OnInit {
       const term = this.searchTerm.toLowerCase();
       filtered = filtered.filter(
         (v) =>
-          v.brand?.toLowerCase().includes(term) ||
+          v.vehicleBrandName?.toLowerCase().includes(term) ||
           v.model?.toLowerCase().includes(term) ||
           v.plate?.toLowerCase().includes(term),
       );
     }
 
     this.vehicles = filtered;
+  }
+
+  mapBrandNames(): void {
+    if (this.brands.length > 0 && this.allVehicles.length > 0) {
+      this.allVehicles.forEach((v) => {
+        const brand = this.brands.find(
+          (b) => b.id.toString() === v.vehicleBrandId.toString(),
+        );
+        if (brand) {
+          v.vehicleBrandName = brand.name;
+        }
+      });
+    }
   }
 }

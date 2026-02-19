@@ -15,6 +15,6 @@ export class ModelOwner {
     public age?: number,
     public vehicles?: number,
     public status?: string,
-    //public partnerMembership: any[] = []
+    public password?: string,
   ) {}
 }

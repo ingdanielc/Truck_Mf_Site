@@ -16,6 +16,8 @@ import {
   Sort,
 } from 'src/app/models/model-filter-table';
 import { OwnerService } from 'src/app/services/owner.service';
+import { SecurityService } from 'src/app/services/security/security.service';
+import { ToastService } from 'src/app/services/toast.service';
 import { ModelRole } from '../../models/user-model';
 import { CommonService } from '../../services/common.service';
 
@@ -54,6 +56,8 @@ export class OwnersComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly ownerService: OwnerService,
     private readonly commonService: CommonService,
+    private readonly securityService: SecurityService,
+    private readonly toastService: ToastService,
   ) {
     this.ownerForm = this.fb.group(
       {
@@ -200,13 +204,55 @@ export class OwnersComponent implements OnInit {
     }
   }
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (this.ownerForm.valid) {
-      const formValue = this.ownerForm.value;
-      console.log('Form submitted:', formValue);
-      // TODO: Implement actual save logic here
-      // For now, just close the offcanvas
-      this.toggleOffcanvas();
+      try {
+        const formValue = this.ownerForm.getRawValue();
+        let password = formValue.password;
+
+        if (password) {
+          password = await this.securityService.getHashSHA512(password);
+        }
+
+        const ownerToSave: ModelOwner = {
+          id: this.editingOwner?.id || null,
+          name: formValue.name,
+          documentTypeId: formValue.documentType,
+          documentNumber: formValue.documentNumber,
+          cellPhone: formValue.cellPhone,
+          birthdate: formValue.birthdate,
+          cityId: formValue.city,
+          genderId: formValue.gender,
+          email: formValue.email,
+          password: password || undefined,
+          status: this.editingOwner?.status || 'Active',
+          photo: this.editingOwner?.photo || '',
+        };
+
+        this.ownerService.createOwner(ownerToSave).subscribe({
+          next: () => {
+            this.toastService.showSuccess(
+              'Gestión de Propietarios',
+              this.editingOwner
+                ? 'Propietario actualizado exitosamente!'
+                : 'Propietario creado exitosamente!',
+            );
+            this.loadPartners();
+            this.toggleOffcanvas();
+          },
+          error: (err) => {
+            console.error('Error saving owner:', err);
+            this.toastService.showError(
+              'Error',
+              'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
+            );
+          },
+        });
+      } catch (error) {
+        console.error('Error in onSubmit:', error);
+      }
+    } else {
+      this.ownerForm.markAllAsTouched();
     }
   }
 
@@ -222,18 +268,18 @@ export class OwnersComponent implements OnInit {
         if (response?.data?.content) {
           this.totalOwners = response.data.totalElements || 0;
           this.allOwners = response.data.content;
+          this.calculateStats();
           this.applyFilter();
         } else {
           this.allOwners = [];
           this.owners = [];
+          this.calculateStats();
         }
       },
       error: (err) => {
         console.error('Error loading users:', err);
       },
     });
-    this.calculateStats();
-    this.applyFilter();
   }
 
   calculateStats(): void {

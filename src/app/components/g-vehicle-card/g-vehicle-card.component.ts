@@ -24,9 +24,9 @@ export class GVehicleCardComponent {
 
   get statusClass(): string {
     switch (this.vehicle.status?.toLowerCase()) {
-      case 'disponible':
+      case 'activo':
         return 'status-available';
-      case 'ocupado':
+      case 'inactivo':
         return 'status-busy';
       default:
         return 'status-default';
@@ -35,9 +35,9 @@ export class GVehicleCardComponent {
 
   get statusDotClass(): string {
     switch (this.vehicle.status?.toLowerCase()) {
-      case 'disponible':
+      case 'activo':
         return 'dot-available';
-      case 'ocupado':
+      case 'inactivo':
         return 'dot-busy';
       default:
         return 'dot-default';

@@ -197,7 +197,7 @@
                   vehicleForm.get('brand')?.touched
                 "
               >
-                <option value="" disabled selected>Seleccione marca</option>
+                <option value="" disabled selected>Selecciona</option>
                 @for (brand of brands; track brand.selectId) {
                   <option [value]="brand.id">
                     {{ brand.name }}
@@ -252,7 +252,7 @@
                   vehicleForm.get('year')?.touched
                 "
               >
-                <option value="" disabled>Seleccione año</option>
+                <option value="" disabled>Selecciona</option>
                 @for (year of years; track year) {
                   <option [value]="year">{{ year }}</option>
                 }

@@ -1,15 +1,14 @@
 export interface ModelVehicle {
   id?: number;
-  brand: string;
+  photo?: string;
+  vehicleBrandId: string;
+  vehicleBrandName?: string;
   model: string;
   year: number;
   color: string;
   plate: string;
-  motorNumber: string;
+  engineNumber: string;
   chassisNumber: string;
-  axleCount: number;
-  photo?: string;
-  km?: string;
-  fuelCapacity?: string;
+  numberOfAxles: number;
   status?: string;
 }
