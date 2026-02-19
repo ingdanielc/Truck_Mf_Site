@@ -11,4 +11,5 @@ export interface ModelVehicle {
   chassisNumber: string;
   numberOfAxles: number;
   status?: string;
+  ownerId?: number;
 }

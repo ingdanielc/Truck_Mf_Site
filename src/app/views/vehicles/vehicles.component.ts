@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -7,6 +7,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import {
   Filter,
@@ -18,6 +19,9 @@ import { GVehicleCardComponent } from '../../components/g-vehicle-card/g-vehicle
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { CommonService } from 'src/app/services/common.service';
 import { ToastService } from 'src/app/services/toast.service';
+import { SecurityService } from 'src/app/services/security/security.service';
+import { OwnerService } from 'src/app/services/owner.service';
+import { ModelOwner } from 'src/app/models/owner-model';
 
 @Component({
   selector: 'app-vehicles',
@@ -31,7 +35,7 @@ import { ToastService } from 'src/app/services/toast.service';
   templateUrl: './vehicles.component.html',
   styleUrls: ['./vehicles.component.scss'],
 })
-export class VehiclesComponent implements OnInit {
+export class VehiclesComponent implements OnInit, OnDestroy {
   vehicles: ModelVehicle[] = [];
   allVehicles: ModelVehicle[] = [];
   totalVehicles: number = 0;
@@ -50,12 +54,20 @@ export class VehiclesComponent implements OnInit {
   brands: any[] = [];
   years: number[] = [];
   axleOptions: number[] = [1, 2, 3, 4, 5, 6];
+  owners: ModelOwner[] = [];
+
+  // User context
+  userRole: string = 'ROL';
+  loggedInOwnerId: number | null = null;
+  private userSub?: Subscription;
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly vehicleService: VehicleService,
     private readonly commonService: CommonService,
     private readonly toastService: ToastService,
+    private readonly securityService: SecurityService,
+    private readonly ownerService: OwnerService,
   ) {
     this.generateYears();
     this.vehicleForm = this.fb.group({
@@ -77,12 +89,63 @@ export class VehiclesComponent implements OnInit {
         [Validators.required, Validators.min(1), Validators.max(6)],
       ],
       photo: [''],
+      ownerId: [null, []],
     });
   }
 
   ngOnInit(): void {
     this.loadVehicles();
     this.loadBrands();
+    this.subscribeToUserContext();
+  }
+
+  subscribeToUserContext(): void {
+    this.userSub = this.securityService.userData$.subscribe({
+      next: (user) => {
+        if (user) {
+          this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+
+          if (this.userRole === 'ADMINISTRADOR') {
+            this.loadAllOwners();
+            this.vehicleForm
+              .get('ownerId')
+              ?.setValidators([Validators.required]);
+          } else if (this.userRole === 'PROPIETARIO') {
+            if (user.id != null) {
+              this.loggedInOwnerId = user.id;
+              this.loadOwnerByUserId(user.id);
+            }
+          }
+          this.vehicleForm.get('ownerId')?.updateValueAndValidity();
+        }
+      },
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.userSub?.unsubscribe();
+  }
+
+  loadAllOwners(): void {
+    let filtros: Filter[] = [];
+    let filter = new ModelFilterTable(
+      filtros,
+      new Pagination(100, 0),
+      new Sort('name', true),
+    );
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content) {
+          this.owners = response.data.content;
+        }
+      },
+    });
+  }
+
+  loadOwnerByUserId(userId: number): void {
+    // Logic to find owner associated with this user if needed
+    // For now assuming user.id relates to owner or we just need the ID for save
+    this.loggedInOwnerId = userId;
   }
 
   generateYears(): void {
@@ -126,6 +189,8 @@ export class VehiclesComponent implements OnInit {
         this.vehicleForm.reset({
           year: new Date().getFullYear(),
           axleCount: 2,
+          ownerId:
+            this.userRole === 'ADMINISTRADOR' ? null : this.loggedInOwnerId,
         });
       }
     } else {
@@ -151,9 +216,12 @@ export class VehiclesComponent implements OnInit {
           chassisNumber: formValue.chassisNumber,
           numberOfAxles: formValue.axleCount,
           status: this.editingVehicle?.status || 'Activo',
+          ownerId:
+            this.userRole === 'ADMINISTRADOR'
+              ? formValue.ownerId
+              : this.loggedInOwnerId || undefined,
         };
 
-        console.log('v: ', vehicleToSave);
         this.vehicleService.createVehicle(vehicleToSave).subscribe({
           next: () => {
             this.toastService.showSuccess(

@@ -175,6 +175,47 @@
           <p class="text-secondary small mt-2">Fotografía del vehículo</p>
         </div>
 
+        <!-- Owner Selection Section (Admin only) -->
+        @if (userRole === "ADMINISTRADOR") {
+          <div class="mb-4">
+            <h6
+              class="text-primary fw-bold mb-3 d-flex align-items-center title-section"
+            >
+              <i class="fa-solid fa-user-tie me-2"></i>Propietario
+            </h6>
+
+            <div class="mb-3">
+              <label for="ownerId" class="form-label small fw-bold mb-2"
+                >Seleccionar Socio*</label
+              >
+              <select
+                id="ownerId"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="ownerId"
+                [class.is-invalid]="
+                  vehicleForm.get('ownerId')?.invalid &&
+                  vehicleForm.get('ownerId')?.touched
+                "
+              >
+                <option value="" disabled selected>Selecciona</option>
+                @for (owner of owners; track owner.id) {
+                  <option [value]="owner.id">
+                    {{ owner.name }} - {{ owner.documentNumber }}
+                  </option>
+                }
+              </select>
+              @if (
+                vehicleForm.get("ownerId")?.invalid &&
+                vehicleForm.get("ownerId")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Debe seleccionar un propietario para el vehículo
+                </div>
+              }
+            </div>
+          </div>
+        }
+
         <!-- General Info Section -->
         <div class="mb-4">
           <h6
@@ -396,10 +437,11 @@
   </div>
 
   <!-- Backdrop -->
-  <div
-    class="offcanvas-backdrop transition-all d-none d-md-block"
-    *ngIf="isOffcanvasOpen"
-    (click)="toggleOffcanvas()"
-    onkeypress
-  ></div>
+  @if (isOffcanvasOpen) {
+    <div
+      class="offcanvas-backdrop transition-all d-none d-md-block"
+      (click)="toggleOffcanvas()"
+      onkeypress
+    ></div>
+  }
 </div>

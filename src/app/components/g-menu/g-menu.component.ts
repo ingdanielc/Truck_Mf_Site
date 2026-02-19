@@ -1,14 +1,9 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TokenService } from '../../services/token.service';
 import { SecurityService } from '../../services/security/security.service';
-import {
-  Filter,
-  ModelFilterTable,
-  Pagination,
-  Sort,
-} from '../../models/model-filter-table';
+import { Subscription } from 'rxjs';
 
 interface MenuItem {
   label: string;
@@ -23,7 +18,7 @@ interface MenuItem {
   templateUrl: './g-menu.component.html',
   styleUrls: ['./g-menu.component.scss'],
 })
-export class GMenuComponent implements OnInit {
+export class GMenuComponent implements OnInit, OnDestroy {
   @Input() version: string = '';
   @Input() tituloMenuBar: string = 'CashTruck';
   @Input() isLogoMenuBar: boolean = true;
@@ -63,6 +58,7 @@ export class GMenuComponent implements OnInit {
   ];
 
   menuItems: MenuItem[] = [];
+  private userSub?: Subscription;
 
   constructor(
     private readonly tokenService: TokenService,
@@ -71,36 +67,22 @@ export class GMenuComponent implements OnInit {
 
   ngOnInit(): void {
     this.menuItems = [...this.allMenuItems];
-    this.loadUserRole();
+    this.subscribeToUserContext();
   }
 
-  private loadUserRole(): void {
-    const payload = this.tokenService.getPayload();
-    if (payload) {
-      const userId = payload.nameid || payload.id || payload.sub;
-      if (userId) {
-        const filter = new ModelFilterTable(
-          [new Filter('id', '=', userId)],
-          new Pagination(1, 0),
-          new Sort('id', true),
-        );
+  private subscribeToUserContext(): void {
+    this.userSub = this.securityService.userData$.subscribe({
+      next: (user) => {
+        if (user) {
+          const role = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+          this.filterMenu(role);
+        }
+      },
+    });
+  }
 
-        this.securityService.getUserFilter(filter).subscribe({
-          next: (response: any) => {
-            if (response?.data?.content?.length > 0) {
-              const user = response.data.content[0];
-              const role = (
-                user.userRoles?.[0]?.role?.name || ''
-              ).toUpperCase();
-              this.filterMenu(role);
-            }
-          },
-          error: (err: any) => {
-            console.error('Error loading role for menu:', err);
-          },
-        });
-      }
-    }
+  ngOnDestroy(): void {
+    this.userSub?.unsubscribe();
   }
 
   private filterMenu(role: string): void {
