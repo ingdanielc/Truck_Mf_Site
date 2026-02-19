@@ -40,6 +40,7 @@
         class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
         [class.border-primary]="activeFilter === 'Todos'"
         (click)="setFilter('Todos')"
+        onkeypress
       >
         <div
           class="card-body p-4 d-flex justify-content-between align-items-center"
@@ -63,6 +64,7 @@
         class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
         [class.border-success]="activeFilter === 'PROPIETARIO'"
         (click)="setFilter('PROPIETARIO')"
+        onkeypress
       >
         <div
           class="card-body p-4 d-flex justify-content-between align-items-center"
@@ -86,6 +88,7 @@
         class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
         [class.border-warning]="activeFilter === 'CONDUCTOR'"
         (click)="setFilter('CONDUCTOR')"
+        onkeypress
       >
         <div
           class="card-body p-4 d-flex justify-content-between align-items-center"
