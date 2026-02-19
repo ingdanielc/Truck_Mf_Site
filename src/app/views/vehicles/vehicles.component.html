@@ -180,7 +180,7 @@
           <h6
             class="text-primary fw-bold mb-3 d-flex align-items-center title-section"
           >
-            <i class="fa-solid fa-info-circle me-2"></i>INFORMACIÓN GENERAL
+            <i class="fa-solid fa-info-circle me-2"></i>Información General
           </h6>
 
           <div class="row g-3">
@@ -188,17 +188,22 @@
               <label for="brand" class="form-label small fw-bold mb-2"
                 >Marca</label
               >
-              <input
+              <select
                 id="brand"
-                type="text"
-                class="form-control rounded-3 py-2 px-3"
+                class="form-select rounded-3 py-2 px-3"
                 formControlName="brand"
-                placeholder="Ej: Mercedes-Benz"
                 [class.is-invalid]="
                   vehicleForm.get('brand')?.invalid &&
                   vehicleForm.get('brand')?.touched
                 "
-              />
+              >
+                <option value="" disabled selected>Seleccione marca</option>
+                @for (brand of brands; track brand.selectId) {
+                  <option [value]="brand.id">
+                    {{ brand.name }}
+                  </option>
+                }
+              </select>
               @if (
                 vehicleForm.get("brand")?.invalid &&
                 vehicleForm.get("brand")?.touched
@@ -238,17 +243,20 @@
               <label for="year" class="form-label small fw-bold mb-2"
                 >Año</label
               >
-              <input
+              <select
                 id="year"
-                type="number"
-                class="form-control rounded-3 py-2 px-3"
+                class="form-select rounded-3 py-2 px-3"
                 formControlName="year"
-                placeholder="2024"
                 [class.is-invalid]="
                   vehicleForm.get('year')?.invalid &&
                   vehicleForm.get('year')?.touched
                 "
-              />
+              >
+                <option value="" disabled>Seleccione año</option>
+                @for (year of years; track year) {
+                  <option [value]="year">{{ year }}</option>
+                }
+              </select>
               @if (
                 vehicleForm.get("year")?.invalid &&
                 vehicleForm.get("year")?.touched
@@ -289,7 +297,7 @@
           <h6
             class="text-primary fw-bold mb-3 d-flex align-items-center title-section"
           >
-            <i class="fa-solid fa-gear me-2"></i>ESPECIFICACIONES TÉCNICAS
+            <i class="fa-solid fa-gear me-2"></i>Especificaciones Técnicas
           </h6>
 
           <div class="row g-3">
@@ -302,7 +310,7 @@
                 type="text"
                 class="form-control rounded-3 py-2 px-3 text-uppercase"
                 formControlName="plate"
-                placeholder="ABC-1234"
+                placeholder="XXX-999"
                 [class.is-invalid]="
                   vehicleForm.get('plate')?.invalid &&
                   vehicleForm.get('plate')?.touched
@@ -312,7 +320,9 @@
                 vehicleForm.get("plate")?.invalid &&
                 vehicleForm.get("plate")?.touched
               ) {
-                <div class="text-danger small mt-1">Placa obligatoria</div>
+                <div class="text-danger small mt-1">
+                  Formato inválido (Ej: ABC-123)
+                </div>
               }
             </div>
 
@@ -346,17 +356,19 @@
               <label for="axleCount" class="form-label small fw-bold mb-2"
                 >Nro. de Ejes</label
               >
-              <input
+              <select
                 id="axleCount"
-                type="number"
-                class="form-control rounded-3 py-2 px-3"
+                class="form-select rounded-3 py-2 px-3"
                 formControlName="axleCount"
-                placeholder="Ej: 3"
                 [class.is-invalid]="
                   vehicleForm.get('axleCount')?.invalid &&
                   vehicleForm.get('axleCount')?.touched
                 "
-              />
+              >
+                @for (option of axleOptions; track option) {
+                  <option [value]="option">{{ option }}</option>
+                }
+              </select>
             </div>
           </div>
         </div>
@@ -366,18 +378,17 @@
         >
           <button
             type="button"
-            class="btn btn-link text-secondary text-decoration-none fw-bold"
+            class="btn btn-outline-primary flex-fill py-2 rounded-3 fw-bold"
             (click)="toggleOffcanvas()"
           >
-            ATRÁS
+            Atrás
           </button>
           <button
             type="submit"
-            class="btn btn-primary flex-fill py-2 rounded-3 fw-bold shadow-primary d-flex align-items-center justify-content-center"
+            class="btn btn-primary flex-fill py-2 rounded-3 fw-bold shadow-primary"
             [disabled]="vehicleForm.invalid"
           >
-            <i class="fa-solid fa-save me-2"></i>
-            {{ editingVehicle ? "GUARDAR CAMBIOS" : "CREAR VEHÍCULO" }}
+            {{ editingVehicle ? "Guardar cambios" : "Crear vehículo" }}
           </button>
         </div>
       </form>

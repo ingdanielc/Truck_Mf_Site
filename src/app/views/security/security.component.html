@@ -1,4 +1,4 @@
-<div class="security-container py-4 px-3 px-md-5">
+<div class="security-container py-4 bg-body">
   <!-- Header Section -->
   <header class="row align-items-center g-3 mb-4 mb-md-5 gx-0">
     <div class="col-12 col-md">
@@ -7,43 +7,101 @@
         Gestión centralizada de usuarios para conductores y propietarios
       </p>
     </div>
-    <div class="col-12 col-md-auto d-grid d-md-block">
-      <button
-        class="btn btn-primary d-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary"
-        (click)="toggleOffcanvas()"
-      >
-        <i class="fa-solid fa-user-plus me-2"></i>Nuevo Usuario
-      </button>
+    <div class="col-12 col-md-auto">
+      <div class="d-flex flex-column flex-sm-row gap-3">
+        <div class="search-wrapper position-relative flex-grow-1">
+          <i
+            class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary"
+          ></i>
+          <input
+            type="text"
+            class="form-control ps-5 py-2 rounded-3 w-100"
+            placeholder="Buscar por nombre o correo electrónico..."
+            (input)="applyFilter()"
+            [(ngModel)]="searchTerm"
+          />
+        </div>
+        <button
+          class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+          (click)="toggleOffcanvas()"
+        >
+          <i class="fa-solid fa-user-plus me-2"></i>Nuevo Usuario
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- Search and Filters Section -->
-  <div class="row align-items-center mb-4 g-3">
-    <div class="col-12 col-lg-7">
-      <div class="search-wrapper position-relative">
-        <i
-          class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"
-        ></i>
-        <input
-          type="text"
-          class="form-control ps-5 py-3 rounded-3"
-          placeholder="Buscar por nombre o correo electrónico..."
-          (input)="applyFilter()"
-          [(ngModel)]="searchTerm"
-        />
+  <!-- Search and Stats Cards Section -->
+
+  <!-- Stats Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
+        [class.border-primary]="activeFilter === 'Todos'"
+        (click)="setFilter('Todos')"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Total Usuarios
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-body">{{ totalUsers }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3"
+          >
+            <i class="fa-solid fa-users fs-3"></i>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="col-12 col-lg-5 d-flex justify-content-lg-end">
-      <div class="filter-pills p-1 rounded-3">
-        @for (filter of filters; track filter) {
-          <button
-            class="btn btn-sm px-4 py-2 rounded-2 transition-all"
-            [class.active]="activeFilter === filter"
-            (click)="setFilter(filter)"
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
+        [class.border-success]="activeFilter === 'PROPIETARIO'"
+        (click)="setFilter('PROPIETARIO')"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Propietarios
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-success">{{ ownersCount }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-success bg-opacity-10 text-success rounded-4 p-3"
           >
-            {{ filter }}
-          </button>
-        }
+            <i class="fa-solid fa-user-tie fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
+        [class.border-warning]="activeFilter === 'CONDUCTOR'"
+        (click)="setFilter('CONDUCTOR')"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Conductores
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-warning">{{ driversCount }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-warning bg-opacity-10 text-warning rounded-4 p-3"
+          >
+            <i class="fa-solid fa-truck fs-3"></i>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -82,6 +140,15 @@
       </button>
     </div>
   </footer>
+
+  <!-- Mobile Floating Action Button -->
+  <button
+    class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
+    aria-label="Nuevo Usuario"
+    (click)="toggleOffcanvas()"
+  >
+    <i class="fa-solid fa-plus fs-4"></i>
+  </button>
 
   <!-- Create/Edit User Offcanvas -->
   <div

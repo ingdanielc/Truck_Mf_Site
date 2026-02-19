@@ -10,6 +10,7 @@ import {
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { GVehicleCardComponent } from '../../components/g-vehicle-card/g-vehicle-card.component';
 import { VehicleService } from 'src/app/services/vehicle.service';
+import { CommonService } from 'src/app/services/common.service';
 
 @Component({
   selector: 'app-vehicles',
@@ -38,28 +39,62 @@ export class VehiclesComponent implements OnInit {
   editingVehicle: ModelVehicle | null = null;
   vehicleForm: FormGroup;
 
+  // Selection Lists
+  brands: any[] = [];
+  years: number[] = [];
+  axleOptions: number[] = [1, 2, 3, 4, 5, 6];
+
   constructor(
     private readonly fb: FormBuilder,
     private readonly vehicleService: VehicleService,
+    private readonly commonService: CommonService,
   ) {
+    this.generateYears();
     this.vehicleForm = this.fb.group({
       brand: ['', [Validators.required]],
       model: ['', [Validators.required]],
       year: [
         new Date().getFullYear(),
-        [Validators.required, Validators.min(1900)],
+        [Validators.required, Validators.min(1980)],
       ],
       color: ['', [Validators.required]],
-      plate: ['', [Validators.required]],
+      plate: [
+        '',
+        [Validators.required, Validators.pattern(/^[A-Z]{3}-\d{3}$/i)],
+      ],
       motorNumber: ['', [Validators.required]],
       chassisNumber: ['', [Validators.required]],
-      axleCount: [2, [Validators.required, Validators.min(1)]],
+      axleCount: [
+        2,
+        [Validators.required, Validators.min(1), Validators.max(6)],
+      ],
       photo: [''],
     });
   }
 
   ngOnInit(): void {
     this.loadVehicles();
+    this.loadBrands();
+  }
+
+  generateYears(): void {
+    const currentYear = new Date().getFullYear();
+    for (let year = currentYear; year >= 1980; year--) {
+      this.years.push(year);
+    }
+  }
+
+  loadBrands(): void {
+    this.commonService.getVehicleBrands().subscribe({
+      next: (response: any) => {
+        if (response?.data) {
+          this.brands = response.data;
+        }
+      },
+      error: (error: any) => {
+        console.error('Error loading brands:', error);
+      },
+    });
   }
 
   toggleOffcanvas(vehicle?: ModelVehicle): void {

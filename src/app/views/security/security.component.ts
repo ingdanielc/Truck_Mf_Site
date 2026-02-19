@@ -41,6 +41,8 @@ export class SecurityComponent implements OnInit {
   isOffcanvasOpen: boolean = false;
   editingUser: User | null = null;
   availableRoles: ModelRole[] = [];
+  ownersCount: number = 0;
+  driversCount: number = 0;
 
   constructor(
     private readonly securityService: SecurityService,
@@ -114,6 +116,7 @@ export class SecurityComponent implements OnInit {
           this.allUsers = response.data.content.map((u: ModelUser) =>
             this.mapUser(u),
           );
+          this.calculateStats();
           this.applyFilter();
         } else {
           this.allUsers = [];
@@ -149,6 +152,16 @@ export class SecurityComponent implements OnInit {
     return 'otro';
   }
 
+  calculateStats(): void {
+    this.totalUsers = this.allUsers.length;
+    this.ownersCount = this.allUsers.filter(
+      (u) => u.roleType === 'propietario',
+    ).length;
+    this.driversCount = this.allUsers.filter(
+      (u) => u.roleType === 'conductor',
+    ).length;
+  }
+
   get strength(): number {
     const pwd = this.userForm.get('password')?.value || '';
     if (!pwd) return 0;
@@ -171,6 +184,7 @@ export class SecurityComponent implements OnInit {
 
   setFilter(filter: string): void {
     this.activeFilter = filter;
+    this.page = 0; // Reset pagination when filter changes
     this.loadUsers();
   }
 

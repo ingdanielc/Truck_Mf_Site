@@ -1,77 +1,72 @@
 <div
-  class="vehicle-card p-3 rounded-4 shadow-sm border-0 h-100 position-relative"
+  class="vehicle-card card h-100 border-0 rounded-4 shadow-sm position-relative"
 >
-  <div class="d-flex align-items-start gap-3">
-    <!-- Vehicle Image Container -->
-    <div class="image-container position-relative">
-      <div
-        class="image-wrapper rounded-4 overflow-hidden bg-dark d-flex align-items-center justify-content-center"
-      >
-        @if (vehicle.photo) {
-          <img
-            [src]="vehicle.photo"
-            [alt]="vehicle.plate"
-            class="img-fluid vehicle-img"
-          />
-        } @else {
-          <div
-            class="placeholder-img d-flex align-items-center justify-content-center w-100 h-100"
-          >
-            <i class="fa-solid fa-truck fs-2 text-secondary op-30"></i>
-          </div>
-        }
+  <div class="card-body p-4">
+    <div class="d-flex align-items-start justify-content-between mb-3">
+      <!-- Vehicle Image Container -->
+      <div class="avatar-wrapper position-relative">
+        <div
+          class="avatar-circle rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center overflow-hidden"
+        >
+          @if (vehicle.photo) {
+            <img
+              [src]="vehicle.photo"
+              [alt]="vehicle.plate"
+              class="img-fluid vehicle-img"
+            />
+          } @else {
+            <div
+              class="placeholder-img d-flex align-items-center justify-content-center w-100 h-100"
+            >
+              <i class="fa-solid fa-truck fs-4 text-secondary"></i>
+            </div>
+          }
+        </div>
+        <!-- Status Indicator -->
+        <span
+          class="status-indicator position-absolute bottom-0 end-0 border border-3 border-white rounded-circle"
+          [ngClass]="statusDotClass"
+        ></span>
       </div>
-      <!-- Status Dot -->
+
       <span
-        class="status-dot position-absolute top-0 end-0 translate-middle rounded-circle border border-2 border-dark"
-        [ngClass]="statusDotClass"
-      ></span>
+        class="status-badge px-3 py-1 rounded-pill small fw-bold text-uppercase"
+        [ngClass]="statusClass"
+      >
+        {{ vehicle.status || "ESTADO" }}
+      </span>
     </div>
 
     <!-- Vehicle Info -->
-    <div class="flex-grow-1 min-width-0">
-      <div class="d-flex justify-content-between align-items-start mb-1">
-        <h3 class="plate-number h4 fw-bold mb-0 text-truncate">
-          {{ vehicle.plate }}
-        </h3>
-        <span
-          class="status-badge px-3 py-1 rounded-pill small fw-bold text-uppercase"
-          [ngClass]="statusClass"
-        >
-          {{ vehicle.status || "ESTADO" }}
-        </span>
-      </div>
-      <p class="brand-model text-body-secondary mb-1 text-truncate">
+    <div class="mb-4">
+      <h5 class="fw-bold mb-0 text-truncate">{{ vehicle.plate }}</h5>
+      <p class="small text-secondary mb-1 text-truncate">
         {{ vehicle.brand }} {{ vehicle.model }}
       </p>
       <p class="year small text-body-secondary mb-0">Año: {{ vehicle.year }}</p>
     </div>
-  </div>
 
-  <!-- Divider -->
-  <hr class="my-3 op-10 border-light" />
-
-  <!-- Footer Stats -->
-  <div class="d-flex justify-content-between align-items-center mt-auto">
-    <div
-      class="stats-group d-flex gap-3 align-items-center text-body-secondary small"
-    >
-      <div class="stat-item d-flex align-items-center">
-        <i class="fa-solid fa-gauge-high me-2 op-60"></i>
-        <span>{{ vehicle.km || "0k" }} km</span>
+    <!-- Footer Stats -->
+    <div class="d-flex justify-content-between align-items-center mt-auto">
+      <div
+        class="stats-group d-flex gap-3 align-items-center text-body-secondary small"
+      >
+        <div class="stat-item d-flex align-items-center">
+          <i class="fa-solid fa-gauge-high me-2 op-60"></i>
+          <span>{{ vehicle.km || "0k" }} km</span>
+        </div>
+        <div class="stat-item d-flex align-items-center">
+          <i class="fa-solid fa-gas-pump me-2 op-60"></i>
+          <span>{{ vehicle.fuelCapacity || "0%" }}</span>
+        </div>
       </div>
-      <div class="stat-item d-flex align-items-center">
-        <i class="fa-solid fa-gas-pump me-2 op-60"></i>
-        <span>{{ vehicle.fuelCapacity || "0%" }}</span>
-      </div>
+      <span
+        class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
+        (click)="onEditClick()"
+        onkeypress
+      >
+        <i class="fa-solid fa-pencil"></i>
+      </span>
     </div>
-    <span
-      class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none"
-      style="width: 40px"
-      (click)="onEditClick()"
-      onkeypress
-    >
-      <i class="fa-solid fa-pencil"></i>
-    </span>
   </div>
 </div>
