@@ -17,13 +17,13 @@ import {
 } from 'src/app/models/model-filter-table';
 
 import { User } from './interfaces/user.interface';
-import { GCardUserComponent } from '../../components/g-card-user/g-card-user.component';
+import { GUserCardComponent } from '../../components/g-user-card/g-user-card.component';
 import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-security',
   standalone: true,
-  imports: [CommonModule, GCardUserComponent, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, GUserCardComponent, ReactiveFormsModule, FormsModule],
   templateUrl: './security.component.html',
   styleUrls: ['./security.component.scss'],
 })

@@ -3,13 +3,13 @@ import { CommonModule } from '@angular/common';
 import { ModelOwner } from 'src/app/models/owner-model';
 
 @Component({
-  selector: 'app-p-vehicle-owner-card',
+  selector: 'g-vehicle-owner-card',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './p-vehicle-owner-card.component.html',
-  styleUrls: ['./p-vehicle-owner-card.component.scss'],
+  templateUrl: './g-vehicle-owner-card.component.html',
+  styleUrls: ['./g-vehicle-owner-card.component.scss'],
 })
-export class PVehicleOwnerCardComponent {
+export class GVehicleOwnerCardComponent {
   @Input() owner!: ModelOwner;
   @Input() vehicleCount: number = 0;
 

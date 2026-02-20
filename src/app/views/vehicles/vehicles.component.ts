@@ -17,7 +17,7 @@ import {
   Sort,
 } from 'src/app/models/model-filter-table';
 import { GVehicleCardComponent } from '../../components/g-vehicle-card/g-vehicle-card.component';
-import { PVehicleOwnerCardComponent } from '../../components/p-vehicle-owner-card/p-vehicle-owner-card.component';
+import { GVehicleOwnerCardComponent } from '../../components/g-vehicle-owner-card/g-vehicle-owner-card.component';
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { CommonService } from 'src/app/services/common.service';
 import { ToastService } from 'src/app/services/toast.service';
@@ -40,7 +40,7 @@ export interface VehicleOwnerGroup {
     FormsModule,
     ReactiveFormsModule,
     GVehicleCardComponent,
-    PVehicleOwnerCardComponent,
+    GVehicleOwnerCardComponent,
   ],
   templateUrl: './vehicles.component.html',
   styleUrls: ['./vehicles.component.scss'],

@@ -102,11 +102,11 @@
   <!-- Vehicles Grouped by Owner -->
   @for (group of groupedVehicles; track group.owner.id) {
     <!-- Owner Header Card — independent, only the header -->
-    <app-p-vehicle-owner-card
+    <g-vehicle-owner-card
       [owner]="group.owner"
       [vehicleCount]="group.vehicles.length"
       (viewProfile)="onViewProfile($event)"
-    ></app-p-vehicle-owner-card>
+    ></g-vehicle-owner-card>
 
     <!-- Vehicle Grid — rendered OUTSIDE the owner card component -->
     <div
