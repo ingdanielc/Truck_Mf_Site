@@ -165,3 +165,27 @@
     opacity: 1;
   }
 }
+
+.add-vehicle-tile {
+  min-height: 180px;
+  border-style: dashed !important;
+  border-color: var(--bs-border-color) !important;
+  background: transparent;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--bs-primary) !important;
+    color: var(--bs-primary) !important;
+    background: rgba(var(--bs-primary-rgb), 0.05);
+  }
+}
+
+.add-vehicle-icon {
+  width: 40px;
+  height: 40px;
+  border-color: currentColor !important;
+}

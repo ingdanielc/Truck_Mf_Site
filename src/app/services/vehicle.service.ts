@@ -30,4 +30,12 @@ export class VehicleService {
       headers: headers,
     });
   }
+
+  getVehicleOwnerFilter(filter: any) {
+    const headers = { 'content-type': 'application/json' };
+    const body = JSON.stringify(filter);
+    return this.http.post<any>(`${this.basePath}/filterVehicleOwner`, body, {
+      headers: headers,
+    });
+  }
 }

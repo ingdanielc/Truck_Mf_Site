@@ -99,17 +99,67 @@
     </div>
   </div>
 
-  <!-- Vehicles Grid -->
-  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4">
-    @for (vehicle of vehicles; track vehicle.id) {
-      <div class="col">
-        <app-g-vehicle-card
-          [vehicle]="vehicle"
-          (edit)="toggleOffcanvas($event)"
-        ></app-g-vehicle-card>
+  <!-- Vehicles Grouped by Owner -->
+  @for (group of groupedVehicles; track group.owner.id) {
+    <!-- Owner Header Card — independent, only the header -->
+    <app-p-vehicle-owner-card
+      [owner]="group.owner"
+      [vehicleCount]="group.vehicles.length"
+      (viewProfile)="onViewProfile($event)"
+    ></app-p-vehicle-owner-card>
+
+    <!-- Vehicle Grid — rendered OUTSIDE the owner card component -->
+    <div
+      class="row row-cols-1 row-cols-md-2 row-cols-xl-3 row-cols-xxl-4 g-3 mb-4 px-1"
+    >
+      @for (vehicle of group.vehicles; track vehicle.id) {
+        <div class="col">
+          <app-g-vehicle-card
+            [vehicle]="vehicle"
+            (edit)="toggleOffcanvas($event)"
+          ></app-g-vehicle-card>
+        </div>
+      }
+      @if (userRole === "ADMINISTRADOR") {
+        <div class="col">
+          <div
+            class="add-vehicle-tile border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
+            (click)="openAddVehicleForOwner(group.owner)"
+            (keypress)="openAddVehicleForOwner(group.owner)"
+            role="button"
+            tabindex="0"
+          >
+            <div
+              class="add-vehicle-icon rounded-circle border d-flex align-items-center justify-content-center"
+            >
+              <i class="fa-solid fa-plus"></i>
+            </div>
+            <span class="small fw-semibold">Agregar Vehículo</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (group.vehicles.length === 0) {
+      <div
+        class="text-center py-4 bg-body-tertiary rounded-4 mb-4 border border-dashed"
+      >
+        <i
+          class="fa-solid fa-truck-moving fs-3 mb-2 opacity-50 text-body-secondary"
+        ></i>
+        <p class="small text-body-secondary mb-0">
+          No se encontraron vehículos para este propietario
+        </p>
       </div>
     }
-  </div>
+  }
+
+  @if (groupedVehicles.length === 0) {
+    <div class="text-center py-5 text-body-secondary">
+      <i class="fa-solid fa-truck-moving fs-1 mb-3 opacity-25"></i>
+      <p class="fw-bold">No se encontraron resultados</p>
+    </div>
+  }
 
   <!-- Mobile Floating Action Button -->
   <button
@@ -175,48 +225,6 @@
           <p class="text-secondary small mt-2">Fotografía del vehículo</p>
         </div>
 
-        <!-- Owner Selection Section (Admin only) -->
-        @if (userRole === "ADMINISTRADOR") {
-          <div class="mb-4">
-            <h6
-              class="text-primary fw-bold mb-3 d-flex align-items-center title-section"
-            >
-              <i class="fa-solid fa-user-tie me-2"></i>Propietario
-            </h6>
-
-            <div class="mb-3">
-              <label for="ownerId" class="form-label small fw-bold mb-2"
-                >Seleccionar Socio*</label
-              >
-              <select
-                id="ownerId"
-                class="form-select rounded-3 py-2 px-3"
-                formControlName="ownerId"
-                [class.is-invalid]="
-                  vehicleForm.get('ownerId')?.invalid &&
-                  vehicleForm.get('ownerId')?.touched
-                "
-              >
-                <option value="" disabled selected>Selecciona</option>
-                @for (owner of owners; track owner.id) {
-                  <option [value]="owner.id">
-                    {{ owner.name }} - {{ owner.documentNumber }}
-                  </option>
-                }
-              </select>
-              @if (
-                vehicleForm.get("ownerId")?.invalid &&
-                vehicleForm.get("ownerId")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  Debe seleccionar un propietario para el vehículo
-                </div>
-              }
-            </div>
-          </div>
-        }
-
-        <!-- General Info Section -->
         <div class="mb-4">
           <h6
             class="text-primary fw-bold mb-3 d-flex align-items-center title-section"
@@ -238,7 +246,7 @@
                   vehicleForm.get('brand')?.touched
                 "
               >
-                <option value="" disabled selected>Selecciona</option>
+                <option value="null" disabled selected>Selecciona</option>
                 @for (brand of brands; track brand.selectId) {
                   <option [value]="brand.id">
                     {{ brand.name }}
@@ -293,7 +301,7 @@
                   vehicleForm.get('year')?.touched
                 "
               >
-                <option value="" disabled>Selecciona</option>
+                <option value="null" disabled>Selecciona</option>
                 @for (year of years; track year) {
                   <option [value]="year">{{ year }}</option>
                 }
@@ -411,6 +419,87 @@
                 }
               </select>
             </div>
+          </div>
+        </div>
+
+        <!-- Owner Selection Section (Admin only) -->
+        <div class="mb-4">
+          <h6
+            class="text-primary fw-bold mb-3 d-flex align-items-center title-section"
+          >
+            <i class="fa-solid fa-user-tie me-2"></i>Propietario
+          </h6>
+          <div class="mb-3">
+            <label for="ownerId" class="form-label small fw-bold mb-2"
+              >Seleccionar Socio*</label
+            >
+            <select
+              id="ownerId"
+              class="form-select rounded-3 py-2 px-3"
+              formControlName="ownerId"
+              [class.is-invalid]="
+                vehicleForm.get('ownerId')?.invalid &&
+                vehicleForm.get('ownerId')?.touched
+              "
+            >
+              <option value="null" disabled selected>Selecciona</option>
+              @for (owner of owners; track owner.id) {
+                <option [value]="owner.id">
+                  {{ owner.name }} - {{ owner.documentNumber }}
+                </option>
+              }
+            </select>
+            @if (
+              vehicleForm.get("ownerId")?.invalid &&
+              vehicleForm.get("ownerId")?.touched
+            ) {
+              <div class="text-danger small mt-1">
+                Debe seleccionar un propietario para el vehículo
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Driver Selection Section (depends on owner) -->
+        <div class="mb-4">
+          <h6
+            class="text-primary fw-bold mb-3 d-flex align-items-center title-section"
+          >
+            <i class="fa-solid fa-id-card-clip me-2"></i>Conductor
+          </h6>
+          <div class="mb-3">
+            <label for="driverId" class="form-label small fw-bold mb-2"
+              >Seleccionar Conductor</label
+            >
+            <select
+              id="driverId"
+              class="form-select rounded-3 py-2 px-3"
+              formControlName="driverId"
+              [disabled]="!vehicleForm.get('ownerId')?.value || loadingDrivers"
+            >
+              <option [value]="null">
+                @if (loadingDrivers) {
+                  Cargando conductores…
+                } @else if (!vehicleForm.get("ownerId")?.value) {
+                  Selecciona primero un propietario
+                } @else if (drivers.length === 0) {
+                  Sin conductores disponibles
+                } @else {
+                  Selecciona
+                }
+              </option>
+              @for (driver of drivers; track driver.id) {
+                <option [value]="driver.id">
+                  {{ driver.name }} — {{ driver.documentNumber }}
+                </option>
+              }
+            </select>
+            @if (!vehicleForm.get("ownerId")?.value) {
+              <div class="text-body-secondary small mt-1">
+                <i class="fa-solid fa-circle-info me-1"></i>
+                Selecciona un propietario para ver los conductores disponibles
+              </div>
+            }
           </div>
         </div>
 

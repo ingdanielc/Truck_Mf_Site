@@ -1,0 +1,37 @@
+// All theming is handled by Bootstrap CSS variables.
+// Only custom structural styles that can't be done with utilities go here.
+
+.owner-header-card {
+  // Use Bootstrap's body-tertiary background so the card adapts to dark/light
+  background-color: var(--bs-tertiary-bg);
+  border-color: var(--bs-border-color) !important;
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    background-color 0.22s ease,
+    border-color 0.22s ease;
+
+  // Accent left border using the primary theme colour
+  border-left: 4px solid var(--bs-primary) !important;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(var(--bs-primary-rgb), 0.15) !important;
+    border-color: var(--bs-primary) !important;
+    background-color: var(--bs-secondary-bg);
+    cursor: pointer;
+  }
+}
+
+.owner-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: var(--bs-secondary-bg);
+  border: 2px solid var(--bs-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}

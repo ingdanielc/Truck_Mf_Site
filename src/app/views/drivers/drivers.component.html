@@ -199,7 +199,7 @@
                 class="form-select rounded-3 py-2 px-3"
                 formControlName="documentType"
               >
-                <option value="" disabled selected>Selecciona</option>
+                <option value="null" disabled selected>Selecciona</option>
                 <option *ngFor="let type of documentTypes" [value]="type.id">
                   {{ type.name }}
                 </option>
@@ -258,7 +258,7 @@
                 class="form-select rounded-3 py-2 px-3"
                 formControlName="city"
               >
-                <option value="" disabled selected>Selecciona</option>
+                <option value="null" disabled selected>Selecciona</option>
                 <option *ngFor="let city of cities" [value]="city.id">
                   {{ city.name }}
                 </option>
@@ -273,7 +273,7 @@
                 class="form-select rounded-3 py-2 px-3"
                 formControlName="gender"
               >
-                <option value="" disabled selected>Selecciona</option>
+                <option value="null" disabled selected>Selecciona</option>
                 <option *ngFor="let gender of genders" [value]="gender.id">
                   {{ gender.name }}
                 </option>

@@ -80,7 +80,7 @@ export class OwnersComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadPartners();
+    this.loadOwners();
     this.loadReferenceData();
   }
 
@@ -237,7 +237,7 @@ export class OwnersComponent implements OnInit {
                 ? 'Propietario actualizado exitosamente!'
                 : 'Propietario creado exitosamente!',
             );
-            this.loadPartners();
+            this.loadOwners();
             this.toggleOffcanvas();
           },
           error: (err) => {
@@ -256,7 +256,7 @@ export class OwnersComponent implements OnInit {
     }
   }
 
-  loadPartners(): void {
+  loadOwners(): void {
     let filtros: Filter[] = [];
     let filter = new ModelFilterTable(
       filtros,

@@ -329,7 +329,7 @@
               userForm.get('role')?.invalid && userForm.get('role')?.touched
             "
           >
-            <option value="" disabled selected>Selecciona</option>
+            <option value="null" disabled selected>Selecciona</option>
             @for (role of availableRoles; track role.id) {
               <option [value]="role.name">{{ role.name }}</option>
             }

@@ -244,7 +244,7 @@
                   ownerForm.get('documentType')?.touched
                 "
               >
-                <option value="" disabled selected>Selecciona</option>
+                <option value="null" disabled selected>Selecciona</option>
                 <option *ngFor="let type of documentTypes" [value]="type.id">
                   {{ type.name }}
                 </option>
@@ -351,7 +351,7 @@
                   ownerForm.get('city')?.touched
                 "
               >
-                <option value="-1" disabled selected>Selecciona</option>
+                <option value="null" disabled selected>Selecciona</option>
                 <option *ngFor="let city of cities" [value]="city.id">
                   {{ city.name }}
                 </option>
@@ -377,7 +377,7 @@
                   ownerForm.get('gender')?.touched
                 "
               >
-                <option value="" disabled selected>Selecciona</option>
+                <option value="null" disabled selected>Selecciona</option>
                 <option *ngFor="let gender of genders" [value]="gender.id">
                   {{ gender.name }}
                 </option>

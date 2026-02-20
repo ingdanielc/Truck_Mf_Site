@@ -59,9 +59,15 @@
       class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top border-secondary-subtle"
     >
       <span
-        class="badge bg-body-secondary text-body-secondary fw-normal px-2 py-1 rounded-2 small"
+        class="vehicle-count-badge d-flex align-items-center gap-2 fw-bold text-primary"
+        role="button"
+        tabindex="0"
+        (click)="goToVehicles()"
+        (keydown.enter)="goToVehicles()"
+        title="Ver vehículos de este propietario"
       >
-        Vehículos: 0
+        <i class="fa-solid fa-truck-moving"></i>
+        <span class="fs-6">Vehículos: {{ owner.vehicleCount }}</span>
       </span>
       <span
         (click)="onEditClick()"
