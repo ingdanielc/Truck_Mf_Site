@@ -7,6 +7,9 @@ import {
   FormsModule,
   ReactiveFormsModule,
   Validators,
+  AbstractControl,
+  ValidationErrors,
+  ValidatorFn,
 } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
@@ -69,7 +72,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   owners: ModelOwner[] = [];
   drivers: ModelDriver[] = [];
   loadingDrivers: boolean = false;
-  private ownerChangeSub?: Subscription;
+  private readonly ownerChangeSub?: Subscription;
 
   // User context
   userRole: string = 'ROL';
@@ -102,7 +105,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       color: ['', [Validators.required]],
       plate: [
         '',
-        [Validators.required, Validators.pattern(/^[A-Z]{3}-\d{3}$/i)],
+        [
+          Validators.required,
+          Validators.pattern(/^[A-Z]{3}-\d{3}$/i),
+          this.duplicatePlateValidator(),
+        ],
       ],
       motorNumber: ['', [Validators.required]],
       chassisNumber: ['', [Validators.required]],
@@ -173,11 +180,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             if (user.id != null) {
               this.loggedInOwnerId = user.id;
               this.loadOwnerByUserId(user.id);
-              // loadVehicles will be called inside loadOwnerByUserId after resolving the correct ownerId
             }
           }
           this.vehicleForm.get('ownerId')?.updateValueAndValidity();
-          // Filter application is handled by loadVehicles -> applyFilter flow
         }
       },
     });
@@ -617,5 +622,18 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   onViewProfile(owner: ModelOwner): void {
     // Placeholder: navigate to owner profile or open detail panel
     console.log('View profile for owner:', owner);
+  }
+
+  // Custom Validators
+  private duplicatePlateValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value || !this.allVehicles) return null;
+      const isDuplicate = this.allVehicles.some(
+        (v) =>
+          v.plate?.toLowerCase() === control.value.toLowerCase() &&
+          v.id !== this.editingVehicle?.id,
+      );
+      return isDuplicate ? { duplicate: true } : null;
+    };
   }
 }

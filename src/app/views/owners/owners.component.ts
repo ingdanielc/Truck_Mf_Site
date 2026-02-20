@@ -6,6 +6,9 @@ import {
   FormsModule,
   ReactiveFormsModule,
   Validators,
+  ValidatorFn,
+  AbstractControl,
+  ValidationErrors,
 } from '@angular/forms';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { GOwnerCardComponent } from '../../components/g-owner-card/g-owner-card.component';
@@ -69,14 +72,29 @@ export class OwnersComponent implements OnInit {
         city: ['', [Validators.required]],
         gender: ['', [Validators.required]],
         vehicleCount: [0, [Validators.required, Validators.min(0)]],
-        email: ['', [Validators.required, Validators.email]],
+        email: [
+          '',
+          [
+            Validators.required,
+            Validators.email,
+            this.duplicateEmailValidator(),
+          ],
+        ],
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', [Validators.required]],
       },
       {
-        validators: this.passwordMatchValidator,
+        validators: [this.passwordMatchValidator],
       },
     );
+
+    // Dynamic validators for fields that depend on allOwners
+    this.ownerForm
+      .get('documentNumber')
+      ?.setValidators([Validators.required, this.duplicateDocumentValidator()]);
+    this.ownerForm
+      .get('cellPhone')
+      ?.setValidators([Validators.required, this.phoneValidator()]);
   }
 
   ngOnInit(): void {
@@ -154,7 +172,7 @@ export class OwnersComponent implements OnInit {
           name: owner.name,
           documentType: owner.documentTypeId,
           documentNumber: owner.documentNumber,
-          cellPhone: owner.cellPhone,
+          cellPhone: this.applyPhoneMask(owner.cellPhone || ''),
           birthdate: owner.birthdate,
           city: owner.cityId,
           gender: owner.genderId,
@@ -225,7 +243,7 @@ export class OwnersComponent implements OnInit {
           genderId: formValue.gender,
           email: formValue.email,
           password: password || undefined,
-          status: this.editingOwner?.status || 'Active',
+          status: this.editingOwner?.user?.status || 'Active',
           photo: this.editingOwner?.photo || '',
         };
 
@@ -285,7 +303,7 @@ export class OwnersComponent implements OnInit {
   calculateStats(): void {
     this.totalOwners = this.allOwners.length;
     this.activeOwners = this.allOwners.filter(
-      (p) => p.status === 'Active',
+      (p) => p.user?.status === 'Active',
     ).length;
     this.inactiveOwners = this.totalOwners - this.activeOwners;
   }
@@ -316,23 +334,66 @@ export class OwnersComponent implements OnInit {
   }
 
   formatCellPhone(event: any): void {
-    let input = event.target.value.replace(/\D/g, ''); // Remove non-digits
-    if (input.length > 10) {
-      input = input.substring(0, 10);
+    const input = event.target.value.replaceAll(/\D/g, ''); // Remove non-digits
+    const formatted = this.applyPhoneMask(input);
+    this.ownerForm.get('cellPhone')?.setValue(formatted, { emitEvent: true });
+  }
+
+  private applyPhoneMask(input: string): string {
+    let unmasked = input.replaceAll(/\D/g, '');
+    if (unmasked.length > 10) {
+      unmasked = unmasked.substring(0, 10);
     }
 
-    // Format as XXX XXX XX XX
-    if (input.length > 3) {
-      input = input.substring(0, 3) + ' ' + input.substring(3);
+    let formatted = unmasked;
+    if (unmasked.length > 3) {
+      formatted = unmasked.substring(0, 3) + ' ' + unmasked.substring(3);
     }
-    if (input.length > 7) {
-      input = input.substring(0, 7) + ' ' + input.substring(7);
+    if (unmasked.length > 7) {
+      formatted = formatted.substring(0, 7) + ' ' + formatted.substring(7);
     }
-    if (input.length > 10) {
-      input = input.substring(0, 10) + ' ' + input.substring(10);
+    if (unmasked.length > 10) {
+      formatted = formatted.substring(0, 10) + ' ' + formatted.substring(10);
     }
+    return formatted;
+  }
 
-    // Update the control value
-    this.ownerForm.get('cellPhone')?.setValue(input, { emitEvent: false });
+  // Custom Validators
+  private duplicateDocumentValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value || !this.allOwners) return null;
+      const isDuplicate = this.allOwners.some(
+        (owner) =>
+          owner.documentNumber === control.value &&
+          owner.id !== this.editingOwner?.id,
+      );
+      return isDuplicate ? { duplicate: true } : null;
+    };
+  }
+
+  private duplicateEmailValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value || !this.allOwners) return null;
+      const isDuplicate = this.allOwners.some(
+        (owner) =>
+          owner.email?.toLowerCase() === control.value.toLowerCase() &&
+          owner.id !== this.editingOwner?.id,
+      );
+      return isDuplicate ? { duplicate: true } : null;
+    };
+  }
+
+  private phoneValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value) return null;
+      const value = control.value.replace(/\s/g, '');
+      if (value.length > 0 && !value.startsWith('3')) {
+        return { notStartingWith3: true };
+      }
+      if (value.length > 0 && value.length !== 10) {
+        return { invalidLength: true };
+      }
+      return null;
+    };
   }
 }

@@ -279,7 +279,13 @@
                 ownerForm.get("documentNumber")?.touched
               ) {
                 <div class="text-danger small mt-1">
-                  Este campo es obligatorio para continuar
+                  @if (ownerForm.get("documentNumber")?.hasError("required")) {
+                    Este campo es obligatorio para continuar
+                  } @else if (
+                    ownerForm.get("documentNumber")?.hasError("duplicate")
+                  ) {
+                    Este número de identificación ya se encuentra registrado
+                  }
                 </div>
               }
             </div>
@@ -308,7 +314,17 @@
                 ownerForm.get("cellPhone")?.touched
               ) {
                 <div class="text-danger small mt-1">
-                  Este campo es obligatorio para continuar
+                  @if (ownerForm.get("cellPhone")?.hasError("required")) {
+                    Este campo es obligatorio para continuar
+                  } @else if (
+                    ownerForm.get("cellPhone")?.hasError("notStartingWith3")
+                  ) {
+                    El número de celular debe empezar con el número 3
+                  } @else if (
+                    ownerForm.get("cellPhone")?.hasError("invalidLength")
+                  ) {
+                    El número de celular debe tener exactamente 10 dígitos
+                  }
                 </div>
               }
             </div>
@@ -444,7 +460,13 @@
               ownerForm.get("email")?.invalid && ownerForm.get("email")?.touched
             ) {
               <div class="text-danger small mt-1">
-                Este campo es obligatorio para continuar
+                @if (ownerForm.get("email")?.hasError("required")) {
+                  Este campo es obligatorio para continuar
+                } @else if (ownerForm.get("email")?.hasError("email")) {
+                  Por favor ingrese un correo electrónico válido
+                } @else if (ownerForm.get("email")?.hasError("duplicate")) {
+                  Este correo electrónico ya se encuentra registrado
+                }
               </div>
             }
           </div>

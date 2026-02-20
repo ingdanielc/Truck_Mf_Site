@@ -352,7 +352,7 @@
           <div class="row g-3">
             <div class="col-6 mb-3">
               <label for="plate" class="form-label small fw-bold mb-2"
-                >Placa / Matricula</label
+                >Placa</label
               >
               <input
                 id="plate"
@@ -370,7 +370,13 @@
                 vehicleForm.get("plate")?.touched
               ) {
                 <div class="text-danger small mt-1">
-                  Formato inválido (Ej: ABC-123)
+                  @if (vehicleForm.get("plate")?.hasError("required")) {
+                    Este campo es obligatorio
+                  } @else if (vehicleForm.get("plate")?.hasError("pattern")) {
+                    Formato inválido (Ej: ABC-123)
+                  } @else if (vehicleForm.get("plate")?.hasError("duplicate")) {
+                    Esta placa ya se encuentra registrada
+                  }
                 </div>
               }
             </div>

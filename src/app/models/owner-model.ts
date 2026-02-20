@@ -17,5 +17,11 @@ export class ModelOwner {
     public status?: string,
     public password?: string,
     public vehicleCount?: number,
+    public user?: {
+      id?: number;
+      name?: string;
+      email?: string;
+      status?: string;
+    },
   ) {}
 }

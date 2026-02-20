@@ -14,7 +14,7 @@ export class GOwnerCardComponent {
   @Input() owner!: ModelOwner;
   @Output() edit = new EventEmitter<ModelOwner>();
 
-  constructor(private router: Router) { }
+  constructor(private router: Router) {}
 
   onEditClick(): void {
     this.edit.emit(this.owner);
@@ -31,7 +31,7 @@ export class GOwnerCardComponent {
   }
 
   get statusClass(): string {
-    return this.owner.status === 'Active' ? 'bg-success' : 'bg-secondary';
+    return this.owner.user?.status === 'Active' ? 'bg-success' : 'bg-secondary';
   }
 
   get formattedCellPhone(): string {

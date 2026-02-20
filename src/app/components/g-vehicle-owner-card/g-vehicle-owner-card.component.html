@@ -18,7 +18,8 @@
     <div class="flex-grow-1 min-w-0">
       <h6 class="fw-bold mb-0 text-body text-truncate">{{ owner.name }}</h6>
       <p class="mb-0 small text-body-secondary">
-        Identificación: {{ owner.documentNumber }}
+        <i class="fa-solid fa-id-card me-2 opacity-50" style="width: 16px"></i>
+        {{ owner.documentNumber }}
       </p>
     </div>
 
@@ -42,17 +43,12 @@
     <div class="d-flex align-items-center gap-2 flex-shrink-0">
       <button
         type="button"
-        class="btn btn-primary btn-sm px-3 rounded-3 fw-semibold"
+        class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none"
+        style="width: 40px"
         (click)="onViewProfile()"
+        title="Ver Perfil"
       >
-        Ver Perfil
-      </button>
-      <button
-        type="button"
-        class="btn btn-link text-body-secondary p-1 border-0 shadow-none"
-        aria-label="Más opciones"
-      >
-        <i class="fa-solid fa-ellipsis-vertical"></i>
+        <i class="fa-solid fa-magnifying-glass"></i>
       </button>
     </div>
   </div>
