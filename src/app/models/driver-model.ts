@@ -16,5 +16,6 @@ export class ModelDriver {
     public vehicles?: number,
     public status?: string,
     public password?: string,
+    public ownerId?: number,
   ) {}
 }

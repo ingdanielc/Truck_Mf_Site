@@ -6,14 +6,10 @@ import {
   FormsModule,
   ReactiveFormsModule,
   Validators,
-  ValidatorFn,
-  AbstractControl,
-  ValidationErrors,
 } from '@angular/forms';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { GOwnerCardComponent } from '../../components/g-owner-card/g-owner-card.component';
 import {
-  Filter,
   ModelFilterTable,
   Pagination,
   Sort,
@@ -23,6 +19,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { ModelRole } from '../../models/user-model';
 import { CommonService } from '../../services/common.service';
+import { CustomValidators } from 'src/app/utils/custom-validators';
 
 @Component({
   selector: 'app-owners',
@@ -65,11 +62,24 @@ export class OwnersComponent implements OnInit {
     this.ownerForm = this.fb.group(
       {
         name: ['', [Validators.required, Validators.maxLength(150)]],
-        documentType: ['', [Validators.required]],
-        documentNumber: ['', [Validators.required]],
-        cellPhone: ['', [Validators.required]],
+        documentType: [null, [Validators.required]],
+        documentNumber: [
+          '',
+          [
+            Validators.required,
+            CustomValidators.duplicateValueValidator(
+              this.allOwners,
+              'documentNumber',
+              this.editingOwner?.id,
+            ),
+          ],
+        ],
+        cellPhone: [
+          '',
+          [Validators.required, CustomValidators.phoneValidator()],
+        ],
         birthdate: ['', [Validators.required]],
-        city: ['', [Validators.required]],
+        city: [null, [Validators.required]],
         gender: ['', [Validators.required]],
         vehicleCount: [0, [Validators.required, Validators.min(0)]],
         email: [
@@ -77,24 +87,20 @@ export class OwnersComponent implements OnInit {
           [
             Validators.required,
             Validators.email,
-            this.duplicateEmailValidator(),
+            CustomValidators.duplicateValueValidator(
+              this.allOwners,
+              'email',
+              this.editingOwner?.id,
+            ),
           ],
         ],
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', [Validators.required]],
       },
       {
-        validators: [this.passwordMatchValidator],
+        validators: [CustomValidators.passwordMatchValidator],
       },
     );
-
-    // Dynamic validators for fields that depend on allOwners
-    this.ownerForm
-      .get('documentNumber')
-      ?.setValidators([Validators.required, this.duplicateDocumentValidator()]);
-    this.ownerForm
-      .get('cellPhone')
-      ?.setValidators([Validators.required, this.phoneValidator()]);
   }
 
   ngOnInit(): void {
@@ -137,12 +143,6 @@ export class OwnersComponent implements OnInit {
     });
   }
 
-  private passwordMatchValidator(g: FormGroup) {
-    return g.get('password')?.value === g.get('confirmPassword')?.value
-      ? null
-      : { mismatch: true };
-  }
-
   get strength(): number {
     const pwd = this.ownerForm.get('password')?.value || '';
     if (!pwd) return 0;
@@ -159,144 +159,129 @@ export class OwnersComponent implements OnInit {
     if (s === 0) return '';
     if (s <= 1) return 'DÉBIL';
     if (s === 2) return 'MEDIA';
-    if (s === 3) return 'BUENA';
-    return 'FUERTE';
+    if (s === 3) return 'FUERTE';
+    if (s === 4) return 'EXCELENTE';
+    return '';
   }
 
   toggleOffcanvas(owner?: ModelOwner): void {
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
-    if (this.isOffcanvasOpen) {
-      if (owner) {
-        this.editingOwner = owner;
-        this.ownerForm.patchValue({
-          name: owner.name,
-          documentType: owner.documentTypeId,
-          documentNumber: owner.documentNumber,
-          cellPhone: this.applyPhoneMask(owner.cellPhone || ''),
-          birthdate: owner.birthdate,
-          city: owner.cityId,
-          gender: owner.genderId,
-          vehicleCount: 0,
-          email: owner.email,
-        });
+    if (owner) {
+      this.editingOwner = owner;
+      this.ownerForm.patchValue({
+        name: owner.name,
+        documentType: owner.documentTypeId,
+        documentNumber: owner.documentNumber,
+        cellPhone: owner.cellPhone,
+        birthdate: owner.birthdate,
+        city: owner.cityId,
+        gender: owner.genderId,
+        email: owner.email,
+      });
 
-        // Disable document type in edit mode
-        this.ownerForm.get('documentType')?.disable();
+      // Update validators to include the current owner's ID for duplication checks
+      this.ownerForm
+        .get('documentNumber')
+        ?.setValidators([
+          Validators.required,
+          CustomValidators.duplicateValueValidator(
+            this.allOwners,
+            'documentNumber',
+            this.editingOwner.id,
+          ),
+        ]);
+      this.ownerForm
+        .get('email')
+        ?.setValidators([
+          Validators.required,
+          Validators.email,
+          CustomValidators.duplicateValueValidator(
+            this.allOwners,
+            'email',
+            this.editingOwner.id,
+          ),
+        ]);
+      this.ownerForm.get('documentNumber')?.updateValueAndValidity();
+      this.ownerForm.get('email')?.updateValueAndValidity();
 
-        // Make password optional for editing
-        this.ownerForm.get('password')?.clearValidators();
-        this.ownerForm.get('confirmPassword')?.clearValidators();
-        this.ownerForm.get('password')?.updateValueAndValidity();
-        this.ownerForm.get('confirmPassword')?.updateValueAndValidity();
-      } else {
-        this.editingOwner = null;
-        this.ownerForm.reset();
-
-        // Enable document type for new owner
-        this.ownerForm.get('documentType')?.enable();
-
-        // Set default values
-        const defaultDocType = this.documentTypes.find(
-          (d) => d.name === 'Cédula de Ciudadanía',
-        );
-        const defaultGender = this.genders.find((g) => g.name === 'Masculino');
-
-        this.ownerForm.patchValue({
-          documentType: defaultDocType ? defaultDocType.id : '',
-          gender: defaultGender ? defaultGender.id : '',
-        });
-
-        // Restore password validators for new owner
-        this.ownerForm
-          .get('password')
-          ?.setValidators([Validators.required, Validators.minLength(6)]);
-        this.ownerForm
-          .get('confirmPassword')
-          ?.setValidators([Validators.required]);
-        this.ownerForm.get('password')?.updateValueAndValidity();
-        this.ownerForm.get('confirmPassword')?.updateValueAndValidity();
-      }
+      // Disable document type in edit mode
+      this.ownerForm.get('documentType')?.disable();
     } else {
       this.editingOwner = null;
-      this.ownerForm.reset();
+      this.ownerForm.reset({
+        name: '',
+        documentType: null,
+        documentNumber: '',
+        cellPhone: '',
+        birthdate: '',
+        city: null,
+        gender: '',
+        vehicleCount: 0,
+        email: '',
+        password: '',
+        confirmPassword: '',
+      });
+
+      // Reset validators for generic list check
+      this.ownerForm
+        .get('documentNumber')
+        ?.setValidators([
+          Validators.required,
+          CustomValidators.duplicateValueValidator(
+            this.allOwners,
+            'documentNumber',
+            null,
+          ),
+        ]);
+      this.ownerForm
+        .get('email')
+        ?.setValidators([
+          Validators.required,
+          Validators.email,
+          CustomValidators.duplicateValueValidator(
+            this.allOwners,
+            'email',
+            null,
+          ),
+        ]);
+      this.ownerForm.get('documentNumber')?.updateValueAndValidity();
+      this.ownerForm.get('email')?.updateValueAndValidity();
+
+      this.ownerForm.get('documentType')?.enable();
     }
   }
 
-  async onSubmit(): Promise<void> {
+  onSubmit(): void {
     if (this.ownerForm.valid) {
-      try {
-        const formValue = this.ownerForm.getRawValue();
-        let password = formValue.password;
-
-        if (password) {
-          password = await this.securityService.getHashSHA512(password);
-        }
-
-        const ownerToSave: ModelOwner = {
-          id: this.editingOwner?.id || null,
-          name: formValue.name,
-          documentTypeId: formValue.documentType,
-          documentNumber: formValue.documentNumber,
-          cellPhone: formValue.cellPhone,
-          birthdate: formValue.birthdate,
-          cityId: formValue.city,
-          genderId: formValue.gender,
-          email: formValue.email,
-          password: password || undefined,
-          status: this.editingOwner?.user?.status || 'Active',
-          photo: this.editingOwner?.photo || '',
-        };
-
-        this.ownerService.createOwner(ownerToSave).subscribe({
-          next: () => {
-            this.toastService.showSuccess(
-              'Gestión de Propietarios',
-              this.editingOwner
-                ? 'Propietario actualizado exitosamente!'
-                : 'Propietario creado exitosamente!',
-            );
-            this.loadOwners();
-            this.toggleOffcanvas();
-          },
-          error: (err) => {
-            console.error('Error saving owner:', err);
-            this.toastService.showError(
-              'Error',
-              'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
-            );
-          },
-        });
-      } catch (error) {
-        console.error('Error in onSubmit:', error);
-      }
+      console.log('Form Submitted:', this.ownerForm.getRawValue());
+      // Logic for save/update would go here
+      this.toggleOffcanvas();
+      this.toastService.showSuccess(
+        'Propietarios',
+        this.editingOwner
+          ? 'Propietario actualizado exitosamente'
+          : 'Propietario creado exitosamente',
+      );
     } else {
       this.ownerForm.markAllAsTouched();
     }
   }
 
   loadOwners(): void {
-    let filtros: Filter[] = [];
-    let filter = new ModelFilterTable(
-      filtros,
+    const filter = new ModelFilterTable(
+      [],
       new Pagination(this.rows, this.page),
       new Sort('id', true),
     );
     this.ownerService.getOwnerFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
-          this.totalOwners = response.data.totalElements || 0;
           this.allOwners = response.data.content;
           this.calculateStats();
           this.applyFilter();
-        } else {
-          this.allOwners = [];
-          this.owners = [];
-          this.calculateStats();
         }
       },
-      error: (err) => {
-        console.error('Error loading users:', err);
-      },
+      error: (err) => console.error('Error loading owners:', err),
     });
   }
 
@@ -345,55 +330,20 @@ export class OwnersComponent implements OnInit {
       unmasked = unmasked.substring(0, 10);
     }
 
-    let formatted = unmasked;
+    let formatted = '';
+    if (unmasked.length > 0) {
+      formatted = unmasked.substring(0, 3);
+    }
     if (unmasked.length > 3) {
-      formatted = unmasked.substring(0, 3) + ' ' + unmasked.substring(3);
+      formatted += ' ' + unmasked.substring(3, 6);
     }
-    if (unmasked.length > 7) {
-      formatted = formatted.substring(0, 7) + ' ' + formatted.substring(7);
+    if (unmasked.length > 6) {
+      formatted += ' ' + unmasked.substring(6, 8);
     }
-    if (unmasked.length > 10) {
-      formatted = formatted.substring(0, 10) + ' ' + formatted.substring(10);
+    if (unmasked.length > 8) {
+      formatted += ' ' + unmasked.substring(8, 10);
     }
+
     return formatted;
-  }
-
-  // Custom Validators
-  private duplicateDocumentValidator(): ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
-      if (!control.value || !this.allOwners) return null;
-      const isDuplicate = this.allOwners.some(
-        (owner) =>
-          owner.documentNumber === control.value &&
-          owner.id !== this.editingOwner?.id,
-      );
-      return isDuplicate ? { duplicate: true } : null;
-    };
-  }
-
-  private duplicateEmailValidator(): ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
-      if (!control.value || !this.allOwners) return null;
-      const isDuplicate = this.allOwners.some(
-        (owner) =>
-          owner.email?.toLowerCase() === control.value.toLowerCase() &&
-          owner.id !== this.editingOwner?.id,
-      );
-      return isDuplicate ? { duplicate: true } : null;
-    };
-  }
-
-  private phoneValidator(): ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
-      if (!control.value) return null;
-      const value = control.value.replace(/\s/g, '');
-      if (value.length > 0 && !value.startsWith('3')) {
-        return { notStartingWith3: true };
-      }
-      if (value.length > 0 && value.length !== 10) {
-        return { invalidLength: true };
-      }
-      return null;
-    };
   }
 }

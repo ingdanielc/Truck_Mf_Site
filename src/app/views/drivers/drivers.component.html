@@ -216,7 +216,23 @@
                 formControlName="documentNumber"
                 placeholder="Ej: 1010101010"
                 (keypress)="allowOnlyNumbers($event)"
+                [class.is-invalid]="
+                  driverForm.get('documentNumber')?.invalid &&
+                  driverForm.get('documentNumber')?.touched
+                "
               />
+              @if (driverForm.get("documentNumber")?.touched) {
+                @if (driverForm.get("documentNumber")?.errors?.["required"]) {
+                  <div class="text-danger small mt-1">
+                    Este campo es obligatorio para continuar
+                  </div>
+                }
+                @if (driverForm.get("documentNumber")?.errors?.["duplicate"]) {
+                  <div class="text-danger small mt-1">
+                    Este número de identificación ya se encuentra registrado
+                  </div>
+                }
+              }
             </div>
           </div>
 
@@ -233,7 +249,30 @@
                 placeholder="XXX XXX XX XX"
                 (input)="formatCellPhone($event)"
                 maxlength="13"
+                [class.is-invalid]="
+                  driverForm.get('cellPhone')?.invalid &&
+                  driverForm.get('cellPhone')?.touched
+                "
               />
+              @if (driverForm.get("cellPhone")?.touched) {
+                @if (driverForm.get("cellPhone")?.errors?.["required"]) {
+                  <div class="text-danger small mt-1">
+                    Este campo es obligatorio para continuar
+                  </div>
+                }
+                @if (
+                  driverForm.get("cellPhone")?.errors?.["notStartingWith3"]
+                ) {
+                  <div class="text-danger small mt-1">
+                    El número de celular debe empezar con el número 3
+                  </div>
+                }
+                @if (driverForm.get("cellPhone")?.errors?.["invalidLength"]) {
+                  <div class="text-danger small mt-1">
+                    Debe tener 10 dígitos
+                  </div>
+                }
+              }
             </div>
             <div class="col-6">
               <label for="birthdate" class="form-label small fw-bold mb-2"
@@ -298,7 +337,21 @@
               class="form-control rounded-3 py-2 px-3"
               formControlName="email"
               placeholder="correo@ejemplo.com"
+              [class.is-invalid]="
+                driverForm.get('email')?.invalid &&
+                driverForm.get('email')?.touched
+              "
             />
+            @if (driverForm.get("email")?.touched) {
+              @if (driverForm.get("email")?.errors?.["email"]) {
+                <div class="text-danger small mt-1">Formato inválido</div>
+              }
+              @if (driverForm.get("email")?.errors?.["duplicate"]) {
+                <div class="text-danger small mt-1">
+                  Este correo electrónico ya se encuentra registrado
+                </div>
+              }
+            }
           </div>
 
           <div class="row g-3 mb-3">
@@ -352,7 +405,9 @@
               ></div>
             </div>
             <div class="d-flex justify-content-between align-items-center">
-              <span class="small text-secondary fw-bold op-70">Seguridad</span>
+              <span class="small text-secondary fw-bold op-70"
+                >Seguridad de contraseña</span
+              >
               <span class="small fw-bold text-primary">{{
                 strengthLabel
               }}</span>
