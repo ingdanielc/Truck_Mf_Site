@@ -11,7 +11,8 @@ import { ModelOwner } from 'src/app/models/owner-model';
 })
 export class GVehicleOwnerCardComponent {
   @Input() owner!: ModelOwner;
-  @Input() vehicleCount: number = 0;
+  @Input() itemCount: number = 0;
+  @Input() itemLabel: string = 'Vehículos';
 
   @Output() viewProfile = new EventEmitter<ModelOwner>();
 

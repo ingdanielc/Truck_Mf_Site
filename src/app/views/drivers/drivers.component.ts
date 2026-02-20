@@ -10,17 +10,25 @@ import {
 import { ModelDriver } from 'src/app/models/driver-model';
 import { GDriverCardComponent } from '../../components/g-driver-card/g-driver-card.component';
 import {
-  Filter,
   ModelFilterTable,
   Pagination,
   Sort,
+  Filter,
 } from 'src/app/models/model-filter-table';
+import { GVehicleOwnerCardComponent } from '../../components/g-vehicle-owner-card/g-vehicle-owner-card.component';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { CommonService } from '../../services/common.service';
 import { Subscription } from 'rxjs';
 import { CustomValidators } from 'src/app/utils/custom-validators';
+import { OwnerService } from 'src/app/services/owner.service';
+import { ModelOwner } from 'src/app/models/owner-model';
+
+export interface DriverOwnerGroup {
+  owner: ModelOwner;
+  drivers: ModelDriver[];
+}
 
 @Component({
   selector: 'app-drivers',
@@ -30,6 +38,7 @@ import { CustomValidators } from 'src/app/utils/custom-validators';
     FormsModule,
     ReactiveFormsModule,
     GDriverCardComponent,
+    GVehicleOwnerCardComponent,
   ],
   templateUrl: './drivers.component.html',
   styleUrls: ['./drivers.component.scss'],
@@ -40,6 +49,7 @@ export class DriversComponent implements OnInit, OnDestroy {
   totalDrivers: number = 0;
   activeDrivers: number = 0;
   inactiveDrivers: number = 0;
+  groupedDrivers: DriverOwnerGroup[] = [];
   searchTerm: string = '';
   page: number = 0;
   rows: number = 10;
@@ -52,10 +62,22 @@ export class DriversComponent implements OnInit, OnDestroy {
   // Offcanvas and Form
   isOffcanvasOpen: boolean = false;
   editingDriver: ModelDriver | null = null;
-  driverForm: FormGroup;
+  driverForm!: FormGroup;
   documentTypes: any[] = [];
   genders: any[] = [];
   cities: any[] = [];
+  licenseCategories: any[] = [
+    { id: 'a1', name: 'A1' },
+    { id: 'a2', name: 'A2' },
+    { id: 'b1', name: 'B1' },
+    { id: 'b2', name: 'B2' },
+    { id: 'b3', name: 'B3' },
+    { id: 'c1', name: 'C1' },
+    { id: 'c2', name: 'C2' },
+    { id: 'c3', name: 'C3' },
+  ];
+  owners: ModelOwner[] = [];
+  showAccessData: boolean = true;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -63,6 +85,7 @@ export class DriversComponent implements OnInit, OnDestroy {
     private readonly commonService: CommonService,
     private readonly securityService: SecurityService,
     private readonly toastService: ToastService,
+    private readonly ownerService: OwnerService,
   ) {
     this.driverForm = this.fb.group(
       {
@@ -86,6 +109,8 @@ export class DriversComponent implements OnInit, OnDestroy {
         birthdate: ['', [Validators.required]],
         city: [null, [Validators.required]],
         gender: [null, [Validators.required]],
+        licenseCategory: [null],
+        licenseExpiry: [''],
         email: [
           '',
           [
@@ -104,6 +129,7 @@ export class DriversComponent implements OnInit, OnDestroy {
             : [Validators.required, Validators.minLength(4)],
         ],
         confirmPassword: ['', this.editingDriver ? [] : [Validators.required]],
+        ownerId: [null, [Validators.required]],
       },
       {
         validators: [CustomValidators.passwordMatchValidator],
@@ -122,7 +148,7 @@ export class DriversComponent implements OnInit, OnDestroy {
 
   subscribeToUserContext(): void {
     this.userSub = this.securityService.userData$.subscribe({
-      next: (user) => {
+      next: (user: any) => {
         if (user) {
           this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
           if (this.userRole === 'PROPIETARIO') {
@@ -155,6 +181,24 @@ export class DriversComponent implements OnInit, OnDestroy {
       },
       error: (err: any) => console.error('Error loading cities:', err),
     });
+
+    this.loadOwners();
+  }
+
+  loadOwners(): void {
+    const filter = new ModelFilterTable(
+      [],
+      new Pagination(100, 0),
+      new Sort('id', true),
+    );
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content) {
+          this.owners = response.data.content;
+        }
+      },
+      error: (err: any) => console.error('Error loading owners:', err),
+    });
   }
 
   get strength(): number {
@@ -177,6 +221,39 @@ export class DriversComponent implements OnInit, OnDestroy {
     return 'FUERTE';
   }
 
+  onToggleAccessData(event: any): void {
+    this.showAccessData = event.target.checked;
+    const emailControl = this.driverForm.get('email');
+    const passwordControl = this.driverForm.get('password');
+    const confirmPasswordControl = this.driverForm.get('confirmPassword');
+
+    if (this.showAccessData) {
+      emailControl?.setValidators([
+        Validators.email,
+        CustomValidators.duplicateValueValidator(
+          this.allDrivers,
+          'email',
+          this.editingDriver?.id,
+        ),
+      ]);
+      if (!this.editingDriver) {
+        passwordControl?.setValidators([
+          Validators.required,
+          Validators.minLength(4),
+        ]);
+        confirmPasswordControl?.setValidators([Validators.required]);
+      }
+    } else {
+      emailControl?.clearValidators();
+      passwordControl?.clearValidators();
+      confirmPasswordControl?.clearValidators();
+    }
+
+    emailControl?.updateValueAndValidity();
+    passwordControl?.updateValueAndValidity();
+    confirmPasswordControl?.updateValueAndValidity();
+  }
+
   toggleOffcanvas(driver?: ModelDriver): void {
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
     if (this.isOffcanvasOpen) {
@@ -190,11 +267,17 @@ export class DriversComponent implements OnInit, OnDestroy {
           birthdate: driver.birthdate,
           city: driver.cityId,
           gender: driver.genderId,
+          licenseCategory: driver.licenseCategory,
+          licenseExpiry: driver.licenseExpiry
+            ? driver.licenseExpiry.split('T')[0]
+            : '',
           email: driver.email,
           password: '',
           confirmPassword: '',
+          ownerId: driver.ownerId,
         });
 
+        this.showAccessData = !!driver.email;
         this.driverForm.get('documentType')?.disable();
         this.driverForm.get('password')?.clearValidators();
         this.driverForm.get('confirmPassword')?.clearValidators();
@@ -234,10 +317,16 @@ export class DriversComponent implements OnInit, OnDestroy {
           birthdate: '',
           city: null,
           gender: null,
+          licenseCategory: null,
+          licenseExpiry: '',
           email: '',
           password: '',
           confirmPassword: '',
+          ownerId:
+            this.userRole === 'ADMINISTRADOR' ? null : this.loggedInOwnerId,
         });
+
+        this.showAccessData = true;
 
         // Default values: Cédula (usually name 'Cédula de Ciudadanía') and Masculino (usually name 'MASCULINO')
         const cedulaType = this.documentTypes.find((t) =>
@@ -311,14 +400,17 @@ export class DriversComponent implements OnInit, OnDestroy {
           birthdate: formValue.birthdate,
           cityId: formValue.city,
           genderId: formValue.gender,
-          email: formValue.email,
-          password: password || undefined,
-          status: this.editingDriver?.status || 'Active',
+          licenseCategory: formValue.licenseCategory,
+          licenseNumber: formValue.documentNumber,
+          licenseExpiry: formValue.licenseExpiry,
+          email: this.showAccessData ? formValue.email : undefined,
+          password: this.showAccessData ? password || undefined : undefined,
+          status: this.editingDriver?.user?.status || 'Active',
           photo: this.editingDriver?.photo || '',
           ownerId:
-            this.userRole === 'PROPIETARIO'
-              ? (this.loggedInOwnerId ?? undefined)
-              : undefined,
+            this.userRole === 'ADMINISTRADOR'
+              ? formValue.ownerId
+              : this.loggedInOwnerId || undefined,
         };
 
         this.driverService.createDriver(driverToSave).subscribe({
@@ -383,7 +475,7 @@ export class DriversComponent implements OnInit, OnDestroy {
   calculateStats(): void {
     this.totalDrivers = this.allDrivers.length;
     this.activeDrivers = this.allDrivers.filter(
-      (d) => d.status === 'Active',
+      (d) => (d.user?.status || 'Active') === 'Active',
     ).length;
     this.inactiveDrivers = this.totalDrivers - this.activeDrivers;
   }
@@ -400,6 +492,75 @@ export class DriversComponent implements OnInit, OnDestroy {
       );
     }
     this.drivers = filtered;
+    this.buildGroups();
+  }
+
+  buildGroups(): void {
+    const groups = new Map<string, DriverOwnerGroup>();
+    const noOwnerKey = '__sin_propietario__';
+
+    this.drivers.forEach((d) => {
+      if (!d.ownerId) {
+        if (!groups.has(noOwnerKey)) {
+          groups.set(noOwnerKey, {
+            owner: new ModelOwner(
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              'Sin socio',
+            ),
+            drivers: [],
+          });
+        }
+        groups.get(noOwnerKey)!.drivers.push(d);
+      } else {
+        const ownerData = this.owners.find((o) => o.id === d.ownerId);
+        const key = String(d.ownerId);
+        if (!groups.has(key)) {
+          groups.set(key, {
+            owner:
+              ownerData ||
+              new ModelOwner(
+                d.ownerId,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                'Socio desconocido',
+              ),
+            drivers: [],
+          });
+        }
+        groups.get(key)!.drivers.push(d);
+      }
+    });
+
+    // Convert map to array and sort: named owners alphabetically, "Sin socio" last
+    const result = Array.from(groups.values()).sort((a, b) => {
+      const aName = a.owner.name ?? '';
+      const bName = b.owner.name ?? '';
+      if (aName === 'Sin socio') return 1;
+      if (bName === 'Sin socio') return -1;
+      return aName.localeCompare(bName);
+    });
+
+    this.groupedDrivers = result;
+  }
+
+  openAddDriverForOwner(owner: ModelOwner): void {
+    this.toggleOffcanvas();
+    if (owner.id) {
+      this.driverForm.get('ownerId')?.setValue(owner.id);
+      if (this.userRole === 'PROPIETARIO') {
+        this.driverForm.get('ownerId')?.disable();
+      }
+    }
+  }
+
+  onViewProfile(owner: ModelOwner): void {
+    console.log('View profile for owner:', owner);
   }
 
   allowOnlyNumbers(event: any): void {

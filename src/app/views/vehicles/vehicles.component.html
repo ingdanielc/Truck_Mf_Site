@@ -104,7 +104,8 @@
     <!-- Owner Header Card — independent, only the header -->
     <g-vehicle-owner-card
       [owner]="group.owner"
-      [vehicleCount]="group.vehicles.length"
+      [itemCount]="group.vehicles.length"
+      itemLabel="Vehículos"
       (viewProfile)="onViewProfile($event)"
     ></g-vehicle-owner-card>
 

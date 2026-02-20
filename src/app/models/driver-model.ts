@@ -17,5 +17,15 @@ export class ModelDriver {
     public status?: string,
     public password?: string,
     public ownerId?: number,
+    public licenseCategory?: string,
+    public licenseNumber?: string,
+    public licenseExpiry?: any,
+    public user?: {
+      id?: number;
+      name?: string;
+      email?: string;
+      password?: string;
+      status?: string;
+    },
   ) {}
 }
