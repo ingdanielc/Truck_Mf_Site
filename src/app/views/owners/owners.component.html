@@ -414,19 +414,19 @@
               >Máximo de Vehículos*</label
             >
             <input
-              id="vehicleCount"
+              id="maxVehicles"
               type="number"
               class="form-control rounded-3 py-2 px-3"
-              formControlName="vehicleCount"
+              formControlName="maxVehicles"
               placeholder="3"
               [class.is-invalid]="
-                ownerForm.get('vehicleCount')?.invalid &&
-                ownerForm.get('vehicleCount')?.touched
+                ownerForm.get('maxVehicles')?.invalid &&
+                ownerForm.get('maxVehicles')?.touched
               "
             />
             @if (
-              ownerForm.get("vehicleCount")?.invalid &&
-              ownerForm.get("vehicleCount")?.touched
+              ownerForm.get("maxVehicles")?.invalid &&
+              ownerForm.get("maxVehicles")?.touched
             ) {
               <div class="text-danger small mt-1">
                 Este campo es obligatorio para continuar

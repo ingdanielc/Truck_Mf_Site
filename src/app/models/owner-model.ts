@@ -13,7 +13,7 @@ export class ModelOwner {
     public genderId?: number,
     public birthdate?: any,
     public age?: number,
-    public vehicles?: number,
+    public maxVehicles?: number,
     public status?: string,
     public password?: string,
     public vehicleCount?: number,

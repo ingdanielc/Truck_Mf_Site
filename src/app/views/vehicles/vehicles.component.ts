@@ -402,6 +402,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.totalVehicles = response.data.totalElements || 0;
             this.allVehicles = response.data.content;
             this.mapBrandNames();
+            this.mapDriverNames();
             this.calculateStats();
             this.applyFilter();
             this.calculateStats();
@@ -435,6 +436,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.totalVehicles = response.data.totalElements || 0;
             this.allVehicles = response.data.content;
             this.mapBrandNames();
+            this.mapDriverNames();
             this.calculateStats();
             this.applyFilter();
           } else {
@@ -465,6 +467,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.totalVehicles = response.data.totalElements || 0;
             this.allVehicles = response.data.content;
             this.mapBrandNames();
+            this.mapDriverNames();
             this.calculateStats();
             this.applyFilter();
           } else {
@@ -598,6 +601,55 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  mapDriverNames(): void {
+    if (this.allVehicles.length === 0) return;
+
+    // 1. Try to match with drivers already loaded (usually for the current owner)
+    if (this.drivers.length > 0) {
+      this.allVehicles.forEach((v) => {
+        if (v.currentDriverId != null && !v.currentDriverName) {
+          const match = this.drivers.find((d) => d.id === v.currentDriverId);
+          if (match) v.currentDriverName = match.name;
+        }
+      });
+    }
+
+    // 2. Identify missing driver IDs
+    const missingIds = [
+      ...new Set(
+        this.allVehicles
+          .filter((v) => v.currentDriverId != null && !v.currentDriverName)
+          .map((v) => v.currentDriverId as number),
+      ),
+    ];
+
+    // 3. Fetch each missing driver's detail individually
+    missingIds.forEach((id) => this.fetchDriverDetail(id));
+  }
+
+  fetchDriverDetail(driverId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('id', '=', driverId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+
+    this.driverService.getDriverFilter(filter).subscribe({
+      next: (response: any) => {
+        const driver = response?.data?.content?.[0];
+        if (driver) {
+          this.allVehicles.forEach((v) => {
+            if (v.currentDriverId === driverId) {
+              v.currentDriverName = driver.name;
+            }
+          });
+        }
+      },
+      error: (err: any) =>
+        console.error(`Error fetching driver ${driverId} details:`, err),
+    });
   }
 
   onViewProfile(owner: ModelOwner): void {

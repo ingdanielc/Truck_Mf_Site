@@ -38,13 +38,27 @@
     </div>
 
     <!-- Vehicle Info -->
-    <div class="mb-4">
+    <div class="mb-3">
       <h5 class="fw-bold mb-0 text-truncate">{{ vehicle.plate }}</h5>
       <p class="small text-secondary mb-1 text-truncate">
         {{ vehicle.vehicleBrandName || vehicle.vehicleBrandId }}
         {{ vehicle.model }} - {{ vehicle.color }}
       </p>
       <p class="year small text-body-secondary mb-0">Año: {{ vehicle.year }}</p>
+    </div>
+
+    <!-- Assigned Driver -->
+    <div class="mb-3">
+      <div class="rounded-3 d-flex align-items-center gap-1">
+        <div class="flex-grow-1 overflow-hidden">
+          <p class="small fw-bold mb-0 text-truncate">
+            {{ vehicle.currentDriverName || "Sin conductor asignado" }}
+          </p>
+          <p class="text-secondary mb-0" style="font-size: 0.75rem">
+            Conductor asignado
+          </p>
+        </div>
+      </div>
     </div>
 
     <!-- Footer Stats -->

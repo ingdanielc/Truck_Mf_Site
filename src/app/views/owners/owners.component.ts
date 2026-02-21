@@ -81,7 +81,7 @@ export class OwnersComponent implements OnInit {
         birthdate: ['', [Validators.required]],
         city: [null, [Validators.required]],
         gender: ['', [Validators.required]],
-        vehicleCount: [0, [Validators.required, Validators.min(0)]],
+        maxVehicles: [0, [Validators.required, Validators.min(0)]],
         email: [
           '',
           [
@@ -177,6 +177,7 @@ export class OwnersComponent implements OnInit {
         city: owner.cityId,
         gender: owner.genderId,
         email: owner.email,
+        maxVehicles: owner.maxVehicles,
       });
 
       // Update validators to include the current owner's ID for duplication checks
@@ -216,11 +217,23 @@ export class OwnersComponent implements OnInit {
         birthdate: '',
         city: null,
         gender: '',
-        vehicleCount: 0,
+        maxVehicles: 0,
         email: '',
         password: '',
         confirmPassword: '',
       });
+
+      // Default values: Cédula (usually name 'Cédula de Ciudadanía') and Masculino (usually name 'MASCULINO')
+      const cedulaType = this.documentTypes.find((t) =>
+        t.name.toUpperCase().includes('CÉDULA'),
+      );
+      const maleGender = this.genders.find((g) =>
+        g.name.toUpperCase().includes('MASCULINO'),
+      );
+
+      if (cedulaType)
+        this.ownerForm.get('documentType')?.setValue(cedulaType.id);
+      if (maleGender) this.ownerForm.get('gender')?.setValue(maleGender.id);
 
       // Reset validators for generic list check
       this.ownerForm
@@ -251,17 +264,55 @@ export class OwnersComponent implements OnInit {
     }
   }
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (this.ownerForm.valid) {
-      console.log('Form Submitted:', this.ownerForm.getRawValue());
       // Logic for save/update would go here
-      this.toggleOffcanvas();
-      this.toastService.showSuccess(
-        'Propietarios',
-        this.editingOwner
-          ? 'Propietario actualizado exitosamente'
-          : 'Propietario creado exitosamente',
-      );
+      try {
+        const formValue = this.ownerForm.getRawValue();
+        let password = formValue.password;
+
+        if (password) {
+          password = await this.securityService.getHashSHA512(password);
+        }
+
+        const ownerToSave: ModelOwner = {
+          id: this.editingOwner?.id || null,
+          name: formValue.name,
+          documentTypeId: formValue.documentType,
+          documentNumber: formValue.documentNumber,
+          cellPhone: formValue.cellPhone,
+          birthdate: formValue.birthdate,
+          cityId: formValue.city,
+          genderId: formValue.gender,
+          email: formValue.email,
+          maxVehicles: formValue.maxVehicles,
+          password: password || undefined,
+          status: this.editingOwner?.status || 'Active',
+          photo: this.editingOwner?.photo || '',
+        };
+
+        this.ownerService.createOwner(ownerToSave).subscribe({
+          next: () => {
+            this.toastService.showSuccess(
+              'Gestión de Propietarios',
+              this.editingOwner
+                ? 'Propietario actualizado exitosamente!'
+                : 'Propietario creado exitosamente!',
+            );
+            this.loadOwners();
+            this.toggleOffcanvas();
+          },
+          error: (err) => {
+            console.error('Error saving owner:', err);
+            this.toastService.showError(
+              'Error',
+              'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
+            );
+          },
+        });
+      } catch (error) {
+        console.error('Error in onSubmit:', error);
+      }
     } else {
       this.ownerForm.markAllAsTouched();
     }
