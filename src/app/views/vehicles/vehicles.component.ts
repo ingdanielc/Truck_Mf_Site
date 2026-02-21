@@ -171,16 +171,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
 
           if (this.userRole === 'ADMINISTRADOR') {
-            this.loadAllOwners();
             this.vehicleForm
               .get('ownerId')
               ?.setValidators([Validators.required]);
+            this.loadOwners();
             this.loadVehicles();
           } else if (this.userRole === 'PROPIETARIO') {
-            if (user.id != null) {
-              this.loggedInOwnerId = user.id;
-              this.loadOwnerByUserId(user.id);
-            }
+            this.loggedInOwnerId = user.id ?? null;
+            this.loadOwners(); // This will trigger loadVehicles upon success
           }
           this.vehicleForm.get('ownerId')?.updateValueAndValidity();
         }
@@ -212,8 +210,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadAllOwners(): void {
+  loadOwners(): void {
     let filtros: Filter[] = [];
+    if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId != null) {
+      filtros.push(new Filter('user.Id', '=', this.loggedInOwnerId.toString()));
+    }
+
     let filter = new ModelFilterTable(
       filtros,
       new Pagination(100, 0),
@@ -222,38 +224,17 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.ownerService.getOwnerFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
-          this.owners = response.data.content;
+          const owners = response.data.content;
+          this.owners = owners;
+          if (this.userRole === 'PROPIETARIO' && owners.length > 0) {
+            this.loggedInOwner = owners[0];
+            this.loggedInOwnerId =
+              this.loggedInOwner?.id ?? this.loggedInOwnerId;
+            // Now that we have the TRUE owner.id, load the vehicles
+            this.loadVehicles();
+          }
           this.applyFilter();
         }
-      },
-    });
-  }
-
-  loadOwnerByUserId(userId: number): void {
-    let filter = new ModelFilterTable(
-      [new Filter('user.Id', '=', userId.toString())],
-      new Pagination(1, 0),
-      new Sort('id', true),
-    );
-    this.ownerService.getOwnerFilter(filter).subscribe({
-      next: (response: any) => {
-        if (response?.data?.content?.length > 0) {
-          this.loggedInOwner = response.data.content[0];
-          this.loggedInOwnerId = this.loggedInOwner?.id ?? userId;
-          // Populate owners list so the dropdown works for PROPIETARIO
-          if (this.loggedInOwner) {
-            this.owners = [this.loggedInOwner];
-          }
-          this.loadVehicles();
-        } else {
-          // Fallback: use user.id as ownerId
-          this.loggedInOwnerId = userId;
-          this.loadVehicles();
-        }
-      },
-      error: () => {
-        this.loggedInOwnerId = userId;
-        this.loadVehicles();
       },
     });
   }

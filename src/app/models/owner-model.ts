@@ -17,6 +17,7 @@ export class ModelOwner {
     public status?: string,
     public password?: string,
     public vehicleCount?: number,
+    public driverCount?: number,
     public user?: {
       id?: number;
       name?: string;

@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import {
   FormBuilder,
   FormGroup,
@@ -59,6 +60,10 @@ export class DriversComponent implements OnInit, OnDestroy {
   loggedInOwnerId: number | null = null;
   private userSub: Subscription | undefined;
 
+  /** ownerId filter when navigated from owner card (query param) */
+  ownerIdFilter: number | null = null;
+  filteredOwner: ModelOwner | null = null;
+
   // Offcanvas and Form
   isOffcanvasOpen: boolean = false;
   editingDriver: ModelDriver | null = null;
@@ -86,6 +91,7 @@ export class DriversComponent implements OnInit, OnDestroy {
     private readonly securityService: SecurityService,
     private readonly toastService: ToastService,
     private readonly ownerService: OwnerService,
+    private readonly route: ActivatedRoute,
   ) {
     this.driverForm = this.fb.group(
       {
@@ -138,8 +144,31 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    const rawOwnerId = this.route.snapshot.queryParamMap.get('ownerId');
+    if (rawOwnerId != null) {
+      this.ownerIdFilter = Number(rawOwnerId);
+      this.loadFilteredOwner(this.ownerIdFilter);
+    }
+
     this.subscribeToUserContext();
     this.loadReferenceData();
+  }
+
+  loadFilteredOwner(ownerId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('id', '=', ownerId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content?.length > 0) {
+          this.filteredOwner = response.data.content[0];
+          this.applyFilter();
+        }
+      },
+      error: (err: any) => console.error('Error loading filtered owner:', err),
+    });
   }
 
   ngOnDestroy(): void {
@@ -153,8 +182,11 @@ export class DriversComponent implements OnInit, OnDestroy {
           this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
           if (this.userRole === 'PROPIETARIO') {
             this.loggedInOwnerId = user.id ?? null;
+            this.loadOwners(); // This will trigger loadDrivers upon success
+          } else {
+            this.loadOwners();
+            this.loadDrivers();
           }
-          this.loadDrivers();
         }
       },
     });
@@ -181,13 +213,17 @@ export class DriversComponent implements OnInit, OnDestroy {
       },
       error: (err: any) => console.error('Error loading cities:', err),
     });
-
-    this.loadOwners();
   }
 
   loadOwners(): void {
+    let filtros: Filter[] = [];
+    if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId != null) {
+      // Use user.Id to filter the owner record based on the logged-in user's ID
+      filtros.push(new Filter('user.Id', '=', this.loggedInOwnerId.toString()));
+    }
+
     const filter = new ModelFilterTable(
-      [],
+      filtros,
       new Pagination(100, 0),
       new Sort('id', true),
     );
@@ -195,9 +231,44 @@ export class DriversComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content) {
           this.owners = response.data.content;
+          // If proprietor, ensure we have the correct owner.id from the response
+          if (this.userRole === 'PROPIETARIO' && this.owners.length > 0) {
+            this.loggedInOwnerId = this.owners[0].id ?? this.loggedInOwnerId;
+            // Now that we have the TRUE owner.id, load drivers
+            this.loadDrivers();
+          }
+          // After loading owners, if we already have drivers, build groups
+          if (this.drivers.length > 0) {
+            this.buildGroups();
+          }
         }
       },
       error: (err: any) => console.error('Error loading owners:', err),
+    });
+  }
+
+  fetchOwnerDetails(ownerId: number): void {
+    // Avoid duplicate requests if we are already fetching or have it
+    if (this.owners.some((o) => o.id === ownerId)) return;
+
+    const filter = new ModelFilterTable(
+      [new Filter('id', '=', ownerId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content?.[0]) {
+          const owner = response.data.content[0];
+          if (!this.owners.some((o) => o.id === owner.id)) {
+            this.owners.push(owner);
+            this.buildGroups();
+          }
+        }
+      },
+      error: (err: any) =>
+        console.error(`Error fetching owner ${ownerId}:`, err),
     });
   }
 
@@ -445,9 +516,12 @@ export class DriversComponent implements OnInit, OnDestroy {
 
     // Filter by owner if user is PROPIETARIO
     if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId != null) {
-      filtros.push(
-        new Filter('owner.id', '=', this.loggedInOwnerId.toString()),
-      );
+      filtros.push(new Filter('ownerId', '=', this.loggedInOwnerId.toString()));
+    } else if (
+      this.userRole === 'ADMINISTRADOR' &&
+      this.ownerIdFilter != null
+    ) {
+      filtros.push(new Filter('ownerId', '=', this.ownerIdFilter.toString()));
     }
 
     const filter = new ModelFilterTable(
@@ -462,6 +536,20 @@ export class DriversComponent implements OnInit, OnDestroy {
           this.allDrivers = response.data.content;
           this.calculateStats();
           this.applyFilter();
+
+          // Identify unique missing owners and fetch their details
+          const missingOwnerIds = [
+            ...new Set(
+              this.allDrivers
+                .map((d) => d.ownerId)
+                .filter(
+                  (id): id is number =>
+                    id != null && !this.owners.some((o) => o.id === id),
+                ),
+            ),
+          ];
+
+          missingOwnerIds.forEach((id) => this.fetchOwnerDetails(id));
         } else {
           this.allDrivers = [];
           this.drivers = [];
@@ -498,6 +586,12 @@ export class DriversComponent implements OnInit, OnDestroy {
   buildGroups(): void {
     const groups = new Map<string, DriverOwnerGroup>();
     const noOwnerKey = '__sin_propietario__';
+
+    // Always include the filtered owner if present and no search term is active
+    if (this.filteredOwner && !this.searchTerm) {
+      const key = String(this.filteredOwner.id);
+      groups.set(key, { owner: this.filteredOwner, drivers: [] });
+    }
 
     this.drivers.forEach((d) => {
       if (!d.ownerId) {

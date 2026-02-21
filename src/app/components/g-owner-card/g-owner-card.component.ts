@@ -14,7 +14,7 @@ export class GOwnerCardComponent {
   @Input() owner!: ModelOwner;
   @Output() edit = new EventEmitter<ModelOwner>();
 
-  constructor(private router: Router) {}
+  constructor(private readonly router: Router) {}
 
   onEditClick(): void {
     this.edit.emit(this.owner);
@@ -22,6 +22,12 @@ export class GOwnerCardComponent {
 
   goToVehicles(): void {
     this.router.navigate(['site', 'vehicles'], {
+      queryParams: { ownerId: this.owner.id },
+    });
+  }
+
+  goToDrivers(): void {
+    this.router.navigate(['site', 'drivers'], {
       queryParams: { ownerId: this.owner.id },
     });
   }
@@ -36,7 +42,7 @@ export class GOwnerCardComponent {
 
   get formattedCellPhone(): string {
     if (!this.owner.cellPhone) return '';
-    const phone = this.owner.cellPhone.replace(/\D/g, '');
+    const phone = this.owner.cellPhone.replaceAll(/\D/g, '');
     if (phone.length === 10) {
       return `${phone.substring(0, 3)} ${phone.substring(3, 6)} ${phone.substring(6, 8)} ${phone.substring(8, 10)}`;
     }
