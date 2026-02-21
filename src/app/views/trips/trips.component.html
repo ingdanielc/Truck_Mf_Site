@@ -1,0 +1,414 @@
+<div class="trips-container py-4 bg-body">
+  <!-- Header & Stats -->
+  <div class="row mb-4 gy-3 align-items-center">
+    <div class="col-12 col-md">
+      <h1 class="h3 fw-bold mb-1 text-body">Gestión de Viajes</h1>
+      <p class="text-body-secondary mb-0 text-truncate">
+        Administra y monitorea los viajes de tu flota
+      </p>
+    </div>
+    <div class="col-12 col-md-auto">
+      <div class="d-flex flex-column flex-sm-row gap-3 align-items-center">
+        <div class="search-wrapper position-relative" style="min-width: 300px">
+          <i
+            class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary"
+          ></i>
+          <input
+            type="text"
+            class="form-control ps-5 py-2 rounded-3 w-100"
+            placeholder="Buscar viaje, manifiesto, placa o conductor..."
+            [(ngModel)]="searchTerm"
+            (input)="applyFilter()"
+          />
+        </div>
+        <button
+          class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+          (click)="toggleOffcanvas()"
+        >
+          <i class="fa-solid fa-plus me-2"></i>Nuevo Viaje
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Total Viajes
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-body">{{ totalTrips }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3"
+          >
+            <i class="fa-solid fa-route fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              En Progreso
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-primary">{{ inProgressTrips }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3"
+          >
+            <i class="fa-solid fa-spinner fs-3 fa-spin"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Completados
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-success">{{ completedTrips }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-success bg-opacity-10 text-success rounded-4 p-3"
+          >
+            <i class="fa-solid fa-circle-check fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trip List Grouped by Owner -->
+  <div class="trips-grid animate__animated animate__fadeIn">
+    <div *ngFor="let group of groupedTrips" class="owner-section mb-5">
+      <div class="owner-header mb-4">
+        <g-vehicle-owner-card
+          [owner]="group.owner"
+          [itemCount]="group.trips.length"
+          [itemLabel]="'Viajes'"
+        >
+        </g-vehicle-owner-card>
+      </div>
+
+      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+        <div *ngFor="let trip of group.trips" class="col">
+          <g-trip-card
+            [trip]="trip"
+            (click)="toggleOffcanvas(trip)"
+            class="hover-scale cursor-pointer"
+          >
+          </g-trip-card>
+        </div>
+
+        <!-- Add Trip Card -->
+        <div
+          *ngIf="
+            userRole === 'ADMINISTRADOR' || group.owner.id === loggedInOwnerId
+          "
+          class="col"
+        >
+          <div
+            class="add-trip-card border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
+            (click)="toggleOffcanvas()"
+            (keypress)="toggleOffcanvas()"
+            role="button"
+            tabindex="0"
+          >
+            <div
+              class="add-trip-icon rounded-circle border d-flex align-items-center justify-content-center"
+            >
+              <i class="fa-solid fa-plus"></i>
+            </div>
+            <span class="small fw-semibold">Registrar Viaje</span>
+            <small class="opacity-75">Para {{ group.owner.name }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div
+      *ngIf="groupedTrips.length === 0"
+      class="text-center py-5 text-body-secondary"
+    >
+      <i class="fa-solid fa-route fs-1 mb-3 opacity-25"></i>
+      <p class="fw-bold">No se encontraron resultados</p>
+    </div>
+  </div>
+
+  <!-- Offcanvas Form -->
+  <div
+    class="custom-offcanvas shadow-lg border-start transition-all"
+    [class.open]="isOffcanvasOpen"
+  >
+    <div class="offcanvas-header p-4 pb-0 d-flex justify-content-between">
+      <div>
+        <h2 class="h4 fw-bold mb-1">
+          {{ editingTrip ? "Editar Viaje" : "Nuevo Viaje" }}
+        </h2>
+        <p class="text-secondary small">
+          {{
+            editingTrip
+              ? "Actualice la información del viaje"
+              : "Complete los datos para registrar un nuevo viaje"
+          }}
+        </p>
+      </div>
+      <span
+        class="btn btn-link text-body p-0 border-0 shadow-none op-70 hover-op-100"
+        (click)="toggleOffcanvas()"
+        onkeypress
+      >
+        <i class="fa-solid fa-xmark fs-4"></i>
+      </span>
+    </div>
+
+    <div class="offcanvas-body p-4 pt-4">
+      <form [formGroup]="tripForm" (ngSubmit)="onSubmit()">
+        <!-- Owner Selection (Admin only) -->
+        <div class="mb-4" *ngIf="userRole === 'ADMINISTRADOR'">
+          <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+            <i class="fa-solid fa-user-tie me-2"></i>Propietario
+          </h6>
+          <div class="mb-3">
+            <label for="ownerId" class="form-label small fw-bold mb-2"
+              >Seleccionar Socio*</label
+            >
+            <select
+              id="ownerId"
+              class="form-select rounded-3 py-2 px-3"
+              formControlName="ownerId"
+              [class.is-invalid]="
+                tripForm.get('ownerId')?.touched &&
+                tripForm.get('ownerId')?.invalid
+              "
+            >
+              <option [ngValue]="null">Selecciona</option>
+              <option *ngFor="let owner of owners" [value]="owner.id">
+                {{ owner.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Vehicle Selection -->
+        <div class="mb-4">
+          <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+            <i class="fa-solid fa-truck me-2"></i>Vehículo
+          </h6>
+          <div class="mb-3">
+            <label for="vehicleId" class="form-label small fw-bold mb-2"
+              >Seleccionar Vehículo*</label
+            >
+            <select
+              id="vehicleId"
+              class="form-select rounded-3 py-2 px-3"
+              formControlName="vehicleId"
+              [class.is-invalid]="
+                tripForm.get('vehicleId')?.touched &&
+                tripForm.get('vehicleId')?.invalid
+              "
+              [disabled]="!tripForm.get('ownerId')?.value"
+            >
+              <option [ngValue]="null">
+                {{
+                  !tripForm.get("ownerId")?.value
+                    ? "Selecciona un propietario primero"
+                    : "Selecciona"
+                }}
+              </option>
+              <option *ngFor="let v of vehicles" [value]="v.id">
+                {{ v.plate }} - {{ v.vehicleBrandName }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+            <i class="fa-solid fa-info-circle me-2"></i>Información del Viaje
+          </h6>
+          <div class="row g-3">
+            <div class="col-6 mb-3">
+              <label for="tripNumber" class="form-label small fw-bold mb-2"
+                >Número de viaje</label
+              >
+              <input
+                id="tripNumber"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="tripNumber"
+                placeholder="Ej: VJ-001"
+                [class.is-invalid]="
+                  tripForm.get('tripNumber')?.touched &&
+                  tripForm.get('tripNumber')?.invalid
+                "
+              />
+            </div>
+            <div class="col-6 mb-3">
+              <label for="manifestNumber" class="form-label small fw-bold mb-2"
+                >Manifiesto</label
+              >
+              <input
+                id="manifestNumber"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="manifestNumber"
+                placeholder="Ej: MF-8892"
+                [class.is-invalid]="
+                  tripForm.get('manifestNumber')?.touched &&
+                  tripForm.get('manifestNumber')?.invalid
+                "
+              />
+            </div>
+
+            <div class="col-6 mb-3">
+              <label for="origin" class="form-label small fw-bold mb-2"
+                >Origen</label
+              >
+              <input
+                id="origin"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="origin"
+                placeholder="Ciudad"
+                [class.is-invalid]="
+                  tripForm.get('origin')?.touched &&
+                  tripForm.get('origin')?.invalid
+                "
+              />
+            </div>
+            <div class="col-6 mb-3">
+              <label for="destination" class="form-label small fw-bold mb-2"
+                >Destino</label
+              >
+              <input
+                id="destination"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="destination"
+                placeholder="Ciudad"
+                [class.is-invalid]="
+                  tripForm.get('destination')?.touched &&
+                  tripForm.get('destination')?.invalid
+                "
+              />
+            </div>
+
+            <div class="col-6 mb-3">
+              <label for="totalFreight" class="form-label small fw-bold mb-2"
+                >Flete Total</label
+              >
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input
+                  id="totalFreight"
+                  type="number"
+                  class="form-control py-2 px-3"
+                  formControlName="totalFreight"
+                  [class.is-invalid]="
+                    tripForm.get('totalFreight')?.touched &&
+                    tripForm.get('totalFreight')?.invalid
+                  "
+                />
+              </div>
+            </div>
+            <div class="col-6 mb-3">
+              <label for="advance" class="form-label small fw-bold mb-2"
+                >Anticipo</label
+              >
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input
+                  id="advance"
+                  type="number"
+                  class="form-control py-2 px-3"
+                  formControlName="advance"
+                  [class.is-invalid]="
+                    tripForm.get('advance')?.touched &&
+                    tripForm.get('advance')?.invalid
+                  "
+                />
+              </div>
+            </div>
+
+            <div class="col-6 mb-3">
+              <label for="date" class="form-label small fw-bold mb-2"
+                >Fecha</label
+              >
+              <input
+                id="date"
+                type="date"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="date"
+                [class.is-invalid]="
+                  tripForm.get('date')?.touched && tripForm.get('date')?.invalid
+                "
+              />
+            </div>
+            <div class="col-6 mb-3">
+              <label for="status" class="form-label small fw-bold mb-2"
+                >Estado</label
+              >
+              <select
+                id="status"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="status"
+              >
+                <option value="IN_PROGRESS">En Progreso</option>
+                <option value="COMPLETED">Completado</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="offcanvas-footer border-top pt-4 mt-auto d-flex gap-3 align-items-center"
+        >
+          <button
+            type="button"
+            class="btn btn-outline-primary flex-fill py-2 rounded-3 fw-bold"
+            (click)="toggleOffcanvas()"
+          >
+            Atrás
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary flex-fill py-2 rounded-3 fw-bold shadow-primary"
+            [disabled]="tripForm.invalid"
+          >
+            {{ editingTrip ? "Guardar cambios" : "Crear viaje" }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Backdrop -->
+  <div
+    *ngIf="isOffcanvasOpen"
+    class="offcanvas-backdrop transition-all d-none d-md-block"
+    (click)="toggleOffcanvas()"
+    onkeypress
+  ></div>
+</div>

@@ -18,4 +18,9 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./drivers/drivers.component').then((m) => m.DriversComponent),
   },
+  {
+    path: 'trips',
+    loadComponent: () =>
+      import('./trips/trips.component').then((m) => m.TripsComponent),
+  },
 ];

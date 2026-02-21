@@ -1,0 +1,93 @@
+:host {
+  display: block;
+}
+
+.trip-card {
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s ease;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  }
+}
+
+.tracking-wider {
+  letter-spacing: 0.05em;
+}
+
+.op-80 {
+  opacity: 0.8;
+}
+
+.op-70 {
+  opacity: 0.7;
+}
+
+.op-10 {
+  opacity: 0.1;
+}
+
+.status-badge {
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+}
+
+/* Timeline specific styles */
+.timeline-visual {
+  width: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 4px;
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    position: relative;
+    z-index: 1;
+    margin-left: 3px;
+
+    &.dot-destination {
+      // Hollow dot with border
+      background: transparent;
+    }
+  }
+
+  .dashed-line {
+    width: 0;
+    border-left: 2px dashed rgba(var(--bs-primary-rgb), 0.3);
+    left: 7.5px;
+    top: 10px;
+    z-index: 0;
+  }
+}
+
+.financials {
+  .h1 {
+    font-size: 1.85rem;
+  }
+}
+
+.progress {
+  overflow: visible;
+
+  .progress-bar {
+    position: relative;
+    transition: width 0.6s ease;
+  }
+}
+
+// Dark mode adjustments if needed for native high-contrast
+[data-bs-theme="dark"] {
+  .trip-card {
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
+  }
+
+  .dashed-line {
+    border-left-color: rgba(var(--bs-primary-rgb), 0.5);
+  }
+}
