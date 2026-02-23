@@ -9,7 +9,9 @@ import {
 } from '@angular/forms';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { GOwnerCardComponent } from '../../components/g-owner-card/g-owner-card.component';
+import { GPasswordCardComponent } from '../../components/g-password-card/g-password-card.component';
 import {
+  Filter,
   ModelFilterTable,
   Pagination,
   Sort,
@@ -29,6 +31,7 @@ import { CustomValidators } from 'src/app/utils/custom-validators';
     FormsModule,
     ReactiveFormsModule,
     GOwnerCardComponent,
+    GPasswordCardComponent,
   ],
   templateUrl: './owners.component.html',
   styleUrls: ['./owners.component.scss'],
@@ -53,6 +56,9 @@ export class OwnersComponent implements OnInit {
   cities: any[] = [];
   showPassword = false;
   showConfirmPassword = false;
+
+  isPasswordOffcanvasOpen: boolean = false;
+  ownerChangingPassword: ModelOwner | null = null;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -407,5 +413,76 @@ export class OwnersComponent implements OnInit {
     }
 
     return formatted;
+  }
+
+  togglePasswordOffcanvas(owner?: ModelOwner): void {
+    this.isPasswordOffcanvasOpen = !this.isPasswordOffcanvasOpen;
+    this.ownerChangingPassword = owner || null;
+  }
+
+  async onUpdatePassword(passwords: any): Promise<void> {
+    if (!this.ownerChangingPassword || !this.ownerChangingPassword.user?.id) {
+      this.toastService.showError(
+        'Error',
+        'No se encontró el usuario asociado al propietario',
+      );
+      return;
+    }
+
+    try {
+      const hashedNewPassword = await this.securityService.getHashSHA512(
+        passwords.newPassword,
+      );
+
+      // Fetch full user to update
+      this.securityService
+        .getUserFilter(
+          new ModelFilterTable(
+            [
+              new Filter(
+                'id',
+                '=',
+                this.ownerChangingPassword.user.id.toString(),
+              ),
+            ],
+            new Pagination(1, 0),
+            new Sort('id', true),
+          ),
+        )
+        .subscribe({
+          next: (response: any) => {
+            if (response?.data?.content?.[0]) {
+              const fullUser = response.data.content[0];
+              fullUser.password = hashedNewPassword;
+
+              this.securityService.createUser(fullUser).subscribe({
+                next: () => {
+                  this.toastService.showSuccess(
+                    'Seguridad',
+                    'Contraseña actualizada exitosamente',
+                  );
+                  this.togglePasswordOffcanvas();
+                },
+                error: (err: any) => {
+                  console.error('Error updating password:', err);
+                  this.toastService.showError(
+                    'Error',
+                    'No se pudo actualizar la contraseña',
+                  );
+                },
+              });
+            }
+          },
+          error: (err: any) => {
+            console.error('Error fetching user for password update:', err);
+            this.toastService.showError(
+              'Error',
+              'No se pudo obtener la información del usuario',
+            );
+          },
+        });
+    } catch (error) {
+      console.error('Error in onUpdatePassword:', error);
+    }
   }
 }

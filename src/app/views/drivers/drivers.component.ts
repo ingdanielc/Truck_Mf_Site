@@ -17,6 +17,7 @@ import {
   Filter,
 } from 'src/app/models/model-filter-table';
 import { GVehicleOwnerCardComponent } from '../../components/g-vehicle-owner-card/g-vehicle-owner-card.component';
+import { GPasswordCardComponent } from '../../components/g-password-card/g-password-card.component';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { DriverService } from 'src/app/services/driver.service';
@@ -40,6 +41,7 @@ export interface DriverOwnerGroup {
     ReactiveFormsModule,
     GDriverCardComponent,
     GVehicleOwnerCardComponent,
+    GPasswordCardComponent,
   ],
   templateUrl: './drivers.component.html',
   styleUrls: ['./drivers.component.scss'],
@@ -85,6 +87,9 @@ export class DriversComponent implements OnInit, OnDestroy {
   ];
   owners: ModelOwner[] = [];
   showAccessData: boolean = true;
+
+  isPasswordOffcanvasOpen: boolean = false;
+  driverChangingPassword: ModelDriver | null = null;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -696,5 +701,76 @@ export class DriversComponent implements OnInit, OnDestroy {
     }
 
     return formatted;
+  }
+
+  togglePasswordOffcanvas(driver?: ModelDriver): void {
+    this.isPasswordOffcanvasOpen = !this.isPasswordOffcanvasOpen;
+    this.driverChangingPassword = driver || null;
+  }
+
+  async onUpdatePassword(passwords: any): Promise<void> {
+    if (!this.driverChangingPassword || !this.driverChangingPassword.user?.id) {
+      this.toastService.showError(
+        'Error',
+        'No se encontró el usuario asociado al conductor',
+      );
+      return;
+    }
+
+    try {
+      const hashedNewPassword = await this.securityService.getHashSHA512(
+        passwords.newPassword,
+      );
+
+      // Fetch full user to update
+      this.securityService
+        .getUserFilter(
+          new ModelFilterTable(
+            [
+              new Filter(
+                'id',
+                '=',
+                this.driverChangingPassword.user.id.toString(),
+              ),
+            ],
+            new Pagination(1, 0),
+            new Sort('id', true),
+          ),
+        )
+        .subscribe({
+          next: (response: any) => {
+            if (response?.data?.content?.[0]) {
+              const fullUser = response.data.content[0];
+              fullUser.password = hashedNewPassword;
+
+              this.securityService.createUser(fullUser).subscribe({
+                next: () => {
+                  this.toastService.showSuccess(
+                    'Seguridad',
+                    'Contraseña actualizada exitosamente',
+                  );
+                  this.togglePasswordOffcanvas();
+                },
+                error: (err: any) => {
+                  console.error('Error updating password:', err);
+                  this.toastService.showError(
+                    'Error',
+                    'No se pudo actualizar la contraseña',
+                  );
+                },
+              });
+            }
+          },
+          error: (err: any) => {
+            console.error('Error fetching user for password update:', err);
+            this.toastService.showError(
+              'Error',
+              'No se pudo obtener la información del usuario',
+            );
+          },
+        });
+    } catch (error) {
+      console.error('Error in onUpdatePassword:', error);
+    }
   }
 }

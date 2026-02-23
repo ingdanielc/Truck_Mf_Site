@@ -12,9 +12,23 @@ import { ModelDriver } from 'src/app/models/driver-model';
 export class GDriverCardComponent {
   @Input() driver!: ModelDriver;
   @Output() edit = new EventEmitter<ModelDriver>();
+  @Output() changePassword = new EventEmitter<ModelDriver>();
+
+  isMenuOpen = false;
+
+  toggleMenu(event: Event): void {
+    event.stopPropagation();
+    this.isMenuOpen = !this.isMenuOpen;
+  }
 
   onEditClick(): void {
+    this.isMenuOpen = false;
     this.edit.emit(this.driver);
+  }
+
+  onChangePasswordClick(): void {
+    this.isMenuOpen = false;
+    this.changePassword.emit(this.driver);
   }
 
   get statusClass(): string {

@@ -13,10 +13,24 @@ import { ModelOwner } from 'src/app/models/owner-model';
 export class GOwnerCardComponent {
   @Input() owner!: ModelOwner;
   @Output() edit = new EventEmitter<ModelOwner>();
+  @Output() changePassword = new EventEmitter<ModelOwner>();
+
+  isMenuOpen = false;
 
   constructor(private readonly router: Router) {}
 
+  toggleMenu(event: Event): void {
+    event.stopPropagation();
+    this.isMenuOpen = !this.isMenuOpen;
+  }
+
+  onChangePasswordClick(): void {
+    this.isMenuOpen = false;
+    this.changePassword.emit(this.owner);
+  }
+
   onEditClick(): void {
+    this.isMenuOpen = false;
     this.edit.emit(this.owner);
   }
 

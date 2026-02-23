@@ -4,6 +4,7 @@
 }
 
 .owner-card {
+  position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
 
@@ -11,6 +12,10 @@
     transform: translateY(-5px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
     border-color: rgba(var(--bs-primary-rgb), 0.2) !important;
+  }
+
+  &.menu-open {
+    z-index: 1050;
   }
 }
 
@@ -46,4 +51,17 @@
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+.dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+.dropdown-menu {
+  z-index: 1001;
 }
