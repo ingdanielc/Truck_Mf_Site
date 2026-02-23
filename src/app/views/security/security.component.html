@@ -116,6 +116,7 @@
         <g-user-card
           [user]="user"
           (edit)="toggleOffcanvas($event)"
+          (changePassword)="togglePasswordOffcanvas($event)"
         ></g-user-card>
       </div>
     }
@@ -175,6 +176,7 @@
         class="btn btn-link text-body p-0 border-0 shadow-none op-70 hover-op-100"
         (click)="toggleOffcanvas()"
         onkeypress
+        aria-label="Cerrar"
       >
         <i class="fa-solid fa-xmark fs-4"></i>
       </span>
@@ -361,11 +363,41 @@
     </div>
   </div>
 
+  <!-- Change Password Offcanvas -->
+  <div
+    class="custom-offcanvas shadow-lg border-start transition-all"
+    [class.open]="isPasswordOffcanvasOpen"
+  >
+    <div class="offcanvas-header p-4 pb-0 d-flex justify-content-between">
+      <div>
+        <h2 class="h4 fw-bold mb-1">Cambiar Contraseña</h2>
+        <p class="text-secondary small">
+          {{ userChangingPassword?.name }}
+        </p>
+      </div>
+      <span
+        class="btn btn-link text-body p-0 border-0 shadow-none op-70 hover-op-100"
+        (click)="togglePasswordOffcanvas()"
+        onkeypress
+        aria-label="Cerrar"
+      >
+        <i class="fa-solid fa-xmark fs-4"></i>
+      </span>
+    </div>
+
+    <div class="offcanvas-body p-4 pt-4">
+      <g-password-card
+        (update)="onUpdatePassword($event)"
+        (cancel)="togglePasswordOffcanvas()"
+      ></g-password-card>
+    </div>
+  </div>
+
   <!-- Backdrop -->
   <div
     class="offcanvas-backdrop transition-all d-none d-md-block"
-    *ngIf="isOffcanvasOpen"
-    (click)="toggleOffcanvas()"
+    *ngIf="isOffcanvasOpen || isPasswordOffcanvasOpen"
+    (click)="isOffcanvasOpen ? toggleOffcanvas() : togglePasswordOffcanvas()"
     onkeypress
   ></div>
 </div>

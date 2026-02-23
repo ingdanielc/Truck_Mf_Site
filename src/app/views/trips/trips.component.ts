@@ -65,6 +65,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   // Selection Lists
   owners: ModelOwner[] = [];
   vehicles: ModelVehicle[] = [];
+  cities: any[] = [];
   loadingVehicles: boolean = false;
   private readonly ownerChangeSub?: Subscription;
 
@@ -121,6 +122,18 @@ export class TripsComponent implements OnInit, OnDestroy {
     }
 
     this.subscribeToUserContext();
+    this.loadCities();
+  }
+
+  loadCities(): void {
+    this.commonService.getCities().subscribe({
+      next: (response: any) => {
+        if (response?.data) {
+          this.cities = response.data;
+        }
+      },
+      error: (err: any) => console.error('Error loading cities:', err),
+    });
   }
 
   loadFilteredOwner(ownerId: number): void {
@@ -256,15 +269,25 @@ export class TripsComponent implements OnInit, OnDestroy {
     let filtered = this.allTrips;
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
-      filtered = this.allTrips.filter(
-        (t) =>
+      filtered = this.allTrips.filter((t) => {
+        const originName = this.cities
+          .find((c) => String(c.id) === String(t.origin))
+          ?.name?.toLowerCase();
+        const destName = this.cities
+          .find((c) => String(c.id) === String(t.destination))
+          ?.name?.toLowerCase();
+
+        return (
           (t.tripNumber?.toLowerCase() || '').includes(term) ||
           (t.manifestNumber?.toLowerCase() || '').includes(term) ||
+          (originName || '').includes(term) ||
+          (destName || '').includes(term) ||
           (t.origin?.toLowerCase() || '').includes(term) ||
           (t.destination?.toLowerCase() || '').includes(term) ||
           (t.vehicle?.plate?.toLowerCase() || '').includes(term) ||
-          (t.driver?.name?.toLowerCase() || '').includes(term),
-      );
+          (t.driver?.name?.toLowerCase() || '').includes(term)
+        );
+      });
     }
     this.buildGroups(filtered);
   }

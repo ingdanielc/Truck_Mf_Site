@@ -12,8 +12,22 @@ import { User } from '../../views/security/interfaces/user.interface';
 export class GUserCardComponent {
   @Input() user!: User;
   @Output() edit = new EventEmitter<User>();
+  @Output() changePassword = new EventEmitter<User>();
+
+  isMenuOpen = false;
+
+  toggleMenu(event: Event): void {
+    event.stopPropagation();
+    this.isMenuOpen = !this.isMenuOpen;
+  }
 
   onEditClick(): void {
+    this.isMenuOpen = false;
     this.edit.emit(this.user);
+  }
+
+  onChangePasswordClick(): void {
+    this.isMenuOpen = false;
+    this.changePassword.emit(this.user);
   }
 }

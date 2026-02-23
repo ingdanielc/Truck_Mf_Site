@@ -11,6 +11,7 @@ import { ModelTrip } from '../../models/trip-model';
 })
 export class GTripCardComponent {
   @Input({ required: true }) trip!: ModelTrip;
+  @Input() cities: any[] = [];
 
   get progressPercentage(): number {
     const total = this.trip.freight || this.trip.totalFreight || 0;
@@ -29,5 +30,21 @@ export class GTripCardComponent {
 
   get displayBalance(): number {
     return this.trip.balance ?? this.displayFreight - this.displayAdvance;
+  }
+
+  get originName(): string {
+    if (!this.trip.origin) return 'N/A';
+    const city = this.cities.find(
+      (c) => String(c.id) === String(this.trip.origin),
+    );
+    return city ? city.name : this.trip.origin;
+  }
+
+  get destinationName(): string {
+    if (!this.trip.destination) return 'N/A';
+    const city = this.cities.find(
+      (c) => String(c.id) === String(this.trip.destination),
+    );
+    return city ? city.name : this.trip.destination;
   }
 }

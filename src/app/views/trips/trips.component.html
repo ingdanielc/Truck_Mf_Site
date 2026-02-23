@@ -114,8 +114,10 @@
         <div *ngFor="let trip of group.trips" class="col">
           <g-trip-card
             [trip]="trip"
+            [cities]="cities"
             (click)="toggleOffcanvas(trip)"
             class="hover-scale cursor-pointer"
+            onkeypress
           >
           </g-trip-card>
         </div>
@@ -286,33 +288,39 @@
               <label for="origin" class="form-label small fw-bold mb-2"
                 >Origen</label
               >
-              <input
+              <select
                 id="origin"
-                type="text"
-                class="form-control rounded-3 py-2 px-3"
+                class="form-select rounded-3 py-2 px-3"
                 formControlName="origin"
-                placeholder="Ciudad"
                 [class.is-invalid]="
                   tripForm.get('origin')?.touched &&
                   tripForm.get('origin')?.invalid
                 "
-              />
+              >
+                <option [ngValue]="null">Selecciona ciudad</option>
+                <option *ngFor="let city of cities" [value]="city.id">
+                  {{ city.name }}
+                </option>
+              </select>
             </div>
             <div class="col-6 mb-3">
               <label for="destination" class="form-label small fw-bold mb-2"
                 >Destino</label
               >
-              <input
+              <select
                 id="destination"
-                type="text"
-                class="form-control rounded-3 py-2 px-3"
+                class="form-select rounded-3 py-2 px-3"
                 formControlName="destination"
-                placeholder="Ciudad"
                 [class.is-invalid]="
                   tripForm.get('destination')?.touched &&
                   tripForm.get('destination')?.invalid
                 "
-              />
+              >
+                <option [ngValue]="null">Selecciona ciudad</option>
+                <option *ngFor="let city of cities" [value]="city.id">
+                  {{ city.name }}
+                </option>
+              </select>
             </div>
 
             <div class="col-6 mb-3">

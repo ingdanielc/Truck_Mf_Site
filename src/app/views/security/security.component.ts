@@ -18,12 +18,19 @@ import {
 
 import { User } from './interfaces/user.interface';
 import { GUserCardComponent } from '../../components/g-user-card/g-user-card.component';
+import { GPasswordCardComponent } from '../../components/g-password-card/g-password-card.component';
 import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-security',
   standalone: true,
-  imports: [CommonModule, GUserCardComponent, ReactiveFormsModule, FormsModule],
+  imports: [
+    CommonModule,
+    GUserCardComponent,
+    GPasswordCardComponent,
+    ReactiveFormsModule,
+    FormsModule,
+  ],
   templateUrl: './security.component.html',
   styleUrls: ['./security.component.scss'],
 })
@@ -43,6 +50,9 @@ export class SecurityComponent implements OnInit {
   availableRoles: ModelRole[] = [];
   ownersCount: number = 0;
   driversCount: number = 0;
+
+  isPasswordOffcanvasOpen: boolean = false;
+  userChangingPassword: User | null = null;
 
   constructor(
     private readonly securityService: SecurityService,
@@ -300,6 +310,68 @@ export class SecurityComponent implements OnInit {
       }
     } else {
       this.userForm.markAllAsTouched();
+    }
+  }
+
+  togglePasswordOffcanvas(user?: User): void {
+    this.isPasswordOffcanvasOpen = !this.isPasswordOffcanvasOpen;
+    this.userChangingPassword = user || null;
+  }
+
+  async onUpdatePassword(passwords: any): Promise<void> {
+    if (!this.userChangingPassword) return;
+
+    try {
+      const hashedNewPassword = await this.securityService.getHashSHA512(
+        passwords.newPassword,
+      );
+
+      // We need to fetch the full user model to update it
+      this.securityService
+        .getUserFilter(
+          new ModelFilterTable(
+            [new Filter('id', '=', this.userChangingPassword.id.toString())],
+            new Pagination(1, 0),
+            new Sort('id', true),
+          ),
+        )
+        .subscribe({
+          next: (response: any) => {
+            if (response?.data?.content?.[0]) {
+              const fullUser = response.data.content[0];
+              const updatedUser = new ModelUser(
+                fullUser.id,
+                fullUser.name,
+                fullUser.email,
+                hashedNewPassword,
+                fullUser.userRoles,
+                fullUser.status,
+              );
+
+              this.securityService.createUser(updatedUser).subscribe({
+                next: () => {
+                  this.toastService.showSuccess(
+                    'Seguridad',
+                    'Contraseña actualizada exitosamente',
+                  );
+                  this.togglePasswordOffcanvas();
+                },
+                error: (err) => {
+                  console.error('Error updating password:', err);
+                  this.toastService.showError(
+                    'Error',
+                    'No se pudo actualizar la contraseña',
+                  );
+                },
+              });
+            }
+          },
+          error: (err) => {
+            console.error('Error fetching user for password update:', err);
+          },
+        });
+    } catch (error) {
+      console.error('Error in onUpdatePassword:', error);
     }
   }
 }
