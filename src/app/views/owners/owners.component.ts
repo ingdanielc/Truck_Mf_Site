@@ -51,6 +51,8 @@ export class OwnersComponent implements OnInit {
   documentTypes: any[] = [];
   genders: any[] = [];
   cities: any[] = [];
+  showPassword = false;
+  showConfirmPassword = false;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -67,6 +69,7 @@ export class OwnersComponent implements OnInit {
           '',
           [
             Validators.required,
+            Validators.maxLength(10),
             CustomValidators.duplicateValueValidator(
               this.allOwners,
               'documentNumber',
@@ -81,7 +84,10 @@ export class OwnersComponent implements OnInit {
         birthdate: ['', [Validators.required]],
         city: [null, [Validators.required]],
         gender: ['', [Validators.required]],
-        maxVehicles: [0, [Validators.required, Validators.min(0)]],
+        maxVehicles: [
+          0,
+          [Validators.required, Validators.min(0), Validators.max(99)],
+        ],
         email: [
           '',
           [
@@ -157,15 +163,18 @@ export class OwnersComponent implements OnInit {
   get strengthLabel(): string {
     const s = this.strength;
     if (s === 0) return '';
-    if (s <= 1) return 'DÉBIL';
-    if (s === 2) return 'MEDIA';
-    if (s === 3) return 'FUERTE';
-    if (s === 4) return 'EXCELENTE';
+    if (s <= 1) return 'Débil';
+    if (s === 2) return 'Media';
+    if (s === 3) return 'Buena';
+    if (s === 4) return 'Fuerte';
     return '';
   }
 
   toggleOffcanvas(owner?: ModelOwner): void {
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
+    this.showPassword = false;
+    this.showConfirmPassword = false;
+
     if (owner) {
       this.editingOwner = owner;
       this.ownerForm.patchValue({
@@ -185,6 +194,7 @@ export class OwnersComponent implements OnInit {
         .get('documentNumber')
         ?.setValidators([
           Validators.required,
+          Validators.maxLength(10),
           CustomValidators.duplicateValueValidator(
             this.allOwners,
             'documentNumber',
@@ -240,6 +250,7 @@ export class OwnersComponent implements OnInit {
         .get('documentNumber')
         ?.setValidators([
           Validators.required,
+          Validators.maxLength(10),
           CustomValidators.duplicateValueValidator(
             this.allOwners,
             'documentNumber',

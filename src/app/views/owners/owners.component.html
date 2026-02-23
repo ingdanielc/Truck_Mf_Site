@@ -268,6 +268,7 @@
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="documentNumber"
                 placeholder="Ej: 1010101010"
+                maxlength="10"
                 (keypress)="allowOnlyNumbers($event)"
                 [class.is-invalid]="
                   ownerForm.get('documentNumber')?.invalid &&
@@ -281,6 +282,10 @@
                 <div class="text-danger small mt-1">
                   @if (ownerForm.get("documentNumber")?.hasError("required")) {
                     Este campo es obligatorio para continuar
+                  } @else if (
+                    ownerForm.get("documentNumber")?.hasError("maxlength")
+                  ) {
+                    El documento no debe exceder los 10 caracteres
                   } @else if (
                     ownerForm.get("documentNumber")?.hasError("duplicate")
                   ) {
@@ -419,6 +424,10 @@
               class="form-control rounded-3 py-2 px-3"
               formControlName="maxVehicles"
               placeholder="3"
+              max="99"
+              oninput="
+                if (this.value.length > 2) this.value = this.value.slice(0, 2);
+              "
               [class.is-invalid]="
                 ownerForm.get('maxVehicles')?.invalid &&
                 ownerForm.get('maxVehicles')?.touched
@@ -429,7 +438,11 @@
               ownerForm.get("maxVehicles")?.touched
             ) {
               <div class="text-danger small mt-1">
-                Este campo es obligatorio para continuar
+                @if (ownerForm.get("maxVehicles")?.hasError("max")) {
+                  El valor máximo permitido es 99
+                } @else {
+                  Este campo es obligatorio para continuar
+                }
               </div>
             }
           </div>
@@ -479,7 +492,7 @@
               <div class="input-group position-relative">
                 <input
                   id="password"
-                  type="password"
+                  [type]="showPassword ? 'text' : 'password'"
                   class="form-control rounded-3 py-2 px-3 pe-5"
                   formControlName="password"
                   placeholder="Escribe"
@@ -488,9 +501,20 @@
                     ownerForm.get('password')?.touched
                   "
                 />
-                <i
-                  class="fa-solid fa-ellipsis position-absolute top-50 end-0 translate-middle-y me-3 text-secondary op-50"
-                ></i>
+                <button
+                  class="btn btn-link text-secondary border-0 shadow-none py-2 px-3 position-absolute top-50 end-0 translate-middle-y z-3"
+                  type="button"
+                  (click)="showPassword = !showPassword"
+                  [attr.aria-label]="
+                    showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'
+                  "
+                >
+                  <i
+                    class="fa-solid"
+                    [class.fa-eye]="!showPassword"
+                    [class.fa-eye-slash]="showPassword"
+                  ></i>
+                </button>
               </div>
               @if (
                 ownerForm.get("password")?.invalid &&
@@ -511,7 +535,7 @@
               <div class="input-group position-relative">
                 <input
                   id="confirmPassword"
-                  type="password"
+                  [type]="showConfirmPassword ? 'text' : 'password'"
                   class="form-control rounded-3 py-2 px-3 pe-5"
                   formControlName="confirmPassword"
                   placeholder="Escribe"
@@ -520,9 +544,22 @@
                     ownerForm.get('confirmPassword')?.touched
                   "
                 />
-                <i
-                  class="fa-solid fa-ellipsis position-absolute top-50 end-0 translate-middle-y me-3 text-secondary op-50"
-                ></i>
+                <button
+                  class="btn btn-link text-secondary border-0 shadow-none py-2 px-3 position-absolute top-50 end-0 translate-middle-y z-3"
+                  type="button"
+                  (click)="showConfirmPassword = !showConfirmPassword"
+                  [attr.aria-label]="
+                    showConfirmPassword
+                      ? 'Ocultar contraseña'
+                      : 'Mostrar contraseña'
+                  "
+                >
+                  <i
+                    class="fa-solid"
+                    [class.fa-eye]="!showConfirmPassword"
+                    [class.fa-eye-slash]="showConfirmPassword"
+                  ></i>
+                </button>
               </div>
               @if (
                 ownerForm.hasError("mismatch") &&

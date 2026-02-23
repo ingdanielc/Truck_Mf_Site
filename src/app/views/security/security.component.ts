@@ -54,6 +54,9 @@ export class SecurityComponent implements OnInit {
   isPasswordOffcanvasOpen: boolean = false;
   userChangingPassword: User | null = null;
 
+  showUserFormPassword = false;
+  showUserFormConfirmPassword = false;
+
   constructor(
     private readonly securityService: SecurityService,
     private readonly toastService: ToastService,
@@ -186,10 +189,10 @@ export class SecurityComponent implements OnInit {
   get strengthLabel(): string {
     const s = this.strength;
     if (s === 0) return '';
-    if (s <= 1) return 'DÉBIL';
-    if (s === 2) return 'MEDIA';
-    if (s === 3) return 'BUENA';
-    return 'FUERTE';
+    if (s <= 1) return 'Débil';
+    if (s === 2) return 'Media';
+    if (s === 3) return 'Buena';
+    return 'Fuerte';
   }
 
   setFilter(filter: string): void {
@@ -213,6 +216,9 @@ export class SecurityComponent implements OnInit {
 
   toggleOffcanvas(user?: User): void {
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
+    this.showUserFormPassword = false;
+    this.showUserFormConfirmPassword = false;
+
     if (this.isOffcanvasOpen) {
       if (user) {
         this.editingUser = user;

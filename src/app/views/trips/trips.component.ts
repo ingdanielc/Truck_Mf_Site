@@ -66,6 +66,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   owners: ModelOwner[] = [];
   vehicles: ModelVehicle[] = [];
   cities: any[] = [];
+  brands: any[] = [];
   loadingVehicles: boolean = false;
   private readonly ownerChangeSub?: Subscription;
 
@@ -102,14 +103,13 @@ export class TripsComponent implements OnInit, OnDestroy {
       status: ['IN_PROGRESS'],
     });
 
-    // React to owner selection change → reload vehicles
     this.ownerChangeSub = this.tripForm
       .get('ownerId')!
       .valueChanges.subscribe((ownerId) => {
-        this.tripForm.get('vehicleId')?.setValue(null, { emitEvent: false });
+        this.tripForm.get('vehicleId')?.setValue(null);
         this.vehicles = [];
-        if (ownerId != null) {
-          this.loadVehiclesByOwner(ownerId);
+        if (ownerId) {
+          this.loadVehiclesByOwner(Number(ownerId));
         }
       });
   }
@@ -123,6 +123,7 @@ export class TripsComponent implements OnInit, OnDestroy {
 
     this.subscribeToUserContext();
     this.loadCities();
+    this.loadBrands();
   }
 
   loadCities(): void {
@@ -146,7 +147,7 @@ export class TripsComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content?.length > 0) {
           this.filteredOwner = response.data.content[0];
-          this.applyFilter();
+          this.loadVehiclesByOwner(ownerId, true);
         }
       },
     });
@@ -177,21 +178,28 @@ export class TripsComponent implements OnInit, OnDestroy {
     this.ownerChangeSub?.unsubscribe();
   }
 
-  loadVehiclesByOwner(ownerId: number): void {
-    this.loadingVehicles = true;
+  loadVehiclesByOwner(ownerId: number, isInitialLoad: boolean = false): void {
+    if (!isInitialLoad) this.loadingVehicles = true;
     const filter = new ModelFilterTable(
       [new Filter('owner.id', '=', ownerId.toString())],
       new Pagination(100, 0),
-      new Sort('plate', true),
+      new Sort('owner.id', true),
     );
-    this.vehicleService.getVehicleFilter(filter).subscribe({
+    this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
       next: (response: any) => {
         this.vehicles = response?.data?.content ?? [];
+        this.mapBrandNames();
         this.loadingVehicles = false;
+        if (isInitialLoad) {
+          this.loadTrips();
+        }
       },
       error: () => {
         this.vehicles = [];
         this.loadingVehicles = false;
+        if (isInitialLoad) {
+          this.loadTrips();
+        }
       },
     });
   }
@@ -199,9 +207,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   loadOwners(): void {
     let filtros: Filter[] = [];
     if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId != null) {
-      filtros.push(
-        new Filter('owner.id', '=', this.loggedInOwnerId.toString()),
-      );
+      filtros.push(new Filter('user.id', '=', this.loggedInOwnerId.toString()));
     }
 
     let filter = new ModelFilterTable(
@@ -218,9 +224,14 @@ export class TripsComponent implements OnInit, OnDestroy {
             this.loggedInOwner = owners[0];
             this.loggedInOwnerId =
               this.loggedInOwner?.id ?? this.loggedInOwnerId;
-            this.loadTrips();
+            if (this.loggedInOwnerId) {
+              this.loadVehiclesByOwner(this.loggedInOwnerId, true);
+            } else {
+              this.loadTrips();
+            }
+          } else if (this.userRole === 'ADMINISTRADOR') {
+            this.applyFilter();
           }
-          this.applyFilter();
         }
       },
     });
@@ -228,10 +239,23 @@ export class TripsComponent implements OnInit, OnDestroy {
 
   loadTrips(): void {
     let filtros: Filter[] = [];
-    if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId != null) {
-      filtros.push(
-        new Filter('owner.id', '=', this.loggedInOwnerId.toString()),
-      );
+
+    // Filter by vehicle.id list if we have a context-specific owner (Role or QueryParam)
+    if (
+      this.userRole === 'PROPIETARIO' ||
+      (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter)
+    ) {
+      const vehicleIds = this.vehicles
+        .map((v) => v.id)
+        .filter((id) => id != null)
+        .join(',');
+
+      if (vehicleIds) {
+        filtros.push(new Filter('vehicle.id', 'in', vehicleIds));
+      } else {
+        // If no vehicles found for the owner, we probably shouldn't see any trips
+        filtros.push(new Filter('vehicle.id', 'IN', '-1'));
+      }
     }
 
     const filter = new ModelFilterTable(
@@ -402,5 +426,32 @@ export class TripsComponent implements OnInit, OnDestroy {
   getVehiclePlate(vehicleId: number): string {
     const v = this.vehicles.find((veh) => veh.id === vehicleId);
     return v ? v.plate : '';
+  }
+
+  loadBrands(): void {
+    this.commonService.getVehicleBrands().subscribe({
+      next: (response: any) => {
+        if (response?.data) {
+          this.brands = response.data;
+          this.mapBrandNames();
+        }
+      },
+      error: (error: any) => {
+        console.error('Error loading brands:', error);
+      },
+    });
+  }
+
+  mapBrandNames(): void {
+    if (this.brands.length > 0 && this.vehicles.length > 0) {
+      this.vehicles.forEach((v) => {
+        const brand = this.brands.find(
+          (b) => b.id.toString() === v.vehicleBrandId.toString(),
+        );
+        if (brand) {
+          v.vehicleBrandName = brand.name;
+        }
+      });
+    }
   }
 }

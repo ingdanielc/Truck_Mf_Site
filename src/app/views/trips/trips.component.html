@@ -206,7 +206,7 @@
               "
             >
               <option [ngValue]="null">Selecciona</option>
-              <option *ngFor="let owner of owners" [value]="owner.id">
+              <option *ngFor="let owner of owners" [ngValue]="owner.id">
                 {{ owner.name }}
               </option>
             </select>
@@ -236,10 +236,12 @@
                 {{
                   !tripForm.get("ownerId")?.value
                     ? "Selecciona un propietario primero"
-                    : "Selecciona"
+                    : loadingVehicles
+                      ? "Cargando vehículos..."
+                      : "Selecciona"
                 }}
               </option>
-              <option *ngFor="let v of vehicles" [value]="v.id">
+              <option *ngFor="let v of vehicles" [ngValue]="v.id">
                 {{ v.plate }} - {{ v.vehicleBrandName }}
               </option>
             </select>

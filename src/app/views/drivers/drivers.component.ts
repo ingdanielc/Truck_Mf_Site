@@ -68,6 +68,8 @@ export class DriversComponent implements OnInit, OnDestroy {
   isOffcanvasOpen: boolean = false;
   editingDriver: ModelDriver | null = null;
   driverForm!: FormGroup;
+  showPassword = false;
+  showConfirmPassword = false;
   documentTypes: any[] = [];
   genders: any[] = [];
   cities: any[] = [];
@@ -101,6 +103,7 @@ export class DriversComponent implements OnInit, OnDestroy {
           '',
           [
             Validators.required,
+            Validators.maxLength(10),
             CustomValidators.duplicateValueValidator(
               this.allDrivers,
               'documentNumber',
@@ -286,10 +289,10 @@ export class DriversComponent implements OnInit, OnDestroy {
   get strengthLabel(): string {
     const s = this.strength;
     if (s === 0) return '';
-    if (s <= 1) return 'DÉBIL';
-    if (s === 2) return 'MEDIA';
-    if (s === 3) return 'BUENA';
-    return 'FUERTE';
+    if (s <= 1) return 'Débil';
+    if (s === 2) return 'Media';
+    if (s === 3) return 'Buena';
+    return 'Fuerte';
   }
 
   onToggleAccessData(event: any): void {
@@ -327,6 +330,8 @@ export class DriversComponent implements OnInit, OnDestroy {
 
   toggleOffcanvas(driver?: ModelDriver): void {
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
+    this.showPassword = false;
+    this.showConfirmPassword = false;
     if (this.isOffcanvasOpen) {
       if (driver) {
         this.editingDriver = driver;
@@ -360,6 +365,7 @@ export class DriversComponent implements OnInit, OnDestroy {
           .get('documentNumber')
           ?.setValidators([
             Validators.required,
+            Validators.maxLength(10),
             CustomValidators.duplicateValueValidator(
               this.allDrivers,
               'documentNumber',
@@ -427,6 +433,7 @@ export class DriversComponent implements OnInit, OnDestroy {
           .get('documentNumber')
           ?.setValidators([
             Validators.required,
+            Validators.maxLength(10),
             CustomValidators.duplicateValueValidator(
               this.allDrivers,
               'documentNumber',
