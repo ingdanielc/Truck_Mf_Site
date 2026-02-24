@@ -91,7 +91,7 @@
       <div class="d-flex align-items-center text-body-secondary small">
         <i class="fa-solid fa-calendar me-2 opacity-50" style="width: 16px"></i>
         <span
-          >{{ driver.birthdate | date: "dd/MM/yyyy" }} ({{
+          >{{ driver.birthdate | date: "d MMM, yyyy" }} ({{
             driver.age
           }}
           años)</span
@@ -107,7 +107,7 @@
             Categoría: <strong>{{ driver.licenseCategory | uppercase }}</strong>
             @if (driver.licenseExpiry) {
               — Vence:
-              <strong>{{ driver.licenseExpiry | date: "dd/MM/yyyy" }}</strong>
+              <strong>{{ driver.licenseExpiry | date: "d MMM, yyyy" }}</strong>
             }
           </span>
         </div>
