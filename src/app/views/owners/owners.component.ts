@@ -188,7 +188,7 @@ export class OwnersComponent implements OnInit {
         documentType: owner.documentTypeId,
         documentNumber: owner.documentNumber,
         cellPhone: owner.cellPhone,
-        birthdate: owner.birthdate,
+        birthdate: owner.birthdate ? owner.birthdate.split('T')[0] : '',
         city: owner.cityId,
         gender: owner.genderId,
         email: owner.email,
@@ -223,6 +223,12 @@ export class OwnersComponent implements OnInit {
 
       // Disable document type in edit mode
       this.ownerForm.get('documentType')?.disable();
+
+      // Clear password validators in edit mode as they are hidden
+      this.ownerForm.get('password')?.clearValidators();
+      this.ownerForm.get('confirmPassword')?.clearValidators();
+      this.ownerForm.get('password')?.updateValueAndValidity();
+      this.ownerForm.get('confirmPassword')?.updateValueAndValidity();
     } else {
       this.editingOwner = null;
       this.ownerForm.reset({
@@ -278,6 +284,16 @@ export class OwnersComponent implements OnInit {
       this.ownerForm.get('email')?.updateValueAndValidity();
 
       this.ownerForm.get('documentType')?.enable();
+
+      // Restore password validators for create mode
+      this.ownerForm
+        .get('password')
+        ?.setValidators([Validators.required, Validators.minLength(6)]);
+      this.ownerForm
+        .get('confirmPassword')
+        ?.setValidators([Validators.required]);
+      this.ownerForm.get('password')?.updateValueAndValidity();
+      this.ownerForm.get('confirmPassword')?.updateValueAndValidity();
     }
   }
 
@@ -309,15 +325,36 @@ export class OwnersComponent implements OnInit {
         };
 
         this.ownerService.createOwner(ownerToSave).subscribe({
-          next: () => {
+          next: (response: any) => {
             this.toastService.showSuccess(
               'Gestión de Propietarios',
               this.editingOwner
                 ? 'Propietario actualizado exitosamente!'
                 : 'Propietario creado exitosamente!',
             );
-            this.loadOwners();
+
+            const updatedOwner = response?.data || ownerToSave;
+
+            if (this.editingOwner) {
+              const index = this.allOwners.findIndex(
+                (o) => o.id === this.editingOwner?.id,
+              );
+              if (index !== -1) {
+                this.allOwners[index] = {
+                  ...this.allOwners[index],
+                  ...updatedOwner,
+                };
+              }
+            } else {
+              this.loadOwners();
+            }
+
+            this.applyFilter();
             this.toggleOffcanvas();
+
+            if (this.editingOwner) {
+              this.loadOwners();
+            }
           },
           error: (err) => {
             console.error('Error saving owner:', err);

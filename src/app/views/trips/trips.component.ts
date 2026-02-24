@@ -26,6 +26,8 @@ import { OwnerService } from 'src/app/services/owner.service';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
+import { DriverService } from 'src/app/services/driver.service';
+import { ModelDriver } from 'src/app/models/driver-model';
 
 export interface TripOwnerGroup {
   owner: ModelOwner;
@@ -65,10 +67,36 @@ export class TripsComponent implements OnInit, OnDestroy {
   // Selection Lists
   owners: ModelOwner[] = [];
   vehicles: ModelVehicle[] = [];
+  drivers: ModelDriver[] = [];
   cities: any[] = [];
   brands: any[] = [];
   loadingVehicles: boolean = false;
+  loadingDrivers: boolean = false;
   private readonly ownerChangeSub?: Subscription;
+  private readonly vehicleChangeSub?: Subscription;
+
+  // Mock lists
+  loadTypes: string[] = [
+    'General',
+    'Refrigerada',
+    'Granel',
+    'Peligrosa',
+    'Contenedores',
+  ];
+  companies: string[] = [
+    'CashTruck Logistics',
+    'Transportes Unidos',
+    'Carga Segura S.A.',
+    'Ruta Rápida',
+    'Logística Avanzada',
+  ];
+  tripStatuses: string[] = [
+    'Planeado',
+    'En Curso',
+    'Completado',
+    'Cancelado',
+    'Pendiente',
+  ];
 
   // User context
   userRole: string = 'ROL';
@@ -88,6 +116,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     private readonly securityService: SecurityService,
     private readonly ownerService: OwnerService,
     private readonly vehicleService: VehicleService,
+    private readonly driverService: DriverService,
     private readonly route: ActivatedRoute,
   ) {
     this.tripForm = this.fb.group({
@@ -95,23 +124,72 @@ export class TripsComponent implements OnInit, OnDestroy {
       manifestNumber: ['', [Validators.required]],
       origin: ['', [Validators.required]],
       destination: ['', [Validators.required]],
-      totalFreight: [0, [Validators.required, Validators.min(0)]],
+      freight: [0, [Validators.required, Validators.min(0)]],
       advance: [0, [Validators.required, Validators.min(0)]],
-      date: [new Date().toISOString().split('T')[0], [Validators.required]],
+      balance: [0],
+      startDate: [
+        new Date().toISOString().split('T')[0],
+        [Validators.required],
+      ],
       ownerId: [null, [Validators.required]],
       vehicleId: [null, [Validators.required]],
-      status: ['IN_PROGRESS'],
+      driverId: [null, [Validators.required]],
+      loadType: ['', [Validators.required]],
+      company: ['', [Validators.required]],
+      status: ['En Curso'],
     });
 
     this.ownerChangeSub = this.tripForm
       .get('ownerId')!
       .valueChanges.subscribe((ownerId) => {
         this.tripForm.get('vehicleId')?.setValue(null);
+        this.tripForm.get('driverId')?.setValue(null);
         this.vehicles = [];
+        this.drivers = [];
         if (ownerId) {
           this.loadVehiclesByOwner(Number(ownerId));
+          this.loadDriversByOwner(Number(ownerId));
         }
       });
+
+    this.vehicleChangeSub = this.tripForm
+      .get('vehicleId')!
+      .valueChanges.subscribe((vehicleId) => {
+        if (vehicleId) {
+          const selectedVehicle = this.vehicles.find(
+            (v) => String(v.id) === String(vehicleId),
+          );
+          if (selectedVehicle) {
+            this.tripForm
+              .get('driverId')
+              ?.setValue(selectedVehicle.currentDriverId);
+
+            // Calculate next trip number for this vehicle
+            if (!this.editingTrip) {
+              const vehicleTripsCount = this.allTrips.filter(
+                (t) => String(t.vehicleId) === String(vehicleId),
+              ).length;
+              this.tripForm.get('tripNumber')?.setValue(vehicleTripsCount + 1);
+            }
+          } else {
+            this.tripForm.get('driverId')?.setValue(null);
+            if (!this.editingTrip)
+              this.tripForm.get('tripNumber')?.setValue('');
+          }
+        } else {
+          this.tripForm.get('driverId')?.setValue(null);
+          if (!this.editingTrip) this.tripForm.get('tripNumber')?.setValue('');
+        }
+      });
+
+    // Auto-calculate balance
+    this.tripForm.valueChanges.subscribe((values) => {
+      const freight = Number(values.freight) || 0;
+      const advance = Number(values.advance) || 0;
+      this.tripForm.get('balance')?.setValue(freight - advance, {
+        emitEvent: false,
+      });
+    });
   }
 
   ngOnInit(): void {
@@ -176,6 +254,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.userSub?.unsubscribe();
     this.ownerChangeSub?.unsubscribe();
+    this.vehicleChangeSub?.unsubscribe();
   }
 
   loadVehiclesByOwner(ownerId: number, isInitialLoad: boolean = false): void {
@@ -200,6 +279,25 @@ export class TripsComponent implements OnInit, OnDestroy {
         if (isInitialLoad) {
           this.loadTrips();
         }
+      },
+    });
+  }
+
+  loadDriversByOwner(ownerId: number): void {
+    this.loadingDrivers = true;
+    const filter = new ModelFilterTable(
+      [new Filter('ownerId', '=', ownerId.toString())],
+      new Pagination(100, 0),
+      new Sort('name', true),
+    );
+    this.driverService.getDriverFilter(filter).subscribe({
+      next: (response: any) => {
+        this.drivers = response?.data?.content ?? [];
+        this.loadingDrivers = false;
+      },
+      error: () => {
+        this.drivers = [];
+        this.loadingDrivers = false;
       },
     });
   }
@@ -321,7 +419,6 @@ export class TripsComponent implements OnInit, OnDestroy {
 
     // Helper to get ownerId from trip
     const getOwnerId = (t: ModelTrip): number | undefined => {
-      if (t.ownerId) return t.ownerId;
       if (t.driver?.ownerId) return t.driver.ownerId;
       if (t.vehicle?.owners && t.vehicle.owners.length > 0) {
         return t.vehicle.owners[0].ownerId;
@@ -368,15 +465,17 @@ export class TripsComponent implements OnInit, OnDestroy {
       if (trip) {
         this.editingTrip = trip;
         this.tripForm.patchValue({
-          tripNumber: trip.tripNumber,
+          //tripNumber: trip.tripNumber,
           manifestNumber: trip.manifestNumber,
           origin: trip.origin,
           destination: trip.destination,
-          totalFreight: trip.totalFreight,
+          freight: trip.freight,
           advance: trip.advance,
-          date: trip.date,
-          ownerId: trip.ownerId,
+          startDate: trip.startDate,
           vehicleId: trip.vehicleId,
+          driverId: trip.driverId,
+          loadType: trip.loadType,
+          company: trip.company,
           status: trip.status,
         });
 
@@ -388,12 +487,13 @@ export class TripsComponent implements OnInit, OnDestroy {
       } else {
         this.editingTrip = null;
         this.tripForm.reset({
-          totalFreight: 0,
+          freight: 0,
           advance: 0,
-          date: new Date().toISOString().split('T')[0],
-          status: 'IN_PROGRESS',
-          ownerId:
-            this.userRole === 'ADMINISTRADOR' ? null : this.loggedInOwnerId,
+          startDate: new Date().toISOString().split('T')[0],
+          status: 'En Curso',
+          driverId: null,
+          loadType: '',
+          company: '',
         });
       }
     }
@@ -401,8 +501,9 @@ export class TripsComponent implements OnInit, OnDestroy {
 
   onSubmit(): void {
     if (this.tripForm.valid) {
+      const { ownerId, ...formData } = this.tripForm.getRawValue();
       const tripData: ModelTrip = {
-        ...this.tripForm.getRawValue(),
+        ...formData,
         id: this.editingTrip ? this.editingTrip.id : null,
       };
 
@@ -440,6 +541,24 @@ export class TripsComponent implements OnInit, OnDestroy {
         console.error('Error loading brands:', error);
       },
     });
+  }
+
+  formatCurrencyInput(controlName: string, event: any): void {
+    const value = event.target.value;
+    if (value === null || value === undefined) return;
+
+    // Remove non-numeric characters
+    const stringValue = String(value).replaceAll(/\D/g, '');
+    const numericValue = stringValue ? Number.parseInt(stringValue, 10) : 0;
+
+    // Update form control with numeric value
+    this.tripForm.get(controlName)?.setValue(numericValue, { emitEvent: true });
+  }
+
+  getFormattedValue(controlName: string): string {
+    const value = this.tripForm.get(controlName)?.value;
+    if (value === null || value === undefined) return '';
+    return new Intl.NumberFormat('de-DE').format(value);
   }
 
   mapBrandNames(): void {

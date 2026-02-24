@@ -216,35 +216,68 @@
         <!-- Vehicle Selection -->
         <div class="mb-4">
           <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
-            <i class="fa-solid fa-truck me-2"></i>Vehículo
+            <i class="fa-solid fa-truck me-2"></i>Vehículo y Conductor
           </h6>
-          <div class="mb-3">
-            <label for="vehicleId" class="form-label small fw-bold mb-2"
-              >Seleccionar Vehículo*</label
-            >
-            <select
-              id="vehicleId"
-              class="form-select rounded-3 py-2 px-3"
-              formControlName="vehicleId"
-              [class.is-invalid]="
-                tripForm.get('vehicleId')?.touched &&
-                tripForm.get('vehicleId')?.invalid
-              "
-              [disabled]="!tripForm.get('ownerId')?.value"
-            >
-              <option [ngValue]="null">
-                {{
-                  !tripForm.get("ownerId")?.value
-                    ? "Selecciona un propietario primero"
-                    : loadingVehicles
-                      ? "Cargando vehículos..."
-                      : "Selecciona"
-                }}
-              </option>
-              <option *ngFor="let v of vehicles" [ngValue]="v.id">
-                {{ v.plate }} - {{ v.vehicleBrandName }}
-              </option>
-            </select>
+          <div class="row g-3">
+            <div class="col-6">
+              <label for="vehicleId" class="form-label small fw-bold mb-2"
+                >Seleccionar Vehículo*</label
+              >
+              <select
+                id="vehicleId"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="vehicleId"
+                [class.is-invalid]="
+                  tripForm.get('vehicleId')?.touched &&
+                  tripForm.get('vehicleId')?.invalid
+                "
+                [disabled]="!tripForm.get('ownerId')?.value"
+              >
+                <option [ngValue]="null">
+                  {{
+                    !tripForm.get("ownerId")?.value
+                      ? "Selecciona un socio"
+                      : loadingVehicles
+                        ? "Cargando..."
+                        : "Selecciona"
+                  }}
+                </option>
+                <option *ngFor="let v of vehicles" [ngValue]="v.id">
+                  {{ v.plate }} - {{ v.vehicleBrandName }}
+                </option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label for="driverId" class="form-label small fw-bold mb-2"
+                >Seleccionar Conductor*</label
+              >
+              <select
+                id="driverId"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="driverId"
+                [class.is-invalid]="
+                  tripForm.get('driverId')?.touched &&
+                  tripForm.get('driverId')?.invalid
+                "
+                [disabled]="!tripForm.get('ownerId')?.value"
+              >
+                <option [ngValue]="null">
+                  {{
+                    !tripForm.get("ownerId")?.value
+                      ? "Selecciona un socio"
+                      : loadingDrivers
+                        ? "Cargando..."
+                        : "Selecciona"
+                  }}
+                </option>
+                <option *ngFor="let d of drivers" [ngValue]="d.id">
+                  {{ d.name }}
+                </option>
+              </select>
+              <div class="invalid-feedback small">
+                Este campo es obligatorio
+              </div>
+            </div>
           </div>
         </div>
 
@@ -255,23 +288,27 @@
           <div class="row g-3">
             <div class="col-6 mb-3">
               <label for="tripNumber" class="form-label small fw-bold mb-2"
-                >Número de viaje</label
+                >Número de viaje*</label
               >
               <input
                 id="tripNumber"
                 type="text"
-                class="form-control rounded-3 py-2 px-3"
+                class="form-control rounded-3 py-2 px-3 fw-bold bg-light"
                 formControlName="tripNumber"
-                placeholder="Ej: VJ-001"
+                placeholder="Autocalculado..."
+                readonly
                 [class.is-invalid]="
                   tripForm.get('tripNumber')?.touched &&
                   tripForm.get('tripNumber')?.invalid
                 "
               />
+              <div class="invalid-feedback small">
+                Este campo es obligatorio para continuar
+              </div>
             </div>
             <div class="col-6 mb-3">
               <label for="manifestNumber" class="form-label small fw-bold mb-2"
-                >Manifiesto</label
+                >Manifiesto*</label
               >
               <input
                 id="manifestNumber"
@@ -284,11 +321,14 @@
                   tripForm.get('manifestNumber')?.invalid
                 "
               />
+              <div class="invalid-feedback small">
+                Este campo es obligatorio para continuar
+              </div>
             </div>
 
             <div class="col-6 mb-3">
               <label for="origin" class="form-label small fw-bold mb-2"
-                >Origen</label
+                >Origen*</label
               >
               <select
                 id="origin"
@@ -304,10 +344,13 @@
                   {{ city.name }}
                 </option>
               </select>
+              <div class="invalid-feedback small">
+                Este campo es obligatorio para continuar
+              </div>
             </div>
             <div class="col-6 mb-3">
               <label for="destination" class="form-label small fw-bold mb-2"
-                >Destino</label
+                >Destino*</label
               >
               <select
                 id="destination"
@@ -323,58 +366,135 @@
                   {{ city.name }}
                 </option>
               </select>
+              <div class="invalid-feedback small">
+                Este campo es obligatorio para continuar
+              </div>
             </div>
 
             <div class="col-6 mb-3">
-              <label for="totalFreight" class="form-label small fw-bold mb-2"
-                >Flete Total</label
+              <label for="freight" class="form-label small fw-bold mb-2"
+                >Flete Total*</label
               >
-              <div class="input-group">
+              <div class="input-group has-validation">
                 <span class="input-group-text">$</span>
                 <input
-                  id="totalFreight"
-                  type="number"
+                  id="freight"
+                  type="text"
                   class="form-control py-2 px-3"
-                  formControlName="totalFreight"
+                  [value]="getFormattedValue('freight')"
+                  (input)="formatCurrencyInput('freight', $event)"
                   [class.is-invalid]="
-                    tripForm.get('totalFreight')?.touched &&
-                    tripForm.get('totalFreight')?.invalid
+                    tripForm.get('freight')?.touched &&
+                    tripForm.get('freight')?.invalid
                   "
                 />
+                <div class="invalid-feedback small">
+                  Este campo es obligatorio para continuar
+                </div>
               </div>
             </div>
             <div class="col-6 mb-3">
               <label for="advance" class="form-label small fw-bold mb-2"
-                >Anticipo</label
+                >Anticipo*</label
               >
-              <div class="input-group">
+              <div class="input-group has-validation">
                 <span class="input-group-text">$</span>
                 <input
                   id="advance"
-                  type="number"
+                  type="text"
                   class="form-control py-2 px-3"
-                  formControlName="advance"
+                  [value]="getFormattedValue('advance')"
+                  (input)="formatCurrencyInput('advance', $event)"
                   [class.is-invalid]="
                     tripForm.get('advance')?.touched &&
                     tripForm.get('advance')?.invalid
                   "
                 />
+                <div class="invalid-feedback small">
+                  Este campo es obligatorio para continuar
+                </div>
               </div>
             </div>
 
             <div class="col-6 mb-3">
-              <label for="date" class="form-label small fw-bold mb-2"
-                >Fecha</label
+              <label for="balance" class="form-label small fw-bold mb-2"
+                >Saldo</label
+              >
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input
+                  id="balance"
+                  type="text"
+                  class="form-control py-2 px-3 fw-bold bg-light"
+                  [value]="getFormattedValue('balance')"
+                  readonly
+                />
+              </div>
+            </div>
+
+            <div class="col-6 mb-3">
+              <label for="startDate" class="form-label small fw-bold mb-2"
+                >Fecha de Inicio*</label
               >
               <input
-                id="date"
+                id="startDate"
                 type="date"
                 class="form-control rounded-3 py-2 px-3"
-                formControlName="date"
+                formControlName="startDate"
                 [class.is-invalid]="
-                  tripForm.get('date')?.touched && tripForm.get('date')?.invalid
+                  tripForm.get('startDate')?.touched &&
+                  tripForm.get('startDate')?.invalid
                 "
               />
+              <div class="invalid-feedback small">
+                Este campo es obligatorio para continuar
+              </div>
+            </div>
+
+            <div class="col-6 mb-3">
+              <label for="loadType" class="form-label small fw-bold mb-2"
+                >Tipo de Carga*</label
+              >
+              <select
+                id="loadType"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="loadType"
+                [class.is-invalid]="
+                  tripForm.get('loadType')?.touched &&
+                  tripForm.get('loadType')?.invalid
+                "
+              >
+                <option value="">Selecciona</option>
+                <option *ngFor="let type of loadTypes" [value]="type">
+                  {{ type }}
+                </option>
+              </select>
+              <div class="invalid-feedback small">
+                Este campo es obligatorio para continuar
+              </div>
+            </div>
+
+            <div class="col-6 mb-3">
+              <label for="company" class="form-label small fw-bold mb-2"
+                >Empresa*</label
+              >
+              <select
+                id="company"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="company"
+                [class.is-invalid]="
+                  tripForm.get('company')?.touched &&
+                  tripForm.get('company')?.invalid
+                "
+              >
+                <option value="">Selecciona</option>
+                <option *ngFor="let corp of companies" [value]="corp">
+                  {{ corp }}
+                </option>
+              </select>
+              <div class="invalid-feedback small">
+                Este campo es obligatorio para continuar
+              </div>
             </div>
             <div class="col-6 mb-3">
               <label for="status" class="form-label small fw-bold mb-2"
@@ -385,8 +505,9 @@
                 class="form-select rounded-3 py-2 px-3"
                 formControlName="status"
               >
-                <option value="IN_PROGRESS">En Progreso</option>
-                <option value="COMPLETED">Completado</option>
+                <option *ngFor="let s of tripStatuses" [value]="s">
+                  {{ s }}
+                </option>
               </select>
             </div>
           </div>

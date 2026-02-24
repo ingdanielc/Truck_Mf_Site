@@ -345,7 +345,7 @@ export class DriversComponent implements OnInit, OnDestroy {
           documentType: driver.documentTypeId,
           documentNumber: driver.documentNumber,
           cellPhone: driver.cellPhone,
-          birthdate: driver.birthdate,
+          birthdate: driver.birthdate ? driver.birthdate.split('T')[0] : '',
           city: driver.cityId,
           gender: driver.genderId,
           licenseCategory: driver.licenseCategory,
@@ -497,15 +497,41 @@ export class DriversComponent implements OnInit, OnDestroy {
         };
 
         this.driverService.createDriver(driverToSave).subscribe({
-          next: () => {
+          next: (response: any) => {
             this.toastService.showSuccess(
               'Gestión de Conductores',
               this.editingDriver
                 ? 'Conductor actualizado exitosamente!'
                 : 'Conductor creado exitosamente!',
             );
-            this.loadDrivers();
+
+            // After save, the backend returns the updated driver
+            const updatedDriver = response?.data || driverToSave;
+
+            if (this.editingDriver) {
+              // Update in the local list for immediate reflection
+              const index = this.allDrivers.findIndex(
+                (d) => d.id === this.editingDriver?.id,
+              );
+              if (index !== -1) {
+                // Preserve names and other fields not necessarily in the update payload
+                this.allDrivers[index] = {
+                  ...this.allDrivers[index],
+                  ...updatedDriver,
+                };
+              }
+            } else {
+              // If it's a new driver, we might need a full reload to get ID and other generated fields
+              this.loadDrivers();
+            }
+
+            this.applyFilter();
             this.toggleOffcanvas();
+
+            // Still call loadDrivers to ensure everything is in sync with the server
+            if (this.editingDriver) {
+              this.loadDrivers();
+            }
           },
           error: (err: any) => {
             console.error('Error saving driver:', err);

@@ -7,16 +7,13 @@ export interface ModelTrip {
   status: string;
   origin: string;
   destination: string;
-  totalFreight: number;
+  freight: number;
   manifestNumber: string;
   advance: number;
   balance: number;
-  date: string | Date;
-  ownerId?: number;
   vehicleId?: number;
   vehiclePlate?: string;
 
-  // New fields from backend
   vehicle?: ModelVehicle;
   driverId?: number;
   driver?: ModelDriver;
@@ -25,7 +22,6 @@ export interface ModelTrip {
   endDate?: string | Date;
   numberOfDays?: number;
   loadType?: string;
-  freight?: number;
   advancePayment?: number;
   paidBalance?: boolean;
   creationDate?: string | Date;

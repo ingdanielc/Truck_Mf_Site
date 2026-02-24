@@ -14,14 +14,14 @@ export class GTripCardComponent {
   @Input() cities: any[] = [];
 
   get progressPercentage(): number {
-    const total = this.trip.freight || this.trip.totalFreight || 0;
+    const total = this.trip.freight || 0;
     const paid = this.trip.advancePayment || this.trip.advance || 0;
     if (total === 0) return 0;
     return (paid / total) * 100;
   }
 
   get displayFreight(): number {
-    return this.trip.freight ?? this.trip.totalFreight ?? 0;
+    return this.trip.freight ?? this.trip.freight ?? 0;
   }
 
   get displayAdvance(): number {

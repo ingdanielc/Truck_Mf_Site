@@ -25,7 +25,7 @@
       </div>
       @if (driver.user) {
         <div class="dropdown position-relative">
-          <span
+          <button
             class="btn btn-link text-body-secondary p-0 border-0 shadow-none op-50 hover-op-100"
             type="button"
             (click)="toggleMenu($event)"
@@ -34,7 +34,7 @@
             onkeypress
           >
             <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
-          </span>
+          </button>
           <ul
             class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
             *ngIf="isMenuOpen"
@@ -117,14 +117,16 @@
     <div
       class="d-flex justify-content-end align-items-center mt-auto pt-3 border-top border-secondary-subtle"
     >
-      <span
+      <button
+        type="button"
         (click)="onEditClick()"
         class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
         style="width: 40px"
         onkeypress
+        aria-label="Editar conductor"
       >
         <i class="fa-solid fa-pencil"></i>
-      </span>
+      </button>
     </div>
   </div>
 </div>
