@@ -3,13 +3,13 @@ import { ModelVehicle } from './vehicle-model';
 
 export interface ModelTrip {
   id: number | null;
-  tripNumber?: string;
+  numberTrip?: string;
   status: string;
   origin: string;
   destination: string;
   freight: number;
   manifestNumber: string;
-  advance: number;
+  advancePayment: number;
   balance: number;
   vehicleId?: number;
   vehiclePlate?: string;
@@ -22,7 +22,6 @@ export interface ModelTrip {
   endDate?: string | Date;
   numberOfDays?: number;
   loadType?: string;
-  advancePayment?: number;
   paidBalance?: boolean;
   creationDate?: string | Date;
   updateDate?: string | Date;

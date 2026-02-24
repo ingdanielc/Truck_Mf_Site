@@ -15,7 +15,7 @@ export class GTripCardComponent {
 
   get progressPercentage(): number {
     const total = this.trip.freight || 0;
-    const paid = this.trip.advancePayment || this.trip.advance || 0;
+    const paid = this.trip.advancePayment || 0;
     if (total === 0) return 0;
     return (paid / total) * 100;
   }
@@ -25,7 +25,7 @@ export class GTripCardComponent {
   }
 
   get displayAdvance(): number {
-    return this.trip.advancePayment ?? this.trip.advance ?? 0;
+    return this.trip.advancePayment ?? this.trip.advancePayment ?? 0;
   }
 
   get displayBalance(): number {

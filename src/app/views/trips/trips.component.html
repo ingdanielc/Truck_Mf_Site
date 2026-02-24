@@ -4,7 +4,7 @@
     <div class="col-12 col-md">
       <h1 class="h3 fw-bold mb-1 text-body">Gestión de Viajes</h1>
       <p class="text-body-secondary mb-0 text-truncate">
-        Administra y monitorea los viajes de tu flota
+        Administra y monitorea los viajes de tus vehículos
       </p>
     </div>
     <div class="col-12 col-md-auto">
@@ -287,19 +287,19 @@
           </h6>
           <div class="row g-3">
             <div class="col-6 mb-3">
-              <label for="tripNumber" class="form-label small fw-bold mb-2"
+              <label for="numberTrip" class="form-label small fw-bold mb-2"
                 >Número de viaje*</label
               >
               <input
-                id="tripNumber"
+                id="numberTrip"
                 type="text"
                 class="form-control rounded-3 py-2 px-3 fw-bold bg-light"
-                formControlName="tripNumber"
+                formControlName="numberTrip"
                 placeholder="Autocalculado..."
                 readonly
                 [class.is-invalid]="
-                  tripForm.get('tripNumber')?.touched &&
-                  tripForm.get('tripNumber')?.invalid
+                  tripForm.get('numberTrip')?.touched &&
+                  tripForm.get('numberTrip')?.invalid
                 "
               />
               <div class="invalid-feedback small">
@@ -394,20 +394,20 @@
               </div>
             </div>
             <div class="col-6 mb-3">
-              <label for="advance" class="form-label small fw-bold mb-2"
+              <label for="advancePayment" class="form-label small fw-bold mb-2"
                 >Anticipo*</label
               >
               <div class="input-group has-validation">
                 <span class="input-group-text">$</span>
                 <input
-                  id="advance"
+                  id="advancePayment"
                   type="text"
                   class="form-control py-2 px-3"
-                  [value]="getFormattedValue('advance')"
-                  (input)="formatCurrencyInput('advance', $event)"
+                  [value]="getFormattedValue('advancePayment')"
+                  (input)="formatCurrencyInput('advancePayment', $event)"
                   [class.is-invalid]="
-                    tripForm.get('advance')?.touched &&
-                    tripForm.get('advance')?.invalid
+                    tripForm.get('advancePayment')?.touched &&
+                    tripForm.get('advancePayment')?.invalid
                   "
                 />
                 <div class="invalid-feedback small">

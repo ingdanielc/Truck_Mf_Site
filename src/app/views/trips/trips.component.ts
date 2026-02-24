@@ -120,12 +120,12 @@ export class TripsComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
   ) {
     this.tripForm = this.fb.group({
-      tripNumber: ['', [Validators.required]],
+      numberTrip: ['', [Validators.required]],
       manifestNumber: ['', [Validators.required]],
       origin: ['', [Validators.required]],
       destination: ['', [Validators.required]],
       freight: [0, [Validators.required, Validators.min(0)]],
-      advance: [0, [Validators.required, Validators.min(0)]],
+      advancePayment: [0, [Validators.required, Validators.min(0)]],
       balance: [0],
       startDate: [
         new Date().toISOString().split('T')[0],
@@ -169,24 +169,24 @@ export class TripsComponent implements OnInit, OnDestroy {
               const vehicleTripsCount = this.allTrips.filter(
                 (t) => String(t.vehicleId) === String(vehicleId),
               ).length;
-              this.tripForm.get('tripNumber')?.setValue(vehicleTripsCount + 1);
+              this.tripForm.get('numberTrip')?.setValue(vehicleTripsCount + 1);
             }
           } else {
             this.tripForm.get('driverId')?.setValue(null);
             if (!this.editingTrip)
-              this.tripForm.get('tripNumber')?.setValue('');
+              this.tripForm.get('numberTrip')?.setValue('');
           }
         } else {
           this.tripForm.get('driverId')?.setValue(null);
-          if (!this.editingTrip) this.tripForm.get('tripNumber')?.setValue('');
+          if (!this.editingTrip) this.tripForm.get('numberTrip')?.setValue('');
         }
       });
 
     // Auto-calculate balance
     this.tripForm.valueChanges.subscribe((values) => {
       const freight = Number(values.freight) || 0;
-      const advance = Number(values.advance) || 0;
-      this.tripForm.get('balance')?.setValue(freight - advance, {
+      const advancePayment = Number(values.advancePayment) || 0;
+      this.tripForm.get('balance')?.setValue(freight - advancePayment, {
         emitEvent: false,
       });
     });
@@ -400,7 +400,7 @@ export class TripsComponent implements OnInit, OnDestroy {
           ?.name?.toLowerCase();
 
         return (
-          (t.tripNumber?.toLowerCase() || '').includes(term) ||
+          (t.numberTrip?.toLowerCase() || '').includes(term) ||
           (t.manifestNumber?.toLowerCase() || '').includes(term) ||
           (originName || '').includes(term) ||
           (destName || '').includes(term) ||
@@ -465,12 +465,12 @@ export class TripsComponent implements OnInit, OnDestroy {
       if (trip) {
         this.editingTrip = trip;
         this.tripForm.patchValue({
-          //tripNumber: trip.tripNumber,
+          numberTrip: trip.numberTrip,
           manifestNumber: trip.manifestNumber,
           origin: trip.origin,
           destination: trip.destination,
           freight: trip.freight,
-          advance: trip.advance,
+          advancePayment: trip.advancePayment,
           startDate: trip.startDate,
           vehicleId: trip.vehicleId,
           driverId: trip.driverId,
@@ -488,7 +488,7 @@ export class TripsComponent implements OnInit, OnDestroy {
         this.editingTrip = null;
         this.tripForm.reset({
           freight: 0,
-          advance: 0,
+          advancePayment: 0,
           startDate: new Date().toISOString().split('T')[0],
           status: 'En Curso',
           driverId: null,
@@ -501,9 +501,11 @@ export class TripsComponent implements OnInit, OnDestroy {
 
   onSubmit(): void {
     if (this.tripForm.valid) {
-      const { ownerId, ...formData } = this.tripForm.getRawValue();
+      const { ownerId, balance, ...formData } = this.tripForm.getRawValue();
       const tripData: ModelTrip = {
         ...formData,
+        numberOfDays: 0,
+        paidBalance: false,
         id: this.editingTrip ? this.editingTrip.id : null,
       };
 
