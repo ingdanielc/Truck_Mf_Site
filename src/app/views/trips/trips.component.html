@@ -340,9 +340,14 @@
                 "
               >
                 <option [ngValue]="null">Selecciona ciudad</option>
-                <option *ngFor="let city of cities" [value]="city.id">
-                  {{ city.name }}
-                </option>
+                <optgroup
+                  *ngFor="let group of groupedCities"
+                  [label]="group.state"
+                >
+                  <option *ngFor="let city of group.cities" [value]="city.id">
+                    {{ city.name }}
+                  </option>
+                </optgroup>
               </select>
               <div class="invalid-feedback small">
                 Este campo es obligatorio para continuar
@@ -362,9 +367,14 @@
                 "
               >
                 <option [ngValue]="null">Selecciona ciudad</option>
-                <option *ngFor="let city of cities" [value]="city.id">
-                  {{ city.name }}
-                </option>
+                <optgroup
+                  *ngFor="let group of groupedCities"
+                  [label]="group.state"
+                >
+                  <option *ngFor="let city of group.cities" [value]="city.id">
+                    {{ city.name }}
+                  </option>
+                </optgroup>
               </select>
               <div class="invalid-feedback small">
                 Este campo es obligatorio para continuar

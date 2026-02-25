@@ -377,9 +377,14 @@
                 "
               >
                 <option value="null" disabled selected>Selecciona</option>
-                <option *ngFor="let city of cities" [value]="city.id">
-                  {{ city.name }}
-                </option>
+                <optgroup
+                  *ngFor="let group of groupedCities"
+                  [label]="group.state"
+                >
+                  <option *ngFor="let city of group.cities" [value]="city.id">
+                    {{ city.name }}
+                  </option>
+                </optgroup>
               </select>
               @if (
                 ownerForm.get("city")?.invalid && ownerForm.get("city")?.touched

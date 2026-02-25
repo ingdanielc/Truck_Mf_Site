@@ -54,6 +54,7 @@ export class OwnersComponent implements OnInit {
   documentTypes: any[] = [];
   genders: any[] = [];
   cities: any[] = [];
+  groupedCities: { state: string; cities: any[] }[] = [];
   showPassword = false;
   showConfirmPassword = false;
 
@@ -146,13 +147,31 @@ export class OwnersComponent implements OnInit {
     this.commonService.getCities().subscribe({
       next: (response: any) => {
         if (response?.data) {
-          this.cities = response.data;
+          this.cities = response.data.sort((a: any, b: any) => {
+            const stateCmp = (a.state || '').localeCompare(b.state || '', 'es');
+            return stateCmp !== 0
+              ? stateCmp
+              : a.name.localeCompare(b.name, 'es');
+          });
+          this.groupedCities = this.buildGroupedCities();
         }
       },
       error: (err) => {
         console.error('Error loading cities:', err);
       },
     });
+  }
+
+  private buildGroupedCities(): { state: string; cities: any[] }[] {
+    const map = new Map<string, any[]>();
+    for (const city of this.cities) {
+      const state = city.state || 'Sin departamento';
+      if (!map.has(state)) map.set(state, []);
+      map.get(state)!.push(city);
+    }
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b, 'es'))
+      .map(([state, cities]) => ({ state, cities }));
   }
 
   get strength(): number {

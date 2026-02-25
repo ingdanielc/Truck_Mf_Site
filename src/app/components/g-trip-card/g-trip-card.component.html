@@ -82,7 +82,7 @@
             Total Flete
           </p>
           <h2 class="h1 fw-bold mb-0 text-body">
-            {{ displayFreight | currency: "USD" : "symbol" : "1.0-0" }}
+            {{ displayFreight | currency: "COP" : "symbol" : "1.0-0" }}
           </h2>
         </div>
         <div class="col-5 text-end">
@@ -100,11 +100,11 @@
         <div class="d-flex justify-content-between mb-2">
           <span class="small text-body-secondary fw-bold op-70"
             >Anticipo:
-            {{ displayAdvance | currency: "USD" : "symbol" : "1.0-0" }}</span
+            {{ displayAdvance | currency: "COP" : "symbol" : "1.0-0" }}</span
           >
           <span class="small text-primary fw-bold"
             >Saldo:
-            {{ displayBalance | currency: "USD" : "symbol" : "1.0-0" }}</span
+            {{ displayBalance | currency: "COP" : "symbol" : "1.0-0" }}</span
           >
         </div>
         <div

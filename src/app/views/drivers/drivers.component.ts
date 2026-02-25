@@ -75,6 +75,7 @@ export class DriversComponent implements OnInit, OnDestroy {
   documentTypes: any[] = [];
   genders: any[] = [];
   cities: any[] = [];
+  groupedCities: { state: string; cities: any[] }[] = [];
   licenseCategories: any[] = [
     { id: 'a1', name: 'A1' },
     { id: 'a2', name: 'A2' },
@@ -217,7 +218,14 @@ export class DriversComponent implements OnInit, OnDestroy {
 
     this.commonService.getCities().subscribe({
       next: (response: any) => {
-        if (response?.data) this.cities = response.data;
+        if (response?.data)
+          this.cities = response.data.sort((a: any, b: any) => {
+            const stateCmp = (a.state || '').localeCompare(b.state || '', 'es');
+            return stateCmp !== 0
+              ? stateCmp
+              : a.name.localeCompare(b.name, 'es');
+          });
+        this.groupedCities = this.buildGroupedCities();
       },
       error: (err: any) => console.error('Error loading cities:', err),
     });
@@ -278,6 +286,18 @@ export class DriversComponent implements OnInit, OnDestroy {
       error: (err: any) =>
         console.error(`Error fetching owner ${ownerId}:`, err),
     });
+  }
+
+  private buildGroupedCities(): { state: string; cities: any[] }[] {
+    const map = new Map<string, any[]>();
+    for (const city of this.cities) {
+      const state = city.state || 'Sin departamento';
+      if (!map.has(state)) map.set(state, []);
+      map.get(state)!.push(city);
+    }
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b, 'es'))
+      .map(([state, cities]) => ({ state, cities }));
   }
 
   get strength(): number {
