@@ -32,7 +32,7 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="flex-grow-1 overflow-auto px-2">
+    <nav class="flex-grow-1 overflow-auto px-2 custom-scrollbar">
       <ul class="nav nav-pills flex-column gap-1">
         @for (item of menuItems; track item.label) {
           <li class="nav-item">
@@ -78,7 +78,7 @@
   </aside>
 
   <!-- Main Content -->
-  <main class="flex-grow-1 overflow-auto bg-body-tertiary">
+  <main class="flex-grow-1 overflow-auto bg-body-tertiary custom-scrollbar">
     <ng-content></ng-content>
   </main>
 </div>
