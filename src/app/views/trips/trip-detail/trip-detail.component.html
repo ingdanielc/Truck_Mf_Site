@@ -21,23 +21,6 @@
     </div>
     <div class="col-12 col-md-auto">
       <div class="d-flex gap-2 align-items-center">
-        <div class="status-selector">
-          <small
-            class="text-secondary d-block mb-1 text-uppercase fw-bold"
-            style="font-size: 0.6rem"
-            >Estado del Viaje</small
-          >
-          <select
-            class="form-select bg-body-tertiary border-0 rounded-3 shadow-sm"
-            [value]="trip.status"
-          >
-            <option value="Planeado">Planeado</option>
-            <option value="En Curso">En Curso</option>
-            <option value="Completado">Completado</option>
-            <option value="Cancelado">Cancelado</option>
-            <option value="Pendiente">Pendiente</option>
-          </select>
-        </div>
         <button
           class="btn btn-primary rounded-3 px-4 shadow-primary d-flex align-items-center"
           (click)="editTrip()"
@@ -57,7 +40,7 @@
         <div>
           <h5 class="fw-bold mb-1">Progreso del Viaje</h5>
           <p class="text-secondary small mb-0">
-            Ubicación actual: {{ originName }} (Punto de control)
+            Ubicación actual: {{ originName }} - Punto de control
           </p>
         </div>
         <div class="text-primary h2 fw-bold mb-0">
@@ -65,7 +48,7 @@
         </div>
       </div>
 
-      <div class="progress-stepper position-relative py-4">
+      <div class="progress-stepper position-relative py-3">
         <div
           class="progress-line bg-secondary bg-opacity-10 position-absolute w-100"
           style="height: 4px; top: 50%; transform: translateY(-50%)"
@@ -85,7 +68,7 @@
             >
               <i class="fa-solid fa-warehouse"></i>
             </div>
-            <div class="fw-bold small">{{ originName }}</div>
+            <div class="fw-bold small pt-2">{{ originName }}</div>
             <div class="text-secondary" style="font-size: 0.7rem">
               {{ trip.startDate | date: "shortTime" }}
             </div>
@@ -99,7 +82,7 @@
             >
               <i class="fa-solid fa-location-dot"></i>
             </div>
-            <div class="fw-bold small">En Ruta</div>
+            <div class="fw-bold small pt-2">En Ruta</div>
             <div class="text-secondary" style="font-size: 0.7rem">
               Actualizado recientemente
             </div>
@@ -113,7 +96,7 @@
             >
               <i class="fa-solid fa-flag-checkered"></i>
             </div>
-            <div class="fw-bold small">{{ destinationName }}</div>
+            <div class="fw-bold small pt-2">{{ destinationName }}</div>
             <div class="text-secondary" style="font-size: 0.7rem">
               Est: --:--
             </div>
@@ -127,7 +110,7 @@
     <!-- Logistics Column -->
     <div class="col-12 col-xl-4">
       <div
-        class="card border-0 rounded-4 shadow-sm bg-body-tertiary h-100 hover-scale"
+        class="card border-0 rounded-4 shadow-sm bg-body-tertiary hover-scale"
       >
         <div class="card-body p-4">
           <h6 class="text-secondary small fw-bold mb-4 text-uppercase">
@@ -177,19 +160,49 @@
             </div>
           </div>
 
-          <div
-            class="payment-check mt-4 p-3 bg-primary bg-opacity-5 rounded-3 d-flex justify-content-between align-items-center"
-          >
-            <div class="d-flex align-items-center gap-2">
-              <i class="fa-solid fa-wallet text-primary"></i>
-              <span class="fw-bold small">Saldo Pagado</span>
+          <div class="d-flex gap-3 mb-4">
+            <div
+              class="icon-box bg-secondary bg-opacity-10 rounded-3 p-3 flex-shrink-0 d-flex align-items-center justify-content-center"
+              style="width: 50px; height: 50px"
+            >
+              <i class="fa-solid fa-circle-notch text-secondary"></i>
+            </div>
+            <div class="flex-grow-1">
+              <p class="text-secondary small mb-0">Estado del Viaje</p>
+              <select
+                class="form-select bg-transparent border-0 p-0 shadow-none fw-bold text-body"
+                [value]="trip.status"
+                style="font-size: 1rem; margin-top: -2px"
+              >
+                <option value="Planeado">Planeado</option>
+                <option value="En Curso">En Curso</option>
+                <option value="Completado">Completado</option>
+                <option value="Cancelado">Cancelado</option>
+                <option value="Pendiente">Pendiente</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="d-flex gap-3 align-items-center">
+            <div
+              class="icon-box bg-secondary bg-opacity-10 rounded-3 p-3 flex-shrink-0 d-flex align-items-center justify-content-center"
+              style="width: 50px; height: 50px"
+            >
+              <i class="fa-solid fa-wallet text-secondary"></i>
+            </div>
+            <div class="flex-grow-1">
+              <p class="text-secondary small mb-0">Saldo Pagado</p>
+              <h6 class="fw-bold mb-0">
+                {{ trip.paidBalance ? "Si" : "No" }}
+              </h6>
             </div>
             <div class="form-check form-switch mb-0">
               <input
-                class="form-check-input"
+                class="form-check-input shadow-none"
                 type="checkbox"
                 role="switch"
                 [checked]="trip.paidBalance"
+                (change)="trip.paidBalance = !trip.paidBalance"
               />
             </div>
           </div>
@@ -219,7 +232,9 @@
             <div class="card-body p-4">
               <div class="d-flex justify-content-between">
                 <div>
-                  <p class="text-secondary small mb-1">Total Ingresos</p>
+                  <p class="text-secondary small mb-1 fw-bold text-uppercase">
+                    Total Ingresos
+                  </p>
                   <h3 class="fw-bold mb-1">
                     ${{ trip.freight | number: "1.0-0" }}
                   </h3>
@@ -244,17 +259,17 @@
             <div class="card-body p-4">
               <div class="d-flex justify-content-between">
                 <div>
-                  <p class="text-secondary small mb-1">Total Gastos</p>
+                  <p class="text-secondary small mb-1 fw-bold text-uppercase">
+                    Total Gastos
+                  </p>
                   <h3 class="fw-bold mb-1">$0</h3>
-                  <div class="d-flex gap-1 mt-1">
+                  <div class="d-flex gap-1 mt-2">
                     <span
                       class="badge bg-secondary bg-opacity-10 text-secondary border-0 p-1"
-                      style="font-size: 0.6rem"
                       >Peajes</span
                     >
                     <span
                       class="badge bg-secondary bg-opacity-10 text-secondary border-0 p-1"
-                      style="font-size: 0.6rem"
                       >Combustible</span
                     >
                   </div>
@@ -275,8 +290,8 @@
             class="card border-0 rounded-4 shadow-sm bg-primary border border-primary border-opacity-10 text-center py-5 hover-scale"
           >
             <div class="card-body text-white">
-              <p class="text-white small fw-bold text-uppercase mb-2">
-                Rentabilidad neta estimada
+              <p class="text-white small fw-bold text-uppercase mb-3">
+                Rentabilidad neta
               </p>
               <h1 class="display-4 fw-bold text-white mb-3">
                 ${{ netProfit | number: "1.0-0" }}
