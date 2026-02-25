@@ -3,27 +3,6 @@
   flex: 1;
 }
 
-.custom-scrollbar {
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-  }
-}
-
-[data-bs-theme="dark"] {
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-  }
-}
-
 .shadow-primary {
   box-shadow: 0 4px 15px rgba(var(--bs-primary-rgb), 0.3);
 }

@@ -183,7 +183,7 @@
       </button>
     </div>
 
-    <div class="offcanvas-body p-4 pt-4">
+    <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
       <form [formGroup]="ownerForm" (ngSubmit)="onSubmit()">
         <!-- Photo Upload Section -->
         <div class="text-center mb-4">
@@ -691,7 +691,7 @@
       </button>
     </div>
 
-    <div class="offcanvas-body p-4 pt-4">
+    <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
       <g-password-card
         (update)="onUpdatePassword($event)"
         (cancel)="togglePasswordOffcanvas()"
