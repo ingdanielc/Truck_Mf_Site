@@ -48,4 +48,11 @@ export class GDriverCardComponent {
     }
     return this.driver.cellPhone || '';
   }
+
+  formatDocNumber(value: any): string {
+    const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
+    return isNaN(n) || value === ''
+      ? String(value ?? '')
+      : new Intl.NumberFormat('es-CO').format(n);
+  }
 }

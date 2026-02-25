@@ -127,8 +127,14 @@ export class TripsComponent implements OnInit, OnDestroy {
       manifestNumber: ['', [Validators.required]],
       origin: ['', [Validators.required]],
       destination: ['', [Validators.required]],
-      freight: [0, [Validators.required, Validators.min(0), Validators.max(999999999)]],
-      advancePayment: [0, [Validators.required, Validators.min(0), Validators.max(999999999)]],
+      freight: [
+        0,
+        [Validators.required, Validators.min(0), Validators.max(999999999)],
+      ],
+      advancePayment: [
+        0,
+        [Validators.required, Validators.min(0), Validators.max(999999999)],
+      ],
       balance: [0],
       startDate: [
         new Date().toISOString().split('T')[0],

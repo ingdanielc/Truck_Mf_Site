@@ -62,4 +62,11 @@ export class GOwnerCardComponent {
     }
     return this.owner.cellPhone || '';
   }
+
+  formatDocNumber(value: any): string {
+    const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
+    return isNaN(n) || value === ''
+      ? String(value ?? '')
+      : new Intl.NumberFormat('es-CO').format(n);
+  }
 }

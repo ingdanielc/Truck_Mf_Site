@@ -19,4 +19,11 @@ export class GVehicleOwnerCardComponent {
   onViewProfile(): void {
     this.viewProfile.emit(this.owner);
   }
+
+  formatDocNumber(value: any): string {
+    const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
+    return isNaN(n) || value === ''
+      ? String(value ?? '')
+      : new Intl.NumberFormat('es-CO').format(n);
+  }
 }
