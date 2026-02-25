@@ -6,6 +6,7 @@
         <button
           (click)="goBack()"
           class="btn btn-link text-body p-0 shadow-none"
+          aria-label="Editar"
         >
           <i class="fa-solid fa-arrow-left fs-4"></i>
         </button>
@@ -68,7 +69,7 @@
             >
               <i class="fa-solid fa-warehouse"></i>
             </div>
-            <div class="fw-bold small pt-2">{{ originName }}</div>
+            <div class="fw-bold small pt-3">{{ originName }}</div>
             <div class="text-secondary" style="font-size: 0.7rem">
               {{ trip.startDate | date: "shortTime" }}
             </div>
@@ -82,7 +83,7 @@
             >
               <i class="fa-solid fa-location-dot"></i>
             </div>
-            <div class="fw-bold small pt-2">En Ruta</div>
+            <div class="fw-bold small pt-3">En Ruta</div>
             <div class="text-secondary" style="font-size: 0.7rem">
               Actualizado recientemente
             </div>
@@ -96,7 +97,7 @@
             >
               <i class="fa-solid fa-flag-checkered"></i>
             </div>
-            <div class="fw-bold small pt-2">{{ destinationName }}</div>
+            <div class="fw-bold small pt-3">{{ destinationName }}</div>
             <div class="text-secondary" style="font-size: 0.7rem">
               Est: --:--
             </div>
@@ -351,6 +352,45 @@
     </div>
   </div>
 </div>
+
+<!-- Offcanvas Form -->
+<div
+  class="custom-offcanvas shadow-lg border-start transition-all"
+  [class.open]="isOffcanvasOpen"
+>
+  <div class="offcanvas-header p-4 pb-0 d-flex justify-content-between">
+    <div>
+      <h2 class="h4 fw-bold mb-1">Editar Viaje</h2>
+      <p class="text-secondary small">Actualice la información del viaje</p>
+    </div>
+    <span
+      class="btn btn-link text-body p-0 border-0 shadow-none op-70 hover-op-100"
+      (click)="toggleOffcanvas()"
+      onkeypress
+    >
+      <i class="fa-solid fa-xmark fs-4"></i>
+    </span>
+  </div>
+
+  <div class="offcanvas-body p-0">
+    <g-trip-form
+      *ngIf="isOffcanvasOpen"
+      [trip]="trip"
+      [userRole]="userRole"
+      [loggedInOwnerId]="loggedInOwnerId"
+      (saved)="onTripSaved()"
+      (cancel)="toggleOffcanvas()"
+    ></g-trip-form>
+  </div>
+</div>
+
+<!-- Backdrop -->
+<div
+  *ngIf="isOffcanvasOpen"
+  class="offcanvas-backdrop transition-all d-none d-md-block"
+  (click)="toggleOffcanvas()"
+  onkeypress
+></div>
 
 <ng-template #loadingState>
   <div

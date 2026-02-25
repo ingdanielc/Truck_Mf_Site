@@ -6,6 +6,8 @@ import { TripService } from 'src/app/services/trip.service';
 import { CommonService } from 'src/app/services/common.service';
 import { ModelTrip } from 'src/app/models/trip-model';
 import { ToastService } from 'src/app/services/toast.service';
+import { SecurityService } from 'src/app/services/security/security.service';
+import { GTripFormComponent } from '../../../components/g-trip-form/g-trip-form.component';
 import {
   Filter,
   ModelFilterTable,
@@ -16,7 +18,7 @@ import {
 @Component({
   selector: 'app-trip-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, GTripFormComponent],
   templateUrl: './trip-detail.component.html',
   styleUrls: ['./trip-detail.component.scss'],
 })
@@ -25,7 +27,16 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   trip: ModelTrip | null = null;
   cities: any[] = [];
   loading: boolean = true;
+
+  // UI State
+  isOffcanvasOpen: boolean = false;
+
+  // User context
+  userRole: string = 'ROL';
+  loggedInOwnerId: number | null = null;
+
   private routeSub?: Subscription;
+  private userSub?: Subscription;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -33,6 +44,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     private readonly tripService: TripService,
     private readonly commonService: CommonService,
     private readonly toastService: ToastService,
+    private readonly securityService: SecurityService,
   ) {}
 
   ngOnInit(): void {
@@ -44,10 +56,22 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         this.loadTrip(this.tripId);
       }
     });
+
+    this.userSub = this.securityService.userData$.subscribe({
+      next: (user) => {
+        if (user) {
+          this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+          if (this.userRole === 'PROPIETARIO') {
+            this.loggedInOwnerId = user.id ?? null;
+          }
+        }
+      },
+    });
   }
 
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
+    this.userSub?.unsubscribe();
   }
 
   loadCities(): void {
@@ -65,7 +89,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     this.loading = true;
     const filter = new ModelFilterTable(
       [new Filter('id', '=', id.toString())],
-      new Pagination(100, 0),
+      new Pagination(1, 0),
       new Sort('id', true),
     );
     this.tripService.getTripFilter(filter).subscribe({
@@ -118,7 +142,6 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   get netProfit(): number {
     if (!this.trip) return 0;
-    // For now: Freight - Advance (this might change if there are more expenses)
     return (this.trip.freight || 0) - (this.trip.advancePayment || 0);
   }
 
@@ -131,8 +154,18 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     this.router.navigate(['/site/trips']);
   }
 
+  toggleOffcanvas(): void {
+    this.isOffcanvasOpen = !this.isOffcanvasOpen;
+  }
+
   editTrip(): void {
-    console.log('Navegando a edición...');
-    // Navigation to edit could be implemented if needed
+    this.toggleOffcanvas();
+  }
+
+  onTripSaved(): void {
+    this.toggleOffcanvas();
+    if (this.tripId) {
+      this.loadTrip(this.tripId);
+    }
   }
 }

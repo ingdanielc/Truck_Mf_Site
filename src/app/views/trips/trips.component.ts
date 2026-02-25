@@ -1,13 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import {
-  FormBuilder,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ModelTrip } from 'src/app/models/trip-model';
 import {
@@ -25,9 +19,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { VehicleService } from 'src/app/services/vehicle.service';
-import { ModelVehicle } from 'src/app/models/vehicle-model';
-import { DriverService } from 'src/app/services/driver.service';
-import { ModelDriver } from 'src/app/models/driver-model';
+import { GTripFormComponent } from '../../components/g-trip-form/g-trip-form.component';
 
 export interface TripOwnerGroup {
   owner: ModelOwner;
@@ -40,9 +32,9 @@ export interface TripOwnerGroup {
   imports: [
     CommonModule,
     FormsModule,
-    ReactiveFormsModule,
     GTripCardComponent,
     GVehicleOwnerCardComponent,
+    GTripFormComponent,
   ],
   templateUrl: './trips.component.html',
   styleUrls: ['./trips.component.scss'],
@@ -59,147 +51,33 @@ export class TripsComponent implements OnInit, OnDestroy {
   // Grouped display
   groupedTrips: TripOwnerGroup[] = [];
 
-  // Offcanvas and Form
+  // Offcanvas state
   isOffcanvasOpen: boolean = false;
   editingTrip: ModelTrip | null = null;
-  tripForm: FormGroup;
 
-  // Selection Lists
+  // Selection Lists for parent context
   owners: ModelOwner[] = [];
-  vehicles: ModelVehicle[] = [];
-  drivers: ModelDriver[] = [];
   cities: any[] = [];
-  groupedCities: { state: string; cities: any[] }[] = [];
-  brands: any[] = [];
-  loadingVehicles: boolean = false;
-  loadingDrivers: boolean = false;
-  private _pendingVehicleId: number | null = null;
-  private _pendingDriverId: number | null = null;
-  private readonly ownerChangeSub?: Subscription;
-  private readonly vehicleChangeSub?: Subscription;
-
-  // Mock lists
-  loadTypes: string[] = [
-    'General',
-    'Refrigerada',
-    'Granel',
-    'Peligrosa',
-    'Contenedores',
-  ];
-  companies: string[] = [
-    'CashTruck Logistics',
-    'Transportes Unidos',
-    'Carga Segura S.A.',
-    'Ruta Rápida',
-    'Logística Avanzada',
-  ];
-  tripStatuses: string[] = [
-    'Planeado',
-    'En Curso',
-    'Completado',
-    'Cancelado',
-    'Pendiente',
-  ];
+  vehicles: any[] = [];
 
   // User context
   userRole: string = 'ROL';
   loggedInOwnerId: number | null = null;
-  loggedInOwner: ModelOwner | null = null;
   private userSub?: Subscription;
 
-  /** ownerId filter when navigated from owner card (query param) */
+  // filters
   ownerIdFilter: number | null = null;
   filteredOwner: ModelOwner | null = null;
 
   constructor(
-    private readonly fb: FormBuilder,
     private readonly tripService: TripService,
     private readonly commonService: CommonService,
     private readonly toastService: ToastService,
     private readonly securityService: SecurityService,
     private readonly ownerService: OwnerService,
     private readonly vehicleService: VehicleService,
-    private readonly driverService: DriverService,
     private readonly route: ActivatedRoute,
-  ) {
-    this.tripForm = this.fb.group({
-      numberTrip: ['', [Validators.required]],
-      manifestNumber: ['', [Validators.required]],
-      origin: ['', [Validators.required]],
-      destination: ['', [Validators.required]],
-      freight: [
-        0,
-        [Validators.required, Validators.min(0), Validators.max(999999999)],
-      ],
-      advancePayment: [
-        0,
-        [Validators.required, Validators.min(0), Validators.max(999999999)],
-      ],
-      balance: [0],
-      startDate: [
-        new Date().toISOString().split('T')[0],
-        [Validators.required],
-      ],
-      ownerId: [null, [Validators.required]],
-      vehicleId: [null, [Validators.required]],
-      driverId: [null, [Validators.required]],
-      loadType: ['', [Validators.required]],
-      company: ['', [Validators.required]],
-      status: ['En Curso'],
-    });
-
-    this.ownerChangeSub = this.tripForm
-      .get('ownerId')!
-      .valueChanges.subscribe((ownerId) => {
-        this.tripForm.get('vehicleId')?.setValue(null);
-        this.tripForm.get('driverId')?.setValue(null);
-        this.vehicles = [];
-        this.drivers = [];
-        if (ownerId) {
-          this.loadVehiclesByOwner(Number(ownerId));
-          this.loadDriversByOwner(Number(ownerId));
-        }
-      });
-
-    this.vehicleChangeSub = this.tripForm
-      .get('vehicleId')!
-      .valueChanges.subscribe((vehicleId) => {
-        if (vehicleId) {
-          const selectedVehicle = this.vehicles.find(
-            (v) => String(v.id) === String(vehicleId),
-          );
-          if (selectedVehicle) {
-            this.tripForm
-              .get('driverId')
-              ?.setValue(selectedVehicle.currentDriverId);
-
-            // Calculate next trip number for this vehicle
-            if (!this.editingTrip) {
-              const vehicleTripsCount = this.allTrips.filter(
-                (t) => String(t.vehicleId) === String(vehicleId),
-              ).length;
-              this.tripForm.get('numberTrip')?.setValue(vehicleTripsCount + 1);
-            }
-          } else {
-            this.tripForm.get('driverId')?.setValue(null);
-            if (!this.editingTrip)
-              this.tripForm.get('numberTrip')?.setValue('');
-          }
-        } else {
-          this.tripForm.get('driverId')?.setValue(null);
-          if (!this.editingTrip) this.tripForm.get('numberTrip')?.setValue('');
-        }
-      });
-
-    // Auto-calculate balance
-    this.tripForm.valueChanges.subscribe((values) => {
-      const freight = Number(values.freight) || 0;
-      const advancePayment = Number(values.advancePayment) || 0;
-      this.tripForm.get('balance')?.setValue(freight - advancePayment, {
-        emitEvent: false,
-      });
-    });
-  }
+  ) {}
 
   ngOnInit(): void {
     const rawOwnerId = this.route.snapshot.queryParamMap.get('ownerId');
@@ -210,36 +88,17 @@ export class TripsComponent implements OnInit, OnDestroy {
 
     this.subscribeToUserContext();
     this.loadCities();
-    this.loadBrands();
   }
 
   loadCities(): void {
     this.commonService.getCities().subscribe({
       next: (response: any) => {
         if (response?.data) {
-          this.cities = response.data.sort((a: any, b: any) => {
-            const stateCmp = (a.state || '').localeCompare(b.state || '', 'es');
-            return stateCmp !== 0
-              ? stateCmp
-              : a.name.localeCompare(b.name, 'es');
-          });
-          this.groupedCities = this.buildGroupedCities();
+          this.cities = response.data;
         }
       },
       error: (err: any) => console.error('Error loading cities:', err),
     });
-  }
-
-  private buildGroupedCities(): { state: string; cities: any[] }[] {
-    const map = new Map<string, any[]>();
-    for (const city of this.cities) {
-      const state = city.state || 'Sin departamento';
-      if (!map.has(state)) map.set(state, []);
-      map.get(state)!.push(city);
-    }
-    return Array.from(map.entries())
-      .sort(([a], [b]) => a.localeCompare(b, 'es'))
-      .map(([state, cities]) => ({ state, cities }));
   }
 
   loadFilteredOwner(ownerId: number): void {
@@ -265,14 +124,12 @@ export class TripsComponent implements OnInit, OnDestroy {
           this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
 
           if (this.userRole === 'ADMINISTRADOR') {
-            this.tripForm.get('ownerId')?.setValidators([Validators.required]);
             this.loadOwners();
             this.loadTrips();
           } else if (this.userRole === 'PROPIETARIO') {
             this.loggedInOwnerId = user.id ?? null;
             this.loadOwners();
           }
-          this.tripForm.get('ownerId')?.updateValueAndValidity();
         }
       },
     });
@@ -280,12 +137,9 @@ export class TripsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.userSub?.unsubscribe();
-    this.ownerChangeSub?.unsubscribe();
-    this.vehicleChangeSub?.unsubscribe();
   }
 
   loadVehiclesByOwner(ownerId: number, isInitialLoad: boolean = false): void {
-    if (!isInitialLoad) this.loadingVehicles = true;
     const filter = new ModelFilterTable(
       [new Filter('owner.id', '=', ownerId.toString())],
       new Pagination(100, 0),
@@ -294,55 +148,13 @@ export class TripsComponent implements OnInit, OnDestroy {
     this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
       next: (response: any) => {
         this.vehicles = response?.data?.content ?? [];
-        this.mapBrandNames();
-        this.loadingVehicles = false;
-        if (this._pendingVehicleId != null) {
-          // Edit mode: restore the trip's vehicle
-          this.tripForm
-            .get('vehicleId')
-            ?.setValue(this._pendingVehicleId, { emitEvent: false });
-          this._pendingVehicleId = null;
-        } else if (!this.editingTrip && this.vehicles.length === 1) {
-          // Create mode: auto-select the only vehicle
-          this.tripForm.get('vehicleId')?.setValue(this.vehicles[0].id);
-        }
         if (isInitialLoad) {
           this.loadTrips();
         }
       },
       error: () => {
         this.vehicles = [];
-        this.loadingVehicles = false;
-        if (isInitialLoad) {
-          this.loadTrips();
-        }
-      },
-    });
-  }
-
-  loadDriversByOwner(ownerId: number): void {
-    this.loadingDrivers = true;
-    const filter = new ModelFilterTable(
-      [new Filter('ownerId', '=', ownerId.toString())],
-      new Pagination(100, 0),
-      new Sort('name', true),
-    );
-    this.driverService.getDriverFilter(filter).subscribe({
-      next: (response: any) => {
-        this.drivers = response?.data?.content ?? [];
-        this.loadingDrivers = false;
-        if (this._pendingDriverId != null) {
-          // Edit mode: restore the trip's driver
-          this.tripForm.get('driverId')?.setValue(this._pendingDriverId);
-          this._pendingDriverId = null;
-        } else if (!this.editingTrip && this.drivers.length === 1) {
-          // Create mode: auto-select the only driver
-          this.tripForm.get('driverId')?.setValue(this.drivers[0].id);
-        }
-      },
-      error: () => {
-        this.drivers = [];
-        this.loadingDrivers = false;
+        if (isInitialLoad) this.loadTrips();
       },
     });
   }
@@ -361,15 +173,11 @@ export class TripsComponent implements OnInit, OnDestroy {
     this.ownerService.getOwnerFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
-          const owners = response.data.content;
-          this.owners = owners;
-          if (this.userRole === 'PROPIETARIO' && owners.length > 0) {
-            this.loggedInOwner = owners[0];
-            this.loggedInOwnerId =
-              this.loggedInOwner?.id ?? this.loggedInOwnerId;
+          this.owners = response.data.content;
+          if (this.userRole === 'PROPIETARIO' && this.owners.length > 0) {
+            this.loggedInOwnerId = this.owners[0].id ?? this.loggedInOwnerId;
             if (this.loggedInOwnerId) {
               this.loadVehiclesByOwner(this.loggedInOwnerId, true);
-              this.loadDriversByOwner(this.loggedInOwnerId);
             } else {
               this.loadTrips();
             }
@@ -384,7 +192,6 @@ export class TripsComponent implements OnInit, OnDestroy {
   loadTrips(): void {
     let filtros: Filter[] = [];
 
-    // Filter by vehicle.id list if we have a context-specific owner (Role or QueryParam)
     if (
       this.userRole === 'PROPIETARIO' ||
       (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter)
@@ -397,7 +204,6 @@ export class TripsComponent implements OnInit, OnDestroy {
       if (vehicleIds) {
         filtros.push(new Filter('vehicle.id', 'in', vehicleIds));
       } else {
-        // If no vehicles found for the owner, we probably shouldn't see any trips
         filtros.push(new Filter('vehicle.id', 'IN', '-1'));
       }
     }
@@ -462,8 +268,6 @@ export class TripsComponent implements OnInit, OnDestroy {
 
   buildGroups(trips: ModelTrip[]): void {
     const groups: TripOwnerGroup[] = [];
-
-    // Helper to get ownerId from trip
     const getOwnerId = (t: ModelTrip): number | undefined => {
       if (t.driver?.ownerId) return t.driver.ownerId;
       if (t.vehicle?.owners && t.vehicle.owners.length > 0) {
@@ -472,7 +276,6 @@ export class TripsComponent implements OnInit, OnDestroy {
       return undefined;
     };
 
-    // If we have an ownerIdFilter, ensure that owner is always shown first
     if (this.ownerIdFilter != null && this.filteredOwner) {
       const ownerTrips = trips.filter(
         (t) => getOwnerId(t) === this.ownerIdFilter,
@@ -483,7 +286,6 @@ export class TripsComponent implements OnInit, OnDestroy {
       });
     }
 
-    // Process all other owners
     const ownerIds = [
       ...new Set(
         trips.map((t) => getOwnerId(t)).filter((id) => id !== undefined),
@@ -491,7 +293,6 @@ export class TripsComponent implements OnInit, OnDestroy {
     ] as number[];
     ownerIds.forEach((oid) => {
       if (oid === this.ownerIdFilter) return;
-
       const owner = this.owners.find((o) => o.id === oid);
       if (owner) {
         const ownerTrips = trips.filter((t) => getOwnerId(t) === oid);
@@ -508,148 +309,12 @@ export class TripsComponent implements OnInit, OnDestroy {
   toggleOffcanvas(trip?: ModelTrip): void {
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
     if (this.isOffcanvasOpen) {
-      if (trip) {
-        this.editingTrip = trip;
-
-        // Determine ownerId to load vehicles/drivers for this trip
-        const tripOwnerId: number | null =
-          this.userRole === 'PROPIETARIO'
-            ? this.loggedInOwnerId
-            : (trip.driver?.ownerId ??
-              trip.vehicle?.owners?.[0]?.ownerId ??
-              null);
-
-        if (tripOwnerId) {
-          this._pendingVehicleId = trip.vehicleId ?? null;
-          this._pendingDriverId = trip.driverId ?? null;
-          this.loadVehiclesByOwner(Number(tripOwnerId));
-          this.loadDriversByOwner(Number(tripOwnerId));
-        }
-
-        this.tripForm.patchValue({
-          numberTrip: trip.numberTrip,
-          manifestNumber: trip.manifestNumber,
-          origin: trip.origin,
-          destination: trip.destination,
-          freight: trip.freight,
-          advancePayment: trip.advancePayment,
-          startDate: trip.startDate,
-          vehicleId: trip.vehicleId,
-          driverId: trip.driverId,
-          loadType: trip.loadType,
-          company: trip.company,
-          status: trip.status,
-        });
-
-        if (this.userRole === 'PROPIETARIO') {
-          this.tripForm.get('ownerId')?.disable();
-        } else {
-          this.tripForm.get('ownerId')?.enable();
-        }
-      } else {
-        this.editingTrip = null;
-        this.tripForm.reset({
-          freight: 0,
-          advancePayment: 0,
-          startDate: new Date().toISOString().split('T')[0],
-          status: 'En Curso',
-          driverId: null,
-          loadType: '',
-          company: '',
-        });
-
-        // For PROPIETARIO: pre-set ownerId so vehicle/driver selects populate
-        if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId) {
-          this.tripForm.get('ownerId')?.setValue(this.loggedInOwnerId);
-          this.tripForm.get('ownerId')?.disable();
-        }
-      }
+      this.editingTrip = trip ?? null;
     }
   }
 
-  onSubmit(): void {
-    if (this.tripForm.valid) {
-      const { ownerId, balance, ...formData } = this.tripForm.getRawValue();
-      const tripData: ModelTrip = {
-        ...formData,
-        numberOfDays: 0,
-        paidBalance: false,
-        id: this.editingTrip ? this.editingTrip.id : null,
-      };
-
-      this.tripService.createTrip(tripData).subscribe({
-        next: () => {
-          this.toastService.showSuccess(
-            'Éxito',
-            `Viaje ${this.editingTrip ? 'actualizado' : 'creado'} correctamente`,
-          );
-          this.toggleOffcanvas();
-          this.loadTrips();
-        },
-        error: (error: any) => {
-          console.error('Error saving trip:', error);
-          this.toastService.showError('Error', 'Error al guardar el viaje');
-        },
-      });
-    }
-  }
-
-  getVehiclePlate(vehicleId: number): string {
-    const v = this.vehicles.find((veh) => veh.id === vehicleId);
-    return v ? v.plate : '';
-  }
-
-  loadBrands(): void {
-    this.commonService.getVehicleBrands().subscribe({
-      next: (response: any) => {
-        if (response?.data) {
-          this.brands = response.data;
-          this.mapBrandNames();
-        }
-      },
-      error: (error: any) => {
-        console.error('Error loading brands:', error);
-      },
-    });
-  }
-
-  formatCurrencyInput(controlName: string, event: any): void {
-    const MAX = 999_999_999;
-    const input = event.target as HTMLInputElement;
-    const value = input.value;
-    if (value === null || value === undefined) return;
-
-    // Remove non-numeric characters
-    const stringValue = String(value).replaceAll(/\D/g, '');
-    const numericValue = stringValue ? Number.parseInt(stringValue, 10) : 0;
-
-    // Block if exceeds max: restore the previous displayed value
-    if (numericValue > MAX) {
-      const current = this.tripForm.get(controlName)?.value ?? 0;
-      input.value = new Intl.NumberFormat('de-DE').format(current);
-      return;
-    }
-
-    // Update form control with numeric value
-    this.tripForm.get(controlName)?.setValue(numericValue, { emitEvent: true });
-  }
-
-  getFormattedValue(controlName: string): string {
-    const value = this.tripForm.get(controlName)?.value;
-    if (value === null || value === undefined) return '';
-    return new Intl.NumberFormat('de-DE').format(value);
-  }
-
-  mapBrandNames(): void {
-    if (this.brands.length > 0 && this.vehicles.length > 0) {
-      this.vehicles.forEach((v) => {
-        const brand = this.brands.find(
-          (b) => b.id.toString() === v.vehicleBrandId.toString(),
-        );
-        if (brand) {
-          v.vehicleBrandName = brand.name;
-        }
-      });
-    }
+  onTripSaved(): void {
+    this.toggleOffcanvas();
+    this.loadTrips();
   }
 }

@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModelTrip } from '../../models/trip-model';
 import { Router } from '@angular/router';
@@ -13,6 +13,7 @@ import { Router } from '@angular/router';
 export class GTripCardComponent {
   @Input({ required: true }) trip!: ModelTrip;
   @Input() cities: any[] = [];
+  @Output() edit = new EventEmitter<ModelTrip>();
 
   constructor(private readonly router: Router) {}
 
@@ -20,6 +21,11 @@ export class GTripCardComponent {
     if (this.trip.id) {
       this.router.navigate(['/site/trips', this.trip.id]);
     }
+  }
+
+  onEditClick(event: Event): void {
+    event.stopPropagation();
+    this.edit.emit(this.trip);
   }
 
   get progressPercentage(): number {

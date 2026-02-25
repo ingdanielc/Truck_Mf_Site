@@ -1,0 +1,54 @@
+.offcanvas-body {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+  }
+}
+
+[data-bs-theme="dark"] {
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.shadow-primary {
+  box-shadow: 0 4px 15px rgba(var(--bs-primary-rgb), 0.3);
+}
+
+.input-group-text {
+  background-color: rgba(var(--bs-emphasis-color-rgb), 0.05);
+  border-color: rgba(var(--bs-emphasis-color-rgb), 0.1);
+}
+
+.form-control,
+.form-select {
+  background-color: rgba(var(--bs-emphasis-color-rgb), 0.03);
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+
+  &:focus {
+    background-color: var(--bs-body-bg);
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.1);
+  }
+
+  &.is-invalid {
+    border-color: var(--bs-form-invalid-border-color) !important;
+
+    &:focus {
+      box-shadow: 0 0 0 0.25rem rgba(var(--bs-danger-rgb), 0.25) !important;
+    }
+  }
+}
