@@ -1,0 +1,347 @@
+<div class="trip-detail-container py-4 bg-body" *ngIf="trip; else loadingState">
+  <!-- Header -->
+  <div class="row mb-4 gy-3 align-items-center">
+    <div class="col-12 col-md">
+      <div class="d-flex align-items-center gap-3">
+        <button
+          (click)="goBack()"
+          class="btn btn-link text-body p-0 shadow-none"
+        >
+          <i class="fa-solid fa-arrow-left fs-4"></i>
+        </button>
+        <div>
+          <h1 class="h3 fw-bold mb-1 text-body">
+            Viaje {{ trip.numberTrip || "N/A" }}
+          </h1>
+          <p class="text-body-secondary mb-0">
+            Ruta: {{ originName }} - {{ destinationName }}
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-auto">
+      <div class="d-flex gap-2 align-items-center">
+        <div class="status-selector">
+          <small
+            class="text-secondary d-block mb-1 text-uppercase fw-bold"
+            style="font-size: 0.6rem"
+            >Estado del Viaje</small
+          >
+          <select
+            class="form-select bg-body-tertiary border-0 rounded-3 shadow-sm"
+            [value]="trip.status"
+          >
+            <option value="Planeado">Planeado</option>
+            <option value="En Curso">En Curso</option>
+            <option value="Completado">Completado</option>
+            <option value="Cancelado">Cancelado</option>
+            <option value="Pendiente">Pendiente</option>
+          </select>
+        </div>
+        <button
+          class="btn btn-primary rounded-3 px-4 shadow-primary d-flex align-items-center"
+          (click)="editTrip()"
+        >
+          <i class="fa-solid fa-pen-to-square me-2"></i>Editar Viaje
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Section -->
+  <div
+    class="card border-0 rounded-4 shadow-sm bg-body-tertiary mb-4 overflow-hidden hover-scale"
+  >
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h5 class="fw-bold mb-1">Progreso del Viaje</h5>
+          <p class="text-secondary small mb-0">
+            Ubicación actual: {{ originName }} (Punto de control)
+          </p>
+        </div>
+        <div class="text-primary h2 fw-bold mb-0">
+          {{ progressPercentage }}%
+        </div>
+      </div>
+
+      <div class="progress-stepper position-relative py-4">
+        <div
+          class="progress-line bg-secondary bg-opacity-10 position-absolute w-100"
+          style="height: 4px; top: 50%; transform: translateY(-50%)"
+        ></div>
+        <div
+          class="progress-line-active bg-primary position-absolute"
+          [style.width.%]="progressPercentage"
+          style="height: 4px; top: 50%; transform: translateY(-50%)"
+        ></div>
+
+        <div class="d-flex justify-content-between position-relative z-1">
+          <!-- Origin -->
+          <div class="step-point text-center">
+            <div
+              class="icon-circle bg-primary text-white rounded-3 shadow-primary mb-2 mx-auto d-flex align-items-center justify-content-center"
+              style="width: 40px; height: 40px"
+            >
+              <i class="fa-solid fa-warehouse"></i>
+            </div>
+            <div class="fw-bold small">{{ originName }}</div>
+            <div class="text-secondary" style="font-size: 0.7rem">
+              {{ trip.startDate | date: "shortTime" }}
+            </div>
+          </div>
+
+          <!-- Current (Example) -->
+          <div class="step-point text-center">
+            <div
+              class="icon-circle bg-primary text-white rounded-3 shadow-primary mb-2 mx-auto d-flex align-items-center justify-content-center"
+              style="width: 40px; height: 40px"
+            >
+              <i class="fa-solid fa-location-dot"></i>
+            </div>
+            <div class="fw-bold small">En Ruta</div>
+            <div class="text-secondary" style="font-size: 0.7rem">
+              Actualizado recientemente
+            </div>
+          </div>
+
+          <!-- Destination -->
+          <div class="step-point text-center">
+            <div
+              class="icon-circle bg-secondary bg-opacity-25 text-secondary rounded-3 mb-2 mx-auto d-flex align-items-center justify-content-center"
+              style="width: 40px; height: 40px"
+            >
+              <i class="fa-solid fa-flag-checkered"></i>
+            </div>
+            <div class="fw-bold small">{{ destinationName }}</div>
+            <div class="text-secondary" style="font-size: 0.7rem">
+              Est: --:--
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Logistics Column -->
+    <div class="col-12 col-xl-4">
+      <div
+        class="card border-0 rounded-4 shadow-sm bg-body-tertiary h-100 hover-scale"
+      >
+        <div class="card-body p-4">
+          <h6 class="text-secondary small fw-bold mb-4 text-uppercase">
+            Información Logística
+          </h6>
+
+          <div class="d-flex gap-3 mb-4">
+            <div
+              class="icon-box bg-secondary bg-opacity-10 rounded-3 p-3 flex-shrink-0 d-flex align-items-center justify-content-center"
+              style="width: 50px; height: 50px"
+            >
+              <i class="fa-solid fa-calendar text-secondary"></i>
+            </div>
+            <div>
+              <p class="text-secondary small mb-0">Duración del Viaje</p>
+              <h6 class="fw-bold mb-0">{{ trip.numberOfDays }} Días</h6>
+            </div>
+          </div>
+
+          <div class="d-flex gap-3 mb-4">
+            <div
+              class="icon-box bg-secondary bg-opacity-10 rounded-3 p-3 flex-shrink-0 d-flex align-items-center justify-content-center"
+              style="width: 50px; height: 50px"
+            >
+              <i class="fa-solid fa-truck text-secondary"></i>
+            </div>
+            <div>
+              <p class="text-secondary small mb-0">Vehículo</p>
+              <h6 class="fw-bold mb-0">
+                {{ trip.vehicle?.plate || trip.vehiclePlate || "N/A" }}
+              </h6>
+            </div>
+          </div>
+
+          <div class="d-flex gap-3 mb-4">
+            <div
+              class="icon-box bg-secondary bg-opacity-10 rounded-3 p-3 flex-shrink-0 d-flex align-items-center justify-content-center"
+              style="width: 50px; height: 50px"
+            >
+              <i class="fa-solid fa-user-tie text-secondary"></i>
+            </div>
+            <div>
+              <p class="text-secondary small mb-0">Conductor</p>
+              <h6 class="fw-bold mb-0">
+                {{ trip.driver?.name || "No asignado" }}
+              </h6>
+            </div>
+          </div>
+
+          <div
+            class="payment-check mt-4 p-3 bg-primary bg-opacity-5 rounded-3 d-flex justify-content-between align-items-center"
+          >
+            <div class="d-flex align-items-center gap-2">
+              <i class="fa-solid fa-wallet text-primary"></i>
+              <span class="fw-bold small">Saldo Pagado</span>
+            </div>
+            <div class="form-check form-switch mb-0">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                [checked]="trip.paidBalance"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="card border-0 rounded-4 shadow-sm bg-body-tertiary mt-4 hover-scale"
+      >
+        <div class="card-body p-4">
+          <h6 class="text-primary small fw-bold mb-3">Notas del Despacho</h6>
+          <p class="mb-0 fst-italic text-secondary small">
+            "Este viaje requiere especial atención a los tiempos de carga.
+            {{ trip.loadType }} confirmado."
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Financial Column -->
+    <div class="col-12 col-xl-8">
+      <div class="row g-4">
+        <div class="col-12 col-md-6">
+          <div
+            class="card border-0 rounded-4 shadow-sm bg-body-tertiary hover-scale"
+          >
+            <div class="card-body p-4">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <p class="text-secondary small mb-1">Total Ingresos</p>
+                  <h3 class="fw-bold mb-1">
+                    ${{ trip.freight | number: "1.0-0" }}
+                  </h3>
+                  <small class="text-secondary"
+                    >Facturado al cliente: {{ trip.company || "N/A" }}</small
+                  >
+                </div>
+                <div
+                  class="bg-success bg-opacity-10 text-success rounded-3 p-2"
+                  style="height: fit-content"
+                >
+                  <i class="fa-solid fa-arrow-trend-up"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div
+            class="card border-0 rounded-4 shadow-sm bg-body-tertiary hover-scale"
+          >
+            <div class="card-body p-4">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <p class="text-secondary small mb-1">Total Gastos</p>
+                  <h3 class="fw-bold mb-1">$0</h3>
+                  <div class="d-flex gap-1 mt-1">
+                    <span
+                      class="badge bg-secondary bg-opacity-10 text-secondary border-0 p-1"
+                      style="font-size: 0.6rem"
+                      >Peajes</span
+                    >
+                    <span
+                      class="badge bg-secondary bg-opacity-10 text-secondary border-0 p-1"
+                      style="font-size: 0.6rem"
+                      >Combustible</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="bg-danger bg-opacity-10 text-danger rounded-3 p-2"
+                  style="height: fit-content"
+                >
+                  <i class="fa-solid fa-arrow-trend-down"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div
+            class="card border-0 rounded-4 shadow-sm bg-primary border border-primary border-opacity-10 text-center py-5 hover-scale"
+          >
+            <div class="card-body text-white">
+              <p class="text-white small fw-bold text-uppercase mb-2">
+                Rentabilidad neta estimada
+              </p>
+              <h1 class="display-4 fw-bold text-white mb-3">
+                ${{ netProfit | number: "1.0-0" }}
+                <span class="h6">COP</span>
+              </h1>
+              <div
+                class="badge bg-white bg-opacity-25 text-white rounded-pill px-4 py-2 border-0"
+              >
+                <i class="fa-solid fa-circle-check me-2"></i>Margen del
+                {{ profitMargin | number: "1.1-1" }}%
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div
+            class="card border-0 rounded-4 shadow-sm bg-body-tertiary hover-scale"
+          >
+            <div class="card-body p-4">
+              <div
+                class="d-flex justify-content-between align-items-center mb-3"
+              >
+                <h6 class="fw-bold mb-0">Mapa del Trayecto</h6>
+                <button
+                  class="btn btn-link btn-sm text-primary p-0 shadow-none"
+                >
+                  Ver detalles
+                  <i class="fa-solid fa-up-right-from-square ms-1"></i>
+                </button>
+              </div>
+              <!-- Placeholder for map -->
+              <div
+                class="map-placeholder rounded-4 bg-secondary bg-opacity-10 d-flex flex-column align-items-center justify-content-center position-relative overflow-hidden"
+                style="height: 300px"
+              >
+                <img
+                  src="assets/images/map-mockup.png"
+                  alt="Static Map"
+                  class="w-100 h-100 object-fit-cover opacity-50"
+                />
+                <div
+                  class="position-absolute top-50 start-50 translate-middle text-center"
+                >
+                  <i
+                    class="fa-solid fa-map-location-dot fs-1 text-primary mb-2"
+                  ></i>
+                  <p class="small text-secondary fw-bold">
+                    Mapa interactivo próximamente
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #loadingState>
+  <div
+    class="d-flex flex-column align-items-center justify-content-center py-5"
+  >
+    <div class="spinner-border text-primary mb-3" role="status"></div>
+    <p class="text-secondary fw-bold">Cargando detalles del viaje...</p>
+  </div>
+</ng-template>

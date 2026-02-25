@@ -1,6 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModelTrip } from '../../models/trip-model';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'g-trip-card',
@@ -12,6 +13,14 @@ import { ModelTrip } from '../../models/trip-model';
 export class GTripCardComponent {
   @Input({ required: true }) trip!: ModelTrip;
   @Input() cities: any[] = [];
+
+  constructor(private readonly router: Router) {}
+
+  navigateToDetail(): void {
+    if (this.trip.id) {
+      this.router.navigate(['/site/trips', this.trip.id]);
+    }
+  }
 
   get progressPercentage(): number {
     const total = this.trip.freight || 0;

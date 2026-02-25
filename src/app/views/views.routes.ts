@@ -23,4 +23,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./trips/trips.component').then((m) => m.TripsComponent),
   },
+  {
+    path: 'trips/:id',
+    loadComponent: () =>
+      import('./trips/trip-detail/trip-detail.component').then(
+        (m) => m.TripDetailComponent,
+      ),
+  },
 ];
