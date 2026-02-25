@@ -73,6 +73,8 @@ export class TripsComponent implements OnInit, OnDestroy {
   brands: any[] = [];
   loadingVehicles: boolean = false;
   loadingDrivers: boolean = false;
+  private _pendingVehicleId: number | null = null;
+  private _pendingDriverId: number | null = null;
   private readonly ownerChangeSub?: Subscription;
   private readonly vehicleChangeSub?: Subscription;
 
@@ -125,8 +127,8 @@ export class TripsComponent implements OnInit, OnDestroy {
       manifestNumber: ['', [Validators.required]],
       origin: ['', [Validators.required]],
       destination: ['', [Validators.required]],
-      freight: [0, [Validators.required, Validators.min(0)]],
-      advancePayment: [0, [Validators.required, Validators.min(0)]],
+      freight: [0, [Validators.required, Validators.min(0), Validators.max(999999999)]],
+      advancePayment: [0, [Validators.required, Validators.min(0), Validators.max(999999999)]],
       balance: [0],
       startDate: [
         new Date().toISOString().split('T')[0],
@@ -288,6 +290,16 @@ export class TripsComponent implements OnInit, OnDestroy {
         this.vehicles = response?.data?.content ?? [];
         this.mapBrandNames();
         this.loadingVehicles = false;
+        if (this._pendingVehicleId != null) {
+          // Edit mode: restore the trip's vehicle
+          this.tripForm
+            .get('vehicleId')
+            ?.setValue(this._pendingVehicleId, { emitEvent: false });
+          this._pendingVehicleId = null;
+        } else if (!this.editingTrip && this.vehicles.length === 1) {
+          // Create mode: auto-select the only vehicle
+          this.tripForm.get('vehicleId')?.setValue(this.vehicles[0].id);
+        }
         if (isInitialLoad) {
           this.loadTrips();
         }
@@ -313,6 +325,14 @@ export class TripsComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         this.drivers = response?.data?.content ?? [];
         this.loadingDrivers = false;
+        if (this._pendingDriverId != null) {
+          // Edit mode: restore the trip's driver
+          this.tripForm.get('driverId')?.setValue(this._pendingDriverId);
+          this._pendingDriverId = null;
+        } else if (!this.editingTrip && this.drivers.length === 1) {
+          // Create mode: auto-select the only driver
+          this.tripForm.get('driverId')?.setValue(this.drivers[0].id);
+        }
       },
       error: () => {
         this.drivers = [];
@@ -343,6 +363,7 @@ export class TripsComponent implements OnInit, OnDestroy {
               this.loggedInOwner?.id ?? this.loggedInOwnerId;
             if (this.loggedInOwnerId) {
               this.loadVehiclesByOwner(this.loggedInOwnerId, true);
+              this.loadDriversByOwner(this.loggedInOwnerId);
             } else {
               this.loadTrips();
             }
@@ -398,7 +419,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     this.totalTrips = this.allTrips.length;
     this.inProgressTrips = this.allTrips.filter((t) => {
       const status = (t.status || '').toUpperCase();
-      return status === 'IN_PROGRESS' || status === 'EN PROGRESO';
+      return status === 'IN_PROGRESS' || status === 'EN CURSO';
     }).length;
     this.completedTrips = this.allTrips.filter((t) => {
       const status = (t.status || '').toUpperCase();
@@ -483,6 +504,22 @@ export class TripsComponent implements OnInit, OnDestroy {
     if (this.isOffcanvasOpen) {
       if (trip) {
         this.editingTrip = trip;
+
+        // Determine ownerId to load vehicles/drivers for this trip
+        const tripOwnerId: number | null =
+          this.userRole === 'PROPIETARIO'
+            ? this.loggedInOwnerId
+            : (trip.driver?.ownerId ??
+              trip.vehicle?.owners?.[0]?.ownerId ??
+              null);
+
+        if (tripOwnerId) {
+          this._pendingVehicleId = trip.vehicleId ?? null;
+          this._pendingDriverId = trip.driverId ?? null;
+          this.loadVehiclesByOwner(Number(tripOwnerId));
+          this.loadDriversByOwner(Number(tripOwnerId));
+        }
+
         this.tripForm.patchValue({
           numberTrip: trip.numberTrip,
           manifestNumber: trip.manifestNumber,
@@ -514,6 +551,12 @@ export class TripsComponent implements OnInit, OnDestroy {
           loadType: '',
           company: '',
         });
+
+        // For PROPIETARIO: pre-set ownerId so vehicle/driver selects populate
+        if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId) {
+          this.tripForm.get('ownerId')?.setValue(this.loggedInOwnerId);
+          this.tripForm.get('ownerId')?.disable();
+        }
       }
     }
   }
@@ -565,12 +608,21 @@ export class TripsComponent implements OnInit, OnDestroy {
   }
 
   formatCurrencyInput(controlName: string, event: any): void {
-    const value = event.target.value;
+    const MAX = 999_999_999;
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
     if (value === null || value === undefined) return;
 
     // Remove non-numeric characters
     const stringValue = String(value).replaceAll(/\D/g, '');
     const numericValue = stringValue ? Number.parseInt(stringValue, 10) : 0;
+
+    // Block if exceeds max: restore the previous displayed value
+    if (numericValue > MAX) {
+      const current = this.tripForm.get(controlName)?.value ?? 0;
+      input.value = new Intl.NumberFormat('de-DE').format(current);
+      return;
+    }
 
     // Update form control with numeric value
     this.tripForm.get(controlName)?.setValue(numericValue, { emitEvent: true });

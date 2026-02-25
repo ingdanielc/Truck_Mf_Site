@@ -63,7 +63,7 @@
         >
           <div>
             <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
-              En Progreso
+              En Curso
             </p>
             <h2 class="h1 fw-bold mb-0 text-primary">{{ inProgressTrips }}</h2>
           </div>
@@ -221,7 +221,7 @@
           <div class="row g-3">
             <div class="col-6">
               <label for="vehicleId" class="form-label small fw-bold mb-2"
-                >Seleccionar Vehículo*</label
+                >Vehículo*</label
               >
               <select
                 id="vehicleId"
@@ -246,10 +246,13 @@
                   {{ v.plate }} - {{ v.vehicleBrandName }}
                 </option>
               </select>
+              <div class="invalid-feedback small">
+                Este campo es obligatorio para continuar
+              </div>
             </div>
             <div class="col-6">
               <label for="driverId" class="form-label small fw-bold mb-2"
-                >Seleccionar Conductor*</label
+                >Conductor*</label
               >
               <select
                 id="driverId"
@@ -275,7 +278,7 @@
                 </option>
               </select>
               <div class="invalid-feedback small">
-                Este campo es obligatorio
+                Este campo es obligatorio para continuar
               </div>
             </div>
           </div>

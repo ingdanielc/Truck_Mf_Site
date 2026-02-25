@@ -35,6 +35,24 @@
   letter-spacing: 0.5px;
 }
 
+.badge-in-progress {
+  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  color: var(--bs-primary);
+  border: 1px solid var(--bs-primary);
+}
+
+.badge-completed {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid #10b981;
+}
+
+.badge-pending {
+  background-color: rgba(var(--bs-warning-rgb), 0.12);
+  color: var(--bs-warning-text-emphasis);
+  border: 1px solid rgba(var(--bs-warning-rgb), 0.5);
+}
+
 /* Timeline specific styles */
 .timeline-visual {
   width: 16px;

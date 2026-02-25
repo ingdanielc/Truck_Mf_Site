@@ -37,7 +37,9 @@ export class GTripCardComponent {
     const city = this.cities.find(
       (c) => String(c.id) === String(this.trip.origin),
     );
-    return city ? (city.state ? city.state + ' - ' : '') + city.name : this.trip.origin;
+    return city
+      ? (city.state ? city.state + ' - ' : '') + city.name
+      : this.trip.origin;
   }
 
   get destinationName(): string {
@@ -45,6 +47,18 @@ export class GTripCardComponent {
     const city = this.cities.find(
       (c) => String(c.id) === String(this.trip.destination),
     );
-    return city ? (city.state ? city.state + ' - ' : '') + city.name : this.trip.destination;
+    return city
+      ? (city.state ? city.state + ' - ' : '') + city.name
+      : this.trip.destination;
+  }
+  getStatusClass(status: string): string {
+    switch ((status || '').toUpperCase()) {
+      case 'COMPLETADO':
+        return 'badge-completed';
+      case 'PENDIENTE':
+        return 'badge-pending';
+      default:
+        return 'badge-in-progress';
+    }
   }
 }

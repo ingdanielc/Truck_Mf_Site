@@ -255,7 +255,7 @@
                 vehicleForm.get("brand")?.touched
               ) {
                 <div class="text-danger small mt-1">
-                  Este campo es obligatorio
+                  Este campo es obligatorio para continuar
                 </div>
               }
             </div>
@@ -280,7 +280,7 @@
                 vehicleForm.get("model")?.touched
               ) {
                 <div class="text-danger small mt-1">
-                  Este campo es obligatorio
+                  Este campo es obligatorio para continuar
                 </div>
               }
             </div>
@@ -331,7 +331,7 @@
                 vehicleForm.get("color")?.touched
               ) {
                 <div class="text-danger small mt-1">
-                  Este campo es obligatorio
+                  Este campo es obligatorio para continuar
                 </div>
               }
             </div>
@@ -366,7 +366,7 @@
               ) {
                 <div class="text-danger small mt-1">
                   @if (vehicleForm.get("plate")?.hasError("required")) {
-                    Este campo es obligatorio
+                    Este campo es obligatorio para continuar
                   } @else if (vehicleForm.get("plate")?.hasError("pattern")) {
                     Formato inválido (Ej: ABC-123)
                   } @else if (vehicleForm.get("plate")?.hasError("duplicate")) {
