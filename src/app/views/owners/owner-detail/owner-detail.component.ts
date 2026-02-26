@@ -48,7 +48,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     private readonly driverService: DriverService,
     private readonly toastService: ToastService,
     private readonly commonService: CommonService,
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.routeSub = this.route.paramMap.subscribe((params) => {
