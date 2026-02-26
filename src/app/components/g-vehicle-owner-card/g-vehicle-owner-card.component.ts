@@ -19,10 +19,6 @@ export class GVehicleOwnerCardComponent {
 
   constructor(private readonly router: Router) {}
 
-  onViewProfile(): void {
-    this.viewProfile.emit(this.owner);
-  }
-
   goToDetail(): void {
     if (this.owner.id) {
       this.router.navigate(['/site/owners', this.owner.id]);

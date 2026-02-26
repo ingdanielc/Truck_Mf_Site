@@ -1,0 +1,65 @@
+<div
+  class="vehicle-mini-card d-flex align-items-center p-2 mb-3 rounded-4 shadow-sm border bg-body-tertiary transition-all"
+  [ngClass]="getStatusColorClass()"
+>
+  <!-- Left Strip Indicator -->
+  <div class="status-strip"></div>
+
+  <!-- Vehicle Photo -->
+  <div class="avatar-wrapper position-relative me-3">
+    <div
+      class="avatar-circle rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center overflow-hidden border"
+    >
+      @if (vehicle.photo) {
+        <img
+          [src]="vehicle.photo"
+          [alt]="vehicle.plate"
+          class="img-fluid vehicle-img w-100 h-100 object-fit-cover"
+        />
+      } @else {
+        <div
+          class="placeholder-img d-flex align-items-center justify-content-center w-100 h-100"
+        >
+          <i class="fa-solid fa-truck fs-5 text-secondary"></i>
+        </div>
+      }
+    </div>
+    <!-- Status Indicator -->
+    <span
+      class="status-indicator position-absolute bottom-0 end-0 border border-3 border-white rounded-circle"
+      [ngClass]="statusDotClass"
+    ></span>
+  </div>
+
+  <!-- Content -->
+  <div class="flex-grow-1 min-width-0">
+    <div class="d-flex align-items-center gap-2 mb-0">
+      <span class="fw-bold text-body text-truncate"
+        >{{ vehicle.plate }} - {{ vehicle.vehicleBrandName || "N/A" }} -
+        {{ vehicle.model || "N/A" }}</span
+      >
+      <span class="small text-secondary opacity-75">({{ vehicle.year }})</span>
+    </div>
+    <div class="d-flex align-items-center gap-2 text-secondary small">
+      <i class="fa-solid fa-user-steering fs-xs opacity-50"></i>
+      <span class="text-truncate">{{
+        vehicle.currentDriverName || "Sin Conductor"
+      }}</span>
+    </div>
+  </div>
+
+  <!-- Status Right Side -->
+  <div class="ms-auto text-end me-2">
+    <span
+      class="badge rounded-pill px-3 py-2 fw-bold text-uppercase"
+      [ngClass]="{
+        'bg-success bg-opacity-10': getStatusLabel() === 'Activo',
+        'bg-danger bg-opacity-10': getStatusLabel() === 'Inactivo',
+        'bg-warning bg-opacity-10':
+          getStatusLabel() !== 'Activo' && getStatusLabel() !== 'Inactivo',
+      }"
+    >
+      {{ getStatusLabel() }}
+    </span>
+  </div>
+</div>

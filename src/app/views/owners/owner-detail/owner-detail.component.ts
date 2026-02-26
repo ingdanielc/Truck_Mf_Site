@@ -10,6 +10,7 @@ import { ModelOwner } from 'src/app/models/owner-model';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { DriverService } from 'src/app/services/driver.service';
+import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
 import {
   Filter,
   ModelFilterTable,
@@ -20,7 +21,7 @@ import {
 @Component({
   selector: 'app-owner-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, GVehicleMiniCardComponent],
   templateUrl: './owner-detail.component.html',
   styleUrls: ['./owner-detail.component.scss'],
 })
@@ -47,7 +48,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     private readonly driverService: DriverService,
     private readonly toastService: ToastService,
     private readonly commonService: CommonService,
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.routeSub = this.route.paramMap.subscribe((params) => {
