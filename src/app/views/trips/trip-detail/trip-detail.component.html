@@ -12,10 +12,12 @@
         </button>
         <div>
           <h1 class="h3 fw-bold mb-1 text-body">
-            Viaje {{ trip.numberTrip || "N/A" }}
+            Viaje {{ trip.numberTrip || "N/A" }} -
+            <span class="d-none d-md-inline">{{ vehicleBrandName }} </span>
+            {{ trip.vehicle?.plate || trip.vehiclePlate || "" }}
           </h1>
           <p class="text-body-secondary mb-0">
-            Ruta: {{ originName }} - {{ destinationName }}
+            {{ originName }} - {{ destinationName }}
           </p>
         </div>
       </div>
@@ -141,6 +143,7 @@
             <div>
               <p class="text-secondary small mb-0">Vehículo</p>
               <h6 class="fw-bold mb-0">
+                {{ vehicleBrandName }}
                 {{ trip.vehicle?.plate || trip.vehiclePlate || "N/A" }}
               </h6>
             </div>
@@ -173,6 +176,7 @@
               <select
                 class="form-select bg-transparent border-0 p-0 shadow-none fw-bold text-body"
                 [value]="trip.status"
+                (change)="trip.status = $any($event.target).value"
                 style="font-size: 1rem; margin-top: -2px"
               >
                 <option value="Planeado">Planeado</option>
@@ -184,7 +188,7 @@
             </div>
           </div>
 
-          <div class="d-flex gap-3 align-items-center">
+          <div class="d-flex gap-3 align-items-center mb-4">
             <div
               class="icon-box bg-secondary bg-opacity-10 rounded-3 p-3 flex-shrink-0 d-flex align-items-center justify-content-center"
               style="width: 50px; height: 50px"
@@ -206,6 +210,16 @@
                 (change)="trip.paidBalance = !trip.paidBalance"
               />
             </div>
+          </div>
+
+          <!-- Update Button -->
+          <div *ngIf="hasLogisticsChanges" class="mt-2">
+            <button
+              class="btn btn-primary w-100 rounded-3 shadow-primary d-flex align-items-center justify-content-center"
+              (click)="updateLogistics()"
+            >
+              <i class="fa-solid fa-save me-2"></i>Actualizar
+            </button>
           </div>
         </div>
       </div>
@@ -237,7 +251,7 @@
                     Total Ingresos
                   </p>
                   <h3 class="fw-bold mb-1">
-                    ${{ trip.freight | number: "1.0-0" }}
+                    ${{ totalIncome | number: "1.0-0" }}
                   </h3>
                   <small class="text-secondary"
                     >Facturado al cliente: {{ trip.company || "N/A" }}</small
@@ -263,7 +277,9 @@
                   <p class="text-secondary small mb-1 fw-bold text-uppercase">
                     Total Gastos
                   </p>
-                  <h3 class="fw-bold mb-1">$0</h3>
+                  <h3 class="fw-bold mb-1">
+                    ${{ totalExpenses | number: "1.0-0" }}
+                  </h3>
                   <div class="d-flex gap-1 mt-2">
                     <span
                       class="badge bg-secondary bg-opacity-10 text-secondary border-0 p-1"

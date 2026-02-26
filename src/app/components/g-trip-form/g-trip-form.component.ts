@@ -359,6 +359,16 @@ export class GTripFormComponent implements OnInit, OnDestroy {
         id: this.trip ? this.trip.id : null,
       };
 
+      if (['Completado', 'Cancelado', 'Pendiente'].includes(tripData.status)) {
+        tripData.endDate = new Date().toISOString().split('T')[0];
+        if (tripData.startDate && tripData.endDate) {
+          const start = new Date(tripData.startDate);
+          const end = new Date(tripData.endDate);
+          const diffTime = Math.abs(end.getTime() - start.getTime());
+          tripData.numberOfDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+      }
+
       this.tripService.createTrip(tripData).subscribe({
         next: () => {
           this.toastService.showSuccess(

@@ -29,6 +29,7 @@ export class GTripCardComponent {
   }
 
   get progressPercentage(): number {
+    if (this.trip.paidBalance) return 100;
     const total = this.trip.freight || 0;
     const paid = this.trip.advancePayment || 0;
     if (total === 0) return 0;
@@ -75,5 +76,14 @@ export class GTripCardComponent {
       default:
         return 'badge-in-progress';
     }
+  }
+
+  get tripDuration(): number {
+    if (!this.trip.startDate || !this.trip.endDate) return 0;
+    const start = new Date(this.trip.startDate);
+    const end = new Date(this.trip.endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
   }
 }

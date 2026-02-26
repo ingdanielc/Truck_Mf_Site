@@ -26,7 +26,12 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   tripId: number | null = null;
   trip: ModelTrip | null = null;
   cities: any[] = [];
+  vehicleBrands: any[] = [];
   loading: boolean = true;
+
+  // State tracking for logistics
+  originalStatus: string = '';
+  originalPaidBalance: boolean = false;
 
   // UI State
   isOffcanvasOpen: boolean = false;
@@ -34,6 +39,9 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   // User context
   userRole: string = 'ROL';
   loggedInOwnerId: number | null = null;
+
+  // Expenses
+  totalExpenses: number = 0;
 
   private routeSub?: Subscription;
   private userSub?: Subscription;
@@ -53,6 +61,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       if (id) {
         this.tripId = Number(id);
         this.loadCities();
+        this.loadVehicleBrands();
         this.loadTrip(this.tripId);
       }
     });
@@ -85,6 +94,17 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  loadVehicleBrands(): void {
+    this.commonService.getVehicleBrands().subscribe({
+      next: (response: any) => {
+        if (response?.data) {
+          this.vehicleBrands = response.data;
+        }
+      },
+      error: (err: any) => console.error('Error loading vehicle brands:', err),
+    });
+  }
+
   loadTrip(id: number): void {
     this.loading = true;
     const filter = new ModelFilterTable(
@@ -96,6 +116,10 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content && response.data.content.length > 0) {
           this.trip = response.data.content[0];
+          if (this.trip) {
+            this.originalStatus = this.trip.status;
+            this.originalPaidBalance = this.trip.paidBalance ?? false;
+          }
         } else {
           this.toastService.showError('Error', 'No se encontró el viaje');
           this.goBack();
@@ -132,6 +156,65 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return city.state ? `${city.name} (${city.state})` : city.name;
   }
 
+  get vehicleBrandName(): string {
+    const brandId =
+      this.trip?.vehicle?.vehicleBrandId || this.trip?.vehicle?.vehicleBrandId;
+    if (!brandId) return '';
+
+    const brand = this.vehicleBrands.find(
+      (b) => Number(b.id) === Number(brandId),
+    );
+    return brand ? brand.name : '';
+  }
+
+  get hasLogisticsChanges(): boolean {
+    if (!this.trip) return false;
+    return (
+      this.trip.status !== this.originalStatus ||
+      this.trip.paidBalance !== this.originalPaidBalance
+    );
+  }
+
+  get totalIncome(): number {
+    if (!this.trip) return 0;
+    if (this.trip.paidBalance) {
+      return this.trip.freight || 0;
+    }
+    return (this.trip.freight || 0) - (this.trip.balance || 0);
+  }
+
+  updateLogistics(): void {
+    if (!this.trip) return;
+
+    if (['Completado', 'Cancelado', 'Pendiente'].includes(this.trip.status)) {
+      this.trip.endDate = new Date().toISOString().split('T')[0];
+      if (this.trip.startDate && this.trip.endDate) {
+        const start = new Date(this.trip.startDate);
+        const end = new Date(this.trip.endDate);
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        this.trip.numberOfDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+    }
+
+    this.loading = true;
+    this.tripService.createTrip(this.trip).subscribe({
+      next: () => {
+        this.toastService.showSuccess(
+          'Éxito',
+          'Viaje actualizado correctamente',
+        );
+        if (this.tripId) {
+          this.loadTrip(this.tripId);
+        }
+      },
+      error: (err: any) => {
+        console.error('Error updating trip:', err);
+        this.toastService.showError('Error', 'No se pudo actualizar el viaje');
+        this.loading = false;
+      },
+    });
+  }
+
   get progressPercentage(): number {
     if (!this.trip) return 0;
     const total = this.trip.freight || 0;
@@ -142,12 +225,12 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   get netProfit(): number {
     if (!this.trip) return 0;
-    return (this.trip.freight || 0) - (this.trip.advancePayment || 0);
+    return this.totalIncome - this.totalExpenses;
   }
 
   get profitMargin(): number {
-    if (!this.trip || !this.trip.freight) return 0;
-    return (this.netProfit / this.trip.freight) * 100;
+    if (!this.trip || !this.totalIncome) return 0;
+    return (this.netProfit / this.totalIncome) * 100;
   }
 
   goBack(): void {

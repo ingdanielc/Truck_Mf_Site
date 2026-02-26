@@ -109,3 +109,16 @@
     border-left-color: rgba(var(--bs-primary-rgb), 0.5);
   }
 }
+
+.driver-name {
+  max-width: 130px;
+  display: inline-block;
+
+  @media (min-width: 992px) {
+    max-width: 250px;
+  }
+}
+
+.trip-date {
+  line-height: 1.2;
+}
