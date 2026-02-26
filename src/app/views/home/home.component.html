@@ -1,0 +1,31 @@
+<div class="home-container py-5">
+  <div class="container">
+    <div class="row mb-5 text-center">
+      <div class="col-12">
+        <h1 class="display-4 fw-bold mb-3 gradient-text">Panel de Control</h1>
+        <p class="lead text-secondary opacity-75">
+          Bienvenido al ecosistema logístico de CashTruck.
+        </p>
+      </div>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+      @for (card of listCard; track card.routing) {
+        <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+          <div class="hub-card h-100 p-4" (click)="navigateTo(card.routing)">
+            <div class="card-icon-container mb-4">
+              <i [class]="card.icon"></i>
+            </div>
+            <h3 class="h4 mb-3 card-title">{{ card.title }}</h3>
+            <p class="card-description mb-0 opacity-75 small">
+              {{ card.descriptions }}
+            </p>
+            <div class="card-arrow text-primary mt-3">
+              <i class="fa-solid fa-arrow-right"></i>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

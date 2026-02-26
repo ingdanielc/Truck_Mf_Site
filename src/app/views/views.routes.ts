@@ -2,6 +2,11 @@ import { Routes } from '@angular/router';
 import { SecurityComponent } from './security/security.component';
 
 export const routes: Routes = [
+  {
+    path: 'home',
+    loadComponent: () =>
+      import('./home/home.component').then((m) => m.HomeComponent),
+  },
   { path: 'security', component: SecurityComponent },
   {
     path: 'owners',

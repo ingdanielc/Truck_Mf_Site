@@ -26,7 +26,7 @@ export class GMenuComponent implements OnInit, OnDestroy {
   isMobileOpen: boolean = false;
 
   private readonly allMenuItems: MenuItem[] = [
-    { label: 'Dashboard', icon: 'fa-solid fa-gauge', route: '/hub/home' },
+    { label: 'Dashboard', icon: 'fa-solid fa-gauge', route: '/site/home' },
     {
       label: 'Propietarios',
       icon: 'fa-solid fa-user-tie',
