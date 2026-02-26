@@ -1,5 +1,9 @@
 <!-- Owner Header Card - fully Bootstrap theming (light/dark support) -->
-<div class="card owner-header-card border rounded-4 shadow-sm mb-3">
+<div
+  class="card owner-header-card border rounded-4 shadow-sm mb-3 cursor-pointer hover-scale"
+  (click)="goToDetail()"
+  onkeypress
+>
   <div class="card-body d-flex align-items-center gap-3 py-3 px-4">
     <!-- Avatar -->
     <div class="owner-avatar flex-shrink-0">

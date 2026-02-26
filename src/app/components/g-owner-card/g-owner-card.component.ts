@@ -46,6 +46,12 @@ export class GOwnerCardComponent {
     });
   }
 
+  goToDetail(): void {
+    if (this.owner.id) {
+      this.router.navigate(['/site/owners', this.owner.id]);
+    }
+  }
+
   get badgeClass(): string {
     return 'badge-primary';
   }

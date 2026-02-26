@@ -30,4 +30,11 @@ export const routes: Routes = [
         (m) => m.TripDetailComponent,
       ),
   },
+  {
+    path: 'owners/:id',
+    loadComponent: () =>
+      import('./owners/owner-detail/owner-detail.component').then(
+        (m) => m.OwnerDetailComponent,
+      ),
+  },
 ];

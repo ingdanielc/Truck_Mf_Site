@@ -1,6 +1,8 @@
 <div
-  class="card h-100 border-0 rounded-4 shadow-sm bg-body-tertiary owner-card"
+  class="card h-100 border-0 rounded-4 shadow-sm bg-body-tertiary owner-card cursor-pointer hover-scale"
   [class.menu-open]="isMenuOpen"
+  (click)="goToDetail()"
+  onkeypress
 >
   <div class="card-body p-4">
     <div class="d-flex justify-content-between align-items-start mb-3">
@@ -102,7 +104,7 @@
         <button
           type="button"
           class="btn btn-link p-0 text-decoration-none border-0 vehicle-count-badge d-flex align-items-center gap-2"
-          (click)="goToVehicles()"
+          (click)="goToVehicles(); $event.stopPropagation()"
           (keydown.enter)="goToVehicles()"
           title="Ver vehículos de este propietario"
         >
@@ -115,7 +117,7 @@
         <button
           type="button"
           class="btn btn-link p-0 text-decoration-none border-0 driver-count-badge d-flex align-items-center gap-2"
-          (click)="goToDrivers()"
+          (click)="goToDrivers(); $event.stopPropagation()"
           (keydown.enter)="goToDrivers()"
           title="Ver conductores de este propietario"
         >
@@ -127,7 +129,7 @@
       </div>
       <button
         type="button"
-        (click)="onEditClick()"
+        (click)="onEditClick(); $event.stopPropagation()"
         class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
         style="width: 40px"
         aria-label="Editar"

@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { ModelOwner } from 'src/app/models/owner-model';
 
 @Component({
@@ -16,8 +17,16 @@ export class GVehicleOwnerCardComponent {
 
   @Output() viewProfile = new EventEmitter<ModelOwner>();
 
+  constructor(private readonly router: Router) {}
+
   onViewProfile(): void {
     this.viewProfile.emit(this.owner);
+  }
+
+  goToDetail(): void {
+    if (this.owner.id) {
+      this.router.navigate(['/site/owners', this.owner.id]);
+    }
   }
 
   formatDocNumber(value: any): string {
