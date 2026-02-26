@@ -19,7 +19,11 @@ export class SecurityService {
   private readonly userSubject = new BehaviorSubject<ModelUser | null>(null);
   userData$ = this.userSubject.asObservable();
 
-  constructor(private readonly http: HttpClient) {}
+  getUserData(): ModelUser | null {
+    return this.userSubject.value;
+  }
+
+  constructor(private readonly http: HttpClient) { }
 
   getUserFilter(filter: any) {
     const headers = { 'content-type': 'application/json' };

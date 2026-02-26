@@ -5,8 +5,11 @@ import { Subscription } from 'rxjs';
 import { OwnerService } from 'src/app/services/owner.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { ToastService } from 'src/app/services/toast.service';
+import { CommonService } from 'src/app/services/common.service';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
+import { ModelDriver } from 'src/app/models/driver-model';
+import { DriverService } from 'src/app/services/driver.service';
 import {
   Filter,
   ModelFilterTable,
@@ -25,8 +28,14 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   ownerId: number | null = null;
   owner: ModelOwner | null = null;
   vehicles: ModelVehicle[] = [];
+  drivers: ModelDriver[] = [];
+  cities: any[] = [];
+  brands: any[] = [];
   loading: boolean = true;
   loadingVehicles: boolean = true;
+  loadingDrivers: boolean = true;
+  loadingCities: boolean = true;
+  loadingBrands: boolean = true;
 
   private routeSub?: Subscription;
 
@@ -35,7 +44,9 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly ownerService: OwnerService,
     private readonly vehicleService: VehicleService,
+    private readonly driverService: DriverService,
     private readonly toastService: ToastService,
+    private readonly commonService: CommonService,
   ) {}
 
   ngOnInit(): void {
@@ -43,8 +54,11 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
       const id = params.get('id');
       if (id) {
         this.ownerId = Number(id);
+        this.loadCities();
+        this.loadBrands();
         this.loadOwner(this.ownerId);
         this.loadVehicles(this.ownerId);
+        this.loadDrivers(this.ownerId);
       }
     });
   }
@@ -64,6 +78,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content?.length > 0) {
           this.owner = response.data.content[0];
+          this.resolveCityName();
         } else {
           this.toastService.showError('Error', 'No se encontró el propietario');
           this.goBack();
@@ -89,6 +104,8 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
       next: (response: any) => {
         this.vehicles = response?.data?.content ?? [];
+        this.mapBrandNames();
+        this.mapDriverNames();
         this.loadingVehicles = false;
       },
       error: (err) => {
@@ -96,6 +113,91 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
         this.loadingVehicles = false;
       },
     });
+  }
+
+  loadDrivers(ownerId: number): void {
+    this.loadingDrivers = true;
+    const filter = new ModelFilterTable(
+      [new Filter('ownerId', '=', ownerId.toString())],
+      new Pagination(50, 0),
+      new Sort('id', true),
+    );
+    this.driverService.getDriverFilter(filter).subscribe({
+      next: (response: any) => {
+        this.drivers = response?.data?.content ?? [];
+        this.mapDriverNames();
+        this.loadingDrivers = false;
+      },
+      error: (err) => {
+        console.error('Error loading drivers:', err);
+        this.loadingDrivers = false;
+      },
+    });
+  }
+
+  loadCities(): void {
+    this.loadingCities = true;
+    this.commonService.getCities().subscribe({
+      next: (response: any) => {
+        this.cities = response?.data ?? [];
+        this.loadingCities = false;
+        this.resolveCityName();
+      },
+      error: (err) => {
+        console.error('Error loading cities:', err);
+        this.loadingCities = false;
+      },
+    });
+  }
+
+  resolveCityName(): void {
+    if (this.owner?.cityId && this.cities.length > 0) {
+      const city = this.cities.find((c) => c.id === this.owner?.cityId);
+      if (city) {
+        this.owner.cityName = city.state
+          ? `${city.name}, ${city.state}`
+          : city.name;
+      }
+    }
+  }
+
+  loadBrands(): void {
+    this.loadingBrands = true;
+    this.commonService.getVehicleBrands().subscribe({
+      next: (response: any) => {
+        this.brands = response?.data ?? [];
+        this.loadingBrands = false;
+        this.mapBrandNames();
+      },
+      error: (err) => {
+        console.error('Error loading brands:', err);
+        this.loadingBrands = false;
+      },
+    });
+  }
+
+  mapBrandNames(): void {
+    if (this.brands.length > 0 && this.vehicles.length > 0) {
+      this.vehicles.forEach((v) => {
+        if (!v.vehicleBrandName) {
+          const brand = this.brands.find(
+            (b) => String(b.id) === String(v.vehicleBrandId),
+          );
+          if (brand) v.vehicleBrandName = brand.name;
+        }
+      });
+    }
+  }
+
+  mapDriverNames(): void {
+    if (this.drivers.length > 0 && this.vehicles.length > 0) {
+      this.vehicles.forEach((v) => {
+        const driver = this.drivers.find(
+          (d) => String(d.id) === String(v.currentDriverId),
+        );
+        if (driver) v.currentDriverName = driver.name;
+      });
+    }
   }
 
   get stats() {
@@ -117,5 +219,12 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     this.router.navigate(['/site/vehicles'], {
       queryParams: { ownerId: this.ownerId },
     });
+  }
+
+  formatDocNumber(value: any): string {
+    const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
+    return isNaN(n) || value === ''
+      ? String(value ?? '')
+      : new Intl.NumberFormat('es-CO').format(n);
   }
 }

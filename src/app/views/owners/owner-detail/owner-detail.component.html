@@ -22,10 +22,11 @@
   <div
     class="card border-0 rounded-4 shadow-sm bg-primary mb-4 overflow-hidden position-relative"
   >
-    <div class="hero-overlay position-absolute w-100 h-100"></div>
     <div class="card-body p-4 p-md-5 position-relative z-1">
       <div class="row align-items-center gy-4">
-        <div class="col-auto">
+        <div
+          class="col-12 col-md-auto d-flex justify-content-center justify-content-md-start"
+        >
           <div class="profile-img-container position-relative">
             <div
               class="avatar rounded-circle overflow-hidden bg-white bg-opacity-10 d-flex align-items-center justify-content-center border border-4 border-white border-opacity-10 shadow-lg"
@@ -48,18 +49,27 @@
             ></div>
           </div>
         </div>
-        <div class="col">
-          <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+        <div class="col-12 col-md text-center text-md-start">
+          <div
+            class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-3 mb-2"
+          >
             <h1 class="display-6 fw-bold mb-0 text-white">{{ owner.name }}</h1>
           </div>
-          <div class="d-flex flex-wrap gap-4 text-white text-opacity-75">
+          <div
+            class="d-flex flex-wrap gap-4 text-white text-opacity-75 justify-content-center justify-content-md-start"
+          >
             <div class="d-flex align-items-center gap-2">
               <i class="fa-regular fa-calendar"></i>
-              <span>Miembro desde Enero 2022</span>
+              <span
+                >Miembro desde
+                {{
+                  ($any(owner).creationDate | date: "MMMM yyyy") || "Enero 2022"
+                }}</span
+              >
             </div>
             <div class="d-flex align-items-center gap-2">
               <i class="fa-solid fa-location-dot"></i>
-              <span>Bogotá, Colombia</span>
+              <span>{{ owner.cityName || "Bogotá, Colombia" }}</span>
             </div>
           </div>
         </div>
@@ -181,7 +191,9 @@
           <p class="text-secondary small fw-bold mb-1 text-uppercase">
             Identificación
           </p>
-          <h6 class="fw-bold mb-0">{{ owner.documentNumber }}</h6>
+          <h6 class="fw-bold mb-0">
+            {{ formatDocNumber(owner.documentNumber) }}
+          </h6>
         </div>
         <div class="col-12 col-sm-6 col-lg-4">
           <p class="text-secondary small fw-bold mb-1 text-uppercase">
@@ -230,12 +242,22 @@
               <th
                 class="border-0 bg-transparent text-secondary small fw-bold text-uppercase"
               >
-                ID Vehículo
+                Id
               </th>
               <th
                 class="border-0 bg-transparent text-secondary small fw-bold text-uppercase"
               >
-                Modelo
+                Placa
+              </th>
+              <th
+                class="border-0 bg-transparent text-secondary small fw-bold text-uppercase"
+              >
+                Marca
+              </th>
+              <th
+                class="border-0 bg-transparent text-secondary small fw-bold text-uppercase"
+              >
+                Año
               </th>
               <th
                 class="border-0 bg-transparent text-secondary small fw-bold text-uppercase"
@@ -247,14 +269,20 @@
               >
                 Estado
               </th>
-              <th class="border-0 bg-transparent"></th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let vehicle of vehicles">
-              <td class="border-0 py-3 fw-bold">{{ vehicle.plate }}</td>
+            <tr *ngFor="let vehicle of vehicles; let i = index">
+              <td class="border-0 py-3 fw-bold">{{ i + 1 }}</td>
+              <td class="border-0 py-3 fw-bold text-primary text-uppercase">
+                {{ vehicle.plate }}
+              </td>
               <td class="border-0 py-3 text-secondary">
-                {{ vehicle.vehicleBrandName || "N/A" }}
+                {{ vehicle.vehicleBrandName || "N/A" }} -
+                {{ vehicle.model || "N/A" }}
+              </td>
+              <td class="border-0 py-3 text-secondary">
+                {{ vehicle.year }}
               </td>
               <td class="border-0 py-3">
                 <div class="d-flex align-items-center gap-2">
@@ -267,38 +295,38 @@
                 <div class="d-flex align-items-center gap-2">
                   <div
                     class="dot rounded-circle"
-                    [ngClass]="
-                      vehicle.status === 'Active' ? 'bg-success' : 'bg-warning'
-                    "
+                    [ngClass]="{
+                      'bg-success': vehicle.status === 'Activo',
+                      'bg-danger': vehicle.status === 'Inactivo',
+                      'bg-warning':
+                        vehicle.status !== 'Activo' &&
+                        vehicle.status !== 'Inactivo',
+                    }"
                     style="width: 8px; height: 8px"
                   ></div>
                   <span
                     class="small fw-bold"
-                    [ngClass]="
-                      vehicle.status === 'Active'
-                        ? 'text-success'
-                        : 'text-warning'
-                    "
+                    [ngClass]="{
+                      'text-success': vehicle.status === 'Activo',
+                      'text-danger': vehicle.status === 'Inactivo',
+                      'text-warning':
+                        vehicle.status !== 'Activo' &&
+                        vehicle.status !== 'Inactivo',
+                    }"
                   >
                     {{
-                      vehicle.status === "Active"
+                      vehicle.status === "Activo"
                         ? "Activo"
-                        : vehicle.status || "En Ruta"
+                        : vehicle.status === "Inactivo"
+                          ? "Inactivo"
+                          : vehicle.status || "En Ruta"
                     }}
                   </span>
                 </div>
               </td>
-              <td class="border-0 py-3 text-end">
-                <button
-                  class="btn btn-link text-body p-0 shadow-none op-50 hover-op-100"
-                  aria-label="ver"
-                >
-                  <i class="fa-solid fa-eye fs-5"></i>
-                </button>
-              </td>
             </tr>
             <tr *ngIf="vehicles.length === 0">
-              <td colspan="5" class="text-center py-5 text-secondary border-0">
+              <td colspan="6" class="text-center py-5 text-secondary border-0">
                 No se encontraron vehículos para este propietario.
               </td>
             </tr>
