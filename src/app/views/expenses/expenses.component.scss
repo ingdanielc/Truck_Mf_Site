@@ -1,0 +1,72 @@
+.expenses-container {
+  min-height: 100vh;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  transition: all 0.3s ease;
+
+  @media (min-width: 768px) {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+// ── Carousel slide ────────────────────────────────────────────────
+
+.carousel-slide {
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+
+  &.ring-selected ::ng-deep .vehicle-good-card {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+  }
+}
+
+// ── Nav buttons ───────────────────────────────────────────────────
+
+.carousel-nav-btn {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+
+  &:disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  &:not(:disabled):hover {
+    transform: scale(1.05);
+  }
+}
+
+// ── Indicator dots ────────────────────────────────────────────────
+
+.dot-btn {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px !important;
+  background-color: var(--bs-secondary);
+  opacity: 0.3;
+  cursor: pointer;
+  transition: all 0.25s ease;
+
+  &.dot-active {
+    width: 24px;
+    opacity: 1;
+    background-color: var(--bs-primary);
+  }
+}
+
+// ── Misc ──────────────────────────────────────────────────────────
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.transition-all {
+  transition: all 0.25s ease;
+}

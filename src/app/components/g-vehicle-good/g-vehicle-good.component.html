@@ -1,0 +1,34 @@
+<div
+  class="vehicle-good-card d-flex align-items-center gap-3 p-3 rounded-4 bg-body-tertiary border shadow-sm"
+>
+  <!-- Vehicle Photo -->
+  <div
+    class="vehicle-photo flex-shrink-0 rounded-3 overflow-hidden bg-body-secondary d-flex align-items-center justify-content-center"
+  >
+    @if (vehicle.photo) {
+      <img
+        [src]="vehicle.photo"
+        [alt]="vehicle.plate"
+        class="w-100 h-100 object-fit-cover"
+      />
+    } @else {
+      <i class="fa-solid fa-truck fs-2 text-secondary opacity-50"></i>
+    }
+  </div>
+
+  <!-- Info -->
+  <div class="flex-grow-1 min-width-0">
+    <!-- Plate badge -->
+    <span class="badge vehicle-plate-badge mb-1 text-uppercase">{{
+      vehicle.plate
+    }}</span>
+
+    <!-- Brand + Year -->
+    <h5 class="fw-bold mb-1 text-body text-truncate">{{ displayTitle }}</h5>
+
+    <!-- Location / Driver -->
+    <p class="text-secondary small mb-0 text-truncate">
+      <i class="fa-solid fa-user me-1 opacity-50"></i>{{ location }}
+    </p>
+  </div>
+</div>

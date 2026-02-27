@@ -1,0 +1,162 @@
+<div class="g-expenses-trip animate__animated animate__fadeIn">
+  <!-- Summary Row (Matching Image 1) -->
+  <div class="row g-4 mb-5">
+    <!-- Total General Block -->
+    <div class="col-12 col-lg-7">
+      <div
+        class="card overflow-hidden border-0 rounded-4 shadow-sm text-white h-100 total-card p-4 p-md-5 position-relative"
+      >
+        <div class="position-relative z-1">
+          <p
+            class="small fw-bold tracking-wider text-uppercase text-white-50 mb-1"
+          >
+            Monto Acumulado
+          </p>
+          <h2 class="display-6 fw-bold mb-4 col-sm-6">Total General</h2>
+
+          <div class="d-flex align-items-baseline gap-2">
+            <h1 class="display-4 fw-bold mb-0 lh-1">
+              {{ totalAmount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+            </h1>
+            <span class="fs-4 text-white-50">COP</span>
+          </div>
+        </div>
+
+        <!-- Background graphics -->
+        <div class="bg-graphic"></div>
+
+        <!-- Badge -->
+        <div class="position-absolute bottom-0 end-0 p-4 p-md-5 z-1">
+          <span
+            class="badge rounded-pill bg-white bg-opacity-25 px-3 py-2 fw-medium border border-white border-opacity-25"
+          >
+            <i class="fa-solid fa-arrow-trend-down me-1"></i> 12% vs. último
+            viaje
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Budget Status Block -->
+    <div class="col-12 col-lg-5">
+      <div class="card border-0 rounded-4 shadow-sm bg-body-tertiary h-100 p-4">
+        <p class="small fw-bold tracking-wider text-secondary mb-4">
+          ESTADO DEL PRESUPUESTO
+        </p>
+
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-body fw-medium">Presupuestado</span>
+          <span class="fw-bold fs-5">{{
+            budget | currency: "COP" : "symbol-narrow" : "1.0-0"
+          }}</span>
+        </div>
+
+        <div
+          class="progress rounded-pill bg-secondary bg-opacity-10 mb-2"
+          style="height: 10px"
+        >
+          <div
+            class="progress-bar bg-primary rounded-pill"
+            role="progressbar"
+            [style.width]="budgetPercentage + '%'"
+            onkeypress
+            aria-label="progress"
+          ></div>
+        </div>
+
+        <p class="small text-secondary fst-italic mb-4">
+          Te quedan
+          {{ remainingBudget | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+          para este trayecto.
+        </p>
+
+        <div
+          class="mt-auto pt-3 border-top border-secondary border-opacity-10 d-flex gap-3 align-items-center"
+        >
+          <div
+            class="icon-shape rounded-circle bg-primary bg-opacity-10 text-primary flex-shrink-0"
+            style="width: 40px; height: 40px"
+          >
+            <i class="fa-solid fa-clock"></i>
+          </div>
+          <div>
+            <p class="small text-secondary mb-0 mb-1 lh-1">
+              Última actualización
+            </p>
+            <p class="fw-bold mb-0 text-body lh-1">Hace 15 minutos</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two Column Layout for Breakdowns -->
+  <div class="row g-4">
+    <!-- Column 1: Gastos del Viaje -->
+    <div class="col-12 col-xl-6">
+      <div class="d-flex align-items-center gap-2 mb-4">
+        <div
+          class="icon-shape rounded-3 bg-primary bg-opacity-10 text-primary p-2"
+        >
+          <i class="fa-solid fa-gas-pump fs-5"></i>
+        </div>
+        <h5 class="fw-bold mb-0">Gastos del Viaje</h5>
+      </div>
+
+      <div class="d-flex flex-column gap-3">
+        @for (expense of tripExpenses; track expense.id) {
+          <g-expense-card
+            [expense]="expense"
+            [totalAmount]="totalAmount"
+          ></g-expense-card>
+        }
+      </div>
+    </div>
+
+    <!-- Column 2: Gastos del Vehículo (and Add button) -->
+    <div class="col-12 col-xl-6">
+      <div class="d-flex align-items-center gap-2 mb-4">
+        <div
+          class="icon-shape rounded-3 bg-primary bg-opacity-10 text-primary p-2"
+        >
+          <i class="fa-solid fa-wrench fs-5"></i>
+        </div>
+        <h5 class="fw-bold mb-0">Gastos del Vehículo</h5>
+      </div>
+
+      <div class="d-flex flex-column gap-2">
+        @for (expense of vehicleExpenses; track expense.id) {
+          <g-expense-card
+            [expense]="expense"
+            [totalAmount]="totalAmount"
+          ></g-expense-card>
+        }
+
+        <!-- Add new Expense placeholder card -->
+        <div
+          class="add-expense-card bg-transparent p-3 p-md-4 d-flex flex-row align-items-center gap-3 rounded-4 cursor-pointer mb-3 w-100"
+        >
+          <div
+            class="icon-shape rounded-3 bg-body-secondary text-secondary flex-shrink-0 d-flex align-items-center justify-content-center"
+            style="width: 48px; height: 48px; font-size: 1.25rem"
+          >
+            <i class="fa-solid fa-plus"></i>
+          </div>
+          <div class="flex-grow-1 text-start min-width-0">
+            <h6 class="fw-bold text-body mb-1 text-truncate">¿Nuevo Gasto?</h6>
+            <p class="small text-secondary mb-0 text-truncate">
+              Registra gastos imprevistos de este viaje
+            </p>
+          </div>
+          <div class="d-none d-sm-block flex-shrink-0 ms-2">
+            <button
+              class="btn btn-sm btn-outline-secondary rounded-pill fw-medium px-3 text-nowrap"
+            >
+              Registrar Gasto
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -27,6 +27,11 @@ export const routes: Routes = [
       import('./vehicles/vehicles.component').then((m) => m.VehiclesComponent),
   },
   {
+    path: 'expenses',
+    loadComponent: () =>
+      import('./expenses/expenses.component').then((m) => m.ExpensesComponent),
+  },
+  {
     path: 'drivers',
     canActivate: [RoleGuard],
     data: { allowedRoles: ['ADMINISTRADOR', 'PROPIETARIO'] },

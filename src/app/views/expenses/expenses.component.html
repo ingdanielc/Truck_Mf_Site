@@ -1,0 +1,122 @@
+<div class="expenses-container py-4 bg-body">
+  <!-- Page Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col">
+      <h1 class="h3 fw-bold mb-0 text-body">
+        <i class="fa-solid fa-money-bill-wave me-2 text-primary"></i>Gastos
+      </h1>
+      <p class="text-secondary mb-0 small">
+        Gestiona los gastos asociados a tus vehículos
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Vehicle Carousel ─────────────────────────────────────────── -->
+  <div class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold mb-0 text-body">
+        <i class="fa-solid fa-truck-front me-2 text-secondary"></i>Vehículos
+      </h5>
+      <span
+        class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3"
+      >
+        {{ vehicles.length }} vehículo{{ vehicles.length !== 1 ? "s" : "" }}
+      </span>
+    </div>
+
+    <div>
+      <!-- Loading -->
+      <div *ngIf="loadingVehicles" class="text-center py-4">
+        <div class="spinner-border text-primary" role="status"></div>
+      </div>
+
+      <!-- Empty -->
+      <div
+        *ngIf="!loadingVehicles && vehicles.length === 0"
+        class="text-center py-5 text-secondary"
+      >
+        <i class="fa-solid fa-truck-front fs-1 mb-3 opacity-25"></i>
+        <p class="mb-0">No se encontraron vehículos.</p>
+      </div>
+
+      <!-- Carousel -->
+      <div *ngIf="!loadingVehicles && vehicles.length > 0">
+        <!-- Nav + visible cards -->
+        <div class="d-flex align-items-center gap-2">
+          <!-- Prev -->
+          <button
+            class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0"
+            (click)="prev()"
+            [disabled]="!canPrev"
+            aria-label="Anterior"
+          >
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+
+          <!-- Cards window -->
+          <div class="flex-grow-1 row g-3">
+            <div
+              *ngFor="let v of visibleVehicles"
+              class="col-12 col-md-4 carousel-slide cursor-pointer"
+              [class.ring-selected]="selectedVehicle === v"
+              (click)="selectVehicle(v)"
+              onkeypress
+            >
+              <g-vehicle-good [vehicle]="v"></g-vehicle-good>
+            </div>
+          </div>
+
+          <!-- Next -->
+          <button
+            class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0"
+            (click)="next()"
+            [disabled]="!canNext"
+            aria-label="Siguiente"
+          >
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+
+        <!-- Dots -->
+        <div
+          class="d-flex justify-content-center gap-2 mt-3"
+          *ngIf="totalDots > 1"
+        >
+          <button
+            *ngFor="let i of dotRange()"
+            class="dot-btn p-0 border-0 rounded-circle transition-all"
+            [class.dot-active]="i === carouselIndex"
+            (click)="carouselIndex = i; selectVehicle(vehicles[i])"
+            [attr.aria-label]="'Ir al vehículo ' + (i + 1)"
+          ></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Expenses Section ─────────────────────────────────────────── -->
+  <div *ngIf="selectedVehicle" class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold mb-0 text-body">
+        <i class="fa-solid fa-receipt me-2 text-secondary"></i>Gastos —
+        {{ selectedVehicle.plate }}
+      </h5>
+      <button
+        class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+      >
+        <i class="fa-solid fa-plus me-2"></i> Agregar gasto
+      </button>
+    </div>
+    <div class="mt-4">
+      <g-expenses-trip [tripId]="1"></g-expenses-trip>
+    </div>
+  </div>
+
+  <!-- Mobile Floating Action Button -->
+  <button
+    class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
+    aria-label="Agregar Gasto"
+  >
+    <i class="fa-solid fa-plus fs-4"></i>
+  </button>
+</div>

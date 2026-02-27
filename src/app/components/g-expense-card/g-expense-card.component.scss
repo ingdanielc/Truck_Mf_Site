@@ -1,0 +1,52 @@
+.expense-card {
+  cursor: default;
+
+  &:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+    border-color: rgba(var(--bs-primary-rgb), 0.2) !important;
+  }
+}
+
+.icon-wrapper {
+  width: 48px;
+  height: 48px;
+  font-size: 1.25rem;
+
+  @media (min-width: 576px) {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+}
+
+.min-width-0 {
+  min-width: 0; // Ensures text-truncate works inside flex containers
+}
+
+.tracking-wider {
+  letter-spacing: 0.05em;
+  font-size: 0.7rem; // Make the "X% DEL TOTAL" slightly smaller
+}
+
+// Custom Colors for specific categories not natively in bootstrap
+.text-indigo {
+  color: #6610f2;
+}
+.bg-indigo {
+  background-color: #6610f2;
+}
+
+// Ensure opacity-10 works regardless of dark/light theme on custom classes
+.bg-opacity-10 {
+  &.bg-indigo {
+    background-color: rgba(102, 16, 242, 0.1) !important;
+    color: #6610f2;
+  }
+}
+
+// Responsive quick adjustments
+.w-sm-auto {
+  @media (min-width: 576px) {
+    width: auto !important;
+  }
+}

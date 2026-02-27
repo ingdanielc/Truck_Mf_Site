@@ -1,0 +1,36 @@
+<div
+  class="expense-card p-3 p-md-4 rounded-4 bg-body border shadow-sm transition-all mb-3 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3"
+>
+  <!-- Left: Icon & Details -->
+  <div class="d-flex align-items-center gap-3 flex-grow-1 min-width-0">
+    <!-- Icon Container -->
+    <div
+      class="icon-wrapper flex-shrink-0 rounded-3 d-flex align-items-center justify-content-center bg-opacity-10"
+      [ngClass]="config.colorClass"
+    >
+      <i [class]="config.icon" [ngClass]="config.colorClass.split(' ')[0]"></i>
+    </div>
+
+    <!-- Text details -->
+    <div class="min-width-0">
+      <h6 class="fw-bold mb-1 text-body text-truncate">
+        {{ expense.category }}
+      </h6>
+      <p class="small text-secondary mb-0 text-truncate">
+        {{ expense.description }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Right: Value & Percentage -->
+  <div class="text-sm-end text-start min-width-0 mt-2 mt-sm-0 w-100 w-sm-auto">
+    <h5 class="fw-bold mb-1 text-body text-truncate">
+      {{ expense.amount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+    </h5>
+    <p
+      class="small text-secondary mb-0 fw-semibold tracking-wider text-uppercase text-truncate"
+    >
+      <span class="text-primary">{{ percentage }}%</span> del total
+    </p>
+  </div>
+</div>
