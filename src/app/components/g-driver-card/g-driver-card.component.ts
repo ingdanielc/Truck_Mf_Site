@@ -13,6 +13,7 @@ export class GDriverCardComponent {
   @Input() driver!: ModelDriver;
   @Output() edit = new EventEmitter<ModelDriver>();
   @Output() changePassword = new EventEmitter<ModelDriver>();
+  @Output() viewDetail = new EventEmitter<ModelDriver>();
 
   isMenuOpen = false;
 
@@ -21,14 +22,21 @@ export class GDriverCardComponent {
     this.isMenuOpen = !this.isMenuOpen;
   }
 
-  onEditClick(): void {
+  onEditClick(event?: Event): void {
+    event?.stopPropagation();
     this.isMenuOpen = false;
     this.edit.emit(this.driver);
   }
 
-  onChangePasswordClick(): void {
+  onChangePasswordClick(event?: Event): void {
+    event?.stopPropagation();
     this.isMenuOpen = false;
     this.changePassword.emit(this.driver);
+  }
+
+  onViewProfile(): void {
+    if (this.isMenuOpen) return;
+    this.viewDetail.emit(this.driver);
   }
 
   get statusClass(): string {

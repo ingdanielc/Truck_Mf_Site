@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   FormBuilder,
   FormGroup,
@@ -100,6 +100,7 @@ export class DriversComponent implements OnInit, OnDestroy {
     private readonly toastService: ToastService,
     private readonly ownerService: OwnerService,
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
   ) {
     this.driverForm = this.fb.group(
       {
@@ -712,7 +713,11 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   onViewProfile(owner: ModelOwner): void {
-    console.log('View profile for owner:', owner);
+    this.router.navigate(['/site/owners', owner.id]);
+  }
+
+  onViewDriver(driver: ModelDriver): void {
+    this.router.navigate(['/site/drivers', driver.id]);
   }
 
   allowOnlyNumbers(event: any): void {

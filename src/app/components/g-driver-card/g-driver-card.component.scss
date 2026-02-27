@@ -22,14 +22,16 @@
 .avatar {
   width: 64px;
   height: 64px;
-  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+  border: 2px solid var(--bs-border-color);
+  flex-shrink: 0;
 }
 
 .status-dot {
-  bottom: 0;
-  right: 0;
+  bottom: 0px;
+  right: 0px;
   width: 16px;
   height: 16px;
+  z-index: 2;
 }
 
 .op-50 {

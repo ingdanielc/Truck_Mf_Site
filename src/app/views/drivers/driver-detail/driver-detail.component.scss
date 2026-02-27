@@ -1,0 +1,49 @@
+.driver-detail-container {
+    min-height: 100vh;
+    transition: all 0.3s ease;
+
+    .hover-scale {
+        transition: transform 0.2s ease-in-out;
+
+        &:hover {
+            transform: translateY(-5px);
+        }
+    }
+
+    .avatar {
+        img {
+            transition: transform 0.5s ease;
+        }
+
+        &:hover img {
+            transform: scale(1.1);
+        }
+    }
+
+    .icon-box {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .tracking-wider {
+        letter-spacing: 0.05em;
+    }
+
+    // Dark mode refinements for cards in primary section
+    .bg-primary {
+        .card {
+            backdrop-filter: blur(10px);
+        }
+    }
+
+    p {
+        font-size: 0.95rem;
+    }
+
+    .badge {
+        font-weight: 600;
+    }
+}

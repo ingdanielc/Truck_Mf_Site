@@ -42,4 +42,11 @@ export const routes: Routes = [
         (m) => m.OwnerDetailComponent,
       ),
   },
+  {
+    path: 'drivers/:id',
+    loadComponent: () =>
+      import('./drivers/driver-detail/driver-detail.component').then(
+        (m) => m.DriverDetailComponent,
+      ),
+  },
 ];
