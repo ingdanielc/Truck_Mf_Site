@@ -49,4 +49,11 @@ export const routes: Routes = [
         (m) => m.DriverDetailComponent,
       ),
   },
+  {
+    path: 'admin-detail/:id',
+    loadComponent: () =>
+      import('./security/admin-detail/admin-detail.component').then(
+        (m) => m.AdminDetailComponent,
+      ),
+  },
 ];

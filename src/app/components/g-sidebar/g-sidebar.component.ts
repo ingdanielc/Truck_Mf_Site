@@ -148,6 +148,8 @@ export class GSidebarComponent implements OnInit, OnDestroy {
           console.error('Error al buscar el conductor:', err);
         },
       });
+    } else if (roleName === 'ADMINISTRADOR') {
+      this.router.navigate(['/site/admin-detail', user.id]);
     } else {
       console.log('Navegando al perfil general...');
       // Logic for other roles profile could go here if implemented
