@@ -374,18 +374,22 @@
   class="custom-offcanvas shadow-lg border-start transition-all"
   [class.open]="isOffcanvasOpen"
 >
-  <div class="offcanvas-header p-4 pb-0 d-flex justify-content-between">
-    <div>
-      <h2 class="h4 fw-bold mb-1">Editar Viaje</h2>
-      <p class="text-secondary small">Actualice la información del viaje</p>
+  <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
+    <div class="d-flex justify-content-between align-items-start w-100">
+      <h2 class="h4 fw-bold mb-0 text-body">Editar Viaje</h2>
+      <button
+        type="button"
+        class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
+        (click)="toggleOffcanvas()"
+        onkeypress
+        aria-label="Cerrar"
+      >
+        <i class="fa-solid fa-xmark fs-3"></i>
+      </button>
     </div>
-    <span
-      class="btn btn-link text-body p-0 border-0 shadow-none op-70 hover-op-100"
-      (click)="toggleOffcanvas()"
-      onkeypress
-    >
-      <i class="fa-solid fa-xmark fs-4"></i>
-    </span>
+    <p class="text-secondary small mb-0 mt-1">
+      Actualice la información del viaje
+    </p>
   </div>
 
   <div class="offcanvas-body p-0">

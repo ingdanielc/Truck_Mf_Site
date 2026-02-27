@@ -149,28 +149,28 @@
     class="custom-offcanvas shadow-lg border-start transition-all"
     [class.open]="isOffcanvasOpen"
   >
-    <div class="offcanvas-header p-4 pb-0 d-flex justify-content-between">
-      <div>
-        <h2 class="h4 fw-bold mb-1">
+    <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-start w-100">
+        <h2 class="h4 fw-bold mb-0 text-body">
           {{ editingDriver ? "Editar Conductor" : "Crear Conductor" }}
         </h2>
-        <p class="text-secondary small">
-          {{
-            editingDriver
-              ? "Actualice la información del conductor"
-              : "Complete los datos para dar de alta un nuevo conductor"
-          }}
-        </p>
+        <button
+          type="button"
+          class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
+          (click)="toggleOffcanvas()"
+          onkeypress
+          aria-label="Cerrar"
+        >
+          <i class="fa-solid fa-xmark fs-3"></i>
+        </button>
       </div>
-      <button
-        type="button"
-        class="btn btn-link text-body p-0 border-0 shadow-none op-70 hover-op-100"
-        (click)="toggleOffcanvas()"
-        onkeypress
-        aria-label="Cerrar"
-      >
-        <i class="fa-solid fa-xmark fs-4"></i>
-      </button>
+      <p class="text-secondary small mb-0 mt-1 align-items-start">
+        {{
+          editingDriver
+            ? "Actualice la información del conductor"
+            : "Complete los datos para dar de alta un nuevo conductor"
+        }}
+      </p>
     </div>
 
     <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
@@ -647,22 +647,22 @@
     class="custom-offcanvas shadow-lg border-start transition-all"
     [class.open]="isPasswordOffcanvasOpen"
   >
-    <div class="offcanvas-header p-4 pb-0 d-flex justify-content-between">
-      <div>
-        <h2 class="h4 fw-bold mb-1">Cambiar Contraseña</h2>
-        <p class="text-secondary small">
-          {{ driverChangingPassword?.name }}
-        </p>
+    <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-start w-100">
+        <h2 class="h4 fw-bold mb-0 text-body">Cambiar Contraseña</h2>
+        <button
+          type="button"
+          class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
+          (click)="togglePasswordOffcanvas()"
+          onkeypress
+          aria-label="Cerrar"
+        >
+          <i class="fa-solid fa-xmark fs-3"></i>
+        </button>
       </div>
-      <button
-        type="button"
-        class="btn btn-link text-body p-0 border-0 shadow-none op-70 hover-op-100"
-        (click)="togglePasswordOffcanvas()"
-        onkeypress
-        aria-label="Cerrar"
-      >
-        <i class="fa-solid fa-xmark fs-4"></i>
-      </button>
+      <p class="text-secondary small mb-0 mt-1">
+        {{ driverChangingPassword?.name }}
+      </p>
     </div>
 
     <div class="offcanvas-body p-4 pt-4 custom-scrollbar">

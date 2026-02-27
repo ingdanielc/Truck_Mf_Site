@@ -41,6 +41,7 @@
               routerLinkActive="active"
               class="nav-link text-white d-flex align-items-center p-2 rounded transition-all"
               [title]="isCollapsed ? item.label : ''"
+              (click)="closeMobileMenu()"
             >
               <i [class]="item.icon + ' fs-5 fixed-width-icon'"></i>
               <span
