@@ -6,7 +6,7 @@ import {
   OnInit,
   Output,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   FormBuilder,
   FormGroup,
@@ -36,7 +36,7 @@ import {
 @Component({
   selector: 'g-trip-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [FormsModule, ReactiveFormsModule],
   templateUrl: './g-trip-form.component.html',
   styleUrls: ['./g-trip-form.component.scss'],
 })

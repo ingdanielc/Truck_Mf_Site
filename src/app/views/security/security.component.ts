@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   FormBuilder,
   FormGroup,
@@ -25,7 +25,6 @@ import { ToastService } from '../../services/toast.service';
   selector: 'app-security',
   standalone: true,
   imports: [
-    CommonModule,
     GUserCardComponent,
     GPasswordCardComponent,
     ReactiveFormsModule,

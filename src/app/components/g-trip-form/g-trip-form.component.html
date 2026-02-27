@@ -5,32 +5,37 @@
 >
   <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
     <!-- Owner Section (Conditional for Admin) -->
-    <div *ngIf="userRole === 'ADMINISTRADOR'" class="mb-4">
-      <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
-        <i class="fa-solid fa-user-tie me-2"></i>Propietario
-      </h6>
-      <div class="mb-3">
-        <label for="ownerId" class="form-label small fw-bold mb-2"
-          >Seleccionar Socio*</label
-        >
-        <select
-          id="ownerId"
-          class="form-select rounded-3 py-2 px-3"
-          formControlName="ownerId"
-          [class.is-invalid]="
-            tripForm.get('ownerId')?.touched && tripForm.get('ownerId')?.invalid
-          "
-        >
-          <option [ngValue]="null">Selecciona</option>
-          <option *ngFor="let owner of owners" [ngValue]="owner.id">
-            {{ owner.name }}
-          </option>
-        </select>
-        <div class="invalid-feedback small">
-          Este campo es obligatorio para continuar
+    @if (userRole === "ADMINISTRADOR") {
+      <div class="mb-4">
+        <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+          <i class="fa-solid fa-user-tie me-2"></i>Propietario
+        </h6>
+        <div class="mb-3">
+          <label for="ownerId" class="form-label small fw-bold mb-2"
+            >Seleccionar Socio*</label
+          >
+          <select
+            id="ownerId"
+            class="form-select rounded-3 py-2 px-3"
+            formControlName="ownerId"
+            [class.is-invalid]="
+              tripForm.get('ownerId')?.touched &&
+              tripForm.get('ownerId')?.invalid
+            "
+          >
+            <option [ngValue]="null">Selecciona</option>
+            @for (owner of owners; track owner) {
+              <option [ngValue]="owner.id">
+                {{ owner.name }}
+              </option>
+            }
+          </select>
+          <div class="invalid-feedback small">
+            Este campo es obligatorio para continuar
+          </div>
         </div>
       </div>
-    </div>
+    }
 
     <!-- Logistics Section -->
     <div class="mb-4">
@@ -61,9 +66,11 @@
                     : "Selecciona"
               }}
             </option>
-            <option *ngFor="let v of vehicles" [ngValue]="v.id">
-              {{ v.plate }} - {{ v.vehicleBrandName }}
-            </option>
+            @for (v of vehicles; track v) {
+              <option [ngValue]="v.id">
+                {{ v.plate }} - {{ v.vehicleBrandName }}
+              </option>
+            }
           </select>
           <div class="invalid-feedback small">
             Este campo es obligatorio para continuar
@@ -92,9 +99,11 @@
                     : "Selecciona"
               }}
             </option>
-            <option *ngFor="let d of drivers" [ngValue]="d.id">
-              {{ d.name }}
-            </option>
+            @for (d of drivers; track d) {
+              <option [ngValue]="d.id">
+                {{ d.name }}
+              </option>
+            }
           </select>
           <div class="invalid-feedback small">
             Este campo es obligatorio para continuar
@@ -162,11 +171,15 @@
             "
           >
             <option [ngValue]="null">Selecciona ciudad</option>
-            <optgroup *ngFor="let group of groupedCities" [label]="group.state">
-              <option *ngFor="let city of group.cities" [value]="city.id">
-                {{ city.name }}
-              </option>
-            </optgroup>
+            @for (group of groupedCities; track group) {
+              <optgroup [label]="group.state">
+                @for (city of group.cities; track city) {
+                  <option [value]="city.id">
+                    {{ city.name }}
+                  </option>
+                }
+              </optgroup>
+            }
           </select>
           <div class="invalid-feedback small">
             Este campo es obligatorio para continuar
@@ -186,11 +199,15 @@
             "
           >
             <option [ngValue]="null">Selecciona ciudad</option>
-            <optgroup *ngFor="let group of groupedCities" [label]="group.state">
-              <option *ngFor="let city of group.cities" [value]="city.id">
-                {{ city.name }}
-              </option>
-            </optgroup>
+            @for (group of groupedCities; track group) {
+              <optgroup [label]="group.state">
+                @for (city of group.cities; track city) {
+                  <option [value]="city.id">
+                    {{ city.name }}
+                  </option>
+                }
+              </optgroup>
+            }
           </select>
           <div class="invalid-feedback small">
             Este campo es obligatorio para continuar
@@ -291,9 +308,11 @@
             "
           >
             <option value="">Selecciona</option>
-            <option *ngFor="let type of loadTypes" [value]="type">
-              {{ type }}
-            </option>
+            @for (type of loadTypes; track type) {
+              <option [value]="type">
+                {{ type }}
+              </option>
+            }
           </select>
           <div class="invalid-feedback small">
             Este campo es obligatorio para continuar
@@ -314,9 +333,11 @@
             "
           >
             <option value="">Selecciona</option>
-            <option *ngFor="let corp of companies" [value]="corp">
-              {{ corp }}
-            </option>
+            @for (corp of companies; track corp) {
+              <option [value]="corp">
+                {{ corp }}
+              </option>
+            }
           </select>
           <div class="invalid-feedback small">
             Este campo es obligatorio para continuar
@@ -331,9 +352,11 @@
             class="form-select rounded-3 py-2 px-3"
             formControlName="status"
           >
-            <option *ngFor="let s of tripStatuses" [value]="s">
-              {{ s }}
-            </option>
+            @for (s of tripStatuses; track s) {
+              <option [value]="s">
+                {{ s }}
+              </option>
+            }
           </select>
         </div>
       </div>

@@ -34,12 +34,13 @@
         class="btn btn-link position-relative p-0 text-decoration-none text-body"
       >
         <i class="fa-solid fa-bell fs-5"></i>
-        <span
-          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-          *ngIf="notificationsCount > 0"
-        >
-          {{ notificationsCount }}
-        </span>
+        @if (notificationsCount > 0) {
+          <span
+            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+          >
+            {{ notificationsCount }}
+          </span>
+        }
       </button>
     </div>
 
@@ -66,34 +67,35 @@
       </div>
 
       <!-- Dropdown Menu -->
-      <div
-        class="user-dropdown-menu bg-body border rounded shadow-sm position-absolute end-0 mt-2 z-3"
-        *ngIf="isUserMenuOpen"
-      >
-        <ul class="list-unstyled m-0 p-1">
-          <li>
-            <button
-              class="btn btn-link text-body w-100 text-start text-decoration-none p-2 rounded hover-bg d-flex align-items-center"
-              (click)="goToProfile()"
-            >
-              <i class="fa-solid fa-user-gear me-2 smaller"></i>
-              <span class="small text-nowrap">Perfil</span>
-            </button>
-          </li>
-          <li>
-            <hr class="dropdown-divider m-1" />
-          </li>
-          <li>
-            <button
-              class="btn btn-link text-danger w-100 text-start text-decoration-none p-2 rounded hover-bg d-flex align-items-center"
-              (click)="logout()"
-            >
-              <i class="fa-solid fa-right-from-bracket me-2 smaller"></i>
-              <span class="small text-nowrap">Salir</span>
-            </button>
-          </li>
-        </ul>
-      </div>
+      @if (isUserMenuOpen) {
+        <div
+          class="user-dropdown-menu bg-body border rounded shadow-sm position-absolute end-0 mt-2 z-3"
+        >
+          <ul class="list-unstyled m-0 p-1">
+            <li>
+              <button
+                class="btn btn-link text-body w-100 text-start text-decoration-none p-2 rounded hover-bg d-flex align-items-center"
+                (click)="goToProfile()"
+              >
+                <i class="fa-solid fa-user-gear me-2 smaller"></i>
+                <span class="small text-nowrap">Perfil</span>
+              </button>
+            </li>
+            <li>
+              <hr class="dropdown-divider m-1" />
+            </li>
+            <li>
+              <button
+                class="btn btn-link text-danger w-100 text-start text-decoration-none p-2 rounded hover-bg d-flex align-items-center"
+                (click)="logout()"
+              >
+                <i class="fa-solid fa-right-from-bracket me-2 smaller"></i>
+                <span class="small text-nowrap">Salir</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      }
     </div>
   </div>
 </header>

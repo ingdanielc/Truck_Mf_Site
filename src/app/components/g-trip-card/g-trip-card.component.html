@@ -107,10 +107,12 @@
             >Anticipo:
             {{ displayAdvance | currency: "COP" : "symbol" : "1.0-0" }}</span
           >
-          <span *ngIf="!trip.paidBalance" class="small text-danger fw-bold"
-            >Saldo:
-            {{ displayBalance | currency: "COP" : "symbol" : "1.0-0" }}</span
-          >
+          @if (!trip.paidBalance) {
+            <span class="small text-danger fw-bold"
+              >Saldo:
+              {{ displayBalance | currency: "COP" : "symbol" : "1.0-0" }}</span
+            >
+          }
         </div>
         <div
           class="progress rounded-pill bg-body-secondary"
@@ -140,15 +142,13 @@
       <i class="fa-regular fa-calendar"></i>
       <span>{{ trip.startDate | date: "dd MMM, yyyy" }}</span>
 
-      <ng-container
-        *ngIf="trip.status === 'Completado' || trip.status === 'Pendiente'"
-      >
+      @if (trip.status === "Completado" || trip.status === "Pendiente") {
         <i class="fa-solid fa-arrow-right-long mx-1 opacity-50"></i>
         <span class="text-success fw-bold">
           {{ trip.endDate | date: "dd MMM, yyyy" }} ({{ tripDuration }}
           {{ tripDuration === 1 ? "día" : "días" }})
         </span>
-      </ng-container>
+      }
     </div>
     <button
       class="btn btn-link text-primary p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2"

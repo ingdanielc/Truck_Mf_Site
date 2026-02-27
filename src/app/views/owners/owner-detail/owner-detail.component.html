@@ -1,262 +1,263 @@
-<div
-  class="owner-detail-container py-4 bg-body"
-  *ngIf="owner; else loadingState"
->
-  <!-- Header -->
-  <div class="row mb-4 gy-3 align-items-center">
-    <div class="col-12 col-md">
-      <div class="d-flex align-items-center gap-3">
+@if (owner) {
+  <div class="owner-detail-container py-4 bg-body">
+    <!-- Header -->
+    <div class="row mb-4 gy-3 align-items-center">
+      <div class="col-12 col-md">
+        <div class="d-flex align-items-center gap-3">
+          <button
+            (click)="goBack()"
+            class="btn btn-link text-body p-0 shadow-none"
+            aria-label="atras"
+          >
+            <i class="fa-solid fa-arrow-left fs-4"></i>
+          </button>
+          <h1 class="h3 fw-bold mb-0 text-body">Perfil del Propietario</h1>
+        </div>
+      </div>
+    </div>
+    <!-- Hero Section -->
+    <div
+      class="card border-0 rounded-4 shadow-sm bg-primary mb-4 overflow-hidden position-relative"
+    >
+      <div class="card-body p-4 p-md-5 position-relative z-1">
+        <div class="row align-items-center gy-4">
+          <div
+            class="col-12 col-md-auto d-flex justify-content-center justify-content-md-start"
+          >
+            <div class="profile-img-container position-relative">
+              <div
+                class="avatar rounded-circle overflow-hidden bg-white bg-opacity-10 d-flex align-items-center justify-content-center border border-4 border-white border-opacity-10 shadow-lg"
+                style="width: 140px; height: 140px"
+              >
+                @if (owner.photo) {
+                  <img
+                    [src]="owner.photo"
+                    class="w-100 h-100 object-fit-cover"
+                    alt="Profile"
+                  />
+                } @else {
+                  <i
+                    class="fa-solid fa-user text-white opacity-50 display-3"
+                  ></i>
+                }
+              </div>
+              <div
+                class="status-indicator position-absolute bg-success border border-3 border-dark rounded-circle"
+                style="width: 24px; height: 24px; bottom: 8px; right: 8px"
+              ></div>
+            </div>
+          </div>
+          <div class="col-12 col-md text-center text-md-start">
+            <div
+              class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-3 mb-2"
+            >
+              <h1 class="display-6 fw-bold mb-0 text-white">
+                {{ owner.name }}
+              </h1>
+            </div>
+            <div
+              class="d-flex flex-wrap gap-4 text-white text-opacity-75 justify-content-center justify-content-md-start"
+            >
+              <div class="d-flex align-items-center gap-2">
+                <i class="fa-regular fa-calendar"></i>
+                <span
+                  >Miembro desde
+                  {{
+                    ($any(owner).creationDate | date: "MMMM yyyy") ||
+                      "Enero 2022"
+                  }}</span
+                >
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-location-dot"></i>
+                <span>{{ owner.cityName || "Bogotá, Colombia" }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-lg-auto ms-lg-auto">
+            <div class="d-flex gap-3">
+              <div
+                class="card bg-dark bg-opacity-50 border-0 rounded-4 p-3 text-center"
+                style="min-width: 120px"
+              >
+                <p
+                  class="text-white text-opacity-50 small fw-bold mb-1 text-uppercase tracking-wider"
+                >
+                  Estado
+                </p>
+                <h5 class="fw-bold mb-0 text-success">Activo</h5>
+              </div>
+              <div
+                class="card bg-dark bg-opacity-50 border-0 rounded-4 p-3 text-center"
+                style="min-width: 100px"
+              >
+                <p
+                  class="text-white text-opacity-50 small fw-bold mb-1 text-uppercase tracking-wider"
+                >
+                  Calificación
+                </p>
+                <h5 class="fw-bold mb-0 text-warning">
+                  4.8 <i class="fa-solid fa-star fs-6"></i>
+                </h5>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Stats Grid -->
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-md-4">
+        <div
+          class="card border-0 rounded-4 shadow-sm bg-body-tertiary p-4 h-100 hover-scale"
+        >
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div
+              class="icon-box bg-secondary bg-opacity-10 rounded-3 p-3 text-secondary"
+            >
+              <i class="fa-solid fa-truck-front fs-4"></i>
+            </div>
+            <span class="text-secondary small fw-bold text-uppercase"
+              >Total</span
+            >
+          </div>
+          <h2 class="display-5 fw-bold mb-1">{{ stats.total }}</h2>
+          <p class="text-secondary mb-0">Vehículos Registrados</p>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div
+          class="card border-0 rounded-4 shadow-sm bg-body-tertiary p-4 h-100 hover-scale"
+        >
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div
+              class="icon-box bg-success bg-opacity-10 rounded-3 p-3 text-success"
+            >
+              <i class="fa-solid fa-route fs-4"></i>
+            </div>
+            <span class="text-secondary small fw-bold text-uppercase"
+              >Historial</span
+            >
+          </div>
+          <h2 class="display-5 fw-bold mb-1 text-success">
+            {{ stats.trips }}
+          </h2>
+          <p class="text-secondary mb-0">Total Viajes</p>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div
+          class="card border-0 rounded-4 shadow-sm bg-body-tertiary p-4 h-100 hover-scale"
+        >
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div
+              class="icon-box bg-warning bg-opacity-10 rounded-3 p-3 text-warning"
+            >
+              <i class="fa-solid fa-wrench fs-4"></i>
+            </div>
+            <span class="text-secondary small fw-bold text-uppercase"
+              >Alertas</span
+            >
+          </div>
+          <h2 class="display-5 fw-bold mb-1 text-warning">
+            {{ stats.maintenance }}
+          </h2>
+          <p class="text-secondary mb-0">En Mantenimiento</p>
+        </div>
+      </div>
+    </div>
+    <!-- Personal Details -->
+    <div class="card border-0 rounded-4 shadow-sm bg-body-tertiary mb-4">
+      <div
+        class="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center"
+      >
+        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary">
+          <i class="fa-solid fa-user"></i> Información Personal
+        </h5>
         <button
-          (click)="goBack()"
-          class="btn btn-link text-body p-0 shadow-none"
-          aria-label="atras"
+          class="btn btn-link text-primary p-0 text-decoration-none small fw-bold"
         >
-          <i class="fa-solid fa-arrow-left fs-4"></i>
+          Actualizar
         </button>
-        <h1 class="h3 fw-bold mb-0 text-body">Perfil del Propietario</h1>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-4">
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">
+              Nombre Completo
+            </p>
+            <h6 class="fw-bold mb-0">{{ owner.name }}</h6>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">
+              Identificación
+            </p>
+            <h6 class="fw-bold mb-0">
+              {{ formatDocNumber(owner.documentNumber) }}
+            </h6>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">
+              Correo Electrónico
+            </p>
+            <h6 class="fw-bold mb-0">{{ owner.email }}</h6>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">
+              Celular
+            </p>
+            <h6 class="fw-bold mb-0">{{ owner.cellPhone }}</h6>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">
+              Fecha de Nacimiento
+            </p>
+            <h6 class="fw-bold mb-0">
+              {{ owner.birthdate | date: "longDate" }} ({{ owner.age }} años)
+            </h6>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-
-  <!-- Hero Section -->
-  <div
-    class="card border-0 rounded-4 shadow-sm bg-primary mb-4 overflow-hidden position-relative"
-  >
-    <div class="card-body p-4 p-md-5 position-relative z-1">
-      <div class="row align-items-center gy-4">
-        <div
-          class="col-12 col-md-auto d-flex justify-content-center justify-content-md-start"
+    <!-- Active Fleet Table -->
+    <div class="card border-0 rounded-4 shadow-sm bg-body-tertiary">
+      <div
+        class="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center"
+      >
+        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary">
+          <i class="fa-solid fa-truck-front"></i> Listado de Vehiculos
+        </h5>
+        <button
+          class="btn btn-link text-primary p-0 text-decoration-none small fw-bold"
+          (click)="manageFleet()"
         >
-          <div class="profile-img-container position-relative">
-            <div
-              class="avatar rounded-circle overflow-hidden bg-white bg-opacity-10 d-flex align-items-center justify-content-center border border-4 border-white border-opacity-10 shadow-lg"
-              style="width: 140px; height: 140px"
-            >
-              <ng-container *ngIf="owner.photo; else fallbackIcon">
-                <img
-                  [src]="owner.photo"
-                  class="w-100 h-100 object-fit-cover"
-                  alt="Profile"
-                />
-              </ng-container>
-              <ng-template #fallbackIcon>
-                <i class="fa-solid fa-user text-white opacity-50 display-3"></i>
-              </ng-template>
+          Ver Vehículos
+        </button>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-1">
+          @for (vehicle of vehicles; track vehicle) {
+            <div class="col-12">
+              <g-vehicle-mini-card [vehicle]="vehicle"></g-vehicle-mini-card>
             </div>
-            <div
-              class="status-indicator position-absolute bg-success border border-3 border-dark rounded-circle"
-              style="width: 24px; height: 24px; bottom: 8px; right: 8px"
-            ></div>
-          </div>
-        </div>
-        <div class="col-12 col-md text-center text-md-start">
-          <div
-            class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-3 mb-2"
-          >
-            <h1 class="display-6 fw-bold mb-0 text-white">{{ owner.name }}</h1>
-          </div>
-          <div
-            class="d-flex flex-wrap gap-4 text-white text-opacity-75 justify-content-center justify-content-md-start"
-          >
-            <div class="d-flex align-items-center gap-2">
-              <i class="fa-regular fa-calendar"></i>
-              <span
-                >Miembro desde
-                {{
-                  ($any(owner).creationDate | date: "MMMM yyyy") || "Enero 2022"
-                }}</span
-              >
-            </div>
-            <div class="d-flex align-items-center gap-2">
-              <i class="fa-solid fa-location-dot"></i>
-              <span>{{ owner.cityName || "Bogotá, Colombia" }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="col-12 col-lg-auto ms-lg-auto">
-          <div class="d-flex gap-3">
-            <div
-              class="card bg-dark bg-opacity-50 border-0 rounded-4 p-3 text-center"
-              style="min-width: 120px"
-            >
-              <p
-                class="text-white text-opacity-50 small fw-bold mb-1 text-uppercase tracking-wider"
-              >
-                Estado
+          }
+          @if (vehicles.length === 0) {
+            <div class="col-12 text-center py-5 text-secondary">
+              <i class="fa-solid fa-truck-front fs-1 mb-3 opacity-25"></i>
+              <p class="mb-0">
+                No se encontraron vehículos para este propietario.
               </p>
-              <h5 class="fw-bold mb-0 text-success">Activo</h5>
             </div>
-            <div
-              class="card bg-dark bg-opacity-50 border-0 rounded-4 p-3 text-center"
-              style="min-width: 100px"
-            >
-              <p
-                class="text-white text-opacity-50 small fw-bold mb-1 text-uppercase tracking-wider"
-              >
-                Calificación
-              </p>
-              <h5 class="fw-bold mb-0 text-warning">
-                4.8 <i class="fa-solid fa-star fs-6"></i>
-              </h5>
-            </div>
-          </div>
+          }
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Stats Grid -->
-  <div class="row g-4 mb-4">
-    <div class="col-12 col-md-4">
-      <div
-        class="card border-0 rounded-4 shadow-sm bg-body-tertiary p-4 h-100 hover-scale"
-      >
-        <div class="d-flex justify-content-between align-items-start mb-3">
-          <div
-            class="icon-box bg-secondary bg-opacity-10 rounded-3 p-3 text-secondary"
-          >
-            <i class="fa-solid fa-truck-front fs-4"></i>
-          </div>
-          <span class="text-secondary small fw-bold text-uppercase">Total</span>
-        </div>
-        <h2 class="display-5 fw-bold mb-1">{{ stats.total }}</h2>
-        <p class="text-secondary mb-0">Vehículos Registrados</p>
-      </div>
-    </div>
-    <div class="col-12 col-md-4">
-      <div
-        class="card border-0 rounded-4 shadow-sm bg-body-tertiary p-4 h-100 hover-scale"
-      >
-        <div class="d-flex justify-content-between align-items-start mb-3">
-          <div
-            class="icon-box bg-success bg-opacity-10 rounded-3 p-3 text-success"
-          >
-            <i class="fa-solid fa-route fs-4"></i>
-          </div>
-          <span class="text-secondary small fw-bold text-uppercase"
-            >Historial</span
-          >
-        </div>
-        <h2 class="display-5 fw-bold mb-1 text-success">
-          {{ stats.trips }}
-        </h2>
-        <p class="text-secondary mb-0">Total Viajes</p>
-      </div>
-    </div>
-    <div class="col-12 col-md-4">
-      <div
-        class="card border-0 rounded-4 shadow-sm bg-body-tertiary p-4 h-100 hover-scale"
-      >
-        <div class="d-flex justify-content-between align-items-start mb-3">
-          <div
-            class="icon-box bg-warning bg-opacity-10 rounded-3 p-3 text-warning"
-          >
-            <i class="fa-solid fa-wrench fs-4"></i>
-          </div>
-          <span class="text-secondary small fw-bold text-uppercase"
-            >Alertas</span
-          >
-        </div>
-        <h2 class="display-5 fw-bold mb-1 text-warning">
-          {{ stats.maintenance }}
-        </h2>
-        <p class="text-secondary mb-0">En Mantenimiento</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Personal Details -->
-  <div class="card border-0 rounded-4 shadow-sm bg-body-tertiary mb-4">
-    <div
-      class="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center"
-    >
-      <h5 class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary">
-        <i class="fa-solid fa-user"></i> Información Personal
-      </h5>
-      <button
-        class="btn btn-link text-primary p-0 text-decoration-none small fw-bold"
-      >
-        Actualizar
-      </button>
-    </div>
-    <div class="card-body p-4">
-      <div class="row g-4">
-        <div class="col-12 col-sm-6 col-lg-4">
-          <p class="text-secondary small fw-bold mb-1 text-uppercase">
-            Nombre Completo
-          </p>
-          <h6 class="fw-bold mb-0">{{ owner.name }}</h6>
-        </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <p class="text-secondary small fw-bold mb-1 text-uppercase">
-            Identificación
-          </p>
-          <h6 class="fw-bold mb-0">
-            {{ formatDocNumber(owner.documentNumber) }}
-          </h6>
-        </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <p class="text-secondary small fw-bold mb-1 text-uppercase">
-            Correo Electrónico
-          </p>
-          <h6 class="fw-bold mb-0">{{ owner.email }}</h6>
-        </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <p class="text-secondary small fw-bold mb-1 text-uppercase">
-            Celular
-          </p>
-          <h6 class="fw-bold mb-0">{{ owner.cellPhone }}</h6>
-        </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <p class="text-secondary small fw-bold mb-1 text-uppercase">
-            Fecha de Nacimiento
-          </p>
-          <h6 class="fw-bold mb-0">
-            {{ owner.birthdate | date: "longDate" }} ({{ owner.age }} años)
-          </h6>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Active Fleet Table -->
-  <div class="card border-0 rounded-4 shadow-sm bg-body-tertiary">
-    <div
-      class="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center"
-    >
-      <h5 class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary">
-        <i class="fa-solid fa-truck-front"></i> Listado de Vehiculos
-      </h5>
-      <button
-        class="btn btn-link text-primary p-0 text-decoration-none small fw-bold"
-        (click)="manageFleet()"
-      >
-        Ver Vehículos
-      </button>
-    </div>
-    <div class="card-body p-4">
-      <div class="row g-1">
-        <div class="col-12" *ngFor="let vehicle of vehicles">
-          <g-vehicle-mini-card [vehicle]="vehicle"></g-vehicle-mini-card>
-        </div>
-
-        <div
-          class="col-12 text-center py-5 text-secondary"
-          *ngIf="vehicles.length === 0"
-        >
-          <i class="fa-solid fa-truck-front fs-1 mb-3 opacity-25"></i>
-          <p class="mb-0">No se encontraron vehículos para este propietario.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<ng-template #loadingState>
+} @else {
   <div
     class="d-flex flex-column align-items-center justify-content-center py-5"
   >
     <div class="spinner-border text-primary mb-3" role="status"></div>
     <p class="text-secondary fw-bold">Cargando perfil del propietario...</p>
   </div>
-</ng-template>
+}

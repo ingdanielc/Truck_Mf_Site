@@ -431,10 +431,11 @@
   </div>
 
   <!-- Backdrop -->
-  <div
-    class="offcanvas-backdrop transition-all d-none d-md-block"
-    *ngIf="isOffcanvasOpen || isPasswordOffcanvasOpen"
-    (click)="isOffcanvasOpen ? toggleOffcanvas() : togglePasswordOffcanvas()"
-    onkeypress
-  ></div>
+  @if (isOffcanvasOpen || isPasswordOffcanvasOpen) {
+    <div
+      class="offcanvas-backdrop transition-all d-none d-md-block"
+      (click)="isOffcanvasOpen ? toggleOffcanvas() : togglePasswordOffcanvas()"
+      onkeypress
+    ></div>
+  }
 </div>

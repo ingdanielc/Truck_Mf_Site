@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   FormsModule,
   ReactiveFormsModule,
@@ -11,7 +11,7 @@ import {
 @Component({
   selector: 'g-password-card',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [FormsModule, ReactiveFormsModule],
   templateUrl: './g-password-card.component.html',
   styleUrls: ['./g-password-card.component.scss'],
 })

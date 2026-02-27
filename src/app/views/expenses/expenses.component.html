@@ -26,91 +26,94 @@
 
     <div>
       <!-- Loading -->
-      <div *ngIf="loadingVehicles" class="text-center py-4">
-        <div class="spinner-border text-primary" role="status"></div>
-      </div>
+      @if (loadingVehicles) {
+        <div class="text-center py-4">
+          <div class="spinner-border text-primary" role="status"></div>
+        </div>
+      }
 
       <!-- Empty -->
-      <div
-        *ngIf="!loadingVehicles && vehicles.length === 0"
-        class="text-center py-5 text-secondary"
-      >
-        <i class="fa-solid fa-truck-front fs-1 mb-3 opacity-25"></i>
-        <p class="mb-0">No se encontraron vehículos.</p>
-      </div>
+      @if (!loadingVehicles && vehicles.length === 0) {
+        <div class="text-center py-5 text-secondary">
+          <i class="fa-solid fa-truck-front fs-1 mb-3 opacity-25"></i>
+          <p class="mb-0">No se encontraron vehículos.</p>
+        </div>
+      }
 
       <!-- Carousel -->
-      <div *ngIf="!loadingVehicles && vehicles.length > 0">
-        <!-- Nav + visible cards -->
-        <div class="d-flex align-items-center gap-2">
-          <!-- Prev -->
-          <button
-            class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0"
-            (click)="prev()"
-            [disabled]="!canPrev"
-            aria-label="Anterior"
-          >
-            <i class="fa-solid fa-chevron-left"></i>
-          </button>
-
-          <!-- Cards window -->
-          <div class="flex-grow-1 row g-3">
-            <div
-              *ngFor="let v of visibleVehicles"
-              class="col-12 col-md-4 carousel-slide cursor-pointer"
-              [class.ring-selected]="selectedVehicle === v"
-              (click)="selectVehicle(v)"
-              onkeypress
+      @if (!loadingVehicles && vehicles.length > 0) {
+        <div>
+          <!-- Nav + visible cards -->
+          <div class="d-flex align-items-center gap-2">
+            <!-- Prev -->
+            <button
+              class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0"
+              (click)="prev()"
+              [disabled]="!canPrev"
+              aria-label="Anterior"
             >
-              <g-vehicle-good [vehicle]="v"></g-vehicle-good>
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <!-- Cards window -->
+            <div class="flex-grow-1 row g-3">
+              @for (v of visibleVehicles; track v) {
+                <div
+                  class="col-12 col-md-4 carousel-slide cursor-pointer"
+                  [class.ring-selected]="selectedVehicle === v"
+                  (click)="selectVehicle(v)"
+                  onkeypress
+                >
+                  <g-vehicle-good [vehicle]="v"></g-vehicle-good>
+                </div>
+              }
             </div>
+            <!-- Next -->
+            <button
+              class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0"
+              (click)="next()"
+              [disabled]="!canNext"
+              aria-label="Siguiente"
+            >
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
           </div>
-
-          <!-- Next -->
-          <button
-            class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0"
-            (click)="next()"
-            [disabled]="!canNext"
-            aria-label="Siguiente"
-          >
-            <i class="fa-solid fa-chevron-right"></i>
-          </button>
+          <!-- Dots -->
+          @if (totalDots > 1) {
+            <div class="d-flex justify-content-center gap-2 mt-3">
+              @for (i of dotRange(); track i) {
+                <button
+                  class="dot-btn p-0 border-0 rounded-circle transition-all"
+                  [class.dot-active]="i === carouselIndex"
+                  (click)="carouselIndex = i; selectVehicle(vehicles[i])"
+                  [attr.aria-label]="'Ir al vehículo ' + (i + 1)"
+                ></button>
+              }
+            </div>
+          }
         </div>
-
-        <!-- Dots -->
-        <div
-          class="d-flex justify-content-center gap-2 mt-3"
-          *ngIf="totalDots > 1"
-        >
-          <button
-            *ngFor="let i of dotRange()"
-            class="dot-btn p-0 border-0 rounded-circle transition-all"
-            [class.dot-active]="i === carouselIndex"
-            (click)="carouselIndex = i; selectVehicle(vehicles[i])"
-            [attr.aria-label]="'Ir al vehículo ' + (i + 1)"
-          ></button>
-        </div>
-      </div>
+      }
     </div>
   </div>
 
   <!-- ── Expenses Section ─────────────────────────────────────────── -->
-  <div *ngIf="selectedVehicle" class="mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="fw-bold mb-0 text-body">
-        <i class="fa-solid fa-receipt me-2 text-secondary"></i>Gastos —
-        {{ selectedVehicle.plate }}
-      </h5>
-      <button
-        class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
-      >
-        <i class="fa-solid fa-plus me-2"></i> Agregar gasto
-      </button>
+  @if (selectedVehicle) {
+    <div class="mb-5">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0 text-body">
+          <i class="fa-solid fa-receipt me-2 text-secondary"></i>Gastos —
+          {{ selectedVehicle.plate }}
+        </h5>
+        <button
+          class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+        >
+          <i class="fa-solid fa-plus me-2"></i> Agregar gasto
+        </button>
+      </div>
+      <div class="mt-4">
+        <g-expenses-trip [tripId]="1"></g-expenses-trip>
+      </div>
     </div>
-    <div class="mt-4">
-      <g-expenses-trip [tripId]="1"></g-expenses-trip>
-    </div>
-  </div>
+  }
 
   <!-- Mobile Floating Action Button -->
   <button

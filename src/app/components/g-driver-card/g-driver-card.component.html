@@ -36,36 +36,38 @@
           >
             <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
           </button>
-          <ul
-            class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
-            *ngIf="isMenuOpen"
-          >
-            <li>
-              <button
-                class="dropdown-item d-flex align-items-center gap-2 py-2"
-                (click)="onChangePasswordClick($event)"
-              >
-                <i class="fa-solid fa-key text-secondary"></i>
-                <span>Cambiar contraseña</span>
-              </button>
-            </li>
-            <li>
-              <button
-                class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
-                (click)="onEditClick($event)"
-              >
-                <i class="fa-solid fa-pencil"></i>
-                <span>Editar conductor</span>
-              </button>
-            </li>
-          </ul>
+          @if (isMenuOpen) {
+            <ul
+              class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
+            >
+              <li>
+                <button
+                  class="dropdown-item d-flex align-items-center gap-2 py-2"
+                  (click)="onChangePasswordClick($event)"
+                >
+                  <i class="fa-solid fa-key text-secondary"></i>
+                  <span>Cambiar contraseña</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
+                  (click)="onEditClick($event)"
+                >
+                  <i class="fa-solid fa-pencil"></i>
+                  <span>Editar conductor</span>
+                </button>
+              </li>
+            </ul>
+          }
           <!-- Backdrop to close dropdown -->
-          <div
-            class="dropdown-backdrop"
-            *ngIf="isMenuOpen"
-            (click)="toggleMenu($event)"
-            onkeypress
-          ></div>
+          @if (isMenuOpen) {
+            <div
+              class="dropdown-backdrop"
+              (click)="toggleMenu($event)"
+              onkeypress
+            ></div>
+          }
         </div>
       }
     </div>

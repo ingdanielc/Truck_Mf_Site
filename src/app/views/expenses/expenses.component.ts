@@ -1,5 +1,5 @@
 import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Subscription } from 'rxjs';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
@@ -21,7 +21,7 @@ import {
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [CommonModule, GVehicleGoodComponent, GExpensesTripComponent],
+  imports: [GVehicleGoodComponent, GExpensesTripComponent],
   templateUrl: './expenses.component.html',
   styleUrls: ['./expenses.component.scss'],
 })

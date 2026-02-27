@@ -6,7 +6,7 @@ import {
   OnInit,
   Output,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TokenService } from '../../services/token.service';
 import { Router } from '@angular/router';
 import { SecurityService } from '../../services/security/security.service';
@@ -23,7 +23,7 @@ import {
 @Component({
   selector: 'g-sidebar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './g-sidebar.component.html',
   styleUrls: ['./g-sidebar.component.scss'],
 })

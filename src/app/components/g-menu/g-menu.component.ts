@@ -1,5 +1,5 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterModule } from '@angular/router';
 import { TokenService } from '../../services/token.service';
 import { SecurityService } from '../../services/security/security.service';
@@ -14,7 +14,7 @@ interface MenuItem {
 @Component({
   selector: 'g-menu',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [RouterModule],
   templateUrl: './g-menu.component.html',
   styleUrls: ['./g-menu.component.scss'],
 })

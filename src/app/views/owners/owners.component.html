@@ -18,422 +18,429 @@
             placeholder="Buscar por nombre o ID..."
             [(ngModel)]="searchTerm"
             (input)="applyFilter()"
-          />
-        </div>
-        <button
-          class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
-          (click)="toggleOffcanvas()"
-        >
-          <i class="fa-solid fa-user-plus me-2"></i>Agregar Propietario
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Stats Cards -->
-  <div class="row g-4 mb-4">
-    <div class="col-12 col-md-4">
-      <div
-        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
-      >
-        <div
-          class="card-body p-4 d-flex justify-content-between align-items-center"
-        >
-          <div>
-            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
-              Total Propietarios
-            </p>
-            <h2 class="h1 fw-bold mb-0 text-body">{{ totalOwners }}</h2>
+            />
           </div>
-          <div
-            class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3"
-          >
-            <i class="fa-solid fa-users fs-3"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-4">
-      <div
-        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
-      >
-        <div
-          class="card-body p-4 d-flex justify-content-between align-items-center"
-        >
-          <div>
-            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
-              Activos
-            </p>
-            <h2 class="h1 fw-bold mb-0 text-success">{{ activeOwners }}</h2>
-          </div>
-          <div
-            class="icon-shape bg-success bg-opacity-10 text-success rounded-4 p-3"
-          >
-            <i class="fa-solid fa-check-circle fs-3"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-4">
-      <div
-        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
-      >
-        <div
-          class="card-body p-4 d-flex justify-content-between align-items-center"
-        >
-          <div>
-            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
-              Inactivos
-            </p>
-            <h2 class="h1 fw-bold mb-0 text-warning">{{ inactiveOwners }}</h2>
-          </div>
-          <div
-            class="icon-shape bg-warning bg-opacity-10 text-warning rounded-4 p-3"
-          >
-            <i class="fa-solid fa-history fs-3"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Owners Grid -->
-  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4">
-    @for (owner of owners; track owner.id) {
-      <div class="col">
-        <app-g-owner-card
-          [owner]="owner"
-          (edit)="toggleOffcanvas($event)"
-          (changePassword)="togglePasswordOffcanvas($event)"
-        ></app-g-owner-card>
-      </div>
-    }
-  </div>
-
-  <!-- Footer/Pagination -->
-  <div
-    class="d-flex justify-content-between align-items-center text-body-secondary small"
-  >
-    <p class="mb-0">
-      Mostrando 1 a {{ owners.length }} de {{ totalOwners }} propietarios
-    </p>
-    <nav aria-label="Navegación de propietarios">
-      <ul class="pagination pagination-sm mb-0">
-        <li class="page-item disabled">
-          <a
-            class="page-link rounded-start-3"
-            href="#"
-            tabindex="-1"
-            aria-disabled="true"
-          >
-            <i class="fa-solid fa-chevron-left"></i>
-          </a>
-        </li>
-        <li class="page-item active" aria-current="page">
-          <a class="page-link" href="#">1</a>
-        </li>
-        <li class="page-item"><a class="page-link" href="#">2</a></li>
-        <li class="page-item"><a class="page-link" href="#">3</a></li>
-        <li class="page-item disabled"><span class="page-link">...</span></li>
-        <li class="page-item"><a class="page-link" href="#">214</a></li>
-        <li class="page-item">
-          <a class="page-link rounded-end-3" href="#">
-            <i class="fa-solid fa-chevron-right"></i>
-          </a>
-        </li>
-      </ul>
-    </nav>
-  </div>
-
-  <!-- Mobile Floating Action Button -->
-  <button
-    class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
-    aria-label="Agregar Propietario"
-    (click)="toggleOffcanvas()"
-  >
-    <i class="fa-solid fa-plus fs-4"></i>
-  </button>
-
-  <!-- Create/Edit Owner Offcanvas -->
-  <div
-    class="custom-offcanvas shadow-lg border-start transition-all"
-    [class.open]="isOffcanvasOpen"
-  >
-    <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
-      <div class="d-flex justify-content-between align-items-start w-100">
-        <h2 class="h4 fw-bold mb-0 text-body">
-          {{ editingOwner ? "Editar Propietario" : "Crear Propietario" }}
-        </h2>
-        <button
-          type="button"
-          class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
-          (click)="toggleOffcanvas()"
-          aria-label="Cerrar"
-          onkeypress
-        >
-          <i class="fa-solid fa-xmark fs-3"></i>
-        </button>
-      </div>
-      <p class="text-secondary small mb-0 mt-1 align-items-start">
-        {{
-          editingOwner
-            ? "Actualice la información del propietario"
-            : "Complete los datos para dar de alta un nuevo propietario"
-        }}
-      </p>
-    </div>
-
-    <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
-      <form [formGroup]="ownerForm" (ngSubmit)="onSubmit()">
-        <!-- Photo Upload Section -->
-        <div class="text-center mb-4">
-          <div class="photo-upload-wrapper mx-auto position-relative">
-            <div
-              class="photo-circle bg-body-secondary d-flex align-items-center justify-content-center"
+          <button
+            class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+            (click)="toggleOffcanvas()"
             >
-              <i class="fa-solid fa-camera fs-3 text-body-secondary"></i>
+            <i class="fa-solid fa-user-plus me-2"></i>Agregar Propietario
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-md-4">
+        <div
+          class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+          >
+          <div
+            class="card-body p-4 d-flex justify-content-between align-items-center"
+            >
+            <div>
+              <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+                Total Propietarios
+              </p>
+              <h2 class="h1 fw-bold mb-0 text-body">{{ totalOwners }}</h2>
             </div>
-            <button
-              type="button"
-              class="btn btn-primary btn-sm rounded-circle position-absolute photo-edit-btn"
-              aria-label="Foto"
-            >
-              <i class="fa-solid fa-pencil"></i>
-            </button>
+            <div
+              class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3"
+              >
+              <i class="fa-solid fa-users fs-3"></i>
+            </div>
           </div>
-          <p class="text-secondary small mt-2">Foto de perfil</p>
         </div>
-
-        <!-- Personal Information Section -->
-        <div class="mb-4">
-          <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
-            <i class="fa-solid fa-user me-2"></i>Información Personal
-          </h6>
-
-          <div class="mb-3">
-            <label for="name" class="form-label small fw-bold mb-2"
-              >Nombre completo*</label
+      </div>
+      <div class="col-12 col-md-4">
+        <div
+          class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+          >
+          <div
+            class="card-body p-4 d-flex justify-content-between align-items-center"
             >
-            <input
-              id="name"
-              type="text"
-              class="form-control rounded-3 py-2 px-3"
-              formControlName="name"
-              maxlength="150"
-              placeholder="Ej: Juan Pérez"
+            <div>
+              <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+                Activos
+              </p>
+              <h2 class="h1 fw-bold mb-0 text-success">{{ activeOwners }}</h2>
+            </div>
+            <div
+              class="icon-shape bg-success bg-opacity-10 text-success rounded-4 p-3"
+              >
+              <i class="fa-solid fa-check-circle fs-3"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div
+          class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+          >
+          <div
+            class="card-body p-4 d-flex justify-content-between align-items-center"
+            >
+            <div>
+              <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+                Inactivos
+              </p>
+              <h2 class="h1 fw-bold mb-0 text-warning">{{ inactiveOwners }}</h2>
+            </div>
+            <div
+              class="icon-shape bg-warning bg-opacity-10 text-warning rounded-4 p-3"
+              >
+              <i class="fa-solid fa-history fs-3"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Owners Grid -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4">
+      @for (owner of owners; track owner.id) {
+        <div class="col">
+          <app-g-owner-card
+            [owner]="owner"
+            (edit)="toggleOffcanvas($event)"
+            (changePassword)="togglePasswordOffcanvas($event)"
+          ></app-g-owner-card>
+        </div>
+      }
+    </div>
+
+    <!-- Footer/Pagination -->
+    <div
+      class="d-flex justify-content-between align-items-center text-body-secondary small"
+      >
+      <p class="mb-0">
+        Mostrando 1 a {{ owners.length }} de {{ totalOwners }} propietarios
+      </p>
+      <nav aria-label="Navegación de propietarios">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item disabled">
+            <a
+              class="page-link rounded-start-3"
+              href="#"
+              tabindex="-1"
+              aria-disabled="true"
+              >
+              <i class="fa-solid fa-chevron-left"></i>
+            </a>
+          </li>
+          <li class="page-item active" aria-current="page">
+            <a class="page-link" href="#">1</a>
+          </li>
+          <li class="page-item"><a class="page-link" href="#">2</a></li>
+          <li class="page-item"><a class="page-link" href="#">3</a></li>
+          <li class="page-item disabled"><span class="page-link">...</span></li>
+          <li class="page-item"><a class="page-link" href="#">214</a></li>
+          <li class="page-item">
+            <a class="page-link rounded-end-3" href="#">
+              <i class="fa-solid fa-chevron-right"></i>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+
+    <!-- Mobile Floating Action Button -->
+    <button
+      class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
+      aria-label="Agregar Propietario"
+      (click)="toggleOffcanvas()"
+      >
+      <i class="fa-solid fa-plus fs-4"></i>
+    </button>
+
+    <!-- Create/Edit Owner Offcanvas -->
+    <div
+      class="custom-offcanvas shadow-lg border-start transition-all"
+      [class.open]="isOffcanvasOpen"
+      >
+      <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-start w-100">
+          <h2 class="h4 fw-bold mb-0 text-body">
+            {{ editingOwner ? "Editar Propietario" : "Crear Propietario" }}
+          </h2>
+          <button
+            type="button"
+            class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
+            (click)="toggleOffcanvas()"
+            aria-label="Cerrar"
+            onkeypress
+            >
+            <i class="fa-solid fa-xmark fs-3"></i>
+          </button>
+        </div>
+        <p class="text-secondary small mb-0 mt-1 align-items-start">
+          {{
+          editingOwner
+          ? "Actualice la información del propietario"
+          : "Complete los datos para dar de alta un nuevo propietario"
+          }}
+        </p>
+      </div>
+
+      <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
+        <form [formGroup]="ownerForm" (ngSubmit)="onSubmit()">
+          <!-- Photo Upload Section -->
+          <div class="text-center mb-4">
+            <div class="photo-upload-wrapper mx-auto position-relative">
+              <div
+                class="photo-circle bg-body-secondary d-flex align-items-center justify-content-center"
+                >
+                <i class="fa-solid fa-camera fs-3 text-body-secondary"></i>
+              </div>
+              <button
+                type="button"
+                class="btn btn-primary btn-sm rounded-circle position-absolute photo-edit-btn"
+                aria-label="Foto"
+                >
+                <i class="fa-solid fa-pencil"></i>
+              </button>
+            </div>
+            <p class="text-secondary small mt-2">Foto de perfil</p>
+          </div>
+
+          <!-- Personal Information Section -->
+          <div class="mb-4">
+            <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+              <i class="fa-solid fa-user me-2"></i>Información Personal
+            </h6>
+
+            <div class="mb-3">
+              <label for="name" class="form-label small fw-bold mb-2"
+                >Nombre completo*</label
+                >
+                <input
+                  id="name"
+                  type="text"
+                  class="form-control rounded-3 py-2 px-3"
+                  formControlName="name"
+                  maxlength="150"
+                  placeholder="Ej: Juan Pérez"
               [class.is-invalid]="
                 ownerForm.get('name')?.invalid && ownerForm.get('name')?.touched
               "
-            />
-            @if (
-              ownerForm.get("name")?.invalid && ownerForm.get("name")?.touched
-            ) {
-              <div class="text-danger small mt-1">
-                Este campo es obligatorio para continuar
-              </div>
-            }
-          </div>
+                  />
+                  @if (
+                    ownerForm.get("name")?.invalid && ownerForm.get("name")?.touched
+                    ) {
+                    <div class="text-danger small mt-1">
+                      Este campo es obligatorio para continuar
+                    </div>
+                  }
+                </div>
 
-          <div class="row g-3 mb-3">
-            <div class="col-6">
-              <label for="documentType" class="form-label small fw-bold mb-2"
-                >Tipo de Documento*</label
-              >
-              <select
-                id="documentType"
-                class="form-select rounded-3 py-2 px-3"
-                formControlName="documentType"
+                <div class="row g-3 mb-3">
+                  <div class="col-6">
+                    <label for="documentType" class="form-label small fw-bold mb-2"
+                      >Tipo de Documento*</label
+                      >
+                      <select
+                        id="documentType"
+                        class="form-select rounded-3 py-2 px-3"
+                        formControlName="documentType"
                 [class.is-invalid]="
                   ownerForm.get('documentType')?.invalid &&
                   ownerForm.get('documentType')?.touched
                 "
-              >
-                <option value="null" disabled selected>Selecciona</option>
-                <option *ngFor="let type of documentTypes" [value]="type.id">
-                  {{ type.name }}
-                </option>
-              </select>
-              @if (
-                ownerForm.get("documentType")?.invalid &&
-                ownerForm.get("documentType")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  Este campo es obligatorio para continuar
-                </div>
-              }
-            </div>
-            <div class="col-6">
-              <label for="documentNumber" class="form-label small fw-bold mb-2"
-                >Número de Documento*</label
-              >
-              <input
-                id="documentNumber"
-                type="text"
-                class="form-control rounded-3 py-2 px-3"
-                formControlName="documentNumber"
-                placeholder="Ej: 1010101010"
-                maxlength="10"
-                (keypress)="allowOnlyNumbers($event)"
+                        >
+                        <option value="null" disabled selected>Selecciona</option>
+                        @for (type of documentTypes; track type) {
+                          <option [value]="type.id">
+                            {{ type.name }}
+                          </option>
+                        }
+                      </select>
+                      @if (
+                        ownerForm.get("documentType")?.invalid &&
+                        ownerForm.get("documentType")?.touched
+                        ) {
+                        <div class="text-danger small mt-1">
+                          Este campo es obligatorio para continuar
+                        </div>
+                      }
+                    </div>
+                    <div class="col-6">
+                      <label for="documentNumber" class="form-label small fw-bold mb-2"
+                        >Número de Documento*</label
+                        >
+                        <input
+                          id="documentNumber"
+                          type="text"
+                          class="form-control rounded-3 py-2 px-3"
+                          formControlName="documentNumber"
+                          placeholder="Ej: 1010101010"
+                          maxlength="10"
+                          (keypress)="allowOnlyNumbers($event)"
                 [class.is-invalid]="
                   ownerForm.get('documentNumber')?.invalid &&
                   ownerForm.get('documentNumber')?.touched
                 "
-              />
-              @if (
-                ownerForm.get("documentNumber")?.invalid &&
-                ownerForm.get("documentNumber")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  @if (ownerForm.get("documentNumber")?.hasError("required")) {
-                    Este campo es obligatorio para continuar
-                  } @else if (
-                    ownerForm.get("documentNumber")?.hasError("maxlength")
-                  ) {
-                    El documento no debe exceder los 10 caracteres
-                  } @else if (
-                    ownerForm.get("documentNumber")?.hasError("duplicate")
-                  ) {
-                    Este número de identificación ya se encuentra registrado
-                  }
-                </div>
-              }
-            </div>
-          </div>
+                          />
+                          @if (
+                            ownerForm.get("documentNumber")?.invalid &&
+                            ownerForm.get("documentNumber")?.touched
+                            ) {
+                            <div class="text-danger small mt-1">
+                              @if (ownerForm.get("documentNumber")?.hasError("required")) {
+                                Este campo es obligatorio para continuar
+                              } @else if (
+                                ownerForm.get("documentNumber")?.hasError("maxlength")
+                                ) {
+                                El documento no debe exceder los 10 caracteres
+                              } @else if (
+                                ownerForm.get("documentNumber")?.hasError("duplicate")
+                                ) {
+                                Este número de identificación ya se encuentra registrado
+                              }
+                            </div>
+                          }
+                        </div>
+                      </div>
 
-          <div class="row g-3 mb-3">
-            <div class="col-6">
-              <label for="cellPhone" class="form-label small fw-bold mb-2"
-                >Celular*</label
-              >
-              <input
-                id="cellPhone"
-                type="tel"
-                class="form-control rounded-3 py-2 px-3"
-                formControlName="cellPhone"
-                placeholder="XXX XXX XX XX"
-                (input)="formatCellPhone($event)"
-                maxlength="13"
+                      <div class="row g-3 mb-3">
+                        <div class="col-6">
+                          <label for="cellPhone" class="form-label small fw-bold mb-2"
+                            >Celular*</label
+                            >
+                            <input
+                              id="cellPhone"
+                              type="tel"
+                              class="form-control rounded-3 py-2 px-3"
+                              formControlName="cellPhone"
+                              placeholder="XXX XXX XX XX"
+                              (input)="formatCellPhone($event)"
+                              maxlength="13"
                 [class.is-invalid]="
                   ownerForm.get('cellPhone')?.invalid &&
                   ownerForm.get('cellPhone')?.touched
                 "
-              />
-              @if (
-                ownerForm.get("cellPhone")?.invalid &&
-                ownerForm.get("cellPhone")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  @if (ownerForm.get("cellPhone")?.hasError("required")) {
-                    Este campo es obligatorio para continuar
-                  } @else if (
-                    ownerForm.get("cellPhone")?.hasError("notStartingWith3")
-                  ) {
-                    El número de celular debe empezar con el número 3
-                  } @else if (
-                    ownerForm.get("cellPhone")?.hasError("invalidLength")
-                  ) {
-                    El número de celular debe tener exactamente 10 dígitos
-                  }
-                </div>
-              }
-            </div>
-            <div class="col-6">
-              <label for="birthdate" class="form-label small fw-bold mb-2"
-                >Fecha de nacimiento*</label
-              >
-              <input
-                id="birthdate"
-                type="date"
-                class="form-control rounded-3 py-2 px-3"
-                formControlName="birthdate"
+                              />
+                              @if (
+                                ownerForm.get("cellPhone")?.invalid &&
+                                ownerForm.get("cellPhone")?.touched
+                                ) {
+                                <div class="text-danger small mt-1">
+                                  @if (ownerForm.get("cellPhone")?.hasError("required")) {
+                                    Este campo es obligatorio para continuar
+                                  } @else if (
+                                    ownerForm.get("cellPhone")?.hasError("notStartingWith3")
+                                    ) {
+                                    El número de celular debe empezar con el número 3
+                                  } @else if (
+                                    ownerForm.get("cellPhone")?.hasError("invalidLength")
+                                    ) {
+                                    El número de celular debe tener exactamente 10 dígitos
+                                  }
+                                </div>
+                              }
+                            </div>
+                            <div class="col-6">
+                              <label for="birthdate" class="form-label small fw-bold mb-2"
+                                >Fecha de nacimiento*</label
+                                >
+                                <input
+                                  id="birthdate"
+                                  type="date"
+                                  class="form-control rounded-3 py-2 px-3"
+                                  formControlName="birthdate"
                 [class.is-invalid]="
                   ownerForm.get('birthdate')?.invalid &&
                   ownerForm.get('birthdate')?.touched
                 "
-              />
-              @if (
-                ownerForm.get("birthdate")?.invalid &&
-                ownerForm.get("birthdate")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  Este campo es obligatorio para continuar
-                </div>
-              }
-            </div>
-          </div>
+                                  />
+                                  @if (
+                                    ownerForm.get("birthdate")?.invalid &&
+                                    ownerForm.get("birthdate")?.touched
+                                    ) {
+                                    <div class="text-danger small mt-1">
+                                      Este campo es obligatorio para continuar
+                                    </div>
+                                  }
+                                </div>
+                              </div>
 
-          <div class="row g-3 mb-3">
-            <div class="col-6">
-              <label for="city" class="form-label small fw-bold mb-2"
-                >Ciudad*</label
-              >
-              <select
-                id="city"
-                class="form-select rounded-3 py-2 px-3"
-                formControlName="city"
+                              <div class="row g-3 mb-3">
+                                <div class="col-6">
+                                  <label for="city" class="form-label small fw-bold mb-2"
+                                    >Ciudad*</label
+                                    >
+                                    <select
+                                      id="city"
+                                      class="form-select rounded-3 py-2 px-3"
+                                      formControlName="city"
                 [class.is-invalid]="
                   ownerForm.get('city')?.invalid &&
                   ownerForm.get('city')?.touched
                 "
-              >
-                <option value="null" disabled selected>Selecciona</option>
-                <optgroup
-                  *ngFor="let group of groupedCities"
-                  [label]="group.state"
-                >
-                  <option *ngFor="let city of group.cities" [value]="city.id">
-                    {{ city.name }}
-                  </option>
-                </optgroup>
-              </select>
-              @if (
-                ownerForm.get("city")?.invalid && ownerForm.get("city")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  Este campo es obligatorio para continuar
-                </div>
-              }
-            </div>
-            <div class="col-6">
-              <label for="gender" class="form-label small fw-bold mb-2"
-                >Genero*</label
-              >
-              <select
-                id="gender"
-                class="form-select rounded-3 py-2 px-3"
-                formControlName="gender"
+                                      >
+                                      <option value="null" disabled selected>Selecciona</option>
+                                      @for (group of groupedCities; track group) {
+                                        <optgroup
+                                          [label]="group.state"
+                                          >
+                                          @for (city of group.cities; track city) {
+                                            <option [value]="city.id">
+                                              {{ city.name }}
+                                            </option>
+                                          }
+                                        </optgroup>
+                                      }
+                                    </select>
+                                    @if (
+                                      ownerForm.get("city")?.invalid && ownerForm.get("city")?.touched
+                                      ) {
+                                      <div class="text-danger small mt-1">
+                                        Este campo es obligatorio para continuar
+                                      </div>
+                                    }
+                                  </div>
+                                  <div class="col-6">
+                                    <label for="gender" class="form-label small fw-bold mb-2"
+                                      >Genero*</label
+                                      >
+                                      <select
+                                        id="gender"
+                                        class="form-select rounded-3 py-2 px-3"
+                                        formControlName="gender"
                 [class.is-invalid]="
                   ownerForm.get('gender')?.invalid &&
                   ownerForm.get('gender')?.touched
                 "
-              >
-                <option value="null" disabled selected>Selecciona</option>
-                <option *ngFor="let gender of genders" [value]="gender.id">
-                  {{ gender.name }}
-                </option>
-              </select>
-              @if (
-                ownerForm.get("gender")?.invalid &&
-                ownerForm.get("gender")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  Este campo es obligatorio para continuar
-                </div>
-              }
-            </div>
-          </div>
+                                        >
+                                        <option value="null" disabled selected>Selecciona</option>
+                                        @for (gender of genders; track gender) {
+                                          <option [value]="gender.id">
+                                            {{ gender.name }}
+                                          </option>
+                                        }
+                                      </select>
+                                      @if (
+                                        ownerForm.get("gender")?.invalid &&
+                                        ownerForm.get("gender")?.touched
+                                        ) {
+                                        <div class="text-danger small mt-1">
+                                          Este campo es obligatorio para continuar
+                                        </div>
+                                      }
+                                    </div>
+                                  </div>
 
-          <div class="mb-3">
-            <label for="vehicleCount" class="form-label small fw-bold mb-2"
-              >Máximo de Vehículos*</label
-            >
-            <input
-              id="maxVehicles"
-              type="number"
-              class="form-control rounded-3 py-2 px-3"
-              formControlName="maxVehicles"
-              placeholder="3"
-              max="99"
+                                  <div class="mb-3">
+                                    <label for="vehicleCount" class="form-label small fw-bold mb-2"
+                                      >Máximo de Vehículos*</label
+                                      >
+                                      <input
+                                        id="maxVehicles"
+                                        type="number"
+                                        class="form-control rounded-3 py-2 px-3"
+                                        formControlName="maxVehicles"
+                                        placeholder="3"
+                                        max="99"
               oninput="
                 if (this.value.length > 2) this.value = this.value.slice(0, 2);
               "
@@ -441,269 +448,270 @@
                 ownerForm.get('maxVehicles')?.invalid &&
                 ownerForm.get('maxVehicles')?.touched
               "
-            />
-            @if (
-              ownerForm.get("maxVehicles")?.invalid &&
-              ownerForm.get("maxVehicles")?.touched
-            ) {
-              <div class="text-danger small mt-1">
-                @if (ownerForm.get("maxVehicles")?.hasError("max")) {
-                  El valor máximo permitido es 99
-                } @else {
-                  Este campo es obligatorio para continuar
-                }
-              </div>
-            }
-          </div>
+                                        />
+                                        @if (
+                                          ownerForm.get("maxVehicles")?.invalid &&
+                                          ownerForm.get("maxVehicles")?.touched
+                                          ) {
+                                          <div class="text-danger small mt-1">
+                                            @if (ownerForm.get("maxVehicles")?.hasError("max")) {
+                                              El valor máximo permitido es 99
+                                            } @else {
+                                              Este campo es obligatorio para continuar
+                                            }
+                                          </div>
+                                        }
+                                      </div>
 
-          @if (editingOwner) {
-            <div class="mb-3">
-              <label for="email" class="form-label small fw-bold mb-2"
-                >Correo electrónico*</label
-              >
-              <input
-                id="email"
-                type="email"
-                class="form-control rounded-3 py-2 px-3"
-                formControlName="email"
-                placeholder="correo@ejemplo.com"
+                                      @if (editingOwner) {
+                                        <div class="mb-3">
+                                          <label for="email" class="form-label small fw-bold mb-2"
+                                            >Correo electrónico*</label
+                                            >
+                                            <input
+                                              id="email"
+                                              type="email"
+                                              class="form-control rounded-3 py-2 px-3"
+                                              formControlName="email"
+                                              placeholder="correo@ejemplo.com"
                 [class.is-invalid]="
                   ownerForm.get('email')?.invalid &&
                   ownerForm.get('email')?.touched
                 "
-              />
-              @if (
-                ownerForm.get("email")?.invalid &&
-                ownerForm.get("email")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  @if (ownerForm.get("email")?.hasError("required")) {
-                    Este campo es obligatorio para continuar
-                  } @else if (ownerForm.get("email")?.hasError("email")) {
-                    Por favor ingrese un correo electrónico válido
-                  } @else if (ownerForm.get("email")?.hasError("duplicate")) {
-                    Este correo electrónico ya se encuentra registrado
-                  }
-                </div>
-              }
-            </div>
-          }
-        </div>
+                                              />
+                                              @if (
+                                                ownerForm.get("email")?.invalid &&
+                                                ownerForm.get("email")?.touched
+                                                ) {
+                                                <div class="text-danger small mt-1">
+                                                  @if (ownerForm.get("email")?.hasError("required")) {
+                                                    Este campo es obligatorio para continuar
+                                                  } @else if (ownerForm.get("email")?.hasError("email")) {
+                                                    Por favor ingrese un correo electrónico válido
+                                                  } @else if (ownerForm.get("email")?.hasError("duplicate")) {
+                                                    Este correo electrónico ya se encuentra registrado
+                                                  }
+                                                </div>
+                                              }
+                                            </div>
+                                          }
+                                        </div>
 
-        <!-- Access Data Section -->
-        @if (!editingOwner) {
-          <div class="mb-4">
-            <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
-              <i class="fa-solid fa-lock me-2"></i>Datos de Acceso
-            </h6>
+                                        <!-- Access Data Section -->
+                                        @if (!editingOwner) {
+                                          <div class="mb-4">
+                                            <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+                                              <i class="fa-solid fa-lock me-2"></i>Datos de Acceso
+                                            </h6>
 
-            <div class="mb-3">
-              <label for="email_create" class="form-label small fw-bold mb-2"
-                >Correo electrónico*</label
-              >
-              <input
-                id="email_create"
-                type="email"
-                class="form-control rounded-3 py-2 px-3"
-                formControlName="email"
-                placeholder="correo@ejemplo.com"
+                                            <div class="mb-3">
+                                              <label for="email_create" class="form-label small fw-bold mb-2"
+                                                >Correo electrónico*</label
+                                                >
+                                                <input
+                                                  id="email_create"
+                                                  type="email"
+                                                  class="form-control rounded-3 py-2 px-3"
+                                                  formControlName="email"
+                                                  placeholder="correo@ejemplo.com"
                 [class.is-invalid]="
                   ownerForm.get('email')?.invalid &&
                   ownerForm.get('email')?.touched
                 "
-              />
-              @if (
-                ownerForm.get("email")?.invalid &&
-                ownerForm.get("email")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  @if (ownerForm.get("email")?.hasError("required")) {
-                    Este campo es obligatorio para continuar
-                  } @else if (ownerForm.get("email")?.hasError("email")) {
-                    Por favor ingrese un correo electrónico válido
-                  } @else if (ownerForm.get("email")?.hasError("duplicate")) {
-                    Este correo electrónico ya se encuentra registrado
-                  }
-                </div>
-              }
-            </div>
+                                                  />
+                                                  @if (
+                                                    ownerForm.get("email")?.invalid &&
+                                                    ownerForm.get("email")?.touched
+                                                    ) {
+                                                    <div class="text-danger small mt-1">
+                                                      @if (ownerForm.get("email")?.hasError("required")) {
+                                                        Este campo es obligatorio para continuar
+                                                      } @else if (ownerForm.get("email")?.hasError("email")) {
+                                                        Por favor ingrese un correo electrónico válido
+                                                      } @else if (ownerForm.get("email")?.hasError("duplicate")) {
+                                                        Este correo electrónico ya se encuentra registrado
+                                                      }
+                                                    </div>
+                                                  }
+                                                </div>
 
-            <div class="row g-3 mb-3">
-              <div class="col-6">
-                <label for="password" class="form-label small fw-bold mb-2">
-                  Contraseña*
-                </label>
-                <div class="input-group position-relative">
-                  <input
-                    id="password"
-                    [type]="showPassword ? 'text' : 'password'"
-                    class="form-control rounded-3 py-2 px-3 pe-5"
-                    formControlName="password"
-                    placeholder="Escribe"
+                                                <div class="row g-3 mb-3">
+                                                  <div class="col-6">
+                                                    <label for="password" class="form-label small fw-bold mb-2">
+                                                      Contraseña*
+                                                    </label>
+                                                    <div class="input-group position-relative">
+                                                      <input
+                                                        id="password"
+                                                        [type]="showPassword ? 'text' : 'password'"
+                                                        class="form-control rounded-3 py-2 px-3 pe-5"
+                                                        formControlName="password"
+                                                        placeholder="Escribe"
                     [class.is-invalid]="
                       ownerForm.get('password')?.invalid &&
                       ownerForm.get('password')?.touched
                     "
-                  />
-                  <button
-                    class="btn btn-link text-secondary border-0 shadow-none py-2 px-3 position-absolute top-50 end-0 translate-middle-y z-3"
-                    type="button"
-                    (click)="showPassword = !showPassword"
+                                                        />
+                                                        <button
+                                                          class="btn btn-link text-secondary border-0 shadow-none py-2 px-3 position-absolute top-50 end-0 translate-middle-y z-3"
+                                                          type="button"
+                                                          (click)="showPassword = !showPassword"
                     [attr.aria-label]="
                       showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'
                     "
-                  >
-                    <i
-                      class="fa-solid"
-                      [class.fa-eye]="!showPassword"
-                      [class.fa-eye-slash]="showPassword"
-                    ></i>
-                  </button>
-                </div>
-                @if (
-                  ownerForm.get("password")?.invalid &&
-                  ownerForm.get("password")?.touched
-                ) {
-                  <div class="text-danger small mt-1">
-                    Este campo es obligatorio para continuar
-                  </div>
-                }
-              </div>
-              <div class="col-6">
-                <label
-                  for="confirmPassword"
-                  class="form-label small fw-bold mb-2"
-                >
-                  Confirmar contraseña*
-                </label>
-                <div class="input-group position-relative">
-                  <input
-                    id="confirmPassword"
-                    [type]="showConfirmPassword ? 'text' : 'password'"
-                    class="form-control rounded-3 py-2 px-3 pe-5"
-                    formControlName="confirmPassword"
-                    placeholder="Escribe"
+                                                          >
+                                                          <i
+                                                            class="fa-solid"
+                                                            [class.fa-eye]="!showPassword"
+                                                            [class.fa-eye-slash]="showPassword"
+                                                          ></i>
+                                                        </button>
+                                                      </div>
+                                                      @if (
+                                                        ownerForm.get("password")?.invalid &&
+                                                        ownerForm.get("password")?.touched
+                                                        ) {
+                                                        <div class="text-danger small mt-1">
+                                                          Este campo es obligatorio para continuar
+                                                        </div>
+                                                      }
+                                                    </div>
+                                                    <div class="col-6">
+                                                      <label
+                                                        for="confirmPassword"
+                                                        class="form-label small fw-bold mb-2"
+                                                        >
+                                                        Confirmar contraseña*
+                                                      </label>
+                                                      <div class="input-group position-relative">
+                                                        <input
+                                                          id="confirmPassword"
+                                                          [type]="showConfirmPassword ? 'text' : 'password'"
+                                                          class="form-control rounded-3 py-2 px-3 pe-5"
+                                                          formControlName="confirmPassword"
+                                                          placeholder="Escribe"
                     [class.is-invalid]="
                       ownerForm.hasError('mismatch') &&
                       ownerForm.get('confirmPassword')?.touched
                     "
-                  />
-                  <button
-                    class="btn btn-link text-secondary border-0 shadow-none py-2 px-3 position-absolute top-50 end-0 translate-middle-y z-3"
-                    type="button"
-                    (click)="showConfirmPassword = !showConfirmPassword"
+                                                          />
+                                                          <button
+                                                            class="btn btn-link text-secondary border-0 shadow-none py-2 px-3 position-absolute top-50 end-0 translate-middle-y z-3"
+                                                            type="button"
+                                                            (click)="showConfirmPassword = !showConfirmPassword"
                     [attr.aria-label]="
                       showConfirmPassword
                         ? 'Ocultar contraseña'
                         : 'Mostrar contraseña'
                     "
-                  >
-                    <i
-                      class="fa-solid"
-                      [class.fa-eye]="!showConfirmPassword"
-                      [class.fa-eye-slash]="showConfirmPassword"
-                    ></i>
-                  </button>
-                </div>
-                @if (
-                  ownerForm.hasError("mismatch") &&
-                  ownerForm.get("confirmPassword")?.touched
-                ) {
-                  <div class="text-danger small mt-1">
-                    Las contraseñas no coinciden
-                  </div>
-                }
-              </div>
-            </div>
+                                                            >
+                                                            <i
+                                                              class="fa-solid"
+                                                              [class.fa-eye]="!showConfirmPassword"
+                                                              [class.fa-eye-slash]="showConfirmPassword"
+                                                            ></i>
+                                                          </button>
+                                                        </div>
+                                                        @if (
+                                                          ownerForm.hasError("mismatch") &&
+                                                          ownerForm.get("confirmPassword")?.touched
+                                                          ) {
+                                                          <div class="text-danger small mt-1">
+                                                            Las contraseñas no coinciden
+                                                          </div>
+                                                        }
+                                                      </div>
+                                                    </div>
 
-            <!-- Password Strength Meter -->
-            <div class="password-strength-wrapper mb-4">
-              <div class="d-flex gap-2 mb-2">
-                <div
-                  class="strength-segment flex-fill"
-                  [class.active]="strength >= 1"
-                ></div>
-                <div
-                  class="strength-segment flex-fill"
-                  [class.active]="strength >= 2"
-                ></div>
-                <div
-                  class="strength-segment flex-fill"
-                  [class.active]="strength >= 3"
-                ></div>
-                <div
-                  class="strength-segment flex-fill"
-                  [class.active]="strength >= 4"
-                ></div>
-              </div>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="small text-secondary fw-bold op-70"
-                  >Seguridad de contraseña</span
-                >
-                <span class="small fw-bold text-primary">{{
-                  strengthLabel
-                }}</span>
-              </div>
-            </div>
-          </div>
-        }
+                                                    <!-- Password Strength Meter -->
+                                                    <div class="password-strength-wrapper mb-4">
+                                                      <div class="d-flex gap-2 mb-2">
+                                                        <div
+                                                          class="strength-segment flex-fill"
+                                                          [class.active]="strength >= 1"
+                                                        ></div>
+                                                        <div
+                                                          class="strength-segment flex-fill"
+                                                          [class.active]="strength >= 2"
+                                                        ></div>
+                                                        <div
+                                                          class="strength-segment flex-fill"
+                                                          [class.active]="strength >= 3"
+                                                        ></div>
+                                                        <div
+                                                          class="strength-segment flex-fill"
+                                                          [class.active]="strength >= 4"
+                                                        ></div>
+                                                      </div>
+                                                      <div class="d-flex justify-content-between align-items-center">
+                                                        <span class="small text-secondary fw-bold op-70"
+                                                          >Seguridad de contraseña</span
+                                                          >
+                                                          <span class="small fw-bold text-primary">{{
+                                                            strengthLabel
+                                                          }}</span>
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  }
 
-        <div class="offcanvas-footer border-top pt-4 mt-auto d-flex gap-3">
-          <button
-            type="button"
-            class="btn btn-outline-primary flex-fill py-2 rounded-3 fw-bold d-none d-sm-block"
-            (click)="toggleOffcanvas()"
-          >
-            Atrás
-          </button>
-          <button
-            type="submit"
-            class="btn btn-primary flex-fill py-2 rounded-3 fw-bold shadow-primary d-flex align-items-center justify-content-center"
-            [disabled]="ownerForm.invalid"
-          >
-            {{ editingOwner ? "Guardar cambios" : "Crear propietario" }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+                                                  <div class="offcanvas-footer border-top pt-4 mt-auto d-flex gap-3">
+                                                    <button
+                                                      type="button"
+                                                      class="btn btn-outline-primary flex-fill py-2 rounded-3 fw-bold d-none d-sm-block"
+                                                      (click)="toggleOffcanvas()"
+                                                      >
+                                                      Atrás
+                                                    </button>
+                                                    <button
+                                                      type="submit"
+                                                      class="btn btn-primary flex-fill py-2 rounded-3 fw-bold shadow-primary d-flex align-items-center justify-content-center"
+                                                      [disabled]="ownerForm.invalid"
+                                                      >
+                                                      {{ editingOwner ? "Guardar cambios" : "Crear propietario" }}
+                                                    </button>
+                                                  </div>
+                                                </form>
+                                              </div>
+                                            </div>
 
-  <!-- Change Password Offcanvas -->
-  <div
-    class="custom-offcanvas shadow-lg border-start transition-all"
-    [class.open]="isPasswordOffcanvasOpen"
-  >
-    <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
-      <div class="d-flex justify-content-between align-items-start w-100">
-        <h2 class="h4 fw-bold mb-0 text-body">Cambiar Contraseña</h2>
-        <button
-          type="button"
-          class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
-          (click)="togglePasswordOffcanvas()"
-          onkeypress
-          aria-label="Cerrar"
-        >
-          <i class="fa-solid fa-xmark fs-3"></i>
-        </button>
-      </div>
-      <p class="text-secondary small mb-0 mt-1">
-        {{ ownerChangingPassword?.name }}
-      </p>
-    </div>
+                                            <!-- Change Password Offcanvas -->
+                                            <div
+                                              class="custom-offcanvas shadow-lg border-start transition-all"
+                                              [class.open]="isPasswordOffcanvasOpen"
+                                              >
+                                              <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
+                                                <div class="d-flex justify-content-between align-items-start w-100">
+                                                  <h2 class="h4 fw-bold mb-0 text-body">Cambiar Contraseña</h2>
+                                                  <button
+                                                    type="button"
+                                                    class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
+                                                    (click)="togglePasswordOffcanvas()"
+                                                    onkeypress
+                                                    aria-label="Cerrar"
+                                                    >
+                                                    <i class="fa-solid fa-xmark fs-3"></i>
+                                                  </button>
+                                                </div>
+                                                <p class="text-secondary small mb-0 mt-1">
+                                                  {{ ownerChangingPassword?.name }}
+                                                </p>
+                                              </div>
 
-    <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
-      <g-password-card
-        (update)="onUpdatePassword($event)"
-        (cancel)="togglePasswordOffcanvas()"
-      ></g-password-card>
-    </div>
-  </div>
+                                              <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
+                                                <g-password-card
+                                                  (update)="onUpdatePassword($event)"
+                                                  (cancel)="togglePasswordOffcanvas()"
+                                                ></g-password-card>
+                                              </div>
+                                            </div>
 
-  <!-- Backdrop -->
-  <div
-    class="offcanvas-backdrop transition-all d-none d-md-block"
-    *ngIf="isOffcanvasOpen || isPasswordOffcanvasOpen"
-    (click)="isOffcanvasOpen ? toggleOffcanvas() : togglePasswordOffcanvas()"
-    onkeypress
-  ></div>
-</div>
+                                            <!-- Backdrop -->
+                                            @if (isOffcanvasOpen || isPasswordOffcanvasOpen) {
+                                              <div
+                                                class="offcanvas-backdrop transition-all d-none d-md-block"
+                                                (click)="isOffcanvasOpen ? toggleOffcanvas() : togglePasswordOffcanvas()"
+                                                onkeypress
+                                              ></div>
+                                            }
+                                          </div>

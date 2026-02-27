@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute } from '@angular/router';
 import {
   FormBuilder,
@@ -39,7 +39,6 @@ export interface VehicleOwnerGroup {
   selector: 'app-vehicles',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     ReactiveFormsModule,
     GVehicleCardComponent,

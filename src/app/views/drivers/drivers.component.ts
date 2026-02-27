@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   FormBuilder,
@@ -36,7 +36,6 @@ export interface DriverOwnerGroup {
   selector: 'app-drivers',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     ReactiveFormsModule,
     GDriverCardComponent,

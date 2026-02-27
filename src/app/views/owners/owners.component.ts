@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   FormBuilder,
   FormGroup,
@@ -27,7 +27,6 @@ import { CustomValidators } from 'src/app/utils/custom-validators';
   selector: 'app-owners',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     ReactiveFormsModule,
     GOwnerCardComponent,

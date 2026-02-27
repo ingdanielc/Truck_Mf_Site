@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SecurityService } from '../../services/security/security.service';
@@ -10,7 +10,7 @@ import { TokenService } from '../../services/token.service';
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
 })
 export class HomeComponent implements OnInit, OnDestroy {
   private readonly allCards: any = [

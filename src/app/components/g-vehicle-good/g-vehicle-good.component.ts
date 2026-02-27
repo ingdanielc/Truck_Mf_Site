@@ -1,11 +1,11 @@
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ModelVehicle } from '../../models/vehicle-model';
 
 @Component({
   selector: 'g-vehicle-good',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './g-vehicle-good.component.html',
   styleUrls: ['./g-vehicle-good.component.scss'],
 })

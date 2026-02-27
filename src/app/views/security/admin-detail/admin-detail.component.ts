@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SecurityService } from 'src/app/services/security/security.service';
@@ -18,7 +18,7 @@ import {
 @Component({
   selector: 'app-admin-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './admin-detail.component.html',
   styleUrls: ['./admin-detail.component.scss'],
 })

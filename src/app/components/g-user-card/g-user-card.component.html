@@ -3,38 +3,64 @@
     <div class="d-flex align-items-start justify-content-between mb-3">
       <div class="avatar-wrapper position-relative">
         <div
-          class="avatar-circle rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center overflow-hidden">
+          class="avatar-circle rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center overflow-hidden"
+        >
           @if (user.avatar) {
-          <img [src]="user.avatar" [alt]="user.name" class="img-fluid" />
+            <img [src]="user.avatar" [alt]="user.name" class="img-fluid" />
           } @else {
-          <i class="fa-solid fa-user fs-4 text-secondary"></i>
+            <i class="fa-solid fa-user fs-4 text-secondary"></i>
           }
         </div>
-        <span class="status-indicator position-absolute bottom-0 end-0 border border-3 border-white rounded-circle"
-          [class.bg-success]="user.status === 'online'" [class.bg-secondary]="user.status === 'offline'"
-          [class.bg-warning]="user.status === 'away'"></span>
+        <span
+          class="status-indicator position-absolute bottom-0 end-0 border border-3 border-white rounded-circle"
+          [class.bg-success]="user.status === 'online'"
+          [class.bg-secondary]="user.status === 'offline'"
+          [class.bg-warning]="user.status === 'away'"
+        ></span>
       </div>
       <div class="dropdown position-relative">
-        <span class="btn btn-link text-body p-0 border-0 shadow-none op-50 hover-op-100" type="button"
-          (click)="toggleMenu($event)" aria-expanded="false" aria-label="Menú de opciones" onkeypress>
+        <span
+          class="btn btn-link text-body p-0 border-0 shadow-none op-50 hover-op-100"
+          type="button"
+          (click)="toggleMenu($event)"
+          aria-expanded="false"
+          aria-label="Menú de opciones"
+          onkeypress
+        >
           <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
         </span>
-        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block" *ngIf="isMenuOpen">
-          <li>
-            <button class="dropdown-item d-flex align-items-center gap-2 py-2" (click)="onChangePasswordClick()">
-              <i class="fa-solid fa-key text-secondary"></i>
-              <span>Cambiar contraseña</span>
-            </button>
-          </li>
-          <li>
-            <button class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" (click)="onEditClick()">
-              <i class="fa-solid fa-pencil"></i>
-              <span>Editar usuario</span>
-            </button>
-          </li>
-        </ul>
+        @if (isMenuOpen) {
+          <ul
+            class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
+          >
+            <li>
+              <button
+                class="dropdown-item d-flex align-items-center gap-2 py-2"
+                (click)="onChangePasswordClick()"
+              >
+                <i class="fa-solid fa-key text-secondary"></i>
+                <span>Cambiar contraseña</span>
+              </button>
+            </li>
+            <li>
+              <button
+                class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
+                (click)="onEditClick()"
+              >
+                <i class="fa-solid fa-pencil"></i>
+                <span>Editar usuario</span>
+              </button>
+            </li>
+          </ul>
+        }
         <!-- Backdrop to close dropdown -->
-        <div class="dropdown-backdrop" *ngIf="isMenuOpen" (click)="toggleMenu($event)" onkeypress></div>
+        @if (isMenuOpen) {
+          <div
+            class="dropdown-backdrop"
+            (click)="toggleMenu($event)"
+            onkeypress
+          ></div>
+        }
       </div>
     </div>
 
@@ -44,14 +70,20 @@
     </div>
 
     <div class="d-flex align-items-center justify-content-between">
-      <span class="badge px-3 py-2 rounded-pill font-monospace fw-bold"
+      <span
+        class="badge px-3 py-2 rounded-pill font-monospace fw-bold"
         [class.conductor-badge]="user.roleType === 'conductor'"
         [class.propietario-badge]="user.roleType === 'propietario'"
-        [class.admin-badge]="user.roleType === 'administrador'">
+        [class.admin-badge]="user.roleType === 'administrador'"
+      >
         {{ user.role }}
       </span>
-      <span class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn" (click)="onEditClick()" onkeypress
-        aria-label="Editar usuario">
+      <span
+        class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
+        (click)="onEditClick()"
+        onkeypress
+        aria-label="Editar usuario"
+      >
         <i class="fa-solid fa-pencil"></i>
       </span>
     </div>

@@ -100,62 +100,62 @@
 
   <!-- Trip List Grouped by Owner -->
   <div class="trips-grid animate__animated animate__fadeIn">
-    <div *ngFor="let group of groupedTrips" class="owner-section mb-5">
-      <div class="owner-header mb-4">
-        <g-vehicle-owner-card
-          [owner]="group.owner"
-          [itemCount]="group.trips.length"
-          [itemLabel]="'Viajes'"
-        >
-        </g-vehicle-owner-card>
-      </div>
-
-      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-        <div *ngFor="let trip of group.trips" class="col">
-          <g-trip-card
-            [trip]="trip"
-            [cities]="cities"
-            (edit)="toggleOffcanvas(trip)"
-            class="hover-scale cursor-pointer"
-            onkeypress
+    @for (group of groupedTrips; track group) {
+      <div class="owner-section mb-5">
+        <div class="owner-header mb-4">
+          <g-vehicle-owner-card
+            [owner]="group.owner"
+            [itemCount]="group.trips.length"
+            [itemLabel]="'Viajes'"
           >
-          </g-trip-card>
+          </g-vehicle-owner-card>
         </div>
-
-        <!-- Add Trip Card -->
-        <div
-          *ngIf="
-            userRole === 'ADMINISTRADOR' || group.owner.id === loggedInOwnerId
-          "
-          class="col"
-        >
-          <div
-            class="add-trip-card border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
-            (click)="toggleOffcanvas()"
-            (keypress)="toggleOffcanvas()"
-            role="button"
-            tabindex="0"
-          >
-            <div
-              class="add-trip-icon rounded-circle border d-flex align-items-center justify-content-center"
-            >
-              <i class="fa-solid fa-plus"></i>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+          @for (trip of group.trips; track trip) {
+            <div class="col">
+              <g-trip-card
+                [trip]="trip"
+                [cities]="cities"
+                (edit)="toggleOffcanvas(trip)"
+                class="hover-scale cursor-pointer"
+                onkeypress
+              >
+              </g-trip-card>
             </div>
-            <span class="small fw-semibold">Registrar Viaje</span>
-            <small class="opacity-75">Para {{ group.owner.name }}</small>
-          </div>
+          }
+          <!-- Add Trip Card -->
+          @if (
+            userRole === "ADMINISTRADOR" || group.owner.id === loggedInOwnerId
+          ) {
+            <div class="col">
+              <div
+                class="add-trip-card border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
+                (click)="toggleOffcanvas()"
+                (keypress)="toggleOffcanvas()"
+                role="button"
+                tabindex="0"
+              >
+                <div
+                  class="add-trip-icon rounded-circle border d-flex align-items-center justify-content-center"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </div>
+                <span class="small fw-semibold">Registrar Viaje</span>
+                <small class="opacity-75">Para {{ group.owner.name }}</small>
+              </div>
+            </div>
+          }
         </div>
       </div>
-    </div>
+    }
 
     <!-- Empty State -->
-    <div
-      *ngIf="groupedTrips.length === 0"
-      class="text-center py-5 text-body-secondary"
-    >
-      <i class="fa-solid fa-route fs-1 mb-3 opacity-25"></i>
-      <p class="fw-bold">No se encontraron resultados</p>
-    </div>
+    @if (groupedTrips.length === 0) {
+      <div class="text-center py-5 text-body-secondary">
+        <i class="fa-solid fa-route fs-1 mb-3 opacity-25"></i>
+        <p class="fw-bold">No se encontraron resultados</p>
+      </div>
+    }
   </div>
 
   <!-- Offcanvas Form -->
@@ -188,15 +188,16 @@
     </div>
 
     <div class="offcanvas-body p-0">
-      <g-trip-form
-        *ngIf="isOffcanvasOpen"
-        [trip]="editingTrip"
-        [userRole]="userRole"
-        [loggedInOwnerId]="loggedInOwnerId"
-        (saved)="onTripSaved()"
-        (cancel)="toggleOffcanvas()"
-      >
-      </g-trip-form>
+      @if (isOffcanvasOpen) {
+        <g-trip-form
+          [trip]="editingTrip"
+          [userRole]="userRole"
+          [loggedInOwnerId]="loggedInOwnerId"
+          (saved)="onTripSaved()"
+          (cancel)="toggleOffcanvas()"
+        >
+        </g-trip-form>
+      }
     </div>
   </div>
 
@@ -210,10 +211,11 @@
   </button>
 
   <!-- Backdrop -->
-  <div
-    *ngIf="isOffcanvasOpen"
-    class="offcanvas-backdrop transition-all d-none d-md-block"
-    (click)="toggleOffcanvas()"
-    onkeypress
-  ></div>
+  @if (isOffcanvasOpen) {
+    <div
+      class="offcanvas-backdrop transition-all d-none d-md-block"
+      (click)="toggleOffcanvas()"
+      onkeypress
+    ></div>
+  }
 </div>

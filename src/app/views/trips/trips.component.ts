@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -30,7 +30,6 @@ export interface TripOwnerGroup {
   selector: 'app-trips',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     GTripCardComponent,
     GVehicleOwnerCardComponent,
