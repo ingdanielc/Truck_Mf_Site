@@ -11,6 +11,7 @@ import { TokenService } from '../../services/token.service';
 import { Router } from '@angular/router';
 import { SecurityService } from '../../services/security/security.service';
 import { OwnerService } from '../../services/owner.service';
+import { DriverService } from '../../services/driver.service';
 import { Subscription } from 'rxjs';
 import {
   Filter,
@@ -40,6 +41,7 @@ export class GSidebarComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly securityService: SecurityService,
     private readonly ownerService: OwnerService,
+    private readonly driverService: DriverService,
   ) {}
 
   ngOnInit(): void {
@@ -98,10 +100,11 @@ export class GSidebarComponent implements OnInit, OnDestroy {
   goToProfile() {
     this.isUserMenuOpen = false;
     const user = this.securityService.getUserData();
-    if (
-      user &&
-      user.userRoles?.[0]?.role?.name?.toUpperCase() === 'PROPIETARIO'
-    ) {
+    if (!user) return;
+
+    const roleName = user.userRoles?.[0]?.role?.name?.toUpperCase();
+
+    if (roleName === 'PROPIETARIO') {
       // Filtrar propietario por user.id para obtener el owner.id
       const filter = new ModelFilterTable(
         [new Filter('user.id', '=', user.id!.toString())],
@@ -122,6 +125,27 @@ export class GSidebarComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error al buscar el propietario:', err);
+        },
+      });
+    } else if (roleName === 'CONDUCTOR') {
+      // Filtrar conductor por user.id para obtener el driver.id
+      const filter = new ModelFilterTable(
+        [new Filter('user.id', '=', user.id!.toString())],
+        new Pagination(1, 0),
+        new Sort('id', true),
+      );
+
+      this.driverService.getDriverFilter(filter).subscribe({
+        next: (response: any) => {
+          if (response?.data?.content?.length > 0) {
+            const driverId = response.data.content[0].id;
+            this.router.navigate(['/site/drivers', driverId]);
+          } else {
+            console.error('No se encontró el conductor para el usuario actual');
+          }
+        },
+        error: (err) => {
+          console.error('Error al buscar el conductor:', err);
         },
       });
     } else {
