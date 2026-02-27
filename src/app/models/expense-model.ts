@@ -1,11 +1,12 @@
 export interface ModelExpense {
   id?: number;
+  vehicleId: number;
   tripId?: number;
-  vehicleId?: number;
-  category: string;
-  description: string;
+  categoryId: number;
   amount: number;
-  date?: string | Date;
-  receiptUrl?: string;
-  metadata?: any;
+  expenseDate: string | Date;
+  description?: string;
+  receiptImageUrl?: string;
+  creationDate?: string | Date;
+  updateDate?: string | Date;
 }

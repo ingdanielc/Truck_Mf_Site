@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ModelExpense } from '../../models/expense-model';
 
 interface CategoryConfig {
+  name: string;
   icon: string;
   colorClass: string;
 }
@@ -18,36 +19,43 @@ export class GExpenseCardComponent implements OnInit {
   @Input({ required: true }) expense!: ModelExpense;
   @Input() totalAmount: number = 0; // Total expenses amount to calculate the %
 
-  categoryMap: Record<string, CategoryConfig> = {
+  categoryMap: Record<number, CategoryConfig> = {
     // Gastos del viaje
-    COMBUSTIBLE: {
+    1: {
+      name: 'COMBUSTIBLE',
       icon: 'fa-solid fa-gas-pump',
       colorClass: 'text-warning bg-warning',
     },
-    PEAJES: {
+    2: {
+      name: 'PEAJES',
       icon: 'fa-solid fa-circle-dot',
       colorClass: 'text-indigo bg-indigo',
     },
-    ALIMENTACIÓN: {
+    3: {
+      name: 'ALIMENTACIÓN',
       icon: 'fa-solid fa-utensils',
       colorClass: 'text-success bg-success',
     },
     // Gastos del vehículo
-    REPARACIONES: {
+    4: {
+      name: 'REPARACIONES',
       icon: 'fa-solid fa-toolbox',
       colorClass: 'text-danger bg-danger',
     },
-    MANTENIMIENTO: {
+    5: {
+      name: 'MANTENIMIENTO',
       icon: 'fa-solid fa-gear',
       colorClass: 'text-info bg-info',
     },
-    LAVADO: {
+    6: {
+      name: 'LAVADO',
       icon: 'fa-solid fa-car-wash',
       colorClass: 'text-success bg-success',
     },
   };
 
   defaultConfig: CategoryConfig = {
+    name: 'OTRO',
     icon: 'fa-solid fa-receipt',
     colorClass: 'text-secondary bg-secondary',
   };
@@ -55,8 +63,7 @@ export class GExpenseCardComponent implements OnInit {
   ngOnInit(): void {}
 
   get config(): CategoryConfig {
-    const key = (this.expense.category || '').toUpperCase();
-    return this.categoryMap[key] || this.defaultConfig;
+    return this.categoryMap[this.expense.categoryId] || this.defaultConfig;
   }
 
   get percentage(): number {

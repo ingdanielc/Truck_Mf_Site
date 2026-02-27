@@ -18,42 +18,47 @@ export class GExpensesTripComponent implements OnInit {
     {
       id: 1,
       tripId: this.tripId,
-      category: 'COMBUSTIBLE',
+      vehicleId: 1,
+      categoryId: 1, // COMBUSTIBLE
       description: '3 Tanqueos realizados',
       amount: 2800000,
-      date: '2023-10-12',
+      expenseDate: '2023-10-12',
     },
     {
       id: 2,
       tripId: this.tripId,
-      category: 'PEAJES',
+      vehicleId: 1,
+      categoryId: 2, // PEAJES
       description: 'Ruta Bogotá - Cali (10 peajes)',
       amount: 450000,
-      date: '2023-10-12',
+      expenseDate: '2023-10-12',
     },
     {
       id: 3,
       tripId: this.tripId,
-      category: 'ALIMENTACIÓN',
+      vehicleId: 1,
+      categoryId: 3, // ALIMENTACIÓN
       description: 'Viáticos diarios asignados',
       amount: 250000,
-      date: '2023-10-13',
+      expenseDate: '2023-10-13',
     },
     {
       id: 4,
       tripId: this.tripId,
-      category: 'REPARACIONES',
+      vehicleId: 1,
+      categoryId: 4, // REPARACIONES
       description: 'Cambio de correa en ruta',
       amount: 600000,
-      date: '2023-10-14',
+      expenseDate: '2023-10-14',
     },
     {
       id: 5,
       tripId: this.tripId,
-      category: 'MANTENIMIENTO',
+      vehicleId: 1,
+      categoryId: 5, // MANTENIMIENTO
       description: 'Revisión de frenos y niveles',
       amount: 150000,
-      date: '2023-10-15',
+      expenseDate: '2023-10-15',
     },
   ];
 
@@ -77,16 +82,16 @@ export class GExpensesTripComponent implements OnInit {
   }
 
   get tripExpenses(): ModelExpense[] {
-    const vehicleCategories = ['REPARACIONES', 'MANTENIMIENTO', 'LAVADO'];
+    const vehicleCategoryIds = [4, 5, 6]; // REPARACIONES, MANTENIMIENTO, LAVADO
     return this.expenses.filter(
-      (e) => !vehicleCategories.includes(e.category.toUpperCase()),
+      (e) => !vehicleCategoryIds.includes(e.categoryId),
     );
   }
 
   get vehicleExpenses(): ModelExpense[] {
-    const vehicleCategories = ['REPARACIONES', 'MANTENIMIENTO', 'LAVADO'];
+    const vehicleCategoryIds = [4, 5, 6];
     return this.expenses.filter((e) =>
-      vehicleCategories.includes(e.category.toUpperCase()),
+      vehicleCategoryIds.includes(e.categoryId),
     );
   }
 }
