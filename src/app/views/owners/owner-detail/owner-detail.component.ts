@@ -10,6 +10,7 @@ import { ModelOwner } from 'src/app/models/owner-model';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { DriverService } from 'src/app/services/driver.service';
+import { TripService } from 'src/app/services/trip.service';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
 import {
   Filter,
@@ -37,6 +38,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   loadingDrivers: boolean = true;
   loadingCities: boolean = true;
   loadingBrands: boolean = true;
+  tripCount: number = 0;
 
   private routeSub?: Subscription;
 
@@ -46,6 +48,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     private readonly ownerService: OwnerService,
     private readonly vehicleService: VehicleService,
     private readonly driverService: DriverService,
+    private readonly tripService: TripService,
     private readonly toastService: ToastService,
     private readonly commonService: CommonService,
   ) {}
@@ -60,6 +63,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
         this.loadOwner(this.ownerId);
         this.loadVehicles(this.ownerId);
         this.loadDrivers(this.ownerId);
+        this.loadTripCount(this.ownerId);
       }
     });
   }
@@ -136,6 +140,22 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  loadTripCount(ownerId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('vehicle.owners.owner.id', '=', ownerId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.tripService.getTripFilter(filter).subscribe({
+      next: (response: any) => {
+        this.tripCount = response?.data?.totalElements ?? 0;
+      },
+      error: (err) => {
+        console.error('Error loading trip count:', err);
+      },
+    });
+  }
+
   loadCities(): void {
     this.loadingCities = true;
     this.commonService.getCities().subscribe({
@@ -204,9 +224,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   get stats() {
     return {
       total: this.vehicles.length,
-      operational: this.vehicles.filter(
-        (v) => v.status === 'Active' || v.status === 'In Route',
-      ).length,
+      trips: this.tripCount,
       maintenance: this.vehicles.filter((v) => v.status === 'Maintenance')
         .length,
     };
