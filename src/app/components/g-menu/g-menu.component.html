@@ -17,18 +17,24 @@
     <div
       class="sidebar-header d-flex align-items-center p-3 border-bottom border-secondary mb-3"
     >
-      <div
-        class="logo-container d-flex align-items-center justify-content-center bg-primary rounded p-2 me-2"
-        *ngIf="isLogoMenuBar"
+      <a
+        routerLink="/site/home"
+        (click)="closeMobileMenu()"
+        class="d-flex align-items-center text-decoration-none text-white"
       >
-        <i class="fa-solid fa-truck-fast text-white"></i>
-      </div>
-      <span
-        class="fs-5 fw-bold text-nowrap transition-fade"
-        *ngIf="!isCollapsed"
-      >
-        {{ tituloMenuBar }}
-      </span>
+        <div
+          class="logo-container d-flex align-items-center justify-content-center bg-primary rounded p-2 me-2"
+          *ngIf="isLogoMenuBar"
+        >
+          <i class="fa-solid fa-truck-fast text-white"></i>
+        </div>
+        <span
+          class="fs-5 fw-bold text-nowrap transition-fade"
+          *ngIf="!isCollapsed"
+        >
+          {{ tituloMenuBar }}
+        </span>
+      </a>
     </div>
 
     <!-- Navigation -->

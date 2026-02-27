@@ -5,9 +5,8 @@ import {
   Router,
   RouterStateSnapshot,
 } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
 import { filter, timeout, catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
 import { TokenService } from '../services/utils/token.service';
 import { SecurityService } from '../services/security/security.service';
 

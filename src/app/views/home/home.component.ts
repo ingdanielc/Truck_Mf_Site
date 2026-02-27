@@ -88,11 +88,19 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private filterCards(role: string): void {
     if (role.includes('ADMINISTRADOR')) {
-      this.listCard = this.allCards;
-    } else {
-      // Basic filtering example: non-admins might not see security
+      this.listCard = [...this.allCards];
+    } else if (role.includes('PROPIETARIO')) {
       this.listCard = this.allCards.filter(
-        (card: any) => card.title !== 'Seguridad',
+        (card: any) =>
+          card.title !== 'Propietarios' && card.title !== 'Seguridad',
+      );
+    } else if (role.includes('CONDUCTOR')) {
+      this.listCard = this.allCards.filter(
+        (card: any) =>
+          card.title !== 'Propietarios' &&
+          card.title !== 'Seguridad' &&
+          card.title !== 'Conductores' &&
+          card.title !== 'Configuración',
       );
     }
   }
