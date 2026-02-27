@@ -22,18 +22,18 @@ export class HomeComponent implements OnInit, OnDestroy {
         'Gestiona de manera eficiente el registro y control de propietarios de vehículos.',
     },
     {
-      routing: '/site/vehicles',
-      title: 'Vehículos',
-      icon: 'fa-solid fa-truck-moving',
-      descriptions:
-        'Administra tu flota de vehículos, documentos y mantenimientos.',
-    },
-    {
       routing: '/site/drivers',
       title: 'Conductores',
       icon: 'fa-solid fa-id-card',
       descriptions:
         'Controla la información y documentación de tus conductores asociados.',
+    },
+    {
+      routing: '/site/vehicles',
+      title: 'Vehículos',
+      icon: 'fa-solid fa-truck-moving',
+      descriptions:
+        'Administra tu flota de vehículos, documentos y mantenimientos.',
     },
     {
       routing: '/site/trips',

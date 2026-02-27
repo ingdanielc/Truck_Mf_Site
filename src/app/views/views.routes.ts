@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { SecurityComponent } from './security/security.component';
+import { RoleGuard } from '../auth/role.guard';
 
 export const routes: Routes = [
   {
@@ -7,9 +8,16 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./home/home.component').then((m) => m.HomeComponent),
   },
-  { path: 'security', component: SecurityComponent },
+  {
+    path: 'security',
+    component: SecurityComponent,
+    canActivate: [RoleGuard],
+    data: { allowedRoles: ['ADMINISTRADOR'] },
+  },
   {
     path: 'owners',
+    canActivate: [RoleGuard],
+    data: { allowedRoles: ['ADMINISTRADOR'] },
     loadComponent: () =>
       import('./owners/owners.component').then((m) => m.OwnersComponent),
   },
@@ -20,6 +28,8 @@ export const routes: Routes = [
   },
   {
     path: 'drivers',
+    canActivate: [RoleGuard],
+    data: { allowedRoles: ['ADMINISTRADOR', 'PROPIETARIO'] },
     loadComponent: () =>
       import('./drivers/drivers.component').then((m) => m.DriversComponent),
   },
@@ -37,6 +47,8 @@ export const routes: Routes = [
   },
   {
     path: 'owners/:id',
+    canActivate: [RoleGuard],
+    data: { allowedRoles: ['ADMINISTRADOR', 'PROPIETARIO'] },
     loadComponent: () =>
       import('./owners/owner-detail/owner-detail.component').then(
         (m) => m.OwnerDetailComponent,
@@ -44,6 +56,8 @@ export const routes: Routes = [
   },
   {
     path: 'drivers/:id',
+    canActivate: [RoleGuard],
+    data: { allowedRoles: ['ADMINISTRADOR', 'PROPIETARIO', 'CONDUCTOR'] },
     loadComponent: () =>
       import('./drivers/driver-detail/driver-detail.component').then(
         (m) => m.DriverDetailComponent,
@@ -51,6 +65,8 @@ export const routes: Routes = [
   },
   {
     path: 'admin-detail/:id',
+    canActivate: [RoleGuard],
+    data: { allowedRoles: ['ADMINISTRADOR'] },
     loadComponent: () =>
       import('./security/admin-detail/admin-detail.component').then(
         (m) => m.AdminDetailComponent,
