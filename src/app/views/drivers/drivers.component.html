@@ -18,675 +18,673 @@
             placeholder="Buscar por nombre o ID..."
             [(ngModel)]="searchTerm"
             (input)="applyFilter()"
-            />
-          </div>
-          <button
-            class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
-            (click)="toggleOffcanvas()"
-            >
-            <i class="fa-solid fa-user-plus me-2"></i>Agregar Conductor
-          </button>
+          />
         </div>
+        <button
+          class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+          (click)="toggleOffcanvas()"
+        >
+          <i class="fa-solid fa-user-plus me-2"></i>Agregar Conductor
+        </button>
       </div>
     </div>
+  </div>
 
-    <!-- Stats Cards -->
-    <div class="row g-4 mb-4">
-      <div class="col-12 col-md-4">
+  <!-- Stats Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+      >
         <div
-          class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
-          >
-          <div
-            class="card-body p-4 d-flex justify-content-between align-items-center"
-            >
-            <div>
-              <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
-                Total Conductores
-              </p>
-              <h2 class="h1 fw-bold mb-0 text-body">{{ totalDrivers }}</h2>
-            </div>
-            <div
-              class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3"
-              >
-              <i class="fa-solid fa-users fs-3"></i>
-            </div>
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Total Conductores
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-body">{{ totalDrivers }}</h2>
           </div>
-        </div>
-      </div>
-      <div class="col-12 col-md-4">
-        <div
-          class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
-          >
           <div
-            class="card-body p-4 d-flex justify-content-between align-items-center"
-            >
-            <div>
-              <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
-                Activos
-              </p>
-              <h2 class="h1 fw-bold mb-0 text-success">{{ activeDrivers }}</h2>
-            </div>
-            <div
-              class="icon-shape bg-success bg-opacity-10 text-success rounded-4 p-3"
-              >
-              <i class="fa-solid fa-check-circle fs-3"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-md-4">
-        <div
-          class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+            class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3"
           >
-          <div
-            class="card-body p-4 d-flex justify-content-between align-items-center"
-            >
-            <div>
-              <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
-                Inactivos
-              </p>
-              <h2 class="h1 fw-bold mb-0 text-warning">{{ inactiveDrivers }}</h2>
-            </div>
-            <div
-              class="icon-shape bg-warning bg-opacity-10 text-warning rounded-4 p-3"
-              >
-              <i class="fa-solid fa-history fs-3"></i>
-            </div>
+            <i class="fa-solid fa-users fs-3"></i>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Grouped Drivers List -->
-    @for (group of groupedDrivers; track group.owner.id) {
-      <!-- Owner Header Card -->
-      <g-vehicle-owner-card
-        [owner]="group.owner"
-        [itemCount]="group.drivers.length"
-        itemLabel="Conductores"
-        (viewProfile)="onViewProfile($event)"
-      ></g-vehicle-owner-card>
-
-      <!-- Drivers Grid -->
-      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4">
-        @for (driver of group.drivers; track driver.id) {
-          <div class="col">
-            <app-g-driver-card
-              [driver]="driver"
-              (edit)="toggleOffcanvas($event)"
-              (changePassword)="togglePasswordOffcanvas($event)"
-              (viewDetail)="onViewDriver($event)"
-            ></app-g-driver-card>
-          </div>
-        }
-        @if (userRole === "ADMINISTRADOR") {
-          <div class="col">
-            <span
-              class="add-driver-tile border rounded-4 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
-              (click)="openAddDriverForOwner(group.owner)"
-              (keypress)="openAddDriverForOwner(group.owner)"
-              role="button"
-              tabindex="0"
-              >
-              <i class="fa-solid fa-user-plus fs-3"></i>
-              <span class="small fw-bold">Agregar Conductor</span>
-            </span>
-          </div>
-        }
-      </div>
-    }
-
-    <!-- Mobile Floating Action Button -->
-    <button
-      class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
-      aria-label="Agregar Conductor"
-      (click)="toggleOffcanvas()"
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
       >
-      <i class="fa-solid fa-plus fs-4"></i>
-    </button>
-
-    <!-- Create/Edit Driver Offcanvas -->
-    <div
-      class="custom-offcanvas shadow-lg border-start transition-all"
-      [class.open]="isOffcanvasOpen"
-      >
-      <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
-        <div class="d-flex justify-content-between align-items-start w-100">
-          <h2 class="h4 fw-bold mb-0 text-body">
-            {{ editingDriver ? "Editar Conductor" : "Crear Conductor" }}
-          </h2>
-          <button
-            type="button"
-            class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
-            (click)="toggleOffcanvas()"
-            onkeypress
-            aria-label="Cerrar"
-            >
-            <i class="fa-solid fa-xmark fs-3"></i>
-          </button>
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Activos
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-success">{{ activeDrivers }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-success bg-opacity-10 text-success rounded-4 p-3"
+          >
+            <i class="fa-solid fa-check-circle fs-3"></i>
+          </div>
         </div>
-        <p class="text-secondary small mb-0 mt-1 align-items-start">
-          {{
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Inactivos
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-warning">{{ inactiveDrivers }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-warning bg-opacity-10 text-warning rounded-4 p-3"
+          >
+            <i class="fa-solid fa-history fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grouped Drivers List -->
+  @for (group of groupedDrivers; track group.owner.id) {
+    <!-- Owner Header Card -->
+    <g-vehicle-owner-card
+      [owner]="group.owner"
+      [itemCount]="group.drivers.length"
+      itemLabel="Conductores"
+      (viewProfile)="onViewProfile($event)"
+    ></g-vehicle-owner-card>
+
+    <!-- Drivers Grid -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4">
+      @for (driver of group.drivers; track driver.id) {
+        <div class="col">
+          <app-g-driver-card
+            [driver]="driver"
+            (edit)="toggleOffcanvas($event)"
+            (changePassword)="togglePasswordOffcanvas($event)"
+            (viewDetail)="onViewDriver($event)"
+          ></app-g-driver-card>
+        </div>
+      }
+      @if (userRole === "ADMINISTRADOR") {
+        <div class="col">
+          <span
+            class="add-driver-tile border rounded-4 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
+            (click)="openAddDriverForOwner(group.owner)"
+            (keypress)="openAddDriverForOwner(group.owner)"
+            role="button"
+            tabindex="0"
+          >
+            <i class="fa-solid fa-user-plus fs-3"></i>
+            <span class="small fw-bold">Agregar Conductor</span>
+          </span>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Mobile Floating Action Button -->
+  <button
+    class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
+    aria-label="Agregar Conductor"
+    (click)="toggleOffcanvas()"
+  >
+    <i class="fa-solid fa-plus fs-4"></i>
+  </button>
+
+  <!-- Create/Edit Driver Offcanvas -->
+  <div
+    class="custom-offcanvas shadow-lg border-start transition-all"
+    [class.open]="isOffcanvasOpen"
+  >
+    <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-start w-100">
+        <h2 class="h4 fw-bold mb-0 text-body">
+          {{ editingDriver ? "Editar Conductor" : "Crear Conductor" }}
+        </h2>
+        <button
+          type="button"
+          class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
+          (click)="toggleOffcanvas()"
+          onkeypress
+          aria-label="Cerrar"
+        >
+          <i class="fa-solid fa-xmark fs-3"></i>
+        </button>
+      </div>
+      <p class="text-secondary small mb-0 mt-1 align-items-start">
+        {{
           editingDriver
-          ? "Actualice la información del conductor"
-          : "Complete los datos para dar de alta un nuevo conductor"
-          }}
-        </p>
-      </div>
+            ? "Actualice la información del conductor"
+            : "Complete los datos para dar de alta un nuevo conductor"
+        }}
+      </p>
+    </div>
 
-      <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
-        <form [formGroup]="driverForm" (ngSubmit)="onSubmit()">
-          <!-- Photo Upload Section -->
-          <div class="text-center mb-4">
-            <div class="photo-upload-wrapper mx-auto position-relative">
-              <div
-                class="photo-circle bg-body-secondary d-flex align-items-center justify-content-center"
-                >
-                <i class="fa-solid fa-camera fs-3 text-body-secondary"></i>
-              </div>
-              <button
-                type="button"
-                class="btn btn-primary btn-sm rounded-circle position-absolute photo-edit-btn"
-                aria-label="Foto"
-                >
-                <i class="fa-solid fa-pencil"></i>
-              </button>
+    <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
+      <form [formGroup]="driverForm" (ngSubmit)="onSubmit()">
+        <!-- Photo Upload Section -->
+        <div class="text-center mb-4">
+          <div class="photo-upload-wrapper mx-auto position-relative">
+            <div
+              class="photo-circle bg-body-secondary d-flex align-items-center justify-content-center"
+            >
+              <i class="fa-solid fa-camera fs-3 text-body-secondary"></i>
             </div>
-            <p class="text-secondary small mt-2">Foto de perfil</p>
+            <button
+              type="button"
+              class="btn btn-primary btn-sm rounded-circle position-absolute photo-edit-btn"
+              aria-label="Foto"
+            >
+              <i class="fa-solid fa-pencil"></i>
+            </button>
           </div>
+          <p class="text-secondary small mt-2">Foto de perfil</p>
+        </div>
 
-          <!-- Personal Information Section -->
-          <div class="mb-4">
-            <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
-              <i class="fa-solid fa-user me-2"></i>Información Personal
-            </h6>
+        <!-- Personal Information Section -->
+        <div class="mb-4">
+          <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+            <i class="fa-solid fa-user me-2"></i>Información Personal
+          </h6>
 
-            <div class="mb-3">
-              <label for="name" class="form-label small fw-bold mb-2"
-                >Nombre completo*</label
-                >
-                <input
-                  id="name"
-                  type="text"
-                  class="form-control rounded-3 py-2 px-3"
-                  formControlName="name"
-                  maxlength="150"
-                  placeholder="Ej: Juan Conduct"
+          <div class="mb-3">
+            <label for="name" class="form-label small fw-bold mb-2"
+              >Nombre completo*</label
+            >
+            <input
+              id="name"
+              type="text"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="name"
+              maxlength="150"
+              placeholder="Ej: Juan Conduct"
               [class.is-invalid]="
                 driverForm.get('name')?.invalid &&
                 driverForm.get('name')?.touched
               "
-                  />
-                </div>
+            />
+          </div>
 
-                <div class="row g-3 mb-3">
-                  <div class="col-6">
-                    <label for="documentType" class="form-label small fw-bold mb-2"
-                      >Tipo de Documento*</label
-                      >
-                      <select
-                        id="documentType"
-                        class="form-select rounded-3 py-2 px-3"
-                        formControlName="documentType"
-                        >
-                        <option value="null" disabled selected>Selecciona</option>
-                        @for (type of documentTypes; track type) {
-                          <option [value]="type.id">
-                            {{ type.name }}
-                          </option>
-                        }
-                      </select>
-                    </div>
-                    <div class="col-6">
-                      <label for="documentNumber" class="form-label small fw-bold mb-2"
-                        >Número de Documento*</label
-                        >
-                        <input
-                          id="documentNumber"
-                          type="text"
-                          class="form-control rounded-3 py-2 px-3"
-                          formControlName="documentNumber"
-                          placeholder="Ej: 1010101010"
-                          maxlength="10"
-                          (keypress)="allowOnlyNumbers($event)"
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label for="documentType" class="form-label small fw-bold mb-2"
+                >Tipo de Documento*</label
+              >
+              <select
+                id="documentType"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="documentType"
+              >
+                <option value="null" disabled selected>Selecciona</option>
+                @for (type of documentTypes; track type) {
+                  <option [value]="type.id">
+                    {{ type.name }}
+                  </option>
+                }
+              </select>
+            </div>
+            <div class="col-6">
+              <label for="documentNumber" class="form-label small fw-bold mb-2"
+                >Número de Documento*</label
+              >
+              <input
+                id="documentNumber"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="documentNumber"
+                placeholder="Ej: 1010101010"
+                maxlength="10"
+                (keypress)="allowOnlyNumbers($event)"
                 [class.is-invalid]="
                   driverForm.get('documentNumber')?.invalid &&
                   driverForm.get('documentNumber')?.touched
                 "
-                          />
-                          @if (driverForm.get("documentNumber")?.touched) {
-                            @if (driverForm.get("documentNumber")?.errors?.["required"]) {
-                              <div class="text-danger small mt-1">
-                                Este campo es obligatorio para continuar
-                              </div>
-                            }
-                            @if (driverForm.get("documentNumber")?.errors?.["maxlength"]) {
-                              <div class="text-danger small mt-1">
-                                El documento no debe exceder los 10 caracteres
-                              </div>
-                            }
-                            @if (driverForm.get("documentNumber")?.errors?.["duplicate"]) {
-                              <div class="text-danger small mt-1">
-                                Este número de identificación ya se encuentra registrado
-                              </div>
-                            }
-                          }
-                        </div>
-                      </div>
+              />
+              @if (driverForm.get("documentNumber")?.touched) {
+                @if (driverForm.get("documentNumber")?.errors?.["required"]) {
+                  <div class="text-danger small mt-1">
+                    Este campo es obligatorio para continuar
+                  </div>
+                }
+                @if (driverForm.get("documentNumber")?.errors?.["maxlength"]) {
+                  <div class="text-danger small mt-1">
+                    El documento no debe exceder los 10 caracteres
+                  </div>
+                }
+                @if (driverForm.get("documentNumber")?.errors?.["duplicate"]) {
+                  <div class="text-danger small mt-1">
+                    Este número de identificación ya se encuentra registrado
+                  </div>
+                }
+              }
+            </div>
+          </div>
 
-                      <div class="row g-3 mb-3">
-                        <div class="col-6">
-                          <label for="cellPhone" class="form-label small fw-bold mb-2"
-                            >Celular*</label
-                            >
-                            <input
-                              id="cellPhone"
-                              type="tel"
-                              class="form-control rounded-3 py-2 px-3"
-                              formControlName="cellPhone"
-                              placeholder="XXX XXX XX XX"
-                              (input)="formatCellPhone($event)"
-                              maxlength="13"
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label for="cellPhone" class="form-label small fw-bold mb-2"
+                >Celular*</label
+              >
+              <input
+                id="cellPhone"
+                type="tel"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="cellPhone"
+                placeholder="XXX XXX XX XX"
+                (input)="formatCellPhone($event)"
+                maxlength="13"
                 [class.is-invalid]="
                   driverForm.get('cellPhone')?.invalid &&
                   driverForm.get('cellPhone')?.touched
                 "
-                              />
-                              @if (driverForm.get("cellPhone")?.touched) {
-                                @if (driverForm.get("cellPhone")?.errors?.["required"]) {
-                                  <div class="text-danger small mt-1">
-                                    Este campo es obligatorio para continuar
-                                  </div>
-                                }
-                                @if (
-                                  driverForm.get("cellPhone")?.errors?.["notStartingWith3"]
-                                  ) {
-                                  <div class="text-danger small mt-1">
-                                    El número de celular debe empezar con el número 3
-                                  </div>
-                                }
-                                @if (driverForm.get("cellPhone")?.errors?.["invalidLength"]) {
-                                  <div class="text-danger small mt-1">
-                                    Debe tener 10 dígitos
-                                  </div>
-                                }
-                              }
-                            </div>
-                            <div class="col-6">
-                              <label for="birthdate" class="form-label small fw-bold mb-2"
-                                >Fecha de nacimiento*</label
-                                >
-                                <input
-                                  id="birthdate"
-                                  type="date"
-                                  class="form-control rounded-3 py-2 px-3"
-                                  formControlName="birthdate"
-                                  />
-                                </div>
-                              </div>
+              />
+              @if (driverForm.get("cellPhone")?.touched) {
+                @if (driverForm.get("cellPhone")?.errors?.["required"]) {
+                  <div class="text-danger small mt-1">
+                    Este campo es obligatorio para continuar
+                  </div>
+                }
+                @if (
+                  driverForm.get("cellPhone")?.errors?.["notStartingWith3"]
+                ) {
+                  <div class="text-danger small mt-1">
+                    El número de celular debe empezar con el número 3
+                  </div>
+                }
+                @if (driverForm.get("cellPhone")?.errors?.["invalidLength"]) {
+                  <div class="text-danger small mt-1">
+                    Debe tener 10 dígitos
+                  </div>
+                }
+              }
+            </div>
+            <div class="col-6">
+              <label for="birthdate" class="form-label small fw-bold mb-2"
+                >Fecha de nacimiento*</label
+              >
+              <input
+                id="birthdate"
+                type="date"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="birthdate"
+              />
+            </div>
+          </div>
 
-                              <div class="row g-3 mb-3">
-                                <div class="col-6">
-                                  <label for="city" class="form-label small fw-bold mb-2"
-                                    >Ciudad*</label
-                                    >
-                                    <select
-                                      id="city"
-                                      class="form-select rounded-3 py-2 px-3"
-                                      formControlName="city"
-                                      >
-                                      <option value="null" disabled selected>Selecciona</option>
-                                      @for (group of groupedCities; track group) {
-                                        <optgroup
-                                          [label]="group.state"
-                                          >
-                                          @for (city of group.cities; track city) {
-                                            <option [value]="city.id">
-                                              {{ city.name }}
-                                            </option>
-                                          }
-                                        </optgroup>
-                                      }
-                                    </select>
-                                  </div>
-                                  <div class="col-6">
-                                    <label for="gender" class="form-label small fw-bold mb-2"
-                                      >Genero*</label
-                                      >
-                                      <select
-                                        id="gender"
-                                        class="form-select rounded-3 py-2 px-3"
-                                        formControlName="gender"
-                                        >
-                                        <option value="null" disabled selected>Selecciona</option>
-                                        @for (gender of genders; track gender) {
-                                          <option [value]="gender.id">
-                                            {{ gender.name }}
-                                          </option>
-                                        }
-                                      </select>
-                                    </div>
-                                  </div>
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label for="city" class="form-label small fw-bold mb-2"
+                >Ciudad*</label
+              >
+              <select
+                id="city"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="city"
+              >
+                <option value="null" disabled selected>Selecciona</option>
+                @for (group of groupedCities; track group) {
+                  <optgroup [label]="group.state">
+                    @for (city of group.cities; track city) {
+                      <option [value]="city.id">
+                        {{ city.name }}
+                      </option>
+                    }
+                  </optgroup>
+                }
+              </select>
+            </div>
+            <div class="col-6">
+              <label for="gender" class="form-label small fw-bold mb-2"
+                >Genero*</label
+              >
+              <select
+                id="gender"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="gender"
+              >
+                <option value="null" disabled selected>Selecciona</option>
+                @for (gender of genders; track gender) {
+                  <option [value]="gender.id">
+                    {{ gender.name }}
+                  </option>
+                }
+              </select>
+            </div>
+          </div>
 
-                                  @if (editingDriver) {
-                                    <div class="mb-3">
-                                      <label for="email" class="form-label small fw-bold mb-2"
-                                        >Correo electrónico*</label
-                                        >
-                                        <input
-                                          id="email"
-                                          type="email"
-                                          class="form-control rounded-3 py-2 px-3"
-                                          formControlName="email"
-                                          placeholder="correo@ejemplo.com"
+          @if (editingDriver) {
+            <div class="mb-3">
+              <label for="email" class="form-label small fw-bold mb-2"
+                >Correo electrónico*</label
+              >
+              <input
+                id="email"
+                type="email"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="email"
+                placeholder="correo@ejemplo.com"
                 [class.is-invalid]="
                   driverForm.get('email')?.invalid &&
                   driverForm.get('email')?.touched
                 "
-                                          />
-                                          @if (driverForm.get("email")?.touched) {
-                                            @if (driverForm.get("email")?.errors?.["email"]) {
-                                              <div class="text-danger small mt-1">Formato inválido</div>
-                                            }
-                                            @if (driverForm.get("email")?.errors?.["duplicate"]) {
-                                              <div class="text-danger small mt-1">
-                                                Este correo electrónico ya se encuentra registrado
-                                              </div>
-                                            }
-                                          }
-                                        </div>
-                                      }
-                                    </div>
+              />
+              @if (driverForm.get("email")?.touched) {
+                @if (driverForm.get("email")?.errors?.["email"]) {
+                  <div class="text-danger small mt-1">Formato inválido</div>
+                }
+                @if (driverForm.get("email")?.errors?.["duplicate"]) {
+                  <div class="text-danger small mt-1">
+                    Este correo electrónico ya se encuentra registrado
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
 
-                                    <!-- Driver License Section -->
-                                    <div class="mb-4">
-                                      <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
-                                        <i class="fa-solid fa-id-card me-2"></i>Licencia de Conducción
-                                      </h6>
-                                      <div class="row g-3 mb-3">
-                                        <div class="col-6">
-                                          <label for="licenseCategory" class="form-label small fw-bold mb-2"
-                                            >Categoría</label
-                                            >
-                                            <select
-                                              id="licenseCategory"
-                                              class="form-select rounded-3 py-2 px-3"
-                                              formControlName="licenseCategory"
-                                              >
-                                              <option [value]="null">Selecciona</option>
-                                              @for (cat of licenseCategories; track cat.id) {
-                                                <option [value]="cat.id">{{ cat.name }}</option>
-                                              }
-                                            </select>
-                                          </div>
-                                          <div class="col-6">
-                                            <label for="licenseExpiry" class="form-label small fw-bold mb-2"
-                                              >Fecha de Vencimiento</label
-                                              >
-                                              <input
-                                                id="licenseExpiry"
-                                                type="date"
-                                                class="form-control rounded-3 py-2 px-3"
-                                                formControlName="licenseExpiry"
-                                                />
-                                              </div>
-                                            </div>
-                                          </div>
+        <!-- Driver License Section -->
+        <div class="mb-4">
+          <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+            <i class="fa-solid fa-id-card me-2"></i>Licencia de Conducción
+          </h6>
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label for="licenseCategory" class="form-label small fw-bold mb-2"
+                >Categoría</label
+              >
+              <select
+                id="licenseCategory"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="licenseCategory"
+              >
+                <option [value]="null">Selecciona</option>
+                @for (cat of licenseCategories; track cat.id) {
+                  <option [value]="cat.id">{{ cat.name }}</option>
+                }
+              </select>
+            </div>
+            <div class="col-6">
+              <label for="licenseExpiry" class="form-label small fw-bold mb-2"
+                >Fecha de Vencimiento</label
+              >
+              <input
+                id="licenseExpiry"
+                type="date"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="licenseExpiry"
+              />
+            </div>
+          </div>
+        </div>
 
-                                          <!-- Propietario Section (Admin only) -->
-                                          @if (userRole === "ADMINISTRADOR") {
-                                            <div class="mb-4">
-                                              <h6
-                                                class="text-primary fw-bold mb-3 d-flex align-items-center title-section"
-                                                >
-                                                <i class="fa-solid fa-user-tie me-2"></i>Propietario
-                                              </h6>
-                                              <div class="mb-3">
-                                                <label for="ownerId" class="form-label small fw-bold mb-2"
-                                                  >Seleccionar Propietario*</label
-                                                  >
-                                                  <select
-                                                    id="ownerId"
-                                                    class="form-select rounded-3 py-2 px-3"
-                                                    formControlName="ownerId"
+        <!-- Propietario Section (Admin only) -->
+        @if (userRole === "ADMINISTRADOR") {
+          <div class="mb-4">
+            <h6
+              class="text-primary fw-bold mb-3 d-flex align-items-center title-section"
+            >
+              <i class="fa-solid fa-user-tie me-2"></i>Propietario
+            </h6>
+            <div class="mb-3">
+              <label for="ownerId" class="form-label small fw-bold mb-2"
+                >Seleccionar Propietario*</label
+              >
+              <select
+                id="ownerId"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="ownerId"
                 [class.is-invalid]="
                   driverForm.get('ownerId')?.invalid &&
                   driverForm.get('ownerId')?.touched
                 "
-                                                    >
-                                                    <option value="null" disabled selected>Selecciona</option>
-                                                    @for (owner of owners; track owner.id) {
-                                                      <option [value]="owner.id">
-                                                        {{ owner.name }} - {{ owner.documentNumber }}
-                                                      </option>
-                                                    }
-                                                  </select>
-                                                  @if (
-                                                    driverForm.get("ownerId")?.invalid &&
-                                                    driverForm.get("ownerId")?.touched
-                                                    ) {
-                                                    <div class="text-danger small mt-1">
-                                                      Debe seleccionar un propietario para el conductor
-                                                    </div>
-                                                  }
-                                                </div>
-                                              </div>
-                                            }
+              >
+                <option value="null" disabled selected>Selecciona</option>
+                @for (owner of owners; track owner.id) {
+                  <option [value]="owner.id">
+                    {{ owner.name }} - {{ owner.documentNumber }}
+                  </option>
+                }
+              </select>
+              @if (
+                driverForm.get("ownerId")?.invalid &&
+                driverForm.get("ownerId")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Debe seleccionar un propietario para el conductor
+                </div>
+              }
+            </div>
+          </div>
+        }
 
-                                            <!-- Access Data Section -->
-                                            @if (!editingDriver) {
-                                              <div class="mb-4">
-                                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                                  <h6 class="text-primary fw-bold mb-0 d-flex align-items-center">
-                                                    <i class="fa-solid fa-lock me-2"></i>Datos de Acceso
-                                                  </h6>
-                                                  <div class="form-check form-switch">
-                                                    <input
-                                                      class="form-check-input"
-                                                      type="checkbox"
-                                                      id="toggleAccessData"
-                                                      [checked]="showAccessData"
-                                                      (change)="onToggleAccessData($event)"
-                                                      />
-                                                    </div>
-                                                  </div>
+        <!-- Access Data Section -->
+        @if (!editingDriver) {
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="text-primary fw-bold mb-0 d-flex align-items-center">
+                <i class="fa-solid fa-lock me-2"></i>Datos de Acceso
+              </h6>
+              <div class="form-check form-switch">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="toggleAccessData"
+                  [checked]="showAccessData"
+                  (change)="onToggleAccessData($event)"
+                />
+              </div>
+            </div>
 
-                                                  @if (showAccessData) {
-                                                    <div class="mb-3">
-                                                      <label for="email_create" class="form-label small fw-bold mb-2"
-                                                        >Correo electrónico*</label
-                                                        >
-                                                        <input
-                                                          id="email_create"
-                                                          type="email"
-                                                          class="form-control rounded-3 py-2 px-3"
-                                                          formControlName="email"
-                                                          placeholder="correo@ejemplo.com"
+            @if (showAccessData) {
+              <div class="mb-3">
+                <label for="email_create" class="form-label small fw-bold mb-2"
+                  >Correo electrónico*</label
+                >
+                <input
+                  id="email_create"
+                  type="email"
+                  class="form-control rounded-3 py-2 px-3"
+                  formControlName="email"
+                  placeholder="correo@ejemplo.com"
                   [class.is-invalid]="
                     driverForm.get('email')?.invalid &&
                     driverForm.get('email')?.touched
                   "
-                                                          />
-                                                          @if (driverForm.get("email")?.touched) {
-                                                            @if (driverForm.get("email")?.errors?.["email"]) {
-                                                              <div class="text-danger small mt-1">Formato inválido</div>
-                                                            }
-                                                            @if (driverForm.get("email")?.errors?.["duplicate"]) {
-                                                              <div class="text-danger small mt-1">
-                                                                Este correo electrónico ya se encuentra registrado
-                                                              </div>
-                                                            }
-                                                          }
-                                                        </div>
+                />
+                @if (driverForm.get("email")?.touched) {
+                  @if (driverForm.get("email")?.errors?.["email"]) {
+                    <div class="text-danger small mt-1">Formato inválido</div>
+                  }
+                  @if (driverForm.get("email")?.errors?.["duplicate"]) {
+                    <div class="text-danger small mt-1">
+                      Este correo electrónico ya se encuentra registrado
+                    </div>
+                  }
+                }
+              </div>
 
-                                                        <div class="row g-3 mb-3">
-                                                          <div class="col-6">
-                                                            <label for="password" class="form-label small fw-bold mb-2">
-                                                              Contraseña*
-                                                            </label>
-                                                            <div class="input-group position-relative">
-                                                              <input
-                                                                id="password"
-                                                                [type]="showPassword ? 'text' : 'password'"
-                                                                class="form-control rounded-3 py-2 px-3 pe-5"
-                                                                formControlName="password"
-                                                                placeholder="Escribe"
-                                                                />
-                                                                <button
-                                                                  class="btn btn-link text-secondary border-0 shadow-none py-2 px-3 position-absolute top-50 end-0 translate-middle-y z-3"
-                                                                  type="button"
-                                                                  (click)="showPassword = !showPassword"
+              <div class="row g-3 mb-3">
+                <div class="col-6">
+                  <label for="password" class="form-label small fw-bold mb-2">
+                    Contraseña*
+                  </label>
+                  <div class="input-group position-relative">
+                    <input
+                      id="password"
+                      [type]="showPassword ? 'text' : 'password'"
+                      class="form-control rounded-3 py-2 px-3 pe-5"
+                      formControlName="password"
+                      placeholder="Escribe"
+                    />
+                    <button
+                      class="btn btn-link text-secondary border-0 shadow-none py-2 px-3 position-absolute top-50 end-0 translate-middle-y z-3"
+                      type="button"
+                      (click)="showPassword = !showPassword"
                       [attr.aria-label]="
                         showPassword
                           ? 'Ocultar contraseña'
                           : 'Mostrar contraseña'
                       "
-                                                                  >
-                                                                  <i
-                                                                    class="fa-solid"
-                                                                    [class.fa-eye]="!showPassword"
-                                                                    [class.fa-eye-slash]="showPassword"
-                                                                  ></i>
-                                                                </button>
-                                                              </div>
-                                                            </div>
-                                                            <div class="col-6">
-                                                              <label
-                                                                for="confirmPassword"
-                                                                class="form-label small fw-bold mb-2"
-                                                                >
-                                                                Confirmar contraseña*
-                                                              </label>
-                                                              <div class="input-group position-relative">
-                                                                <input
-                                                                  id="confirmPassword"
-                                                                  [type]="showConfirmPassword ? 'text' : 'password'"
-                                                                  class="form-control rounded-3 py-2 px-3 pe-5"
-                                                                  formControlName="confirmPassword"
-                                                                  placeholder="Escribe"
+                    >
+                      <i
+                        class="fa-solid"
+                        [class.fa-eye]="!showPassword"
+                        [class.fa-eye-slash]="showPassword"
+                      ></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <label
+                    for="confirmPassword"
+                    class="form-label small fw-bold mb-2"
+                  >
+                    Confirmar contraseña*
+                  </label>
+                  <div class="input-group position-relative">
+                    <input
+                      id="confirmPassword"
+                      [type]="showConfirmPassword ? 'text' : 'password'"
+                      class="form-control rounded-3 py-2 px-3 pe-5"
+                      formControlName="confirmPassword"
+                      placeholder="Escribe"
                       [class.is-invalid]="
                         driverForm.hasError('mismatch') &&
                         driverForm.get('confirmPassword')?.touched
                       "
-                                                                  />
-                                                                  <button
-                                                                    class="btn btn-link text-secondary border-0 shadow-none py-2 px-3 position-absolute top-50 end-0 translate-middle-y z-3"
-                                                                    type="button"
-                                                                    (click)="showConfirmPassword = !showConfirmPassword"
+                    />
+                    <button
+                      class="btn btn-link text-secondary border-0 shadow-none py-2 px-3 position-absolute top-50 end-0 translate-middle-y z-3"
+                      type="button"
+                      (click)="showConfirmPassword = !showConfirmPassword"
                       [attr.aria-label]="
                         showConfirmPassword
                           ? 'Ocultar contraseña'
                           : 'Mostrar contraseña'
                       "
-                                                                    >
-                                                                    <i
-                                                                      class="fa-solid"
-                                                                      [class.fa-eye]="!showConfirmPassword"
-                                                                      [class.fa-eye-slash]="showConfirmPassword"
-                                                                    ></i>
-                                                                  </button>
-                                                                </div>
-                                                                @if (
-                                                                  driverForm.hasError("mismatch") &&
-                                                                  driverForm.get("confirmPassword")?.touched
-                                                                  ) {
-                                                                  <div class="text-danger small mt-1">
-                                                                    Las contraseñas no coinciden
-                                                                  </div>
-                                                                }
-                                                              </div>
-                                                            </div>
+                    >
+                      <i
+                        class="fa-solid"
+                        [class.fa-eye]="!showConfirmPassword"
+                        [class.fa-eye-slash]="showConfirmPassword"
+                      ></i>
+                    </button>
+                  </div>
+                  @if (
+                    driverForm.hasError("mismatch") &&
+                    driverForm.get("confirmPassword")?.touched
+                  ) {
+                    <div class="text-danger small mt-1">
+                      Las contraseñas no coinciden
+                    </div>
+                  }
+                </div>
+              </div>
 
-                                                            <!-- Password Strength Meter -->
-                                                            <div class="password-strength-wrapper mb-4">
-                                                              <div class="d-flex gap-2 mb-2">
-                                                                <div
-                                                                  class="strength-segment flex-fill"
-                                                                  [class.active]="strength >= 1"
-                                                                ></div>
-                                                                <div
-                                                                  class="strength-segment flex-fill"
-                                                                  [class.active]="strength >= 2"
-                                                                ></div>
-                                                                <div
-                                                                  class="strength-segment flex-fill"
-                                                                  [class.active]="strength >= 3"
-                                                                ></div>
-                                                                <div
-                                                                  class="strength-segment flex-fill"
-                                                                  [class.active]="strength >= 4"
-                                                                ></div>
-                                                              </div>
-                                                              <div class="d-flex justify-content-between align-items-center">
-                                                                <span class="small text-secondary fw-bold op-70"
-                                                                  >Seguridad de contraseña</span
-                                                                  >
-                                                                  <span class="small fw-bold text-primary">{{
-                                                                    strengthLabel
-                                                                  }}</span>
-                                                                </div>
-                                                              </div>
-                                                            }
-                                                          </div>
-                                                        }
+              <!-- Password Strength Meter -->
+              <div class="password-strength-wrapper mb-4">
+                <div class="d-flex gap-2 mb-2">
+                  <div
+                    class="strength-segment flex-fill"
+                    [class.active]="strength >= 1"
+                  ></div>
+                  <div
+                    class="strength-segment flex-fill"
+                    [class.active]="strength >= 2"
+                  ></div>
+                  <div
+                    class="strength-segment flex-fill"
+                    [class.active]="strength >= 3"
+                  ></div>
+                  <div
+                    class="strength-segment flex-fill"
+                    [class.active]="strength >= 4"
+                  ></div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="small text-secondary fw-bold op-70"
+                    >Seguridad de contraseña</span
+                  >
+                  <span class="small fw-bold text-primary">{{
+                    strengthLabel
+                  }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
 
-                                                        <div class="offcanvas-footer border-top pt-4 mt-auto d-flex gap-3">
-                                                          <button
-                                                            type="button"
-                                                            class="btn btn-outline-primary flex-fill d-none d-sm-block"
-                                                            (click)="toggleOffcanvas()"
-                                                            >
-                                                            Atrás
-                                                          </button>
-                                                          <button
-                                                            type="submit"
-                                                            class="btn btn-primary flex-fill"
-                                                            [disabled]="driverForm.invalid"
-                                                            >
-                                                            {{ editingDriver ? "Guardar cambios" : "Crear conductor" }}
-                                                          </button>
-                                                        </div>
-                                                      </form>
-                                                    </div>
-                                                  </div>
+        <div class="offcanvas-footer border-top pt-4 mt-auto d-flex gap-3">
+          <button
+            type="button"
+            class="btn btn-outline-primary flex-fill d-none d-sm-block"
+            (click)="toggleOffcanvas()"
+          >
+            Atrás
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary flex-fill"
+            [disabled]="driverForm.invalid"
+          >
+            {{ editingDriver ? "Guardar cambios" : "Crear conductor" }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-                                                  <!-- Change Password Offcanvas -->
-                                                  <div
-                                                    class="custom-offcanvas shadow-lg border-start transition-all"
-                                                    [class.open]="isPasswordOffcanvasOpen"
-                                                    >
-                                                    <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
-                                                      <div class="d-flex justify-content-between align-items-start w-100">
-                                                        <h2 class="h4 fw-bold mb-0 text-body">Cambiar Contraseña</h2>
-                                                        <button
-                                                          type="button"
-                                                          class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
-                                                          (click)="togglePasswordOffcanvas()"
-                                                          onkeypress
-                                                          aria-label="Cerrar"
-                                                          >
-                                                          <i class="fa-solid fa-xmark fs-3"></i>
-                                                        </button>
-                                                      </div>
-                                                      <p class="text-secondary small mb-0 mt-1">
-                                                        {{ driverChangingPassword?.name }}
-                                                      </p>
-                                                    </div>
+  <!-- Change Password Offcanvas -->
+  <div
+    class="custom-offcanvas shadow-lg border-start transition-all"
+    [class.open]="isPasswordOffcanvasOpen"
+  >
+    <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-start w-100">
+        <h2 class="h4 fw-bold mb-0 text-body">Cambiar Contraseña</h2>
+        <button
+          type="button"
+          class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
+          (click)="togglePasswordOffcanvas()"
+          onkeypress
+          aria-label="Cerrar"
+        >
+          <i class="fa-solid fa-xmark fs-3"></i>
+        </button>
+      </div>
+      <p class="text-secondary small mb-0 mt-1">
+        {{ driverChangingPassword?.name }}
+      </p>
+    </div>
 
-                                                    <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
-                                                      <g-password-card
-                                                        (update)="onUpdatePassword($event)"
-                                                        (cancel)="togglePasswordOffcanvas()"
-                                                      ></g-password-card>
-                                                    </div>
-                                                  </div>
+    <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
+      <g-password-card
+        (update)="onUpdatePassword($event)"
+        (cancel)="togglePasswordOffcanvas()"
+      ></g-password-card>
+    </div>
+  </div>
 
-                                                  <!-- Backdrop -->
-                                                  @if (isOffcanvasOpen || isPasswordOffcanvasOpen) {
-                                                    <div
-                                                      class="offcanvas-backdrop transition-all d-none d-md-block"
-                                                      (click)="isOffcanvasOpen ? toggleOffcanvas() : togglePasswordOffcanvas()"
-                                                      onkeypress
-                                                    ></div>
-                                                  }
-                                                </div>
+  <!-- Backdrop -->
+  @if (isOffcanvasOpen || isPasswordOffcanvasOpen) {
+    <div
+      class="offcanvas-backdrop transition-all d-none d-md-block"
+      (click)="isOffcanvasOpen ? toggleOffcanvas() : togglePasswordOffcanvas()"
+      onkeypress
+    ></div>
+  }
+</div>
