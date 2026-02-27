@@ -70,3 +70,20 @@
 .transition-all {
   transition: all 0.25s ease;
 }
+
+.snap-x {
+  scroll-snap-type: x mandatory;
+}
+
+.snap-align-start {
+  scroll-snap-align: start;
+}
+
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+
+  &::-webkit-scrollbar {
+    display: none; /* WebKit */
+  }
+}

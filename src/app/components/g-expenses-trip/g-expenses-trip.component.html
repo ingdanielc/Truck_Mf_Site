@@ -4,7 +4,7 @@
     <!-- Total General Block -->
     <div class="col-12 col-lg-7">
       <div
-        class="card overflow-hidden border-0 rounded-4 shadow-sm text-white h-100 total-card p-4 p-md-5 position-relative"
+        class="card overflow-hidden border-0 rounded-4 shadow-sm text-white h-100 total-card p-4 p-md-5 position-relative d-flex flex-column justify-content-between"
       >
         <div class="position-relative z-1">
           <p
@@ -12,13 +12,15 @@
           >
             Monto Acumulado
           </p>
-          <h2 class="display-6 fw-bold mb-4 col-sm-6">Total General</h2>
+          <h2 class="h3 fw-bold mb-3 d-inline-block text-truncate w-100">
+            Total General
+          </h2>
 
-          <div class="d-flex align-items-baseline gap-2">
-            <h1 class="display-4 fw-bold mb-0 lh-1">
+          <div class="d-flex align-items-baseline gap-2 flex-wrap">
+            <h1 class="display-5 fw-bold mb-0 lh-1 text-break">
               {{ totalAmount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
             </h1>
-            <span class="fs-4 text-white-50">COP</span>
+            <span class="fs-5 text-white-50">COP</span>
           </div>
         </div>
 
@@ -26,9 +28,9 @@
         <div class="bg-graphic"></div>
 
         <!-- Badge -->
-        <div class="position-absolute bottom-0 end-0 p-4 p-md-5 z-1">
+        <div class="position-relative z-1 text-end mt-4">
           <span
-            class="badge rounded-pill bg-white bg-opacity-25 px-3 py-2 fw-medium border border-white border-opacity-25"
+            class="badge rounded-pill bg-white bg-opacity-25 px-3 py-2 fw-medium border border-white border-opacity-25 text-wrap text-start lh-base d-inline-block max-width-100"
           >
             <i class="fa-solid fa-arrow-trend-down me-1"></i> 12% vs. último
             viaje
@@ -145,7 +147,7 @@
           <div class="flex-grow-1 text-start min-width-0">
             <h6 class="fw-bold text-body mb-1 text-truncate">¿Nuevo Gasto?</h6>
             <p class="small text-secondary mb-0 text-truncate">
-              Registra gastos imprevistos de este viaje
+              Registra gastos de este viaje
             </p>
           </div>
           <div class="d-none d-sm-block flex-shrink-0 ms-2">

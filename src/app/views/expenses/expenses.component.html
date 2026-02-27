@@ -47,7 +47,7 @@
           <div class="d-flex align-items-center gap-2">
             <!-- Prev -->
             <button
-              class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0"
+              class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0 d-none d-md-flex"
               (click)="prev()"
               [disabled]="!canPrev"
               aria-label="Anterior"
@@ -55,21 +55,26 @@
               <i class="fa-solid fa-chevron-left"></i>
             </button>
             <!-- Cards window -->
-            <div class="flex-grow-1 row g-3">
-              @for (v of visibleVehicles; track v) {
-                <div
-                  class="col-12 col-md-4 carousel-slide cursor-pointer"
-                  [class.ring-selected]="selectedVehicle === v"
-                  (click)="selectVehicle(v)"
-                  onkeypress
-                >
-                  <g-vehicle-good [vehicle]="v"></g-vehicle-good>
-                </div>
-              }
+            <div class="flex-grow-1 overflow-hidden" style="margin: -1rem">
+              <div
+                class="d-flex flex-nowrap gap-3 overflow-auto snap-x hide-scrollbar"
+                style="padding: 1rem"
+              >
+                @for (v of visibleVehicles; track v) {
+                  <div
+                    class="carousel-slide cursor-pointer p-1 snap-align-start flex-shrink-0 col-12 col-md-4"
+                    [class.ring-selected]="selectedVehicle === v"
+                    (click)="selectVehicle(v)"
+                    onkeypress
+                  >
+                    <g-vehicle-good [vehicle]="v"></g-vehicle-good>
+                  </div>
+                }
+              </div>
             </div>
             <!-- Next -->
             <button
-              class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0"
+              class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0 d-none d-md-flex"
               (click)="next()"
               [disabled]="!canNext"
               aria-label="Siguiente"
