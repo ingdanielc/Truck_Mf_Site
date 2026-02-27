@@ -172,7 +172,7 @@
                 Identificación
               </p>
               <h6 class="fw-bold mb-0">
-                {{ driver.documentNumber || "---" }}
+                {{ formatDocNumber(driver.documentNumber) || "---" }}
               </h6>
             </div>
             <div class="col-sm-6 col-md-4 col-xl-3">
@@ -209,13 +209,12 @@
                 <i class="fa-solid fa-id-card small"></i> Licencia de Conducción
               </h5>
             </div>
-
             <div class="col-sm-6 col-md-4 col-xl-3">
               <p class="text-secondary small fw-bold mb-1 text-uppercase">
-                Número de Licencia
+                Número
               </p>
               <h6 class="fw-bold mb-0">
-                {{ driver.licenseNumber || "---" }}
+                {{ formatDocNumber(driver.licenseNumber) || "---" }}
               </h6>
             </div>
             <div class="col-sm-6 col-md-4 col-xl-3">
@@ -232,7 +231,7 @@
             </div>
             <div class="col-sm-6 col-md-4 col-xl-3">
               <p class="text-secondary small fw-bold mb-1 text-uppercase">
-                Vencimiento Licencia
+                Vencimiento
               </p>
               <h6
                 class="fw-bold mb-0"

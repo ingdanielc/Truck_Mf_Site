@@ -28,7 +28,9 @@
         >{{ vehicle.plate }} - {{ vehicle.vehicleBrandName || "N/A" }} -
         {{ vehicle.model || "N/A" }}</span
       >
-      <span class="small text-secondary opacity-75">({{ vehicle.year }})</span>
+      <span class="small text-secondary opacity-75 flex-shrink-0"
+        >({{ vehicle.year }})</span
+      >
     </div>
     <div class="d-flex align-items-center gap-2 text-secondary small">
       <i class="fa-solid fa-user-steering fs-xs opacity-50"></i>
@@ -39,7 +41,7 @@
   </div>
 
   <!-- Status Right Side -->
-  <div class="ms-auto text-end me-2">
+  <div class="ms-auto text-end me-2 d-none d-sm-block">
     <span
       class="badge rounded-pill px-3 py-2 fw-bold text-uppercase"
       [ngClass]="{
