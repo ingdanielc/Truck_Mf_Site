@@ -204,6 +204,7 @@
   <!-- Mobile Floating Action Button -->
   <button
     class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
+    [class.d-none]="isOffcanvasOpen"
     aria-label="Nuevo Viaje"
     (click)="toggleOffcanvas()"
   >

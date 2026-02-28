@@ -4,12 +4,14 @@ import { Subscription } from 'rxjs';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
+import { ToastService } from 'src/app/services/toast.service';
 import { CommonService } from 'src/app/services/common.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { TokenService } from 'src/app/services/token.service';
 import { GVehicleGoodComponent } from 'src/app/components/g-vehicle-good/g-vehicle-good.component';
 import { GExpensesTripComponent } from 'src/app/components/g-expenses-trip/g-expenses-trip.component';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
+import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
 import { ModelDriver } from 'src/app/models/driver-model';
 import {
   Filter,
@@ -17,11 +19,16 @@ import {
   Pagination,
   Sort,
 } from 'src/app/models/model-filter-table';
+import { GAddExpenseComponent } from 'src/app/components/g-add-expense/g-add-expense.component';
 
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [GVehicleGoodComponent, GExpensesTripComponent],
+  imports: [
+    GVehicleGoodComponent,
+    GExpensesTripComponent,
+    GAddExpenseComponent,
+  ],
   templateUrl: './expenses.component.html',
   styleUrls: ['./expenses.component.scss'],
 })
@@ -39,6 +46,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   carouselIndex = 0;
   visibleCount = 1;
 
+  showAddExpense = false;
+
   private userSub?: Subscription;
 
   constructor(
@@ -48,6 +57,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     private readonly commonService: CommonService,
     private readonly driverService: DriverService,
     private readonly tokenService: TokenService,
+    private readonly expenseService: ExpenseService,
+    private readonly toastService: ToastService,
   ) {}
 
   ngOnInit(): void {
@@ -217,6 +228,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   selectVehicle(vehicle: ModelVehicle): void {
+    console.log('Selected vehicle:', vehicle);
     this.selectedVehicle = vehicle;
   }
 
@@ -242,5 +254,32 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   dotRange(): number[] {
     return Array.from({ length: this.totalDots }, (_, i) => i);
+  }
+
+  // ── Add Expense Offcanvas ──────────────────────────────────────────
+
+  openAddExpense(): void {
+    this.showAddExpense = true;
+  }
+
+  onExpenseAdded(event: any): void {
+    if (event) {
+      this.expenseService.createExpense(event).subscribe({
+        next: () => {
+          this.toastService.showSuccess(
+            'Éxito',
+            'Gasto registrado correctamente',
+          );
+          this.showAddExpense = false;
+          // Refresh list if needed (e.g., if GExpensesTripComponent handles it, might need a trigger)
+        },
+        error: (err) => {
+          console.error('Error saving expense:', err);
+          this.toastService.showError('Error', 'No se pudo registrar el gasto');
+        },
+      });
+    } else {
+      this.showAddExpense = false;
+    }
   }
 }

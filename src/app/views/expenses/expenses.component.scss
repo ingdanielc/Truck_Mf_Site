@@ -80,10 +80,18 @@
 }
 
 .hide-scrollbar {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* Internet Explorer 10+ */
 
   &::-webkit-scrollbar {
-    display: none; /* WebKit */
+    display: none;
+    /* WebKit */
   }
+}
+
+.custom-offcanvas {
+  width: 600px;
+  max-width: 100vw;
 }

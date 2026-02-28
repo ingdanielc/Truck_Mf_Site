@@ -110,6 +110,7 @@
         </h5>
         <button
           class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+          (click)="openAddExpense()"
         >
           <i class="fa-solid fa-plus me-2"></i> Agregar gasto
         </button>
@@ -123,8 +124,37 @@
   <!-- Mobile Floating Action Button -->
   <button
     class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
+    [class.d-none]="showAddExpense"
     aria-label="Agregar Gasto"
+    (click)="openAddExpense()"
   >
     <i class="fa-solid fa-plus fs-4"></i>
   </button>
+</div>
+
+<!-- Offcanvas backdrop -->
+@if (showAddExpense) {
+  <div
+    class="offcanvas-backdrop fade show"
+    (click)="showAddExpense = false"
+    onkeypress
+  ></div>
+}
+
+<!-- Custom Offcanvas Container -->
+<div
+  class="offcanvas offcanvas-end custom-offcanvas shadow-lg"
+  [class.show]="showAddExpense"
+  [style.visibility]="showAddExpense ? 'visible' : 'hidden'"
+  [style.transform]="showAddExpense ? 'none' : 'translateX(100%)'"
+  style="transition: transform 0.3s ease-in-out"
+  tabindex="-1"
+>
+  @if (showAddExpense) {
+    <g-add-expense
+      [vehicleId]="selectedVehicle?.id!"
+      (close)="onExpenseAdded($event)"
+      class="d-flex flex-column h-100"
+    ></g-add-expense>
+  }
 </div>

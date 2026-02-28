@@ -1,0 +1,53 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.category-card {
+  min-height: 100px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--bs-border-color);
+  /* Default light border for none-selected */
+
+  .icon-shape {
+    width: 48px;
+    height: 48px;
+    font-size: 1.25rem;
+    transition: all 0.2s ease-in-out;
+  }
+
+  /* Selected state: primary background, white text, primary border */
+  &.is-selected {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    box-shadow: 0 4px 12px rgba(var(--bs-primary-rgb), 0.2);
+
+    span {
+      color: #fff !important;
+    }
+
+    .icon-shape {
+      background-color: rgba(255, 255, 255, 0.2) !important;
+      color: #fff !important;
+    }
+  }
+
+  /* Is NEW state: dashed primary border, thin primary background */
+  &.is-new {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+    border-color: rgba(var(--bs-primary-rgb), 0.3);
+    border-style: dashed;
+    border-width: 2px;
+
+    &:hover {
+      background-color: rgba(var(--bs-primary-rgb), 0.1);
+      border-color: var(--bs-primary);
+    }
+  }
+
+  &:hover:not(.is-selected):not(.is-new) {
+    border-color: var(--bs-secondary-bg);
+    background-color: var(--bs-secondary-bg) !important;
+  }
+}

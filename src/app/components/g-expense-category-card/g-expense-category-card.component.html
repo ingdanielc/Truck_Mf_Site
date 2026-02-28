@@ -1,0 +1,30 @@
+<div
+  class="category-card p-3 rounded-4 d-flex flex-column align-items-center justify-content-center text-center cursor-pointer transition-all border h-100"
+  [ngClass]="{
+    'is-selected': selected,
+    'is-new': isNew,
+    'bg-body': !selected && !isNew,
+  }"
+  (click)="onClick()"
+  onkeypress
+>
+  <div
+    class="icon-shape rounded-circle d-flex align-items-center justify-content-center mb-2"
+    [ngClass]="{
+      'bg-primary bg-opacity-10 text-primary': !selected || isNew,
+      'bg-white text-primary': selected && !isNew,
+    }"
+  >
+    <i [class]="icon"></i>
+  </div>
+  <span
+    class="small fw-medium"
+    [ngClass]="{
+      'text-body': !selected && !isNew,
+      'text-white': selected && !isNew,
+      'text-primary fw-bold': isNew,
+    }"
+  >
+    {{ name }}
+  </span>
+</div>
