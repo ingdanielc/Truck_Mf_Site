@@ -5,8 +5,8 @@ export interface ModelTrip {
   id: number | null;
   numberTrip?: string;
   status: string;
-  origin: string;
-  destination: string;
+  originId: string;
+  destinationId: string;
   freight: number;
   manifestNumber: string;
   advancePayment: number;

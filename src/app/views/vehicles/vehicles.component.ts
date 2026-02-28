@@ -344,9 +344,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           id: this.editingVehicle?.id || undefined,
           photo: formValue.photo || '',
           plate: formValue.plate,
-          vehicleBrandId: formValue.brand,
+          vehicleBrandId: Number(formValue.brand),
           model: formValue.model,
-          year: formValue.year,
+          year: Number(formValue.year),
           color: formValue.color,
           engineNumber: formValue.motorNumber,
           chassisNumber: formValue.chassisNumber,
@@ -354,9 +354,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           status: this.editingVehicle?.status || 'Activo',
           ownerId:
             this.userRole === 'ADMINISTRADOR'
-              ? formValue.ownerId
+              ? Number(formValue.ownerId)
               : this.loggedInOwnerId || undefined,
-          currentDriverId: formValue.driverId ?? null,
+          currentDriverId: formValue.driverId
+            ? Number(formValue.driverId)
+            : null,
         };
 
         this.vehicleService.createVehicle(vehicleToSave).subscribe({

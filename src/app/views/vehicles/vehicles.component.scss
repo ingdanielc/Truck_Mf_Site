@@ -103,7 +103,8 @@
     border-color: rgba(var(--bs-emphasis-color-rgb), 0.1);
   }
 
-  .form-control {
+  .form-control,
+  .form-select {
     background-color: rgba(var(--bs-emphasis-color-rgb), 0.03);
     border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
 

@@ -139,26 +139,25 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   }
 
   get originName(): string {
-    if (!this.trip?.origin) return 'N/A';
+    if (!this.trip?.originId) return 'N/A';
     const city = this.cities.find(
-      (c) => String(c.id) === String(this.trip?.origin),
+      (c) => String(c.id) === String(this.trip?.originId),
     );
-    if (!city) return String(this.trip.origin);
+    if (!city) return String(this.trip.originId);
     return city.state ? `${city.name} (${city.state})` : city.name;
   }
 
   get destinationName(): string {
-    if (!this.trip?.destination) return 'N/A';
+    if (!this.trip?.destinationId) return 'N/A';
     const city = this.cities.find(
-      (c) => String(c.id) === String(this.trip?.destination),
+      (c) => String(c.id) === String(this.trip?.destinationId),
     );
-    if (!city) return String(this.trip.destination);
+    if (!city) return String(this.trip.destinationId);
     return city.state ? `${city.name} (${city.state})` : city.name;
   }
 
   get vehicleBrandName(): string {
-    const brandId =
-      this.trip?.vehicle?.vehicleBrandId || this.trip?.vehicle?.vehicleBrandId;
+    const brandId = this.trip?.vehicle?.vehicleBrandId;
     if (!brandId) return '';
 
     const brand = this.vehicleBrands.find(

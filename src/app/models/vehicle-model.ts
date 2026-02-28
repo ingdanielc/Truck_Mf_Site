@@ -24,7 +24,6 @@ export interface ModelVehicle {
   chassisNumber: string;
   numberOfAxles: number;
   status?: string;
-  /** @deprecated Usar owners[0].ownerId en su lugar */
   ownerId?: number;
   owners?: VehicleOwnerRelation[];
   currentDriverId: number | null;

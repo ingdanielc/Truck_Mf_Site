@@ -99,8 +99,8 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     this.tripForm = this.fb.group({
       numberTrip: ['', [Validators.required]],
       manifestNumber: ['', [Validators.required]],
-      origin: ['', [Validators.required]],
-      destination: ['', [Validators.required]],
+      originId: ['', [Validators.required]],
+      destinationId: ['', [Validators.required]],
       freight: [
         0,
         [Validators.required, Validators.min(0), Validators.max(999999999)],
@@ -168,11 +168,18 @@ export class GTripFormComponent implements OnInit, OnDestroy {
             this.tripForm
               .get('driverId')
               ?.setValue(selectedVehicle.currentDriverId);
+
+            // AUTO-CALCULAR NÚMERO DE VIAJE (Solo para nuevos)
+            if (!this.trip) {
+              this.fetchNextTripNumber(Number(vehicleId));
+            }
           } else {
             this.tripForm.get('driverId')?.setValue(null);
+            this.tripForm.get('numberTrip')?.setValue('');
           }
         } else {
           this.tripForm.get('driverId')?.setValue(null);
+          this.tripForm.get('numberTrip')?.setValue('');
         }
       });
 
@@ -201,8 +208,8 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     this.tripForm.patchValue({
       numberTrip: trip.numberTrip,
       manifestNumber: trip.manifestNumber,
-      origin: trip.origin,
-      destination: trip.destination,
+      originId: trip.originId,
+      destinationId: trip.destinationId,
       freight: trip.freight,
       advancePayment: trip.advancePayment,
       startDate: trip.startDate,
@@ -300,11 +307,29 @@ export class GTripFormComponent implements OnInit, OnDestroy {
         if (this._pendingVehicleId != null) {
           this.tripForm
             .get('vehicleId')
-            ?.setValue(this._pendingVehicleId, { emitEvent: false });
+            ?.setValue(this._pendingVehicleId, { emitEvent: true });
           this._pendingVehicleId = null;
         }
       },
       error: () => (this.loadingVehicles = false),
+    });
+  }
+
+  fetchNextTripNumber(vehicleId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('vehicle.id', '=', vehicleId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.tripService.getTripFilter(filter).subscribe({
+      next: (response: any) => {
+        const total = response?.data?.totalElements ?? 0;
+        this.tripForm.get('numberTrip')?.setValue(total + 1);
+      },
+      error: () => {
+        // Fallback or error handling
+        this.tripForm.get('numberTrip')?.setValue('');
+      },
     });
   }
 

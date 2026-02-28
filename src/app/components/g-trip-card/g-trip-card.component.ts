@@ -49,23 +49,23 @@ export class GTripCardComponent {
   }
 
   get originName(): string {
-    if (!this.trip.origin) return 'N/A';
+    if (!this.trip.originId) return 'N/A';
     const city = this.cities.find(
-      (c) => String(c.id) === String(this.trip.origin),
+      (c) => String(c.id) === String(this.trip.originId),
     );
     return city
       ? (city.state ? city.state + ' - ' : '') + city.name
-      : this.trip.origin;
+      : this.trip.originId;
   }
 
   get destinationName(): string {
-    if (!this.trip.destination) return 'N/A';
+    if (!this.trip.destinationId) return 'N/A';
     const city = this.cities.find(
-      (c) => String(c.id) === String(this.trip.destination),
+      (c) => String(c.id) === String(this.trip.destinationId),
     );
     return city
       ? (city.state ? city.state + ' - ' : '') + city.name
-      : this.trip.destination;
+      : this.trip.destinationId;
   }
   getStatusClass(status: string): string {
     switch ((status || '').toUpperCase()) {

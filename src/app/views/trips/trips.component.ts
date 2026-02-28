@@ -244,10 +244,10 @@ export class TripsComponent implements OnInit, OnDestroy {
       const term = this.searchTerm.toLowerCase();
       filtered = this.allTrips.filter((t) => {
         const originName = this.cities
-          .find((c) => String(c.id) === String(t.origin))
+          .find((c) => String(c.id) === String(t.originId))
           ?.name?.toLowerCase();
         const destName = this.cities
-          .find((c) => String(c.id) === String(t.destination))
+          .find((c) => String(c.id) === String(t.destinationId))
           ?.name?.toLowerCase();
 
         return (
@@ -255,8 +255,8 @@ export class TripsComponent implements OnInit, OnDestroy {
           (t.manifestNumber?.toLowerCase() || '').includes(term) ||
           (originName || '').includes(term) ||
           (destName || '').includes(term) ||
-          (t.origin?.toLowerCase() || '').includes(term) ||
-          (t.destination?.toLowerCase() || '').includes(term) ||
+          (t.originId?.toLowerCase() || '').includes(term) ||
+          (t.destinationId?.toLowerCase() || '').includes(term) ||
           (t.vehicle?.plate?.toLowerCase() || '').includes(term) ||
           (t.driver?.name?.toLowerCase() || '').includes(term)
         );

@@ -101,7 +101,7 @@
             </option>
             @for (d of drivers; track d) {
               <option [ngValue]="d.id">
-                {{ d.name }}
+                {{ d.name }} - {{ d.documentNumber | documentNumber }}
               </option>
             }
           </select>
@@ -125,7 +125,7 @@
           <input
             id="numberTrip"
             type="text"
-            class="form-control rounded-3 py-2 px-3 fw-bold bg-light"
+            class="form-control rounded-3 py-2 px-3 fw-bold"
             formControlName="numberTrip"
             placeholder="Autocalculado..."
             readonly
@@ -165,12 +165,12 @@
           <select
             id="origin"
             class="form-select rounded-3 py-2 px-3"
-            formControlName="origin"
+            formControlName="originId"
             [class.is-invalid]="
-              tripForm.get('origin')?.touched && tripForm.get('origin')?.invalid
+              tripForm.get('originId')?.touched && tripForm.get('originId')?.invalid
             "
           >
-            <option [ngValue]="null">Selecciona ciudad</option>
+            <option [ngValue]="null">Selecciona</option>
             @for (group of groupedCities; track group) {
               <optgroup [label]="group.state">
                 @for (city of group.cities; track city) {
@@ -192,13 +192,13 @@
           <select
             id="destination"
             class="form-select rounded-3 py-2 px-3"
-            formControlName="destination"
+            formControlName="destinationId"
             [class.is-invalid]="
-              tripForm.get('destination')?.touched &&
-              tripForm.get('destination')?.invalid
+              tripForm.get('destinationId')?.touched &&
+              tripForm.get('destinationId')?.invalid
             "
           >
-            <option [ngValue]="null">Selecciona ciudad</option>
+            <option [ngValue]="null">Selecciona</option>
             @for (group of groupedCities; track group) {
               <optgroup [label]="group.state">
                 @for (city of group.cities; track city) {
@@ -268,7 +268,7 @@
             <input
               id="balance"
               type="text"
-              class="form-control py-2 px-3 fw-bold bg-light"
+              class="form-control py-2 px-3 fw-bold"
               [value]="getFormattedValue('balance')"
               readonly
             />
@@ -345,7 +345,7 @@
         </div>
         <div class="col-6 mb-3">
           <label for="status" class="form-label small fw-bold mb-2"
-            >Estado</label
+            >Estado*</label
           >
           <select
             id="status"
