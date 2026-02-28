@@ -43,11 +43,33 @@ export class HomeComponent implements OnInit, OnDestroy {
         'Realiza el seguimiento detallado de los despachos y rentabilidad por viaje.',
     },
     {
+      routing: '/site/expenses',
+      title: 'Gastos',
+      icon: 'fa-solid fa-receipt',
+      descriptions:
+        'Registra y consulta todos los gastos operativos relacionados con los vehículos y viajes.',
+    },
+    {
       routing: '/site/security',
       title: 'Seguridad',
       icon: 'fa-solid fa-shield-halved',
       descriptions:
         'Administra usuarios, roles y permisos de acceso al sistema.',
+    },
+
+    {
+      routing: '/site/maintenance',
+      title: 'Mantenimiento',
+      icon: 'fa-solid fa-screwdriver-wrench',
+      descriptions:
+        'Programa, gestiona y haz seguimiento a los mantenimientos de tu flota vehicular.',
+    },
+    {
+      routing: '/site/configuration',
+      title: 'Configuración',
+      icon: 'fa-solid fa-gear',
+      descriptions:
+        'Edita catálogos, preferencias y ajusta el comportamiento general del ecosistema.',
     },
   ];
 
