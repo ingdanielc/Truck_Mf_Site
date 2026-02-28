@@ -91,6 +91,9 @@ export class DriversComponent implements OnInit, OnDestroy {
   isPasswordOffcanvasOpen: boolean = false;
   driverChangingPassword: ModelDriver | null = null;
 
+  maxDate: string = '';
+  defaultBirthdate: string = '';
+
   constructor(
     private readonly fb: FormBuilder,
     private readonly driverService: DriverService,
@@ -150,6 +153,16 @@ export class DriversComponent implements OnInit, OnDestroy {
         validators: [CustomValidators.passwordMatchValidator],
       },
     );
+    this.calculateDates();
+  }
+
+  private calculateDates(): void {
+    const today = new Date();
+    this.maxDate = today.toISOString().split('T')[0];
+
+    const eighteenYearsAgo = new Date();
+    eighteenYearsAgo.setFullYear(today.getFullYear() - 18);
+    this.defaultBirthdate = eighteenYearsAgo.toISOString().split('T')[0];
   }
 
   ngOnInit(): void {
@@ -416,7 +429,7 @@ export class DriversComponent implements OnInit, OnDestroy {
           documentType: null,
           documentNumber: '',
           cellPhone: '',
-          birthdate: '',
+          birthdate: this.defaultBirthdate,
           city: null,
           gender: null,
           licenseCategory: null,

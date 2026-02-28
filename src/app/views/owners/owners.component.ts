@@ -60,6 +60,9 @@ export class OwnersComponent implements OnInit {
   isPasswordOffcanvasOpen: boolean = false;
   ownerChangingPassword: ModelOwner | null = null;
 
+  maxDate: string = '';
+  defaultBirthdate: string = '';
+
   constructor(
     private readonly fb: FormBuilder,
     private readonly ownerService: OwnerService,
@@ -113,6 +116,16 @@ export class OwnersComponent implements OnInit {
         validators: [CustomValidators.passwordMatchValidator],
       },
     );
+    this.calculateDates();
+  }
+
+  private calculateDates(): void {
+    const today = new Date();
+    this.maxDate = today.toISOString().split('T')[0];
+
+    const eighteenYearsAgo = new Date();
+    eighteenYearsAgo.setFullYear(today.getFullYear() - 18);
+    this.defaultBirthdate = eighteenYearsAgo.toISOString().split('T')[0];
   }
 
   ngOnInit(): void {
@@ -254,7 +267,7 @@ export class OwnersComponent implements OnInit {
         documentType: null,
         documentNumber: '',
         cellPhone: '',
-        birthdate: '',
+        birthdate: this.defaultBirthdate,
         city: null,
         gender: '',
         maxVehicles: 0,

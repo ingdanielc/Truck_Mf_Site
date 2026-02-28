@@ -321,6 +321,7 @@
                 type="date"
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="birthdate"
+                [max]="maxDate"
               />
             </div>
           </div>
@@ -426,6 +427,7 @@
                 type="date"
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="licenseExpiry"
+                [min]="maxDate"
               />
             </div>
           </div>

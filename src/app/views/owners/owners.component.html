@@ -348,6 +348,7 @@
                 type="date"
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="birthdate"
+                [max]="maxDate"
                 [class.is-invalid]="
                   ownerForm.get('birthdate')?.invalid &&
                   ownerForm.get('birthdate')?.touched
