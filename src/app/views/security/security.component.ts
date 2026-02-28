@@ -1,10 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 
 import {
+  AbstractControl,
   FormBuilder,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
+  ValidationErrors,
   Validators,
 } from '@angular/forms';
 import { SecurityService } from '../../services/security/security.service';
@@ -64,7 +66,10 @@ export class SecurityComponent implements OnInit {
     this.userForm = this.fb.group(
       {
         name: ['', [Validators.required]],
-        email: ['', [Validators.required, Validators.email]],
+        email: [
+          '',
+          [Validators.required, Validators.email, this.emailUniqueValidator()],
+        ],
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', [Validators.required]],
         role: ['', [Validators.required]],
@@ -79,6 +84,19 @@ export class SecurityComponent implements OnInit {
     return g.get('password')?.value === g.get('confirmPassword')?.value
       ? null
       : { mismatch: true };
+  }
+
+  private emailUniqueValidator() {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const email = control.value?.toLowerCase();
+      if (!email || this.editingUser) {
+        return null; // Don't validate if editing or empty
+      }
+      const exists = this.allUsers.some(
+        (u) => u.email?.toLowerCase() === email,
+      );
+      return exists ? { emailExists: true } : null;
+    };
   }
 
   ngOnInit(): void {
@@ -149,7 +167,7 @@ export class SecurityComponent implements OnInit {
       email: u.email || 'Sin email',
       role: roleName.toUpperCase(),
       roleType: this.getRoleType(roleName),
-      status: u.status === 'Active' ? 'online' : 'offline',
+      status: u.status === 'Activo' ? 'online' : 'offline',
       avatar: undefined,
     };
   }
@@ -288,7 +306,7 @@ export class SecurityComponent implements OnInit {
           formValue.email,
           password || undefined,
           userRoles,
-          this.editingUser?.status === 'online' ? 'Active' : 'Inactive', // Simplification
+          this.editingUser?.status === 'online' ? 'Activo' : 'Inactivo', // Simplification
         );
 
         this.securityService.createUser(userToSave).subscribe({
