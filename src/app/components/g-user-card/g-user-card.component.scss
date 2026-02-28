@@ -111,9 +111,10 @@
 
 .dropdown-menu {
   top: 100%;
-  right: 0;
+  right: 0 !important;
+  left: auto !important;
   margin-top: 0.5rem;
-  z-index: 1050;
+  z-index: 500;
   min-width: 180px;
   background-color: var(--card-bg);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
@@ -126,6 +127,6 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 1040;
+  z-index: 499;
   background: transparent;
 }

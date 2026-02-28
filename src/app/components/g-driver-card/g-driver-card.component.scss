@@ -24,7 +24,7 @@
   }
 
   &.menu-open {
-    z-index: 1050;
+    z-index: 500;
   }
 }
 
@@ -61,9 +61,11 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1000;
+  z-index: 499;
 }
 
 .dropdown-menu {
   z-index: 1001;
+  right: 0 !important;
+  left: auto !important;
 }
