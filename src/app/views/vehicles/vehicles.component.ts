@@ -29,6 +29,7 @@ import { OwnerService } from 'src/app/services/owner.service';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { DriverService } from 'src/app/services/driver.service';
 import { ModelDriver } from 'src/app/models/driver-model';
+import { DocumentNumberPipe } from 'src/app/pipes/document-number.pipe';
 
 export interface VehicleOwnerGroup {
   owner: ModelOwner;
@@ -43,6 +44,7 @@ export interface VehicleOwnerGroup {
     ReactiveFormsModule,
     GVehicleCardComponent,
     GVehicleOwnerCardComponent,
+    DocumentNumberPipe,
   ],
   templateUrl: './vehicles.component.html',
   styleUrls: ['./vehicles.component.scss'],

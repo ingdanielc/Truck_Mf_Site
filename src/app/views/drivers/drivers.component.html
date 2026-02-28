@@ -457,7 +457,8 @@
                 <option value="null" disabled selected>Selecciona</option>
                 @for (owner of owners; track owner.id) {
                   <option [value]="owner.id">
-                    {{ owner.name }} - {{ owner.documentNumber }}
+                    {{ owner.name }} -
+                    {{ owner.documentNumber | documentNumber }}
                   </option>
                 }
               </select>

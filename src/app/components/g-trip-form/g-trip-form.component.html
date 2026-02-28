@@ -26,7 +26,7 @@
             <option [ngValue]="null">Selecciona</option>
             @for (owner of owners; track owner) {
               <option [ngValue]="owner.id">
-                {{ owner.name }}
+                {{ owner.name }} - {{ owner.documentNumber | documentNumber }}
               </option>
             }
           </select>

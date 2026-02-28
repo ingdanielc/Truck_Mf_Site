@@ -26,6 +26,7 @@ import { DriverService } from 'src/app/services/driver.service';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { ModelDriver } from 'src/app/models/driver-model';
+import { DocumentNumberPipe } from 'src/app/pipes/document-number.pipe';
 import {
   Filter,
   ModelFilterTable,
@@ -36,7 +37,7 @@ import {
 @Component({
   selector: 'g-trip-form',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule],
+  imports: [FormsModule, ReactiveFormsModule, DocumentNumberPipe],
   templateUrl: './g-trip-form.component.html',
   styleUrls: ['./g-trip-form.component.scss'],
 })

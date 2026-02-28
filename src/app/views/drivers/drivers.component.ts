@@ -26,6 +26,7 @@ import { Subscription } from 'rxjs';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 import { OwnerService } from 'src/app/services/owner.service';
 import { ModelOwner } from 'src/app/models/owner-model';
+import { DocumentNumberPipe } from 'src/app/pipes/document-number.pipe';
 
 export interface DriverOwnerGroup {
   owner: ModelOwner;
@@ -41,6 +42,7 @@ export interface DriverOwnerGroup {
     GDriverCardComponent,
     GVehicleOwnerCardComponent,
     GPasswordCardComponent,
+    DocumentNumberPipe,
   ],
   templateUrl: './drivers.component.html',
   styleUrls: ['./drivers.component.scss'],
@@ -772,7 +774,7 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   async onUpdatePassword(passwords: any): Promise<void> {
-    if (!this.driverChangingPassword || !this.driverChangingPassword.user?.id) {
+    if (!this.driverChangingPassword?.user?.id) {
       this.toastService.showError(
         'Error',
         'No se encontró el usuario asociado al conductor',
