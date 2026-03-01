@@ -21,14 +21,16 @@
   <form [formGroup]="expenseForm" (ngSubmit)="onSave()">
     <!-- Type Selection -->
     <div class="mb-4">
-      <label class="form-label fw-bold small text-body mb-3"
-        >Tipo de Gasto</label
+      <label for="" class="form-label fw-bold small text-body mb-3"
+        >Tipo de Gasto*</label
       >
-      <div class="d-flex gap-2">
+      <div
+        class="d-flex gap-2 justify-content-center flex-nowrap overflow-auto"
+      >
         @for (type of expenseTypes; track type.id) {
           <button
             type="button"
-            class="btn rounded-pill px-4 fw-medium"
+            class="btn rounded-pill px-3 px-sm-4 fw-medium text-nowrap"
             [ngClass]="
               type.id === selectedType
                 ? 'btn-primary'
@@ -44,8 +46,8 @@
 
     <!-- Category Selection -->
     <div class="mb-4">
-      <label class="form-label fw-bold small text-body mb-3"
-        >Selecciona una categoría</label
+      <label for="" class="form-label fw-bold small text-body mb-3"
+        >Selecciona una categoría*</label
       >
 
       <!-- Search Input -->
@@ -113,8 +115,8 @@
 
     <!-- Amount Input -->
     <div class="mb-4">
-      <label class="form-label fw-bold small text-body mb-2"
-        >Monto total ($)</label
+      <label for="" class="form-label fw-bold small text-body mb-2"
+        >Monto total ($)*</label
       >
       <div
         class="input-group input-group-lg no-border-input-group bg-white rounded-3 overflow-hidden shadow-sm"

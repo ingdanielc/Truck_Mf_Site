@@ -33,6 +33,7 @@ interface CategoryConfig {
 })
 export class GAddExpenseComponent implements OnInit {
   @Input() vehicleId: number | null = null;
+  @Input() tripId: number | null = null;
   @Output() close = new EventEmitter<any>();
 
   expenseForm!: FormGroup;
@@ -214,6 +215,7 @@ export class GAddExpenseComponent implements OnInit {
     if (this.expenseForm.valid && this.selectedCategoryId && this.vehicleId) {
       const expenseData: ModelExpense = {
         vehicleId: this.vehicleId,
+        tripId: this.tripId || undefined,
         categoryId: this.selectedCategoryId,
         amount: this.expenseForm.value.amount,
         description: this.expenseForm.value.description,

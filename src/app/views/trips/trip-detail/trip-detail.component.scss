@@ -148,3 +148,30 @@
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 1040;
 }
+
+// Custom Colors
+.text-indigo {
+  color: #6610f2 !important;
+}
+
+.bg-indigo {
+  background-color: #6610f2 !important;
+}
+
+.bg-opacity-10 {
+  &.bg-indigo {
+    background-color: rgba(102, 16, 242, 0.1) !important;
+  }
+}
+
+// Floating Edit Button
+.btn-edit-fab {
+  background-color: #0dcaf0 !important; // info color
+  color: white !important;
+  box-shadow: 0 4px 20px rgba(13, 202, 240, 0.4) !important;
+
+  &:hover {
+    background-color: #31d2f2 !important;
+    transform: scale(1.05);
+  }
+}

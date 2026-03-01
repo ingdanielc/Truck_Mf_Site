@@ -1,0 +1,22 @@
+<div
+  class="trip-mini-card p-4 rounded-3 shadow-sm hover-scale"
+  [ngClass]="containerClass"
+  [class.is-selected]="isSelected"
+>
+  <div class="d-flex justify-content-between align-items-center">
+    <div class="route-info flex-grow-1 overflow-hidden">
+      <h6 class="header-label mb-1">RUTA ACTUAL</h6>
+      <div class="d-flex align-items-center gap-2">
+        <span class="location-text text-truncate">{{ origin }}</span>
+        <i class="fa-solid fa-arrow-right arrow-icon flex-shrink-0"></i>
+        <span class="location-text text-truncate">{{ destination }}</span>
+      </div>
+    </div>
+    <div class="status-info text-end ms-2">
+      <h6 class="header-label mb-1">ESTADO</h6>
+      <div class="status-badge px-2 py-1" [ngClass]="statusClass">
+        <span class="small fw-bold">{{ status }}</span>
+      </div>
+    </div>
+  </div>
+</div>

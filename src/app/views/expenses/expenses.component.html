@@ -103,28 +103,82 @@
   <!-- ── Expenses Section ─────────────────────────────────────────── -->
   @if (selectedVehicle) {
     <div class="mb-5">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-bold mb-0 text-body">
-          <i class="fa-solid fa-receipt me-2 text-secondary"></i>Gastos —
-          {{ selectedVehicle.plate }}
-        </h5>
-        <button
-          class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
-          (click)="openAddExpense()"
+      <div class="mt-4 mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0 text-body">
+            <i class="fa-solid fa-route me-2 text-secondary"></i>Viajes
+            Recientes
+          </h5>
+        </div>
+
+        @if (loadingTrips) {
+          <div class="text-center py-4">
+            <div
+              class="spinner-border text-primary spinner-border-sm"
+              role="status"
+            ></div>
+            <p class="small text-secondary mt-2">Cargando viajes...</p>
+          </div>
+        } @else if (recentTrips.length === 0) {
+          <div class="text-center py-4 bg-light rounded-4 border border-dashed">
+            <p class="text-secondary mb-0 small">
+              No hay viajes recientes registrados para este vehículo.
+            </p>
+          </div>
+        } @else {
+          <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+            @for (trip of recentTrips; track trip.id) {
+              <div class="col">
+                <g-trip-mini-card
+                  [origin]="getCityName(trip.originId)"
+                  [destination]="getCityName(trip.destinationId)"
+                  [status]="trip.status"
+                  [isSelected]="selectedTrip?.id === trip.id"
+                  (click)="selectTrip(trip)"
+                  class="cursor-pointer d-block"
+                ></g-trip-mini-card>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      @if (selectedTrip) {
+        <div
+          class="d-flex justify-content-between align-items-center mb-3 animate__animated animate__fadeIn"
         >
-          <i class="fa-solid fa-plus me-2"></i> Agregar gasto
-        </button>
-      </div>
-      <div class="mt-4">
-        <g-expenses-trip [tripId]="1"></g-expenses-trip>
-      </div>
+          <h5 class="fw-bold mb-0 text-body">
+            <i class="fa-solid fa-receipt me-2 text-secondary"></i>Gastos —
+            {{ selectedVehicle.plate }}
+          </h5>
+          <button
+            class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+            (click)="openAddExpense()"
+          >
+            <i class="fa-solid fa-plus me-2"></i> Agregar gasto
+          </button>
+        </div>
+
+        <div class="mt-4 animate__animated animate__fadeIn">
+          <g-expenses-trip [tripId]="selectedTrip.id!"></g-expenses-trip>
+        </div>
+      } @else {
+        <div
+          class="text-center py-5 bg-light rounded-4 border border-dashed animate__animated animate__fadeIn"
+        >
+          <i class="fa-solid fa-route fs-2 text-secondary mb-3 opacity-25"></i>
+          <p class="text-secondary mb-0">
+            Selecciona un viaje para ver y gestionar sus gastos.
+          </p>
+        </div>
+      }
     </div>
   }
 
   <!-- Mobile Floating Action Button -->
   <button
     class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
-    [class.d-none]="showAddExpense"
+    [class.d-none]="showAddExpense || !selectedTrip"
     aria-label="Agregar Gasto"
     (click)="openAddExpense()"
   >
@@ -153,6 +207,7 @@
   @if (showAddExpense) {
     <g-add-expense
       [vehicleId]="selectedVehicle?.id!"
+      [tripId]="selectedTrip?.id!"
       (close)="onExpenseAdded($event)"
       class="d-flex flex-column h-100"
     ></g-add-expense>

@@ -20,6 +20,9 @@ import {
   Sort,
 } from 'src/app/models/model-filter-table';
 import { GAddExpenseComponent } from 'src/app/components/g-add-expense/g-add-expense.component';
+import { TripService } from 'src/app/services/trip.service';
+import { ModelTrip } from 'src/app/models/trip-model';
+import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-trip-mini-card.component';
 
 @Component({
   selector: 'app-expenses',
@@ -28,6 +31,7 @@ import { GAddExpenseComponent } from 'src/app/components/g-add-expense/g-add-exp
     GVehicleGoodComponent,
     GExpensesTripComponent,
     GAddExpenseComponent,
+    GTripMiniCardComponent,
   ],
   templateUrl: './expenses.component.html',
   styleUrls: ['./expenses.component.scss'],
@@ -35,6 +39,8 @@ import { GAddExpenseComponent } from 'src/app/components/g-add-expense/g-add-exp
 export class ExpensesComponent implements OnInit, OnDestroy {
   vehicles: ModelVehicle[] = [];
   selectedVehicle: ModelVehicle | null = null;
+  selectedTrip: ModelTrip | null = null;
+  showAddExpense = false;
   loadingVehicles = true;
 
   brands: any[] = [];
@@ -46,7 +52,9 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   carouselIndex = 0;
   visibleCount = 1;
 
-  showAddExpense = false;
+  recentTrips: ModelTrip[] = [];
+  cities: any[] = [];
+  loadingTrips = false;
 
   private userSub?: Subscription;
 
@@ -58,12 +66,14 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     private readonly driverService: DriverService,
     private readonly tokenService: TokenService,
     private readonly expenseService: ExpenseService,
+    private readonly tripService: TripService,
     private readonly toastService: ToastService,
   ) {}
 
   ngOnInit(): void {
     this.updateVisibleCount();
     this.loadBrands();
+    this.loadCities();
     this.userSub = this.securityService.userData$.subscribe((user) => {
       if (user) {
         this.loadVehiclesForUser(user);
@@ -126,7 +136,9 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       this.vehicleService.getVehicleFilter(filter).subscribe({
         next: (resp: any) => {
           this.vehicles = resp?.data?.content ?? [];
-          this.selectedVehicle = this.vehicles[0] ?? null;
+          if (this.vehicles.length > 0) {
+            this.selectVehicle(this.vehicles[0]);
+          }
           this.loadingVehicles = false;
           this.mapBrandNames();
           this.loadDrivers(); // Admin: load all drivers
@@ -145,7 +157,9 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     this.vehicleService.getVehicleFilter(filter).subscribe({
       next: (resp: any) => {
         this.vehicles = resp?.data?.content ?? [];
-        this.selectedVehicle = this.vehicles[0] ?? null;
+        if (this.vehicles.length > 0) {
+          this.selectVehicle(this.vehicles[0]);
+        }
         this.carouselIndex = 0;
         this.loadingVehicles = false;
         this.mapBrandNames();
@@ -167,6 +181,17 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         console.error('Error loading brands:', err);
         this.loadingBrands = false;
       },
+    });
+  }
+
+  loadCities(): void {
+    this.commonService.getCities().subscribe({
+      next: (response: any) => {
+        if (response?.data) {
+          this.cities = response.data;
+        }
+      },
+      error: (err: any) => console.error('Error loading cities:', err),
     });
   }
 
@@ -230,6 +255,60 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   selectVehicle(vehicle: ModelVehicle): void {
     console.log('Selected vehicle:', vehicle);
     this.selectedVehicle = vehicle;
+    this.selectedTrip = null; // Clear selected trip when changing vehicle
+    if (vehicle.id) {
+      this.loadRecentTrips(vehicle.id);
+    }
+  }
+
+  selectTrip(trip: ModelTrip): void {
+    if (this.selectedTrip?.id === trip.id) {
+      this.selectedTrip = null; // Toggle off if already selected
+    } else {
+      this.selectedTrip = trip;
+    }
+  }
+
+  loadRecentTrips(vehicleId: number): void {
+    this.loadingTrips = true;
+    this.recentTrips = [];
+
+    const filter = new ModelFilterTable(
+      [new Filter('vehicle.id', '=', vehicleId.toString())],
+      new Pagination(10, 0),
+      new Sort('id', false), // Newest first
+    );
+
+    this.tripService.getTripFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content) {
+          let trips: ModelTrip[] = response.data.content;
+
+          // Logic to prioritize "En curso" or "En Curso" (case insensitive/variants)
+          const isActive = (status: string) =>
+            status?.toLowerCase().includes('curso') ||
+            status?.toLowerCase().includes('ruta');
+
+          const activeTrips = trips.filter((t) => isActive(t.status));
+          const otherTrips = trips.filter((t) => !isActive(t.status));
+
+          // Combine and take top 4
+          this.recentTrips = [...activeTrips, ...otherTrips].slice(0, 4);
+        }
+        this.loadingTrips = false;
+      },
+      error: (err) => {
+        console.error('Error loading recent trips:', err);
+        this.loadingTrips = false;
+      },
+    });
+  }
+
+  getCityName(cityId: any): string {
+    if (!cityId) return 'N/A';
+    const city = this.cities.find((c) => String(c.id) === String(cityId));
+    if (!city) return String(cityId);
+    return city.name;
   }
 
   prev(): void {
