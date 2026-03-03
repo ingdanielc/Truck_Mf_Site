@@ -80,6 +80,86 @@ export const CATEGORY_UI_CONFIG: Record<string, CategoryConfig> = {
     icon: 'fa-solid fa-oil-can',
     colorClass: 'text-info bg-info',
   },
+  encarrosada: {
+    name: 'ENCARROSADA',
+    icon: 'fa-solid fa-truck-ramp-box',
+    colorClass: 'text-primary bg-primary',
+  },
+  descarrosada: {
+    name: 'DESCARROSADA',
+    icon: 'fa-solid fa-truck-loading',
+    colorClass: 'text-secondary bg-secondary',
+  },
+  bascula: {
+    name: 'BASCULA',
+    icon: 'fa-solid fa-weight-hanging',
+    colorClass: 'text-info bg-info',
+  },
+  'lavado-brillado': {
+    name: 'LAVADO-BRILLADO',
+    icon: 'fa-solid fa-car-wash',
+    colorClass: 'text-success bg-success',
+  },
+  montallantas: {
+    name: 'MONTALLANTAS',
+    icon: 'fa-solid fa-wrench',
+    colorClass: 'text-danger bg-danger',
+  },
+  accesorios: {
+    name: 'ACCESORIOS',
+    icon: 'fa-solid fa-plug',
+    colorClass: 'text-warning bg-warning',
+  },
+  'alimentacion conductor': {
+    name: 'ALIMENTACION CONDUCTOR',
+    icon: 'fa-solid fa-utensils',
+    colorClass: 'text-success bg-success',
+  },
+  'hotel conductor': {
+    name: 'HOTEL CONDUCTOR',
+    icon: 'fa-solid fa-bed',
+    colorClass: 'text-primary bg-primary',
+  },
+  'seguridad social conductor': {
+    name: 'SEGURIDAD SOCIAL CONDUCTOR',
+    icon: 'fa-solid fa-file-shield',
+    colorClass: 'text-info bg-info',
+  },
+  'descuento empresa': {
+    name: 'DESCUENTO EMPRESA',
+    icon: 'fa-solid fa-building-circle-exclamation',
+    colorClass: 'text-danger bg-danger',
+  },
+  retenciones: {
+    name: 'RETENCIONES',
+    icon: 'fa-solid fa-percent',
+    colorClass: 'text-warning bg-warning',
+  },
+  'cambio cheque o papeleo': {
+    name: 'CAMBIO CHEQUE O PAPELEO',
+    icon: 'fa-solid fa-money-check-dollar',
+    colorClass: 'text-success bg-success',
+  },
+  comisiones: {
+    name: 'COMISIONES',
+    icon: 'fa-solid fa-hand-holding-dollar',
+    colorClass: 'text-info bg-info',
+  },
+  cargue: {
+    name: 'CARGUE',
+    icon: 'fa-solid fa-box-open',
+    colorClass: 'text-primary bg-primary',
+  },
+  descargue: {
+    name: 'DESCARGUE',
+    icon: 'fa-solid fa-dolly',
+    colorClass: 'text-secondary bg-secondary',
+  },
+  '4x1000 banco': {
+    name: '4X1000 BANCO',
+    icon: 'fa-solid fa-bank',
+    colorClass: 'text-info bg-info',
+  },
 };
 
 export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {

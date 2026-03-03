@@ -90,6 +90,7 @@ export class DriversComponent implements OnInit, OnDestroy {
   owners: ModelOwner[] = [];
   showAccessData: boolean = false;
   salaryTypes: any[] = [];
+  salaryLabel: string = 'Valor Salario';
 
   isPasswordOffcanvasOpen: boolean = false;
   driverChangingPassword: ModelDriver | null = null;
@@ -250,10 +251,47 @@ export class DriversComponent implements OnInit, OnDestroy {
 
     this.commonService.getSalaryTypes().subscribe({
       next: (response: any) => {
-        if (response?.data) this.salaryTypes = response.data;
+        if (response?.data) {
+          this.salaryTypes = response.data;
+          // After loading types, if editing, update label
+          if (this.editingDriver) {
+            this.updateSalaryValidators(
+              this.driverForm.get('salaryTypeId')?.value,
+            );
+          }
+        }
       },
       error: (err: any) => console.error('Error loading salary types:', err),
     });
+
+    // Listener for salary type changes
+    this.driverForm.get('salaryTypeId')?.valueChanges.subscribe((value) => {
+      this.updateSalaryValidators(value);
+    });
+  }
+
+  updateSalaryValidators(salaryTypeId: number | null): void {
+    const salaryControl = this.driverForm.get('salary');
+    const selectedType = this.salaryTypes.find(
+      (t) => t.id === Number(salaryTypeId),
+    );
+
+    if (selectedType?.name.toUpperCase().includes('PORCENTAJE')) {
+      this.salaryLabel = 'Porcentaje';
+      salaryControl?.setValidators([
+        Validators.required,
+        Validators.min(1),
+        Validators.max(100),
+      ]);
+    } else {
+      this.salaryLabel = 'Valor Salario';
+      salaryControl?.setValidators([
+        Validators.required,
+        Validators.min(1),
+        Validators.max(99999999),
+      ]);
+    }
+    salaryControl?.updateValueAndValidity();
   }
 
   loadOwners(): void {
@@ -448,6 +486,7 @@ export class DriversComponent implements OnInit, OnDestroy {
           ]);
         this.driverForm.get('documentNumber')?.updateValueAndValidity();
         this.driverForm.get('email')?.updateValueAndValidity();
+        this.updateSalaryValidators(driver.salaryTypeId || null);
       } else {
         this.editingDriver = null;
         this.driverForm.reset({
@@ -518,6 +557,7 @@ export class DriversComponent implements OnInit, OnDestroy {
           ]);
         this.driverForm.get('documentNumber')?.updateValueAndValidity();
         this.driverForm.get('email')?.updateValueAndValidity();
+        this.updateSalaryValidators(null);
       }
     } else {
       this.editingDriver = null;

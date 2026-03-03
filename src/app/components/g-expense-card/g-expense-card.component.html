@@ -22,15 +22,27 @@
     </div>
   </div>
 
-  <!-- Right: Value & Percentage -->
-  <div class="text-sm-end text-start min-width-0 mt-2 mt-sm-0 w-100 w-sm-auto">
-    <h5 class="fw-bold mb-1 text-body text-truncate">
-      {{ expense.amount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
-    </h5>
-    <p
-      class="small text-secondary mb-0 fw-semibold tracking-wider text-uppercase text-truncate"
+  <!-- Right: Value, Percentage & Edit -->
+  <div
+    class="text-sm-end text-start min-width-0 mt-2 mt-sm-0 w-100 w-sm-auto d-flex flex-sm-column flex-row justify-content-between align-items-center align-items-sm-end gap-2"
+  >
+    <div class="min-width-0">
+      <h5 class="fw-bold mb-1 text-body text-truncate">
+        {{ expense.amount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+      </h5>
+      <p
+        class="small text-secondary mb-0 fw-semibold tracking-wider text-uppercase text-truncate"
+      >
+        <span class="text-primary">{{ percentage }}%</span> del total
+      </p>
+    </div>
+    <button
+      class="btn btn-sm btn-light rounded-pill px-3 py-1 border shadow-sm d-flex align-items-center gap-1 transition-all edit-btn"
+      (click)="edit.emit(expense)"
+      aria-label="Editar gasto"
     >
-      <span class="text-primary">{{ percentage }}%</span> del total
-    </p>
+      <i class="fa-solid fa-pen-to-square small"></i>
+      <span class="small fw-bold">Editar</span>
+    </button>
   </div>
 </div>

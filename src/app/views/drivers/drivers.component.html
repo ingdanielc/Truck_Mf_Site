@@ -460,16 +460,40 @@
               </select>
             </div>
             <div class="col-6">
-              <label for="salary" class="form-label small fw-bold mb-2"
-                >Valor Salario</label
-              >
+              <label for="salary" class="form-label small fw-bold mb-2">{{
+                salaryLabel
+              }}</label>
               <input
                 id="salary"
                 type="number"
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="salary"
-                placeholder="Ej: 1500000"
+                [placeholder]="
+                  salaryLabel === 'Porcentaje' ? 'Ej: 10' : 'Ej: 1500000'
+                "
+                [class.is-invalid]="
+                  driverForm.get('salary')?.invalid &&
+                  driverForm.get('salary')?.touched
+                "
               />
+              @if (
+                driverForm.get("salary")?.touched &&
+                driverForm.get("salary")?.invalid
+              ) {
+                <div class="text-danger small mt-1">
+                  @if (driverForm.get("salary")?.errors?.["required"]) {
+                    Este campo es obligatorio
+                  }
+                  @if (driverForm.get("salary")?.errors?.["min"]) {
+                    El valor mínimo es
+                    {{ salaryLabel === "Porcentaje" ? "1%" : "1" }}
+                  }
+                  @if (driverForm.get("salary")?.errors?.["max"]) {
+                    El valor máximo es
+                    {{ salaryLabel === "Porcentaje" ? "100%" : "99,999,999" }}
+                  }
+                </div>
+              }
             </div>
           </div>
         </div>

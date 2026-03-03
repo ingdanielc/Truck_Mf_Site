@@ -163,6 +163,7 @@
           <g-expenses-trip
             [tripId]="selectedTrip.id!"
             [vehicleId]="selectedVehicle.id!"
+            (editExpense)="onEditExpense($event)"
           ></g-expenses-trip>
         </div>
       } @else {
@@ -193,7 +194,7 @@
 @if (showAddExpense) {
   <div
     class="offcanvas-backdrop fade show"
-    (click)="showAddExpense = false"
+    (click)="showAddExpense = false; editingExpense = null"
     onkeypress
   ></div>
 }
@@ -211,6 +212,7 @@
     <g-add-expense
       [vehicleId]="selectedVehicle?.id!"
       [tripId]="selectedTrip?.id!"
+      [editingExpense]="editingExpense"
       (close)="onExpenseAdded($event)"
       class="d-flex flex-column h-100"
     ></g-add-expense>

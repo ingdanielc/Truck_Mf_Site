@@ -1,4 +1,10 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import {
+  Component,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 
 import { Subscription } from 'rxjs';
 import { SecurityService } from 'src/app/services/security/security.service';
@@ -11,6 +17,7 @@ import { TokenService } from 'src/app/services/token.service';
 import { GVehicleGoodComponent } from 'src/app/components/g-vehicle-good/g-vehicle-good.component';
 import { GExpensesTripComponent } from 'src/app/components/g-expenses-trip/g-expenses-trip.component';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
+import { ModelExpense } from 'src/app/models/expense-model';
 import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
 import { ModelDriver } from 'src/app/models/driver-model';
 import {
@@ -37,10 +44,13 @@ import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-tr
   styleUrls: ['./expenses.component.scss'],
 })
 export class ExpensesComponent implements OnInit, OnDestroy {
+  @ViewChild(GExpensesTripComponent)
+  expensesTripComponent?: GExpensesTripComponent;
   vehicles: ModelVehicle[] = [];
   selectedVehicle: ModelVehicle | null = null;
   selectedTrip: ModelTrip | null = null;
   showAddExpense = false;
+  editingExpense: ModelExpense | null = null;
   loadingVehicles = true;
 
   brands: any[] = [];
@@ -338,6 +348,12 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   // ── Add Expense Offcanvas ──────────────────────────────────────────
 
   openAddExpense(): void {
+    this.editingExpense = null;
+    this.showAddExpense = true;
+  }
+
+  onEditExpense(expense: ModelExpense): void {
+    this.editingExpense = expense;
     this.showAddExpense = true;
   }
 
@@ -347,10 +363,13 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         next: () => {
           this.toastService.showSuccess(
             'Éxito',
-            'Gasto registrado correctamente',
+            this.editingExpense
+              ? 'Gasto actualizado exitosamente!'
+              : 'Gasto registrado exitosamente!',
           );
           this.showAddExpense = false;
-          // Refresh list if needed (e.g., if GExpensesTripComponent handles it, might need a trigger)
+          // Refresh list
+          this.expensesTripComponent?.loadExpenses();
         },
         error: (err) => {
           console.error('Error saving expense:', err);
@@ -360,5 +379,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     } else {
       this.showAddExpense = false;
     }
+    this.editingExpense = null;
   }
 }

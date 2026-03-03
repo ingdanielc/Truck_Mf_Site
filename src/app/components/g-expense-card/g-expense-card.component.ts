@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModelExpense } from '../../models/expense-model';
 import {
@@ -17,6 +17,7 @@ import {
 export class GExpenseCardComponent implements OnInit {
   @Input({ required: true }) expense!: ModelExpense;
   @Input() totalAmount: number = 0; // Total expenses amount to calculate the %
+  @Output() edit = new EventEmitter<ModelExpense>();
 
   ngOnInit(): void {}
 

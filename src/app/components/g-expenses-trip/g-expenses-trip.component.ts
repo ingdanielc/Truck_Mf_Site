@@ -1,8 +1,10 @@
 import {
   Component,
+  EventEmitter,
   Input,
   OnChanges,
   OnInit,
+  Output,
   SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -26,6 +28,7 @@ import {
 export class GExpensesTripComponent implements OnInit, OnChanges {
   @Input({ required: true }) tripId!: number;
   @Input({ required: true }) vehicleId!: number;
+  @Output() editExpense = new EventEmitter<ModelExpense>();
 
   expenses: ModelExpense[] = [];
   loading = false;

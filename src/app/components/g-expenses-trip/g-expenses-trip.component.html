@@ -110,6 +110,7 @@
           <g-expense-card
             [expense]="expense"
             [totalAmount]="totalAmount"
+            (edit)="editExpense.emit($event)"
           ></g-expense-card>
         }
       </div>
@@ -131,6 +132,7 @@
           <g-expense-card
             [expense]="expense"
             [totalAmount]="totalAmount"
+            (edit)="editExpense.emit($event)"
           ></g-expense-card>
         }
 

@@ -35,6 +35,7 @@ interface CategoryConfig {
 export class GAddExpenseComponent implements OnInit {
   @Input() vehicleId: number | null = null;
   @Input() tripId: number | null = null;
+  @Input() editingExpense: ModelExpense | null = null;
   @Output() close = new EventEmitter<any>();
 
   expenseForm!: FormGroup;
@@ -64,6 +65,22 @@ export class GAddExpenseComponent implements OnInit {
     );
     this.initForm();
     this.loadCategories();
+    if (this.editingExpense) {
+      this.patchFormForEdit();
+    }
+  }
+
+  patchFormForEdit(): void {
+    if (!this.editingExpense) return;
+
+    this.selectedType = this.editingExpense.category?.expenseTypeId || 1;
+    this.selectedCategoryId = this.editingExpense.categoryId;
+
+    this.expenseForm.patchValue({
+      categoryId: this.editingExpense.categoryId,
+      amount: this.editingExpense.amount,
+      description: this.editingExpense.description,
+    });
   }
 
   loadCategories(): void {
@@ -151,8 +168,13 @@ export class GAddExpenseComponent implements OnInit {
         categoryId: this.selectedCategoryId,
         amount: this.expenseForm.value.amount,
         description: this.expenseForm.value.description,
-        expenseDate: new Date().toISOString(),
+        expenseDate: this.editingExpense
+          ? this.editingExpense.expenseDate
+          : new Date().toISOString(),
       };
+      if (this.editingExpense?.id) {
+        expenseData.id = this.editingExpense.id;
+      }
       this.close.emit(expenseData);
     } else {
       if (!this.vehicleId) {
