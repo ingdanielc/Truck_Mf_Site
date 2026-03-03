@@ -41,3 +41,16 @@
 .offcanvas-header {
   align-items: start !important;
 }
+
+// Custom padding for main content (between p-2 and p-3)
+.p-main-content {
+  padding: 0.6rem; // p-2 (xs)
+
+  @media (min-width: 576px) {
+    padding: 0.75rem; // between p-2 and p-3 (sm)
+  }
+
+  @media (min-width: 768px) {
+    padding: 1.2rem; // p-4 (md+)
+  }
+}
