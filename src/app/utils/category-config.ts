@@ -22,7 +22,7 @@ export const CATEGORY_UI_CONFIG: Record<string, CategoryConfig> = {
   },
   parqueadero: {
     name: 'PARQUEADERO',
-    icon: 'fa-solid fa-square-p',
+    icon: 'fa-solid fa-parking',
     colorClass: 'text-secondary bg-secondary',
   },
   papelería: {
@@ -97,7 +97,7 @@ export const CATEGORY_UI_CONFIG: Record<string, CategoryConfig> = {
   },
   'lavado-brillado': {
     name: 'LAVADO-BRILLADO',
-    icon: 'fa-solid fa-car-wash',
+    icon: 'fa-solid fa-hands-bubbles',
     colorClass: 'text-success bg-success',
   },
   montallantas: {

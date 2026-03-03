@@ -78,7 +78,7 @@ export class GAddExpenseComponent implements OnInit {
 
     this.expenseForm.patchValue({
       categoryId: this.editingExpense.categoryId,
-      amount: this.editingExpense.amount,
+      amount: this.applyAmountMask(this.editingExpense.amount.toString()),
       description: this.editingExpense.description,
     });
   }
@@ -128,9 +128,25 @@ export class GAddExpenseComponent implements OnInit {
   initForm(): void {
     this.expenseForm = this.fb.group({
       categoryId: [null, Validators.required],
-      amount: [0, [Validators.required, Validators.min(0.01)]],
-      description: [''],
+      amount: [
+        '',
+        [Validators.required, Validators.min(1), Validators.max(999999999)],
+      ],
+      description: ['', [Validators.maxLength(200)]],
     });
+  }
+
+  onAmountInput(event: any): void {
+    const input = event.target.value.replaceAll(/\D/g, ''); // Remove non-digits
+    const formatted = this.applyAmountMask(input);
+    this.expenseForm.get('amount')?.setValue(formatted, { emitEvent: false });
+  }
+
+  private applyAmountMask(value: string): string {
+    if (!value) return '';
+    const numericValue = Number(value.replaceAll(/\D/g, ''));
+    if (Number.isNaN(numericValue)) return '';
+    return new Intl.NumberFormat('es-CO').format(numericValue);
   }
 
   selectType(typeId: number): void {
@@ -166,7 +182,9 @@ export class GAddExpenseComponent implements OnInit {
         vehicleId: this.vehicleId,
         tripId: this.tripId || undefined,
         categoryId: this.selectedCategoryId,
-        amount: this.expenseForm.value.amount,
+        amount: Number(
+          this.expenseForm.value.amount.toString().replaceAll(/\D/g, ''),
+        ),
         description: this.expenseForm.value.description,
         expenseDate: this.editingExpense
           ? this.editingExpense.expenseDate

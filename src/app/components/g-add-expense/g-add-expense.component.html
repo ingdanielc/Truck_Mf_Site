@@ -17,8 +17,8 @@
   <p class="text-secondary small mb-0 mt-1">
     {{
       editingExpense
-        ? "Modifica los detalles del movimiento financiero."
-        : "Registra un nuevo movimiento financiero."
+        ? "Modifica los detalles del gasto."
+        : "Registra un nuevo gasto."
     }}
   </p>
 </div>
@@ -122,41 +122,65 @@
     <!-- Amount Input -->
     <div class="mb-4">
       <label for="" class="form-label fw-bold small text-body mb-2"
-        >Monto total ($)*</label
+        >Monto total*</label
       >
       <div
-        class="input-group input-group-lg no-border-input-group bg-white rounded-3 overflow-hidden shadow-sm"
+        class="input-group input-group-lg no-border-input-group bg-white rounded-3 overflow-hidden shadow-sm border transition-all"
+        [ngClass]="{
+          'border-danger':
+            expenseForm.get('amount')?.touched &&
+            expenseForm.get('amount')?.invalid,
+        }"
       >
         <span
           class="input-group-text bg-transparent border-0 text-primary fw-bold fs-4 ps-4"
           >$</span
         >
         <input
-          type="number"
+          type="text"
+          inputmode="numeric"
           class="form-control border-0 shadow-none fs-4 text-secondary py-3"
-          placeholder="0.00"
+          placeholder="0"
+          maxlength="10"
           formControlName="amount"
+          (input)="onAmountInput($event)"
         />
+        @if (
+          expenseForm.get("amount")?.touched &&
+          expenseForm.get("amount")?.invalid
+        ) {
+          <span class="input-group-text bg-transparent border-0 pe-4">
+            <i class="fa-solid fa-circle-exclamation text-danger fs-4"></i>
+          </span>
+        }
       </div>
       @if (
         expenseForm.get("amount")?.touched && expenseForm.get("amount")?.invalid
       ) {
         <div class="text-danger small mt-2">
-          Ingresa un monto válido mayor a cero.
+          @if (expenseForm.get("amount")?.errors?.["required"]) {
+            Este campo es obligatorio para continuar
+          } @else if (expenseForm.get("amount")?.errors?.["max"]) {
+            El monto máximo permitido es 999.999.999.
+          } @else if (expenseForm.get("amount")?.errors?.["min"]) {
+            Ingresa un monto mayor a cero.
+          }
         </div>
       }
     </div>
 
     <!-- Description Input -->
     <div class="mb-5">
-      <label class="form-label fw-bold small text-body mb-2"
+      <label for="desc" class="form-label fw-bold small text-body mb-2"
         >Descripción breve</label
       >
       <textarea
+        id="desc"
         class="form-control border-0 shadow-sm rounded-3 p-3 text-secondary"
         rows="3"
         placeholder="Ej: Carga de Diesel en Estación Norte"
         formControlName="description"
+        maxlength="200"
       ></textarea>
     </div>
 
