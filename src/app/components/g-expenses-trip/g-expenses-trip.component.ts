@@ -29,6 +29,7 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
   @Input({ required: true }) tripId!: number;
   @Input({ required: true }) vehicleId!: number;
   @Output() editExpense = new EventEmitter<ModelExpense>();
+  @Output() addExpenseType = new EventEmitter<number>();
 
   expenses: ModelExpense[] = [];
   loading = false;

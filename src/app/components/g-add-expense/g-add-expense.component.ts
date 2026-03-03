@@ -36,15 +36,16 @@ export class GAddExpenseComponent implements OnInit {
   @Input() vehicleId: number | null = null;
   @Input() tripId: number | null = null;
   @Input() editingExpense: ModelExpense | null = null;
+  @Input() preselectedTypeId?: number;
   @Output() close = new EventEmitter<any>();
 
   expenseForm!: FormGroup;
   expenseTypes = [
-    { id: 1, label: 'Vehículo' },
     { id: 3, label: 'Viaje' },
+    { id: 1, label: 'Vehículo' },
     { id: 2, label: 'Conductor' },
   ];
-  selectedType: number = 1;
+  selectedType: number = 3;
 
   categories: CategoryConfig[] = [];
   loadingCategories: boolean = false;
@@ -67,6 +68,8 @@ export class GAddExpenseComponent implements OnInit {
     this.loadCategories();
     if (this.editingExpense) {
       this.patchFormForEdit();
+    } else if (this.preselectedTypeId) {
+      this.selectedType = this.preselectedTypeId;
     }
   }
 

@@ -105,7 +105,7 @@
         <h5 class="fw-bold mb-0">Gastos del Viaje</h5>
       </div>
 
-      <div class="d-flex flex-column gap-2">
+      <div class="d-flex flex-column gap-2 mb-4">
         @for (expense of tripExpenses; track expense.id) {
           <g-expense-card
             [expense]="expense"
@@ -113,6 +113,33 @@
             (edit)="editExpense.emit($event)"
           ></g-expense-card>
         }
+
+        <!-- Add new Trip Expense placeholder card -->
+        <div
+          class="add-expense-card d-none d-md-flex bg-transparent p-3 p-md-4 flex-row align-items-center gap-3 rounded-4 cursor-pointer w-100 mt-2"
+          (click)="addExpenseType.emit(3)"
+          onkeypress
+        >
+          <div
+            class="icon-shape rounded-3 bg-body-secondary text-secondary flex-shrink-0 d-flex align-items-center justify-content-center"
+            style="width: 60px; height: 60px; font-size: 1.25rem"
+          >
+            <i class="fa-solid fa-plus"></i>
+          </div>
+          <div class="flex-grow-1 text-start min-width-0">
+            <h6 class="fw-bold text-body mb-1 text-truncate">¿Nuevo Gasto?</h6>
+            <p class="small text-secondary mb-0 text-truncate">
+              Registra gastos de viaje
+            </p>
+          </div>
+          <div class="d-none d-sm-block flex-shrink-0 ms-2">
+            <button
+              class="btn btn-sm btn-outline-secondary rounded-pill fw-medium px-3 text-nowrap"
+            >
+              Agregar
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -127,7 +154,7 @@
         <h5 class="fw-bold mb-0">Gastos del Vehículo</h5>
       </div>
 
-      <div class="d-flex flex-column gap-2">
+      <div class="d-flex flex-column gap-2 mb-4">
         @for (expense of vehicleExpenses; track expense.id) {
           <g-expense-card
             [expense]="expense"
@@ -135,32 +162,12 @@
             (edit)="editExpense.emit($event)"
           ></g-expense-card>
         }
-      </div>
-    </div>
 
-    <!-- Column 3: Gastos del Conductor (and Add button) -->
-    <div class="col-12 col-xl-4">
-      <div class="d-flex align-items-center gap-2 mb-4">
+        <!-- Add new Vehicle Expense placeholder card -->
         <div
-          class="icon-shape rounded-3 bg-primary bg-opacity-10 text-primary p-2"
-        >
-          <i class="fa-solid fa-user-tie fs-5"></i>
-        </div>
-        <h5 class="fw-bold mb-0">Gastos del Conductor</h5>
-      </div>
-
-      <div class="d-flex flex-column gap-2">
-        @for (expense of driverExpenses; track expense.id) {
-          <g-expense-card
-            [expense]="expense"
-            [totalAmount]="totalAmount"
-            (edit)="editExpense.emit($event)"
-          ></g-expense-card>
-        }
-
-        <!-- Add new Expense placeholder card -->
-        <div
-          class="add-expense-card d-none d-md-flex bg-transparent p-3 p-md-4 flex-row align-items-center gap-3 rounded-4 cursor-pointer mb-3 w-100"
+          class="add-expense-card d-none d-md-flex bg-transparent p-3 p-md-4 flex-row align-items-center gap-3 rounded-4 cursor-pointer w-100 mt-2"
+          (click)="addExpenseType.emit(1)"
+          onkeypress
         >
           <div
             class="icon-shape rounded-3 bg-body-secondary text-secondary flex-shrink-0 d-flex align-items-center justify-content-center"
@@ -171,7 +178,56 @@
           <div class="flex-grow-1 text-start min-width-0">
             <h6 class="fw-bold text-body mb-1 text-truncate">¿Nuevo Gasto?</h6>
             <p class="small text-secondary mb-0 text-truncate">
-              Registra gastos de este viaje
+              Registra gastos del vehículo
+            </p>
+          </div>
+          <div class="d-none d-sm-block flex-shrink-0 ms-2">
+            <button
+              class="btn btn-sm btn-outline-secondary rounded-pill fw-medium px-3 text-nowrap"
+            >
+              Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 3: Gastos del Conductor -->
+    <div class="col-12 col-xl-4">
+      <div class="d-flex align-items-center gap-2 mb-4">
+        <div
+          class="icon-shape rounded-3 bg-primary bg-opacity-10 text-primary p-2"
+        >
+          <i class="fa-solid fa-user-tie fs-5"></i>
+        </div>
+        <h5 class="fw-bold mb-0">Gastos del Conductor</h5>
+      </div>
+
+      <div class="d-flex flex-column gap-2 mb-4">
+        @for (expense of driverExpenses; track expense.id) {
+          <g-expense-card
+            [expense]="expense"
+            [totalAmount]="totalAmount"
+            (edit)="editExpense.emit($event)"
+          ></g-expense-card>
+        }
+
+        <!-- Add new Driver Expense placeholder card -->
+        <div
+          class="add-expense-card d-none d-md-flex bg-transparent p-3 p-md-4 flex-row align-items-center gap-3 rounded-4 cursor-pointer w-100 mt-2"
+          (click)="addExpenseType.emit(2)"
+          onkeypress
+        >
+          <div
+            class="icon-shape rounded-3 bg-body-secondary text-secondary flex-shrink-0 d-flex align-items-center justify-content-center"
+            style="width: 60px; height: 60px; font-size: 1.25rem"
+          >
+            <i class="fa-solid fa-plus"></i>
+          </div>
+          <div class="flex-grow-1 text-start min-width-0">
+            <h6 class="fw-bold text-body mb-1 text-truncate">¿Nuevo Gasto?</h6>
+            <p class="small text-secondary mb-0 text-truncate">
+              Registra gastos del conductor
             </p>
           </div>
           <div class="d-none d-sm-block flex-shrink-0 ms-2">

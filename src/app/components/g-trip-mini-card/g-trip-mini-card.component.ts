@@ -24,7 +24,7 @@ export class GTripMiniCardComponent {
 
   get containerClass(): string {
     const s = (this.status || '').toLowerCase();
-    if (s.includes('curso') || s.includes('ruta')) return 'container-active';
-    return 'container-previous';
+    if (s.includes('curso') || s.includes('ruta')) return 'total-card';
+    return 'bg-body-tertiary';
   }
 }

@@ -51,6 +51,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   selectedTrip: ModelTrip | null = null;
   showAddExpense = false;
   editingExpense: ModelExpense | null = null;
+  preselectedExpenseTypeId: number | null = null;
   loadingVehicles = true;
 
   brands: any[] = [];
@@ -352,9 +353,17 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   // ── Add Expense Offcanvas ──────────────────────────────────────────
 
-  openAddExpense(): void {
-    this.editingExpense = null;
-    this.showAddExpense = true;
+  openAddExpense(typeId?: number): void {
+    if (this.selectedVehicle && this.selectedTrip) {
+      this.editingExpense = null;
+      this.preselectedExpenseTypeId = typeId || null;
+      this.showAddExpense = true;
+    } else {
+      this.toastService.showError(
+        'Atención',
+        'Selecciona un vehículo y un viaje primero',
+      );
+    }
   }
 
   onEditExpense(expense: ModelExpense): void {
@@ -385,5 +394,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       this.showAddExpense = false;
     }
     this.editingExpense = null;
+    this.preselectedExpenseTypeId = null;
   }
 }
