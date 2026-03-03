@@ -40,12 +40,12 @@ export class GDriverCardComponent {
   }
 
   get statusClass(): string {
-    const status = this.driver.user?.status || 'Active';
-    return status === 'Active' ? 'bg-success' : 'bg-secondary';
+    const status = this.driver.user?.status || 'Activo';
+    return status === 'Activo' ? 'bg-success' : 'bg-secondary';
   }
 
   get statusName(): string {
-    return this.driver.user?.status || 'Active';
+    return this.driver.user?.status || 'Activo';
   }
 
   get formattedCellPhone(): string {

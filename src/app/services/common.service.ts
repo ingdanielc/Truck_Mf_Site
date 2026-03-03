@@ -20,8 +20,8 @@ export class CommonService {
 
   getListStatus() {
     return [
-      { selectId: 1, selectValue: 'Active' },
-      { selectId: 2, value: 'Inactive' },
+      { selectId: 1, selectValue: 'Activo' },
+      { selectId: 2, value: 'Inactivo' },
     ];
   }
 
@@ -51,5 +51,9 @@ export class CommonService {
 
   getVehicleBrands() {
     return this.http.get<any>(`${this.basePath}/getVehicleBrands`);
+  }
+
+  getSalaryTypes() {
+    return this.http.get<any>(`${this.basePath}/getSalaryTypes`);
   }
 }

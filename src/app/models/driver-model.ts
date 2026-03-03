@@ -20,6 +20,8 @@ export class ModelDriver {
     public licenseCategory?: string,
     public licenseNumber?: string,
     public licenseExpiry?: any,
+    public salaryTypeId?: number,
+    public salary?: number,
     public user?: {
       id?: number;
       name?: string;

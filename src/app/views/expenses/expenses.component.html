@@ -160,7 +160,10 @@
         </div>
 
         <div class="mt-4 animate__animated animate__fadeIn">
-          <g-expenses-trip [tripId]="selectedTrip.id!"></g-expenses-trip>
+          <g-expenses-trip
+            [tripId]="selectedTrip.id!"
+            [vehicleId]="selectedVehicle.id!"
+          ></g-expenses-trip>
         </div>
       } @else {
         <div

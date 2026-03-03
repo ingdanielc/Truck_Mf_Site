@@ -15,6 +15,7 @@ import {
   Pagination,
   Sort,
 } from 'src/app/models/model-filter-table';
+import { getCategoryConfigByName } from 'src/app/utils/category-config';
 
 interface CategoryConfig {
   id: number;
@@ -47,69 +48,6 @@ export class GAddExpenseComponent implements OnInit {
   categories: CategoryConfig[] = [];
   loadingCategories: boolean = false;
 
-  private readonly categoryUIConfig: Record<string, Partial<CategoryConfig>> = {
-    combustible: {
-      icon: 'fa-solid fa-gas-pump',
-      colorClass: 'text-warning bg-warning',
-    },
-    peajes: {
-      icon: 'fa-solid fa-circle-dot',
-      colorClass: 'text-indigo bg-indigo',
-    },
-    alimentación: {
-      icon: 'fa-solid fa-utensils',
-      colorClass: 'text-primary bg-primary',
-    },
-    parqueadero: {
-      icon: 'fa-solid fa-square-p',
-      colorClass: 'text-secondary bg-secondary',
-    },
-    papelería: {
-      icon: 'fa-solid fa-file-invoice',
-      colorClass: 'text-info bg-info',
-    },
-    reparaciones: {
-      icon: 'fa-solid fa-toolbox',
-      colorClass: 'text-danger bg-danger',
-    },
-    mantenimiento: {
-      icon: 'fa-solid fa-gear',
-      colorClass: 'text-info bg-info',
-    },
-    lavado: {
-      icon: 'fa-solid fa-car-wash',
-      colorClass: 'text-primary bg-primary',
-    },
-    llantas: {
-      icon: 'fa-solid fa-circle-notch',
-      colorClass: 'text-secondary bg-secondary',
-    },
-    seguros: {
-      icon: 'fa-solid fa-shield-halved',
-      colorClass: 'text-primary bg-primary',
-    },
-    hospedaje: {
-      icon: 'fa-solid fa-bed',
-      colorClass: 'text-primary bg-primary',
-    },
-    viáticos: {
-      icon: 'fa-solid fa-money-bill-wave',
-      colorClass: 'text-info bg-info',
-    },
-    comunicaciones: {
-      icon: 'fa-solid fa-mobile-screen',
-      colorClass: 'text-secondary bg-secondary',
-    },
-    otros: {
-      icon: 'fa-solid fa-ellipsis',
-      colorClass: 'text-secondary bg-secondary',
-    },
-    engrasada: {
-      icon: 'fa-solid fa-oil-can',
-      colorClass: 'text-info bg-info',
-    },
-  };
-
   filteredCategories: CategoryConfig[] = [];
   selectedCategoryId: number | null = null;
   searchQuery: string = '';
@@ -138,18 +76,12 @@ export class GAddExpenseComponent implements OnInit {
     );
     this.expenseService.getExpenseCategoryFilter(filter).subscribe({
       next: (response: any) => {
-        // Robust data extraction: handling different API response formats
         const data = response?.data?.content || response?.data || response;
 
         if (data && Array.isArray(data)) {
           this.categories = data.map((cat: any) => {
-            const nameKey = (cat.name || '').toLowerCase();
-            const uiConfig = this.categoryUIConfig[nameKey] || {
-              icon: 'fa-solid fa-receipt',
-              colorClass: 'text-secondary bg-secondary',
-            };
+            const uiConfig = getCategoryConfigByName(cat.name);
 
-            // Trying common field names for the category type ID
             const extractedType =
               cat.expenseTypeId ??
               cat.type ??
@@ -161,8 +93,8 @@ export class GAddExpenseComponent implements OnInit {
               id: cat.id,
               name: cat.name,
               type: String(extractedType ?? ''),
-              icon: uiConfig.icon!,
-              colorClass: uiConfig.colorClass!,
+              icon: uiConfig.icon,
+              colorClass: uiConfig.colorClass,
             };
           });
           this.filterCategories();
@@ -219,15 +151,12 @@ export class GAddExpenseComponent implements OnInit {
         categoryId: this.selectedCategoryId,
         amount: this.expenseForm.value.amount,
         description: this.expenseForm.value.description,
-        expenseDate: new Date().toISOString(), // Default to current date
+        expenseDate: new Date().toISOString(),
       };
       this.close.emit(expenseData);
     } else {
       if (!this.vehicleId) {
-        console.error(
-          'No vehicle ID provided for the expense. vehicleId value:',
-          this.vehicleId,
-        );
+        console.error('No vehicle ID provided for the expense.');
       }
       Object.keys(this.expenseForm.controls).forEach((key) => {
         this.expenseForm.get(key)?.markAsTouched();

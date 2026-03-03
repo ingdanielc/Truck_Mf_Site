@@ -88,7 +88,8 @@ export class DriversComponent implements OnInit, OnDestroy {
     { id: 'c3', name: 'C3' },
   ];
   owners: ModelOwner[] = [];
-  showAccessData: boolean = true;
+  showAccessData: boolean = false;
+  salaryTypes: any[] = [];
 
   isPasswordOffcanvasOpen: boolean = false;
   driverChangingPassword: ModelDriver | null = null;
@@ -150,6 +151,8 @@ export class DriversComponent implements OnInit, OnDestroy {
         ],
         confirmPassword: ['', this.editingDriver ? [] : [Validators.required]],
         ownerId: [null, [Validators.required]],
+        salaryTypeId: [null],
+        salary: [null],
       },
       {
         validators: [CustomValidators.passwordMatchValidator],
@@ -243,6 +246,13 @@ export class DriversComponent implements OnInit, OnDestroy {
         this.groupedCities = this.buildGroupedCities();
       },
       error: (err: any) => console.error('Error loading cities:', err),
+    });
+
+    this.commonService.getSalaryTypes().subscribe({
+      next: (response: any) => {
+        if (response?.data) this.salaryTypes = response.data;
+      },
+      error: (err: any) => console.error('Error loading salary types:', err),
     });
   }
 
@@ -343,6 +353,7 @@ export class DriversComponent implements OnInit, OnDestroy {
 
     if (this.showAccessData) {
       emailControl?.setValidators([
+        Validators.required,
         Validators.email,
         CustomValidators.duplicateValueValidator(
           this.allDrivers,
@@ -358,7 +369,18 @@ export class DriversComponent implements OnInit, OnDestroy {
         confirmPasswordControl?.setValidators([Validators.required]);
       }
     } else {
-      emailControl?.clearValidators();
+      // Even if access data is hidden, we might still want the email in personal info (creation)
+      // The HTML will handle showing it in one place or another.
+      // For now, let's keep it required if specified by user request.
+      emailControl?.setValidators([
+        Validators.required,
+        Validators.email,
+        CustomValidators.duplicateValueValidator(
+          this.allDrivers,
+          'email',
+          this.editingDriver?.id,
+        ),
+      ]);
       passwordControl?.clearValidators();
       confirmPasswordControl?.clearValidators();
     }
@@ -391,6 +413,8 @@ export class DriversComponent implements OnInit, OnDestroy {
           password: '',
           confirmPassword: '',
           ownerId: driver.ownerId,
+          salaryTypeId: driver.salaryTypeId,
+          salary: driver.salary,
         });
 
         this.showAccessData = !!driver.email;
@@ -441,9 +465,11 @@ export class DriversComponent implements OnInit, OnDestroy {
           confirmPassword: '',
           ownerId:
             this.userRole === 'ADMINISTRADOR' ? null : this.loggedInOwnerId,
+          salaryTypeId: null,
+          salary: null,
         });
 
-        this.showAccessData = true;
+        this.showAccessData = false;
 
         // Default values: Cédula (usually name 'Cédula de Ciudadanía') and Masculino (usually name 'MASCULINO')
         const cedulaType = this.documentTypes.find((t) =>
@@ -521,14 +547,15 @@ export class DriversComponent implements OnInit, OnDestroy {
           licenseCategory: formValue.licenseCategory,
           licenseNumber: formValue.documentNumber,
           licenseExpiry: formValue.licenseExpiry,
-          email: this.showAccessData ? formValue.email : undefined,
-          password: this.showAccessData ? password || undefined : undefined,
-          status: this.editingDriver?.user?.status || 'Active',
+          email: formValue.email || undefined,
+          password: this.showAccessData ? password || null : null,
           photo: this.editingDriver?.photo || '',
           ownerId:
             this.userRole === 'ADMINISTRADOR'
               ? formValue.ownerId
               : this.loggedInOwnerId || undefined,
+          salaryTypeId: formValue.salaryTypeId,
+          salary: formValue.salary,
         };
 
         this.driverService.createDriver(driverToSave).subscribe({

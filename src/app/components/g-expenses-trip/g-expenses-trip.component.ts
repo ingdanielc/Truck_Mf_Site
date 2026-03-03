@@ -1,7 +1,20 @@
-import { Component, Input, OnInit } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnChanges,
+  OnInit,
+  SimpleChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GExpenseCardComponent } from '../g-expense-card/g-expense-card.component';
 import { ModelExpense } from '../../models/expense-model';
+import { VehicleService as ExpenseService } from '../../services/expense.service';
+import {
+  Filter,
+  ModelFilterTable,
+  Pagination,
+  Sort,
+} from '../../models/model-filter-table';
 
 @Component({
   selector: 'g-expenses-trip',
@@ -10,62 +23,54 @@ import { ModelExpense } from '../../models/expense-model';
   templateUrl: './g-expenses-trip.component.html',
   styleUrls: ['./g-expenses-trip.component.scss'],
 })
-export class GExpensesTripComponent implements OnInit {
+export class GExpensesTripComponent implements OnInit, OnChanges {
   @Input({ required: true }) tripId!: number;
+  @Input({ required: true }) vehicleId!: number;
 
-  // Hardcoded mockup data until an API is available
-  expenses: ModelExpense[] = [
-    {
-      id: 1,
-      tripId: this.tripId,
-      vehicleId: 1,
-      categoryId: 1, // COMBUSTIBLE
-      description: '3 Tanqueos realizados',
-      amount: 2800000,
-      expenseDate: '2023-10-12',
-    },
-    {
-      id: 2,
-      tripId: this.tripId,
-      vehicleId: 1,
-      categoryId: 2, // PEAJES
-      description: 'Ruta Bogotá - Cali (10 peajes)',
-      amount: 450000,
-      expenseDate: '2023-10-12',
-    },
-    {
-      id: 3,
-      tripId: this.tripId,
-      vehicleId: 1,
-      categoryId: 3, // ALIMENTACIÓN
-      description: 'Viáticos diarios asignados',
-      amount: 250000,
-      expenseDate: '2023-10-13',
-    },
-    {
-      id: 4,
-      tripId: this.tripId,
-      vehicleId: 1,
-      categoryId: 4, // REPARACIONES
-      description: 'Cambio de correa en ruta',
-      amount: 600000,
-      expenseDate: '2023-10-14',
-    },
-    {
-      id: 5,
-      tripId: this.tripId,
-      vehicleId: 1,
-      categoryId: 5, // MANTENIMIENTO
-      description: 'Revisión de frenos y niveles',
-      amount: 150000,
-      expenseDate: '2023-10-15',
-    },
-  ];
-
+  expenses: ModelExpense[] = [];
+  loading = false;
   budget: number = 5000000;
 
+  constructor(private readonly expenseService: ExpenseService) {}
+
   ngOnInit(): void {
-    // Here we would typically fetch the expenses for this.tripId from a service
+    this.loadExpenses();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (
+      (changes['tripId'] && !changes['tripId'].firstChange) ||
+      (changes['vehicleId'] && !changes['vehicleId'].firstChange)
+    ) {
+      this.loadExpenses();
+    }
+  }
+
+  loadExpenses(): void {
+    if (!this.tripId || !this.vehicleId) return;
+
+    this.loading = true;
+    const filters = [
+      new Filter('vehicleId', '=', this.vehicleId.toString()),
+      new Filter('tripId', '=', this.tripId.toString()),
+    ];
+
+    const filterPayload = new ModelFilterTable(
+      filters,
+      new Pagination(100, 0),
+      new Sort('id', false),
+    );
+
+    this.expenseService.getExpenseFilter(filterPayload).subscribe({
+      next: (resp: any) => {
+        this.expenses = resp?.data?.content || [];
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error loading expenses:', err);
+        this.loading = false;
+      },
+    });
   }
 
   get totalAmount(): number {
@@ -82,16 +87,15 @@ export class GExpensesTripComponent implements OnInit {
   }
 
   get tripExpenses(): ModelExpense[] {
-    const vehicleCategoryIds = [4, 5, 6]; // REPARACIONES, MANTENIMIENTO, LAVADO
-    return this.expenses.filter(
-      (e) => !vehicleCategoryIds.includes(e.categoryId),
-    );
+    // Type 3 is and 2 are usually for trip/driver, 1 for vehicle.
+    // If not present, we fallback to the old logic or show all in trip.
+    return this.expenses.filter((e) => {
+      const type = e.category?.expenseTypeId || 0;
+      return type === 3 || type === 2 || type === 0;
+    });
   }
 
   get vehicleExpenses(): ModelExpense[] {
-    const vehicleCategoryIds = [4, 5, 6];
-    return this.expenses.filter((e) =>
-      vehicleCategoryIds.includes(e.categoryId),
-    );
+    return this.expenses.filter((e) => e.category?.expenseTypeId === 1);
   }
 }
