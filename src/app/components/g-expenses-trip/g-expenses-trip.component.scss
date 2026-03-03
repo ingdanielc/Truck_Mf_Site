@@ -34,6 +34,7 @@
 .add-expense-card {
   border: 2px dashed rgba(var(--bs-emphasis-color-rgb), 0.15) !important;
   transition: all 0.2s ease;
+  min-width: 0;
 
   &:hover {
     border-color: var(--bs-primary) !important;
@@ -48,6 +49,22 @@
       background-color: var(--bs-primary);
       border-color: var(--bs-primary);
       color: white;
+    }
+  }
+
+  // Handle wrapped state
+  @media (max-width: 1400px) {
+    justify-content: center !important;
+    text-align: center !important;
+
+    .flex-grow-1 {
+      flex-direction: column;
+      text-align: center;
+      width: 100%;
+    }
+
+    .text-start {
+      text-align: center !important;
     }
   }
 }
