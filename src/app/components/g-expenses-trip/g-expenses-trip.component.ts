@@ -32,7 +32,7 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
 
   expenses: ModelExpense[] = [];
   loading = false;
-  budget: number = 5000000;
+  @Input() budget: number = 0;
 
   constructor(private readonly expenseService: ExpenseService) {}
 
@@ -90,15 +90,45 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
   }
 
   get tripExpenses(): ModelExpense[] {
-    // Type 3 is and 2 are usually for trip/driver, 1 for vehicle.
-    // If not present, we fallback to the old logic or show all in trip.
+    // Type 3 is Trip, Type 0 is General/Other
     return this.expenses.filter((e) => {
       const type = e.category?.expenseTypeId || 0;
-      return type === 3 || type === 2 || type === 0;
+      return type === 3 || type === 0;
     });
   }
 
+  get driverExpenses(): ModelExpense[] {
+    // Type 2 is Driver
+    return this.expenses.filter((e) => e.category?.expenseTypeId === 2);
+  }
+
   get vehicleExpenses(): ModelExpense[] {
+    // Type 1 is Vehicle
     return this.expenses.filter((e) => e.category?.expenseTypeId === 1);
+  }
+
+  get lastUpdateText(): string {
+    if (this.expenses.length === 0) return 'Sin registros';
+
+    const lastExpense = this.expenses.reduce((latest, current) => {
+      const latestDate = new Date(latest.creationDate || 0).getTime();
+      const currentDate = new Date(current.creationDate || 0).getTime();
+      return currentDate > latestDate ? current : latest;
+    }, this.expenses[0]);
+
+    if (!lastExpense.creationDate) return 'Sin registros';
+
+    const diffMs =
+      new Date().getTime() - new Date(lastExpense.creationDate).getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Hace un momento';
+    if (diffMins < 60)
+      return `Hace ${diffMins} ${diffMins === 1 ? 'minuto' : 'minutos'}`;
+    if (diffHours < 24)
+      return `Hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+    return `Hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
   }
 }

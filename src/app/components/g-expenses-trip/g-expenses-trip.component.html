@@ -76,7 +76,7 @@
           class="mt-auto pt-3 border-top border-secondary border-opacity-10 d-flex gap-3 align-items-center"
         >
           <div
-            class="icon-shape rounded-circle bg-primary bg-opacity-10 text-primary flex-shrink-0"
+            class="icon-shape rounded-circle bg-primary bg-opacity-10 text-primary flex-shrink-0 d-flex align-items-center justify-content-center"
             style="width: 40px; height: 40px"
           >
             <i class="fa-solid fa-clock"></i>
@@ -85,17 +85,17 @@
             <p class="small text-secondary mb-0 mb-1 lh-1">
               Última actualización
             </p>
-            <p class="fw-bold mb-0 text-body lh-1">Hace 15 minutos</p>
+            <p class="fw-bold mb-0 text-body lh-1">{{ lastUpdateText }}</p>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Two Column Layout for Breakdowns -->
+  <!-- Three Column Layout for Breakdowns -->
   <div class="row g-4">
     <!-- Column 1: Gastos del Viaje -->
-    <div class="col-12 col-xl-6">
+    <div class="col-12 col-xl-4">
       <div class="d-flex align-items-center gap-2 mb-4">
         <div
           class="icon-shape rounded-3 bg-primary bg-opacity-10 text-primary p-2"
@@ -116,8 +116,8 @@
       </div>
     </div>
 
-    <!-- Column 2: Gastos del Vehículo (and Add button) -->
-    <div class="col-12 col-xl-6">
+    <!-- Column 2: Gastos del Vehículo -->
+    <div class="col-12 col-xl-4">
       <div class="d-flex align-items-center gap-2 mb-4">
         <div
           class="icon-shape rounded-3 bg-primary bg-opacity-10 text-primary p-2"
@@ -135,10 +135,32 @@
             (edit)="editExpense.emit($event)"
           ></g-expense-card>
         }
+      </div>
+    </div>
+
+    <!-- Column 3: Gastos del Conductor (and Add button) -->
+    <div class="col-12 col-xl-4">
+      <div class="d-flex align-items-center gap-2 mb-4">
+        <div
+          class="icon-shape rounded-3 bg-primary bg-opacity-10 text-primary p-2"
+        >
+          <i class="fa-solid fa-user-tie fs-5"></i>
+        </div>
+        <h5 class="fw-bold mb-0">Gastos del Conductor</h5>
+      </div>
+
+      <div class="d-flex flex-column gap-2">
+        @for (expense of driverExpenses; track expense.id) {
+          <g-expense-card
+            [expense]="expense"
+            [totalAmount]="totalAmount"
+            (edit)="editExpense.emit($event)"
+          ></g-expense-card>
+        }
 
         <!-- Add new Expense placeholder card -->
         <div
-          class="add-expense-card bg-transparent p-3 p-md-4 d-flex flex-row align-items-center gap-3 rounded-4 cursor-pointer mb-3 w-100"
+          class="add-expense-card d-none d-md-flex bg-transparent p-3 p-md-4 flex-row align-items-center gap-3 rounded-4 cursor-pointer mb-3 w-100"
         >
           <div
             class="icon-shape rounded-3 bg-body-secondary text-secondary flex-shrink-0 d-flex align-items-center justify-content-center"
@@ -156,7 +178,7 @@
             <button
               class="btn btn-sm btn-outline-secondary rounded-pill fw-medium px-3 text-nowrap"
             >
-              Registrar Gasto
+              Agregar
             </button>
           </div>
         </div>

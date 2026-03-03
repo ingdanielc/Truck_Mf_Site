@@ -304,6 +304,11 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
           // Combine and take top 4
           this.recentTrips = [...activeTrips, ...otherTrips].slice(0, 4);
+
+          // Auto-select the first trip (prioritized active then newest)
+          if (this.recentTrips.length > 0) {
+            this.selectedTrip = this.recentTrips[0];
+          }
         }
         this.loadingTrips = false;
       },
