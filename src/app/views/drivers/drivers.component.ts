@@ -116,7 +116,7 @@ export class DriversComponent implements OnInit, OnDestroy {
           '',
           [
             Validators.required,
-            Validators.maxLength(10),
+            Validators.maxLength(13),
             CustomValidators.duplicateValueValidator(
               this.allDrivers,
               'documentNumber',
@@ -131,11 +131,12 @@ export class DriversComponent implements OnInit, OnDestroy {
         birthdate: ['', [Validators.required]],
         city: [null, [Validators.required]],
         gender: [null, [Validators.required]],
-        licenseCategory: [null],
-        licenseExpiry: [''],
+        licenseCategory: [null, [Validators.required]],
+        licenseExpiry: ['', [Validators.required]],
         email: [
           '',
           [
+            Validators.required,
             Validators.email,
             CustomValidators.duplicateValueValidator(
               this.allDrivers,
@@ -144,15 +145,10 @@ export class DriversComponent implements OnInit, OnDestroy {
             ),
           ],
         ],
-        password: [
-          '',
-          this.editingDriver
-            ? []
-            : [Validators.required, Validators.minLength(4)],
-        ],
-        confirmPassword: ['', this.editingDriver ? [] : [Validators.required]],
+        password: [''],
+        confirmPassword: [''],
         ownerId: [null, [Validators.required]],
-        salaryTypeId: [null],
+        salaryTypeId: [null, [Validators.required]],
         salary: [null],
       },
       {
@@ -272,6 +268,14 @@ export class DriversComponent implements OnInit, OnDestroy {
 
   updateSalaryValidators(salaryTypeId: number | null): void {
     const salaryControl = this.driverForm.get('salary');
+
+    if (!salaryTypeId || salaryTypeId === null) {
+      this.salaryLabel = 'Valor Salario';
+      salaryControl?.clearValidators();
+      salaryControl?.updateValueAndValidity();
+      return;
+    }
+
     const selectedType = this.salaryTypes.find(
       (t) => t.id === Number(salaryTypeId),
     );
@@ -292,6 +296,39 @@ export class DriversComponent implements OnInit, OnDestroy {
       ]);
     }
     salaryControl?.updateValueAndValidity();
+    // After updating validators, if there's a value, format it
+    if (salaryControl?.value) {
+      const masked = this.applySalaryMask(salaryControl.value.toString());
+      salaryControl.setValue(masked, { emitEvent: false });
+    }
+  }
+
+  onSalaryInput(event: any): void {
+    const input = event.target.value.replaceAll(/\D/g, ''); // Remove non-digits
+    const formatted = this.applySalaryMask(input);
+    this.driverForm.get('salary')?.setValue(formatted, { emitEvent: false });
+  }
+
+  private applySalaryMask(value: string): string {
+    if (!value) return '';
+    const numericValue = Number(value.replaceAll(/\D/g, ''));
+    if (isNaN(numericValue)) return '';
+    return new Intl.NumberFormat('es-CO').format(numericValue);
+  }
+
+  onDocumentNumberInput(event: any): void {
+    const input = event.target.value.replaceAll(/\D/g, ''); // Remove non-digits
+    const formatted = this.applyDocumentNumberMask(input);
+    this.driverForm
+      .get('documentNumber')
+      ?.setValue(formatted, { emitEvent: false });
+  }
+
+  private applyDocumentNumberMask(value: string): string {
+    if (!value) return '';
+    const numericValue = Number(value.replaceAll(/\D/g, ''));
+    if (isNaN(numericValue)) return '';
+    return new Intl.NumberFormat('es-CO').format(numericValue);
   }
 
   loadOwners(): void {
@@ -438,7 +475,9 @@ export class DriversComponent implements OnInit, OnDestroy {
         this.driverForm.patchValue({
           name: driver.name,
           documentType: driver.documentTypeId,
-          documentNumber: driver.documentNumber,
+          documentNumber: this.applyDocumentNumberMask(
+            String(driver.documentNumber || ''),
+          ),
           cellPhone: driver.cellPhone,
           birthdate: driver.birthdate ? driver.birthdate.split('T')[0] : '',
           city: driver.cityId,
@@ -452,7 +491,7 @@ export class DriversComponent implements OnInit, OnDestroy {
           confirmPassword: '',
           ownerId: driver.ownerId,
           salaryTypeId: driver.salaryTypeId,
-          salary: driver.salary,
+          salary: this.applySalaryMask(String(driver.salary || '')),
         });
 
         this.showAccessData = !!driver.email;
@@ -467,7 +506,7 @@ export class DriversComponent implements OnInit, OnDestroy {
           .get('documentNumber')
           ?.setValidators([
             Validators.required,
-            Validators.maxLength(10),
+            Validators.maxLength(13),
             CustomValidators.duplicateValueValidator(
               this.allDrivers,
               'documentNumber',
@@ -491,13 +530,9 @@ export class DriversComponent implements OnInit, OnDestroy {
         this.editingDriver = null;
         this.driverForm.reset({
           name: '',
-          documentType: null,
           documentNumber: '',
           cellPhone: '',
           birthdate: this.defaultBirthdate,
-          city: null,
-          gender: null,
-          licenseCategory: null,
           licenseExpiry: '',
           email: '',
           password: '',
@@ -509,6 +544,7 @@ export class DriversComponent implements OnInit, OnDestroy {
         });
 
         this.showAccessData = false;
+        this.onToggleAccessData({ target: { checked: false } });
 
         // Default values: Cédula (usually name 'Cédula de Ciudadanía') and Masculino (usually name 'MASCULINO')
         const cedulaType = this.documentTypes.find((t) =>
@@ -522,23 +558,15 @@ export class DriversComponent implements OnInit, OnDestroy {
           this.driverForm.get('documentType')?.setValue(cedulaType.id);
         if (maleGender) this.driverForm.get('gender')?.setValue(maleGender.id);
 
+        this.updateSalaryValidators(null);
         this.driverForm.get('documentType')?.enable();
-
-        this.driverForm
-          .get('password')
-          ?.setValidators([Validators.required, Validators.minLength(4)]);
-        this.driverForm
-          .get('confirmPassword')
-          ?.setValidators([Validators.required]);
-        this.driverForm.get('password')?.updateValueAndValidity();
-        this.driverForm.get('confirmPassword')?.updateValueAndValidity();
 
         // Reset validators for create mode
         this.driverForm
           .get('documentNumber')
           ?.setValidators([
             Validators.required,
-            Validators.maxLength(10),
+            Validators.maxLength(13),
             CustomValidators.duplicateValueValidator(
               this.allDrivers,
               'documentNumber',
@@ -579,13 +607,13 @@ export class DriversComponent implements OnInit, OnDestroy {
           id: this.editingDriver?.id || null,
           name: formValue.name,
           documentTypeId: formValue.documentType,
-          documentNumber: formValue.documentNumber,
+          documentNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
           cellPhone: formValue.cellPhone,
           birthdate: formValue.birthdate,
           cityId: formValue.city,
           genderId: formValue.gender,
           licenseCategory: formValue.licenseCategory,
-          licenseNumber: formValue.documentNumber,
+          licenseNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
           licenseExpiry: formValue.licenseExpiry,
           email: formValue.email || undefined,
           password: this.showAccessData ? password || null : null,
@@ -595,7 +623,9 @@ export class DriversComponent implements OnInit, OnDestroy {
               ? formValue.ownerId
               : this.loggedInOwnerId || undefined,
           salaryTypeId: formValue.salaryTypeId,
-          salary: formValue.salary,
+          salary: formValue.salary
+            ? Number(formValue.salary.toString().replaceAll(/\D/g, ''))
+            : undefined,
         };
 
         this.driverService.createDriver(driverToSave).subscribe({

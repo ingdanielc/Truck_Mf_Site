@@ -78,7 +78,7 @@ export class OwnersComponent implements OnInit {
           '',
           [
             Validators.required,
-            Validators.maxLength(10),
+            Validators.maxLength(13),
             CustomValidators.duplicateValueValidator(
               this.allOwners,
               'documentNumber',
@@ -217,7 +217,9 @@ export class OwnersComponent implements OnInit {
       this.ownerForm.patchValue({
         name: owner.name,
         documentType: owner.documentTypeId,
-        documentNumber: owner.documentNumber,
+        documentNumber: this.applyDocumentNumberMask(
+          String(owner.documentNumber || ''),
+        ),
         cellPhone: owner.cellPhone,
         birthdate: owner.birthdate ? owner.birthdate.split('T')[0] : '',
         city: owner.cityId,
@@ -231,7 +233,7 @@ export class OwnersComponent implements OnInit {
         .get('documentNumber')
         ?.setValidators([
           Validators.required,
-          Validators.maxLength(10),
+          Validators.maxLength(13),
           CustomValidators.duplicateValueValidator(
             this.allOwners,
             'documentNumber',
@@ -293,7 +295,7 @@ export class OwnersComponent implements OnInit {
         .get('documentNumber')
         ?.setValidators([
           Validators.required,
-          Validators.maxLength(10),
+          Validators.maxLength(13),
           CustomValidators.duplicateValueValidator(
             this.allOwners,
             'documentNumber',
@@ -343,7 +345,7 @@ export class OwnersComponent implements OnInit {
           id: this.editingOwner?.id || null,
           name: formValue.name,
           documentTypeId: formValue.documentType,
-          documentNumber: formValue.documentNumber,
+          documentNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
           cellPhone: formValue.cellPhone,
           birthdate: formValue.birthdate,
           cityId: formValue.city,
@@ -452,6 +454,21 @@ export class OwnersComponent implements OnInit {
     if (!pattern.test(inputChar)) {
       event.preventDefault();
     }
+  }
+
+  onDocumentNumberInput(event: any): void {
+    const input = event.target.value.replaceAll(/\D/g, ''); // Remove non-digits
+    const formatted = this.applyDocumentNumberMask(input);
+    this.ownerForm
+      .get('documentNumber')
+      ?.setValue(formatted, { emitEvent: false });
+  }
+
+  private applyDocumentNumberMask(value: string): string {
+    if (!value) return '';
+    const numericValue = Number(value.replaceAll(/\D/g, ''));
+    if (isNaN(numericValue)) return '';
+    return new Intl.NumberFormat('es-CO').format(numericValue);
   }
 
   formatCellPhone(event: any): void {

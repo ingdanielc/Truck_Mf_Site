@@ -271,11 +271,12 @@
               <input
                 id="documentNumber"
                 type="text"
+                inputmode="numeric"
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="documentNumber"
-                placeholder="Ej: 1010101010"
-                maxlength="10"
-                (keypress)="allowOnlyNumbers($event)"
+                placeholder="Ej: 1.010.101.010"
+                maxlength="13"
+                (input)="onDocumentNumberInput($event)"
                 [class.is-invalid]="
                   ownerForm.get('documentNumber')?.invalid &&
                   ownerForm.get('documentNumber')?.touched
@@ -310,6 +311,7 @@
               <input
                 id="cellPhone"
                 type="tel"
+                inputmode="numeric"
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="cellPhone"
                 placeholder="XXX XXX XX XX"

@@ -244,11 +244,12 @@
               <input
                 id="documentNumber"
                 type="text"
+                inputmode="numeric"
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="documentNumber"
-                placeholder="Ej: 1010101010"
-                maxlength="10"
-                (keypress)="allowOnlyNumbers($event)"
+                placeholder="Ej: 1.010.101.010"
+                maxlength="13"
+                (input)="onDocumentNumberInput($event)"
                 [class.is-invalid]="
                   driverForm.get('documentNumber')?.invalid &&
                   driverForm.get('documentNumber')?.touched
@@ -282,6 +283,7 @@
               <input
                 id="cellPhone"
                 type="tel"
+                inputmode="numeric"
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="cellPhone"
                 placeholder="XXX XXX XX XX"
@@ -410,7 +412,7 @@
           <div class="row g-3 mb-3">
             <div class="col-6">
               <label for="licenseCategory" class="form-label small fw-bold mb-2"
-                >Categoría</label
+                >Categoría*</label
               >
               <select
                 id="licenseCategory"
@@ -422,10 +424,18 @@
                   <option [value]="cat.id">{{ cat.name }}</option>
                 }
               </select>
+              @if (
+                driverForm.get("licenseCategory")?.invalid &&
+                driverForm.get("licenseCategory")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
             </div>
             <div class="col-6">
               <label for="licenseExpiry" class="form-label small fw-bold mb-2"
-                >Fecha de Vencimiento</label
+                >Fecha de Vencimiento*</label
               >
               <input
                 id="licenseExpiry"
@@ -434,6 +444,14 @@
                 formControlName="licenseExpiry"
                 [min]="maxDate"
               />
+              @if (
+                driverForm.get("licenseExpiry")?.invalid &&
+                driverForm.get("licenseExpiry")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
             </div>
           </div>
         </div>
@@ -446,7 +464,7 @@
           <div class="row g-3 mb-3">
             <div class="col-6">
               <label for="salaryTypeId" class="form-label small fw-bold mb-2"
-                >Tipo de Salario</label
+                >Tipo de Salario*</label
               >
               <select
                 id="salaryTypeId"
@@ -458,18 +476,28 @@
                   <option [value]="type.id">{{ type.name }}</option>
                 }
               </select>
+              @if (
+                driverForm.get("salaryTypeId")?.invalid &&
+                driverForm.get("salaryTypeId")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
             </div>
             <div class="col-6">
-              <label for="salary" class="form-label small fw-bold mb-2">{{
-                salaryLabel
-              }}</label>
+              <label for="salary" class="form-label small fw-bold mb-2"
+                >{{ salaryLabel }}*</label
+              >
               <input
                 id="salary"
-                type="number"
+                type="text"
+                inputmode="numeric"
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="salary"
+                (input)="onSalaryInput($event)"
                 [placeholder]="
-                  salaryLabel === 'Porcentaje' ? 'Ej: 10' : 'Ej: 1500000'
+                  salaryLabel === 'Porcentaje' ? 'Ej: 10' : 'Ej: 1.500.000'
                 "
                 [class.is-invalid]="
                   driverForm.get('salary')?.invalid &&
@@ -482,7 +510,7 @@
               ) {
                 <div class="text-danger small mt-1">
                   @if (driverForm.get("salary")?.errors?.["required"]) {
-                    Este campo es obligatorio
+                    Este campo es obligatorio para continuar
                   }
                   @if (driverForm.get("salary")?.errors?.["min"]) {
                     El valor mínimo es
