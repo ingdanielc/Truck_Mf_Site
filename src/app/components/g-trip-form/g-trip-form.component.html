@@ -167,7 +167,8 @@
             class="form-select rounded-3 py-2 px-3"
             formControlName="originId"
             [class.is-invalid]="
-              tripForm.get('originId')?.touched && tripForm.get('originId')?.invalid
+              tripForm.get('originId')?.touched &&
+              tripForm.get('originId')?.invalid
             "
           >
             <option [ngValue]="null">Selecciona</option>
@@ -223,6 +224,7 @@
             <input
               id="freight"
               type="text"
+              inputmode="numeric"
               class="form-control py-2 px-3"
               [value]="getFormattedValue('freight')"
               (input)="formatCurrencyInput('freight', $event)"
@@ -245,6 +247,7 @@
             <input
               id="advancePayment"
               type="text"
+              inputmode="numeric"
               class="form-control py-2 px-3"
               [value]="getFormattedValue('advancePayment')"
               (input)="formatCurrencyInput('advancePayment', $event)"
@@ -268,6 +271,7 @@
             <input
               id="balance"
               type="text"
+              inputmode="numeric"
               class="form-control py-2 px-3 fw-bold"
               [value]="getFormattedValue('balance')"
               readonly

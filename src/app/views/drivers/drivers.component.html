@@ -113,6 +113,7 @@
         <div class="col">
           <app-g-driver-card
             [driver]="driver"
+            [salaryTypes]="salaryTypes"
             (edit)="toggleOffcanvas($event)"
             (changePassword)="togglePasswordOffcanvas($event)"
             (viewDetail)="onViewDriver($event)"
@@ -489,21 +490,31 @@
               <label for="salary" class="form-label small fw-bold mb-2"
                 >{{ salaryLabel }}*</label
               >
-              <input
-                id="salary"
-                type="text"
-                inputmode="numeric"
-                class="form-control rounded-3 py-2 px-3"
-                formControlName="salary"
-                (input)="onSalaryInput($event)"
-                [placeholder]="
-                  salaryLabel === 'Porcentaje' ? 'Ej: 10' : 'Ej: 1.500.000'
-                "
-                [class.is-invalid]="
-                  driverForm.get('salary')?.invalid &&
-                  driverForm.get('salary')?.touched
-                "
-              />
+              <div class="input-group has-validation">
+                @if (salaryLabel !== "Porcentaje") {
+                  <span class="input-group-text">$</span>
+                }
+                <input
+                  id="salary"
+                  type="text"
+                  inputmode="numeric"
+                  class="form-control py-2 px-3"
+                  [class.rounded-start-3]="salaryLabel === 'Porcentaje'"
+                  [class.rounded-end-3]="salaryLabel !== 'Porcentaje'"
+                  formControlName="salary"
+                  (input)="onSalaryInput($event)"
+                  [placeholder]="
+                    salaryLabel === 'Porcentaje' ? 'Ej: 10' : 'Ej: 1.500.000'
+                  "
+                  [class.is-invalid]="
+                    driverForm.get('salary')?.invalid &&
+                    driverForm.get('salary')?.touched
+                  "
+                />
+                @if (salaryLabel === "Porcentaje") {
+                  <span class="input-group-text">%</span>
+                }
+              </div>
               @if (
                 driverForm.get("salary")?.touched &&
                 driverForm.get("salary")?.invalid

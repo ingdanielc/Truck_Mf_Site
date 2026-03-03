@@ -11,11 +11,31 @@ import { ModelDriver } from 'src/app/models/driver-model';
 })
 export class GDriverCardComponent {
   @Input() driver!: ModelDriver;
+  @Input() salaryTypes: any[] = [];
   @Output() edit = new EventEmitter<ModelDriver>();
   @Output() changePassword = new EventEmitter<ModelDriver>();
   @Output() viewDetail = new EventEmitter<ModelDriver>();
 
   isMenuOpen = false;
+
+  get salaryInfo(): string {
+    if (!this.driver.salaryTypeId || !this.driver.salary) return '';
+    const type = this.salaryTypes.find(
+      (t) => t.id === this.driver.salaryTypeId,
+    );
+    if (!type) return '';
+
+    const isPercentage = type.name.toUpperCase().includes('PORCENTAJE');
+    const formattedValue = isPercentage
+      ? `${this.driver.salary}%`
+      : new Intl.NumberFormat('es-CO', {
+          style: 'currency',
+          currency: 'COP',
+          maximumFractionDigits: 0,
+        }).format(this.driver.salary);
+
+    return `${type.name}: ${formattedValue}`;
+  }
 
   toggleMenu(event: Event): void {
     event.stopPropagation();
