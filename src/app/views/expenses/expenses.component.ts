@@ -15,7 +15,7 @@ import { ToastService } from 'src/app/services/toast.service';
 import { CommonService } from 'src/app/services/common.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { TokenService } from 'src/app/services/token.service';
-import { GVehicleGoodComponent } from 'src/app/components/g-vehicle-good/g-vehicle-good.component';
+import { GVehicleGoodCardComponent } from 'src/app/components/g-vehicle-good-card/g-vehicle-good-card.component';
 import { GExpensesTripComponent } from 'src/app/components/g-expenses-trip/g-expenses-trip.component';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { ModelExpense } from 'src/app/models/expense-model';
@@ -37,7 +37,7 @@ import { GVehicleTripCardComponent } from 'src/app/components/g-vehicle-trip-car
   selector: 'app-expenses',
   standalone: true,
   imports: [
-    GVehicleGoodComponent,
+    GVehicleGoodCardComponent,
     GExpensesTripComponent,
     GAddExpenseComponent,
     GTripMiniCardComponent,

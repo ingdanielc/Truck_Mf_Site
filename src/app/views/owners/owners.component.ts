@@ -353,7 +353,7 @@ export class OwnersComponent implements OnInit {
           email: formValue.email,
           maxVehicles: formValue.maxVehicles,
           password: password || undefined,
-          status: this.editingOwner?.status || 'Active',
+          status: this.editingOwner?.status || 'Activo',
           photo: this.editingOwner?.photo || '',
         };
 
@@ -426,7 +426,7 @@ export class OwnersComponent implements OnInit {
   calculateStats(): void {
     this.totalOwners = this.allOwners.length;
     this.activeOwners = this.allOwners.filter(
-      (p) => p.user?.status === 'Active',
+      (p) => p.user?.status === 'Activo',
     ).length;
     this.inactiveOwners = this.totalOwners - this.activeOwners;
   }

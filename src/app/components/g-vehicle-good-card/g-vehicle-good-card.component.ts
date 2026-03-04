@@ -3,13 +3,13 @@ import { Component, Input } from '@angular/core';
 import { ModelVehicle } from '../../models/vehicle-model';
 
 @Component({
-  selector: 'g-vehicle-good',
+  selector: 'g-vehicle-good-card',
   standalone: true,
   imports: [],
-  templateUrl: './g-vehicle-good.component.html',
-  styleUrls: ['./g-vehicle-good.component.scss'],
+  templateUrl: './g-vehicle-good-card.component.html',
+  styleUrls: ['./g-vehicle-good-card.component.scss'],
 })
-export class GVehicleGoodComponent {
+export class GVehicleGoodCardComponent {
   @Input({ required: true }) vehicle!: ModelVehicle;
 
   get displayTitle(): string {

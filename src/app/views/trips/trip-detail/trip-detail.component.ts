@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, of, map, switchMap, catchError } from 'rxjs';
 import { TripService } from 'src/app/services/trip.service';
 import { CommonService } from 'src/app/services/common.service';
 import { ModelTrip } from 'src/app/models/trip-model';
@@ -9,6 +9,9 @@ import { ToastService } from 'src/app/services/toast.service';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { GTripFormComponent } from '../../../components/g-trip-form/g-trip-form.component';
 import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
+import { VehicleService } from 'src/app/services/vehicle.service';
+import { OwnerService } from 'src/app/services/owner.service';
+import { DriverService } from 'src/app/services/driver.service';
 import {
   Filter,
   ModelFilterTable,
@@ -55,7 +58,10 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     private readonly toastService: ToastService,
     private readonly securityService: SecurityService,
     private readonly expenseService: ExpenseService,
-  ) {}
+    private readonly ownerService: OwnerService,
+    private readonly vehicleService: VehicleService,
+    private readonly driverService: DriverService,
+  ) { }
 
   ngOnInit(): void {
     this.routeSub = this.route.paramMap.subscribe((params) => {
@@ -64,19 +70,21 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         this.tripId = Number(id);
         this.loadCities();
         this.loadVehicleBrands();
-        this.loadTrip(this.tripId);
+        // Wait for user data to be available before validating access
+        this.securityService.userData$.subscribe({
+          next: (user) => {
+            if (user && this.tripId) {
+              this.userRole = (
+                user.userRoles?.[0]?.role?.name || ""
+              ).toUpperCase();
+              if (this.userRole === "PROPIETARIO") {
+                this.loggedInOwnerId = user.id ?? null;
+              }
+              this.validateAccess(this.tripId, user);
+            }
+          },
+        });
       }
-    });
-
-    this.userSub = this.securityService.userData$.subscribe({
-      next: (user) => {
-        if (user) {
-          this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
-          if (this.userRole === 'PROPIETARIO') {
-            this.loggedInOwnerId = user.id ?? null;
-          }
-        }
-      },
     });
   }
 
@@ -141,6 +149,96 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         this.goBack();
       },
     });
+  }
+
+  validateAccess(tripId: number, user: any): void {
+    const roleName = (user.userRoles?.[0]?.role?.name || "").toUpperCase();
+
+    if (roleName === "ADMINISTRADOR") {
+      this.loadTrip(tripId);
+      return;
+    }
+
+    // Load trip first to get vehicleId
+    const tripFilter = new ModelFilterTable(
+      [new Filter("id", "=", tripId.toString())],
+      new Pagination(1, 0),
+      new Sort("id", true)
+    );
+
+    this.tripService
+      .getTripFilter(tripFilter)
+      .pipe(
+        switchMap((tripResp: any) => {
+          if (!tripResp?.data?.content || tripResp.data.content.length === 0) {
+            return of({ hasAccess: false, error: "No se encontró el viaje" });
+          }
+
+          const tripData = tripResp.data.content[0];
+          const vehicleId = tripData.vehicleId;
+
+          if (roleName === "PROPIETARIO") {
+            const ownerFilter = new ModelFilterTable(
+              [new Filter("user.id", "=", user.id.toString())],
+              new Pagination(1, 0),
+              new Sort("id", true)
+            );
+
+            return this.ownerService.getOwnerFilter(ownerFilter).pipe(
+              switchMap((ownerResp: any) => {
+                const ownerId = ownerResp?.data?.content?.[0]?.id;
+                if (!ownerId) return of({ hasAccess: false });
+
+                const vehicleFilter = new ModelFilterTable(
+                  [
+                    new Filter("ownerId", "=", ownerId.toString()),
+                    new Filter("id", "=", vehicleId.toString()),
+                  ],
+                  new Pagination(1, 0),
+                  new Sort("id", true)
+                );
+
+                return this.vehicleService.getVehicleOwnerFilter(vehicleFilter).pipe(
+                  map((vResp: any) => ({
+                    hasAccess: vResp?.data?.content?.length > 0,
+                  }))
+                );
+              })
+            );
+          } else if (roleName === "CONDUCTOR") {
+            const driverFilter = new ModelFilterTable(
+              [new Filter("userId", "=", user.id.toString())],
+              new Pagination(1, 0),
+              new Sort("id", true)
+            );
+
+            return this.driverService.getDriverFilter(driverFilter).pipe(
+              map((driverResp: any) => {
+                const driver = driverResp?.data?.content?.[0];
+                const hasAccess = driver && driver.vehicleId === vehicleId;
+                return { hasAccess };
+              })
+            );
+          }
+
+          return of({ hasAccess: false });
+        }),
+        catchError((err) => {
+          console.error("Error validating access:", err);
+          return of({ hasAccess: false, error: "Error de validación" });
+        })
+      )
+      .subscribe((result: any) => {
+        if (result.hasAccess) {
+          this.loadTrip(tripId);
+        } else {
+          this.toastService.showError(
+            "Acceso Denegado",
+            result.error || "No tiene permiso para ver este viaje"
+          );
+          this.goBack();
+        }
+      });
   }
 
   get originName(): string {

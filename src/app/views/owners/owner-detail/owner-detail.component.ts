@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, of, catchError } from 'rxjs';
 import { OwnerService } from 'src/app/services/owner.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { ToastService } from 'src/app/services/toast.service';
@@ -11,6 +11,7 @@ import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { DriverService } from 'src/app/services/driver.service';
 import { TripService } from 'src/app/services/trip.service';
+import { SecurityService } from 'src/app/services/security/security.service';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
 import {
   Filter,
@@ -51,6 +52,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     private readonly tripService: TripService,
     private readonly toastService: ToastService,
     private readonly commonService: CommonService,
+    private readonly securityService: SecurityService,
   ) {}
 
   ngOnInit(): void {
@@ -60,10 +62,14 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
         this.ownerId = Number(id);
         this.loadCities();
         this.loadBrands();
-        this.loadOwner(this.ownerId);
-        this.loadVehicles(this.ownerId);
-        this.loadDrivers(this.ownerId);
-        this.loadTripCount(this.ownerId);
+        // Wait for user data to be available before validating access
+        this.securityService.userData$.subscribe({
+          next: (user) => {
+            if (user && this.ownerId) {
+              this.validateAccess(this.ownerId, user);
+            }
+          },
+        });
       }
     });
   }
@@ -97,6 +103,58 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
         this.goBack();
       },
     });
+  }
+
+  validateAccess(ownerId: number, user: any): void {
+    const roleName = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+
+    if (roleName === 'ADMINISTRADOR') {
+      this.loadAllData(ownerId);
+      return;
+    }
+
+    if (roleName === 'PROPIETARIO') {
+      const ownerFilter = new ModelFilterTable(
+        [new Filter('user.id', '=', user.id.toString())],
+        new Pagination(1, 0),
+        new Sort('id', true),
+      );
+
+      this.ownerService
+        .getOwnerFilter(ownerFilter)
+        .pipe(
+          catchError((err) => {
+            console.error('Error validating owner access:', err);
+            return of(null);
+          }),
+        )
+        .subscribe((response: any) => {
+          const loggedInOwner = response?.data?.content?.[0];
+          if (loggedInOwner?.id === ownerId) {
+            this.loadAllData(ownerId);
+          } else {
+            this.toastService.showError(
+              'Acceso Denegado',
+              'No tiene permiso para ver este perfil',
+            );
+            this.goBack();
+          }
+        });
+    } else {
+      // Conductores u otros roles (por defecto denegar acceso a perfiles de propietario si no es admin)
+      this.toastService.showError(
+        'Acceso Denegado',
+        'No tiene permiso para ver esta información',
+      );
+      this.goBack();
+    }
+  }
+
+  loadAllData(ownerId: number): void {
+    this.loadOwner(ownerId);
+    this.loadVehicles(ownerId);
+    this.loadDrivers(ownerId);
+    this.loadTripCount(ownerId);
   }
 
   loadVehicles(ownerId: number): void {
@@ -242,7 +300,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
 
   formatDocNumber(value: any): string {
     const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
-    return isNaN(n) || value === ''
+    return Number.isNaN(n) || value === ''
       ? String(value ?? '')
       : new Intl.NumberFormat('es-CO').format(n);
   }
