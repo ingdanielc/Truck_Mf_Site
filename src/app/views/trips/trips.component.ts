@@ -19,6 +19,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { VehicleService } from 'src/app/services/vehicle.service';
+import { DriverService } from 'src/app/services/driver.service';
 import { GTripFormComponent } from '../../components/g-trip-form/g-trip-form.component';
 
 export interface TripOwnerGroup {
@@ -68,6 +69,10 @@ export class TripsComponent implements OnInit, OnDestroy {
   ownerIdFilter: number | null = null;
   filteredOwner: ModelOwner | null = null;
 
+  /** driverId filter when navigated from driver profile (query param) */
+  driverIdFilter: number | null = null;
+  filteredDriver: any | null = null;
+
   constructor(
     private readonly tripService: TripService,
     private readonly commonService: CommonService,
@@ -75,6 +80,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     private readonly securityService: SecurityService,
     private readonly ownerService: OwnerService,
     private readonly vehicleService: VehicleService,
+    private readonly driverService: DriverService,
     private readonly route: ActivatedRoute,
   ) {}
 
@@ -83,6 +89,12 @@ export class TripsComponent implements OnInit, OnDestroy {
     if (rawOwnerId != null) {
       this.ownerIdFilter = Number(rawOwnerId);
       this.loadFilteredOwner(this.ownerIdFilter);
+    }
+
+    const rawDriverId = this.route.snapshot.queryParamMap.get('driverId');
+    if (rawDriverId != null) {
+      this.driverIdFilter = Number(rawDriverId);
+      this.loadFilteredDriver(this.driverIdFilter);
     }
 
     this.subscribeToUserContext();
@@ -111,6 +123,22 @@ export class TripsComponent implements OnInit, OnDestroy {
         if (response?.data?.content?.length > 0) {
           this.filteredOwner = response.data.content[0];
           this.loadVehiclesByOwner(ownerId, true);
+        }
+      },
+    });
+  }
+
+  loadFilteredDriver(driverId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('id', '=', driverId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.driverService.getDriverFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content?.length > 0) {
+          this.filteredDriver = response.data.content[0];
+          this.loadTrips();
         }
       },
     });
@@ -191,7 +219,11 @@ export class TripsComponent implements OnInit, OnDestroy {
   loadTrips(): void {
     let filtros: Filter[] = [];
 
-    if (
+    if (this.driverIdFilter) {
+      filtros.push(
+        new Filter('driver.id', '=', this.driverIdFilter.toString()),
+      );
+    } else if (
       this.userRole === 'PROPIETARIO' ||
       (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter)
     ) {

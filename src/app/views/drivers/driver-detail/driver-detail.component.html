@@ -119,7 +119,10 @@
         >
           <div class="d-flex justify-content-between align-items-start mb-3">
             <div
+              (click)="viewDriverVehicles()"
               class="icon-box bg-secondary bg-opacity-10 rounded-3 p-3 text-secondary"
+              style="cursor: pointer"
+              onkeypress
             >
               <i class="fa-solid fa-truck-front fs-4"></i>
             </div>
@@ -137,7 +140,10 @@
         >
           <div class="d-flex justify-content-between align-items-start mb-3">
             <div
+              (click)="viewDriverTrips()"
               class="icon-box bg-success bg-opacity-10 rounded-3 p-3 text-success"
+              style="cursor: pointer"
+              onkeypress
             >
               <i class="fa-solid fa-route fs-4"></i>
             </div>

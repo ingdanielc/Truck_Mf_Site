@@ -81,9 +81,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   loggedInOwner: ModelOwner | null = null;
   private userSub?: Subscription;
 
-  /** ownerId filter when navigated from owner card (query param) */
   ownerIdFilter: number | null = null;
   filteredOwner: ModelOwner | null = null;
+
+  /** driverId filter when navigated from driver profile (query param) */
+  driverIdFilter: number | null = null;
+  filteredDriver: ModelDriver | null = null;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -146,6 +149,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       this.loadFilteredOwner(this.ownerIdFilter);
     }
 
+    const rawDriverId = this.route.snapshot.queryParamMap.get('driverId');
+    if (rawDriverId != null) {
+      this.driverIdFilter = Number(rawDriverId);
+      this.loadFilteredDriver(this.driverIdFilter);
+    }
+
     this.subscribeToUserContext();
   }
 
@@ -159,6 +168,22 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content?.length > 0) {
           this.filteredOwner = response.data.content[0];
+          this.applyFilter();
+        }
+      },
+    });
+  }
+
+  loadFilteredDriver(driverId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('id', '=', driverId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.driverService.getDriverFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content?.length > 0) {
+          this.filteredDriver = response.data.content[0];
           this.applyFilter();
         }
       },
@@ -451,6 +476,40 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error loading vehicles for owner:', err);
+          this.allVehicles = [];
+          this.calculateStats();
+          this.applyFilter();
+        },
+      });
+
+      // Case 2.1: Filter by driverIdFilter
+    } else if (this.driverIdFilter != null) {
+      const filtros = [
+        new Filter('currentDriverId', '=', this.driverIdFilter.toString()),
+      ];
+      const filter = new ModelFilterTable(
+        filtros,
+        new Pagination(this.rows, this.page),
+        new Sort('id', true),
+      );
+      this.vehicleService.getVehicleFilter(filter).subscribe({
+        next: (response: any) => {
+          if (response?.data?.content) {
+            this.totalVehicles = response.data.totalElements || 0;
+            this.allVehicles = response.data.content;
+            this.mapBrandNames();
+            this.mapDriverNames();
+            this.calculateStats();
+            this.applyFilter();
+          } else {
+            this.allVehicles = [];
+            this.totalVehicles = 0;
+            this.calculateStats();
+            this.applyFilter();
+          }
+        },
+        error: (err) => {
+          console.error('Error loading vehicles for driver:', err);
           this.allVehicles = [];
           this.calculateStats();
           this.applyFilter();
