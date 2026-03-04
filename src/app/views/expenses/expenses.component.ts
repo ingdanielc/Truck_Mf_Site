@@ -108,7 +108,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
             return;
           }
 
-          this.validateVehicleAccess(vehicleId, user).subscribe({
+          this.validateAccess(tripId, vehicleId, user).subscribe({
             next: (hasAccess: boolean) => {
               console.log('acceso: ', hasAccess);
               if (!hasAccess) {
@@ -230,12 +230,13 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   // ── Authorization ─────────────────────────────────────────────────
 
   /**
-   * Returns true if the current user is allowed to view the given vehicle.
+   * Returns true if the current user is allowed to view the given vehicle and trip.
    * - Admin: always allowed.
-   * - Propietario: the vehicle must belong to their owner record.
-   * - Conductor: the vehicle must have this driver assigned (currentDriverId).
+   * - Propietario: vehicle must belong to owner, and trip must belong to vehicle.
+   * - Conductor: vehicle must have this driver assigned, and trip must belong to vehicle.
    */
-  private validateVehicleAccess(
+  private validateAccess(
+    tripId: string,
     vehicleId: string,
     user: any,
   ): Observable<boolean> {
@@ -247,7 +248,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     }
 
     if (role.includes('PROPIETARIO')) {
-      // Get owner for this user, then check vehicle belongs to that owner
+      // 1. Validate Owner -> Vehicle
       const ownerFilter = new ModelFilterTable(
         [new Filter('user.id', '=', user.id.toString())],
         new Pagination(1, 0),
@@ -266,14 +267,31 @@ export class ExpensesComponent implements OnInit, OnDestroy {
             new Pagination(1, 0),
             new Sort('id', true),
           );
-          return this.vehicleService
-            .getVehicleOwnerFilter(vehicleFilter)
-            .pipe(map((resp: any) => (resp?.data?.content?.length ?? 0) > 0));
+          return this.vehicleService.getVehicleOwnerFilter(vehicleFilter).pipe(
+            switchMap((vResp: any) => {
+              if (vResp?.data?.content?.length === 0) return of(false);
+
+              // 2. Validate Vehicle -> Trip
+              const tripFilter = new ModelFilterTable(
+                [
+                  new Filter('id', '=', tripId),
+                  new Filter('vehicleId', '=', vehicleId),
+                ],
+                new Pagination(1, 0),
+                new Sort('id', true),
+              );
+              return this.tripService
+                .getTripFilter(tripFilter)
+                .pipe(
+                  map((tResp: any) => (tResp?.data?.content?.length ?? 0) > 0),
+                );
+            }),
+          );
         }),
       );
     }
 
-    // CONDUCTOR – the vehicle must have currentDriverId matching this driver
+    // CONDUCTOR – currentDriverId must match, and trip must belong to vehicle
     const driverFilter = new ModelFilterTable(
       [new Filter('user.id', '=', user.id.toString())],
       new Pagination(1, 0),
@@ -292,9 +310,26 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           new Pagination(1, 0),
           new Sort('id', true),
         );
-        return this.vehicleService
-          .getVehicleFilter(vehicleFilter)
-          .pipe(map((resp: any) => (resp?.data?.content?.length ?? 0) > 0));
+        return this.vehicleService.getVehicleFilter(vehicleFilter).pipe(
+          switchMap((vResp: any) => {
+            if (vResp?.data?.content?.length === 0) return of(false);
+
+            // 2. Validate Vehicle -> Trip
+            const tripFilter = new ModelFilterTable(
+              [
+                new Filter('id', '=', tripId),
+                new Filter('vehicleId', '=', vehicleId),
+              ],
+              new Pagination(1, 0),
+              new Sort('id', true),
+            );
+            return this.tripService
+              .getTripFilter(tripFilter)
+              .pipe(
+                map((tResp: any) => (tResp?.data?.content?.length ?? 0) > 0),
+              );
+          }),
+        );
       }),
     );
   }
