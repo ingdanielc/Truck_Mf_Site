@@ -8,6 +8,7 @@ import { ModelTrip } from 'src/app/models/trip-model';
 import { ToastService } from 'src/app/services/toast.service';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { GTripFormComponent } from '../../../components/g-trip-form/g-trip-form.component';
+import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
 import {
   Filter,
   ModelFilterTable,
@@ -53,6 +54,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     private readonly commonService: CommonService,
     private readonly toastService: ToastService,
     private readonly securityService: SecurityService,
+    private readonly expenseService: ExpenseService,
   ) {}
 
   ngOnInit(): void {
@@ -119,6 +121,9 @@ export class TripDetailComponent implements OnInit, OnDestroy {
           if (this.trip) {
             this.originalStatus = this.trip.status;
             this.originalPaidBalance = this.trip.paidBalance ?? false;
+            if (this.trip.id && this.trip.vehicleId) {
+              this.loadExpenses(this.trip.id, this.trip.vehicleId);
+            }
           }
         } else {
           this.toastService.showError('Error', 'No se encontró el viaje');
@@ -220,6 +225,35 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     const paid = this.trip.advancePayment || 0;
     if (total === 0) return 0;
     return Math.round((paid / total) * 100);
+  }
+
+  loadExpenses(tripId: number, vehicleId: number): void {
+    const filters = [
+      new Filter('vehicleId', '=', vehicleId.toString()),
+      new Filter('tripId', '=', tripId.toString()),
+    ];
+
+    const filterPayload = new ModelFilterTable(
+      filters,
+      new Pagination(100, 0),
+      new Sort('id', false),
+    );
+
+    this.expenseService.getExpenseFilter(filterPayload).subscribe({
+      next: (resp: any) => {
+        const expenses = resp?.data?.content || [];
+        // Categorías 1 (Vehículo), 2 (Conductor), 3 (Viaje). Se exceptúa 4 (Mantenimiento).
+        this.totalExpenses = expenses
+          .filter((e: any) => {
+            const typeId = e.category?.expenseTypeId;
+            return typeId === 1 || typeId === 2 || typeId === 3;
+          })
+          .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+      },
+      error: (err) => {
+        console.error('Error loading expenses:', err);
+      },
+    });
   }
 
   get netProfit(): number {

@@ -1,18 +1,88 @@
 .custom-search {
   .input-group-text {
     border-radius: 0.75rem 0 0 0.75rem;
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
+    border-color: rgba(var(--bs-emphasis-color-rgb), 0.1) !important;
   }
 
   .form-control {
     border-radius: 0 0.75rem 0.75rem 0;
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.03) !important;
+    border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1) !important;
+
+    &:focus {
+      background-color: var(--bs-body-bg) !important;
+      border-color: var(--bs-primary) !important;
+      box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.1) !important;
+    }
   }
 }
 
 .no-border-input-group {
+  background-color: rgba(var(--bs-emphasis-color-rgb), 0.03) !important;
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1) !important;
+
   .form-control {
+    background-color: transparent !important;
+
     &:focus {
-      background-color: transparent;
+      background-color: transparent !important;
+      box-shadow: none !important;
     }
+  }
+
+  &:focus-within {
+    background-color: var(--bs-body-bg) !important;
+    border-color: var(--bs-primary) !important;
+    box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.1) !important;
+  }
+}
+
+[data-bs-theme="dark"] {
+  .btn-white {
+    background-color: #2b3035 !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+
+    &:hover {
+      background-color: #32373d !important;
+      color: #fff !important;
+    }
+
+    &.active {
+      background-color: var(--bs-primary) !important;
+      color: #fff !important;
+      border-color: var(--bs-primary) !important;
+    }
+  }
+
+  .bg-white,
+  .input-group-text.bg-white {
+    background-color: #1a1d21 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .form-control {
+    background-color: #1a1d21 !important;
+    color: var(--bs-body-color) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.3) !important;
+    }
+  }
+
+  .no-border-input-group {
+    background-color: #1a1d21 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+
+    .input-group-text {
+      color: var(--bs-primary) !important;
+    }
+  }
+
+  .text-secondary {
+    color: rgba(255, 255, 255, 0.6) !important;
   }
 }
 

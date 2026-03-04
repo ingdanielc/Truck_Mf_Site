@@ -58,14 +58,12 @@
 
       <!-- Search Input -->
       <div class="input-group mb-3 custom-search">
-        <span
-          class="input-group-text bg-white border-end-0 text-secondary ps-3 pe-2"
-        >
+        <span class="input-group-text border-end-0 text-secondary ps-3 pe-2">
           <i class="fa-solid fa-magnifying-glass"></i>
         </span>
         <input
           type="text"
-          class="form-control border-start-0 ps-0 shadow-none"
+          class="form-control border-start-0 ps-2 shadow-none"
           placeholder="Buscar categoría..."
           (input)="onSearchChange($event)"
           [value]="searchQuery"
@@ -125,7 +123,7 @@
         >Monto total*</label
       >
       <div
-        class="input-group input-group-lg no-border-input-group bg-white rounded-3 overflow-hidden shadow-sm border transition-all"
+        class="input-group input-group-lg no-border-input-group rounded-3 overflow-hidden shadow-sm border transition-all"
         [ngClass]="{
           'border-danger':
             expenseForm.get('amount')?.touched &&
@@ -170,7 +168,7 @@
     </div>
 
     <!-- Description Input -->
-    <div class="mb-5">
+    <div class="mb-4">
       <label for="desc" class="form-label fw-bold small text-body mb-2"
         >Descripción</label
       >
@@ -185,7 +183,7 @@
     </div>
 
     <!-- Action Buttons -->
-    <div class="d-grid gap-2">
+    <div class="offcanvas-footer border-top pt-4 mt-2 d-grid gap-2">
       <button
         type="submit"
         class="btn btn-primary btn-lg rounded-3 fw-bold py-3"
