@@ -356,6 +356,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         },
         error: () => (this.loadingVehicles = false),
       });
+    } else if (role.includes('CONDUCTOR')) {
+      this.loadVehiclesByDriver(user.id);
     } else {
       const filter = new ModelFilterTable(
         [],
@@ -393,6 +395,44 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         this.loadingVehicles = false;
         this.mapBrandNames();
         this.loadDrivers(ownerId); // Owner: load only their drivers
+      },
+      error: () => (this.loadingVehicles = false),
+    });
+  }
+
+  private loadVehiclesByDriver(userId: number): void {
+    const driverFilter = new ModelFilterTable(
+      [new Filter('user.id', '=', userId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.driverService.getDriverFilter(driverFilter).subscribe({
+      next: (driverResp: any) => {
+        const driver = driverResp?.data?.content?.[0];
+        if (driver?.id) {
+          const vehicleFilter = new ModelFilterTable(
+            [new Filter('currentDriverId', '=', driver.id.toString())],
+            new Pagination(9999, 0),
+            new Sort('id', true),
+          );
+          this.vehicleService.getVehicleFilter(vehicleFilter).subscribe({
+            next: (resp: any) => {
+              this.vehicles = resp?.data?.content ?? [];
+              if (this.vehicles.length > 0) {
+                this.selectVehicle(this.vehicles[0]);
+              }
+              this.carouselIndex = 0;
+              this.loadingVehicles = false;
+              this.mapBrandNames();
+              // For conductor, they only see themselves as the driver
+              this.drivers = [driver];
+              this.mapDriverNames();
+            },
+            error: () => (this.loadingVehicles = false),
+          });
+        } else {
+          this.loadingVehicles = false;
+        }
       },
       error: () => (this.loadingVehicles = false),
     });

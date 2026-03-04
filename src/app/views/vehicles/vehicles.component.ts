@@ -79,6 +79,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   userRole: string = 'ROL';
   loggedInOwnerId: number | null = null;
   loggedInOwner: ModelOwner | null = null;
+  loggedInDriverId: number | null = null;
   private userSub?: Subscription;
 
   ownerIdFilter: number | null = null;
@@ -205,8 +206,27 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           } else if (this.userRole === 'PROPIETARIO') {
             this.loggedInOwnerId = user.id ?? null;
             this.loadOwners(); // This will trigger loadVehicles upon success
+          } else if (this.userRole === 'CONDUCTOR') {
+            this.loadDriverIdByUser(user.id);
           }
           this.vehicleForm.get('ownerId')?.updateValueAndValidity();
+        }
+      },
+    });
+  }
+
+  loadDriverIdByUser(userId: number | null | undefined): void {
+    if (userId == null) return;
+    const filter = new ModelFilterTable(
+      [new Filter('user.id', '=', userId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.driverService.getDriverFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content?.length > 0) {
+          this.loggedInDriverId = response.data.content[0].id;
+          this.loadVehicles();
         }
       },
     });
@@ -510,6 +530,40 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error loading vehicles for driver:', err);
+          this.allVehicles = [];
+          this.calculateStats();
+          this.applyFilter();
+        },
+      });
+
+      // Case 2.2: CONDUCTOR role → filter by their assigned vehicle
+    } else if (this.userRole === 'CONDUCTOR' && this.loggedInDriverId != null) {
+      const filtros = [
+        new Filter('currentDriverId', '=', this.loggedInDriverId.toString()),
+      ];
+      const filter = new ModelFilterTable(
+        filtros,
+        new Pagination(this.rows, this.page),
+        new Sort('id', true),
+      );
+      this.vehicleService.getVehicleFilter(filter).subscribe({
+        next: (response: any) => {
+          if (response?.data?.content) {
+            this.totalVehicles = response.data.totalElements || 0;
+            this.allVehicles = response.data.content;
+            this.mapBrandNames();
+            this.mapDriverNames();
+            this.calculateStats();
+            this.applyFilter();
+          } else {
+            this.allVehicles = [];
+            this.totalVehicles = 0;
+            this.calculateStats();
+            this.applyFilter();
+          }
+        },
+        error: (err) => {
+          console.error('Error loading vehicles for logged-in driver:', err);
           this.allVehicles = [];
           this.calculateStats();
           this.applyFilter();

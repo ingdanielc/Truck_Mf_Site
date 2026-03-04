@@ -63,6 +63,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   // User context
   userRole: string = 'ROL';
   loggedInOwnerId: number | null = null;
+  loggedInDriverId: number | null = null;
   private userSub?: Subscription;
 
   // filters
@@ -82,7 +83,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     private readonly vehicleService: VehicleService,
     private readonly driverService: DriverService,
     private readonly route: ActivatedRoute,
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     const rawOwnerId = this.route.snapshot.queryParamMap.get('ownerId');
@@ -156,7 +157,27 @@ export class TripsComponent implements OnInit, OnDestroy {
           } else if (this.userRole === 'PROPIETARIO') {
             this.loggedInOwnerId = user.id ?? null;
             this.loadOwners();
+          } else if (this.userRole === 'CONDUCTOR') {
+            this.loadDriverIdByUser(user.id);
           }
+        }
+      },
+    });
+  }
+
+  loadDriverIdByUser(userId: number | null | undefined): void {
+    if (userId == null) return;
+    const filter = new ModelFilterTable(
+      [new Filter('user.id', '=', userId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.driverService.getDriverFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content?.length > 0) {
+          const driver = response.data.content[0];
+          this.loggedInDriverId = driver.id;
+          this.loadTrips();
         }
       },
     });
@@ -223,6 +244,10 @@ export class TripsComponent implements OnInit, OnDestroy {
       filtros.push(
         new Filter('driver.id', '=', this.driverIdFilter.toString()),
       );
+    } else if (this.userRole === 'CONDUCTOR' && this.loggedInDriverId != null) {
+      filtros.push(
+        new Filter('driver.id', '=', this.loggedInDriverId.toString()),
+      );
     } else if (
       this.userRole === 'PROPIETARIO' ||
       (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter)
@@ -247,12 +272,57 @@ export class TripsComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         this.allTrips = response?.data?.content ?? [];
         this.calculateStats();
-        this.applyFilter();
+
+        // Identify missing owners needed for grouping
+        const getOwnerId = (t: ModelTrip): number | undefined => {
+          if (t.driver?.ownerId) return t.driver.ownerId;
+          if (t.vehicle?.owners && t.vehicle.owners.length > 0) {
+            return t.vehicle.owners[0].ownerId;
+          }
+          return undefined;
+        };
+
+        const currentOwnerIds = this.owners.map(o => o.id);
+        const missingOwnerIds = [...new Set(
+          this.allTrips
+            .map(t => getOwnerId(t))
+            .filter((id): id is number =>
+              id != null &&
+              !currentOwnerIds.includes(id) &&
+              id !== this.ownerIdFilter
+            )
+        )];
+
+        if (missingOwnerIds.length > 0) {
+          this.fetchMissingOwners(missingOwnerIds);
+        } else {
+          this.applyFilter();
+        }
       },
       error: (error: any) => {
         console.error('Error loading trips:', error);
         this.toastService.showError('Error', 'Error al cargar viajes');
       },
+    });
+  }
+
+  fetchMissingOwners(ids: number[]): void {
+    const filter = new ModelFilterTable(
+      [new Filter('id', 'in', ids.join(','))],
+      new Pagination(ids.length, 0),
+      new Sort('id', true),
+    );
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content) {
+          this.owners = [...this.owners, ...response.data.content];
+          this.applyFilter();
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching missing owners:', err);
+        this.applyFilter();
+      }
     });
   }
 
