@@ -298,6 +298,12 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  viewOwnerTrips(): void {
+    this.router.navigate(['/site/trips'], {
+      queryParams: { ownerId: this.ownerId },
+    });
+  }
+
   formatDocNumber(value: any): string {
     const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
     return Number.isNaN(n) || value === ''

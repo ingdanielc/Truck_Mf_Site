@@ -102,7 +102,7 @@ export class TripsComponent implements OnInit, OnDestroy {
 
   loadFilteredOwner(ownerId: number): void {
     const filter = new ModelFilterTable(
-      [new Filter('owner.id', '=', ownerId.toString())],
+      [new Filter('id', '=', ownerId.toString())],
       new Pagination(1, 0),
       new Sort('id', true),
     );
@@ -202,8 +202,6 @@ export class TripsComponent implements OnInit, OnDestroy {
 
       if (vehicleIds) {
         filtros.push(new Filter('vehicle.id', 'in', vehicleIds));
-      } else {
-        filtros.push(new Filter('vehicle.id', 'IN', '-1'));
       }
     }
 
