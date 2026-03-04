@@ -5,8 +5,9 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 
-import { Subscription } from 'rxjs';
+import { Observable, Subscription, map, of, switchMap } from 'rxjs';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
@@ -30,6 +31,7 @@ import { GAddExpenseComponent } from 'src/app/components/g-add-expense/g-add-exp
 import { TripService } from 'src/app/services/trip.service';
 import { ModelTrip } from 'src/app/models/trip-model';
 import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-trip-mini-card.component';
+import { GVehicleTripCardComponent } from 'src/app/components/g-vehicle-trip-card/g-vehicle-trip-card.component';
 
 @Component({
   selector: 'app-expenses',
@@ -39,6 +41,7 @@ import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-tr
     GExpensesTripComponent,
     GAddExpenseComponent,
     GTripMiniCardComponent,
+    GVehicleTripCardComponent,
   ],
   templateUrl: './expenses.component.html',
   styleUrls: ['./expenses.component.scss'],
@@ -53,6 +56,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   editingExpense: ModelExpense | null = null;
   preselectedExpenseTypeId: number | null = null;
   loadingVehicles = true;
+  hideSelectionSections = false;
 
   brands: any[] = [];
   loadingBrands = false;
@@ -79,21 +83,128 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     private readonly expenseService: ExpenseService,
     private readonly tripService: TripService,
     private readonly toastService: ToastService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
     this.updateVisibleCount();
     this.loadBrands();
     this.loadCities();
-    this.userSub = this.securityService.userData$.subscribe((user) => {
-      if (user) {
-        this.loadVehiclesForUser(user);
+
+    this.route.queryParamMap.subscribe((params) => {
+      const tripId = params.get('tripId');
+      const vehicleId = params.get('vehicleId');
+
+      if (tripId && vehicleId) {
+        // Resolve user then validate access before loading data
+        this.userSub = this.securityService.userData$.subscribe((user) => {
+          if (!user) {
+            const payload = this.tokenService.getPayload();
+            const userId = payload?.nameid ?? payload?.id ?? payload?.sub;
+            if (userId) {
+              this.securityService.fetchUserData(userId);
+            }
+            return;
+          }
+
+          this.validateVehicleAccess(vehicleId, user).subscribe({
+            next: (hasAccess: boolean) => {
+              console.log('acceso: ', hasAccess);
+              if (!hasAccess) {
+                this.toastService.showError(
+                  'Acceso denegado',
+                  'No tienes permiso para ver los gastos de este vehículo.',
+                );
+                this.router.navigate(['/site/expenses']);
+                return;
+              }
+
+              // Access validated – proceed to load data
+              this.hideSelectionSections = true;
+              this.selectedTrip = { id: Number(tripId) } as ModelTrip;
+              this.selectedVehicle = { id: Number(vehicleId) } as ModelVehicle;
+              this.loadingVehicles = false;
+
+              // Load the full trip data
+              const tripFilter = new ModelFilterTable(
+                [new Filter('id', '=', tripId)],
+                new Pagination(1, 0),
+                new Sort('id', true),
+              );
+              this.tripService.getTripFilter(tripFilter).subscribe({
+                next: (resp: any) => {
+                  if (resp?.data?.content?.length > 0)
+                    this.selectedTrip = resp.data.content[0];
+                },
+              });
+
+              // Load the full vehicle data so g-vehicle-trip-card has plate, brand, year, etc.
+              const vehicleFilter = new ModelFilterTable(
+                [new Filter('id', '=', vehicleId)],
+                new Pagination(1, 0),
+                new Sort('id', true),
+              );
+              this.vehicleService.getVehicleFilter(vehicleFilter).subscribe({
+                next: (resp: any) => {
+                  const v: ModelVehicle | undefined = resp?.data?.content?.[0];
+                  if (v) {
+                    // Enrich brand name if brands already loaded
+                    if (!v.vehicleBrandName && this.brands.length > 0) {
+                      const brand = this.brands.find(
+                        (b) => String(b.id) === String(v.vehicleBrandId),
+                      );
+                      if (brand) v.vehicleBrandName = brand.name;
+                    }
+                    this.selectedVehicle = v;
+
+                    // Also load driver name if vehicle has a driver assigned
+                    if (v.currentDriverId) {
+                      const driverFilter = new ModelFilterTable(
+                        [new Filter('id', '=', String(v.currentDriverId))],
+                        new Pagination(1, 0),
+                        new Sort('id', true),
+                      );
+                      this.driverService
+                        .getDriverFilter(driverFilter)
+                        .subscribe({
+                          next: (driverResp: any) => {
+                            const driver = driverResp?.data?.content?.[0];
+                            if (driver) {
+                              this.selectedVehicle = {
+                                ...this.selectedVehicle!,
+                                currentDriverName: driver.name,
+                              };
+                            }
+                          },
+                        });
+                    }
+                  }
+                },
+              });
+            },
+            error: () => {
+              this.toastService.showError(
+                'Error',
+                'No se pudo verificar el acceso al vehículo.',
+              );
+              this.router.navigate(['/expenses']);
+            },
+          });
+        });
       } else {
-        const payload = this.tokenService.getPayload();
-        const userId = payload?.nameid ?? payload?.id ?? payload?.sub;
-        if (userId) {
-          this.securityService.fetchUserData(userId);
-        }
+        this.hideSelectionSections = false;
+        this.userSub = this.securityService.userData$.subscribe((user) => {
+          if (user) {
+            this.loadVehiclesForUser(user);
+          } else {
+            const payload = this.tokenService.getPayload();
+            const userId = payload?.nameid ?? payload?.id ?? payload?.sub;
+            if (userId) {
+              this.securityService.fetchUserData(userId);
+            }
+          }
+        });
       }
     });
   }
@@ -114,6 +225,78 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   private updateVisibleCount(): void {
     this.visibleCount = window.innerWidth >= 768 ? 3 : 1;
+  }
+
+  // ── Authorization ─────────────────────────────────────────────────
+
+  /**
+   * Returns true if the current user is allowed to view the given vehicle.
+   * - Admin: always allowed.
+   * - Propietario: the vehicle must belong to their owner record.
+   * - Conductor: the vehicle must have this driver assigned (currentDriverId).
+   */
+  private validateVehicleAccess(
+    vehicleId: string,
+    user: any,
+  ): Observable<boolean> {
+    const role = (user.userRoles?.[0]?.role?.name ?? '').toUpperCase();
+
+    // Administrador – unrestricted
+    if (!role.includes('PROPIETARIO') && !role.includes('CONDUCTOR')) {
+      return of(true);
+    }
+
+    if (role.includes('PROPIETARIO')) {
+      // Get owner for this user, then check vehicle belongs to that owner
+      const ownerFilter = new ModelFilterTable(
+        [new Filter('user.id', '=', user.id.toString())],
+        new Pagination(1, 0),
+        new Sort('id', true),
+      );
+      return this.ownerService.getOwnerFilter(ownerFilter).pipe(
+        switchMap((ownerResp: any) => {
+          const owner = ownerResp?.data?.content?.[0];
+          if (!owner?.id) return of(false);
+
+          const vehicleFilter = new ModelFilterTable(
+            [
+              new Filter('owner.id', '=', owner.id.toString()),
+              new Filter('vehicleId', '=', vehicleId),
+            ],
+            new Pagination(1, 0),
+            new Sort('id', true),
+          );
+          return this.vehicleService
+            .getVehicleOwnerFilter(vehicleFilter)
+            .pipe(map((resp: any) => (resp?.data?.content?.length ?? 0) > 0));
+        }),
+      );
+    }
+
+    // CONDUCTOR – the vehicle must have currentDriverId matching this driver
+    const driverFilter = new ModelFilterTable(
+      [new Filter('user.id', '=', user.id.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    return this.driverService.getDriverFilter(driverFilter).pipe(
+      switchMap((driverResp: any) => {
+        const driver = driverResp?.data?.content?.[0];
+        if (!driver?.id) return of(false);
+
+        const vehicleFilter = new ModelFilterTable(
+          [
+            new Filter('currentDriver.id', '=', driver.id.toString()),
+            new Filter('id', '=', vehicleId),
+          ],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        );
+        return this.vehicleService
+          .getVehicleFilter(vehicleFilter)
+          .pipe(map((resp: any) => (resp?.data?.content?.length ?? 0) > 0));
+      }),
+    );
   }
 
   // ── Data loading ─────────────────────────────────────────────────
@@ -165,7 +348,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       new Pagination(9999, 0),
       new Sort('id', true),
     );
-    this.vehicleService.getVehicleFilter(filter).subscribe({
+    this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
       next: (resp: any) => {
         this.vehicles = resp?.data?.content ?? [];
         if (this.vehicles.length > 0) {
@@ -187,6 +370,22 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         this.brands = response?.data ?? [];
         this.loadingBrands = false;
         this.mapBrandNames();
+        // Also enrich selectedVehicle in case it was loaded before brands (queryParams flow)
+        if (
+          this.selectedVehicle &&
+          !this.selectedVehicle.vehicleBrandName &&
+          this.selectedVehicle.vehicleBrandId
+        ) {
+          const brand = this.brands.find(
+            (b) =>
+              String(b.id) === String(this.selectedVehicle!.vehicleBrandId),
+          );
+          if (brand)
+            this.selectedVehicle = {
+              ...this.selectedVehicle,
+              vehicleBrandName: brand.name,
+            };
+        }
       },
       error: (err) => {
         console.error('Error loading brands:', err);
@@ -222,7 +421,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   loadDrivers(ownerId?: number): void {
     this.loadingDrivers = true;
     const filters = ownerId
-      ? [new Filter('owner.id', '=', ownerId.toString())]
+      ? [new Filter('ownerId', '=', ownerId.toString())]
       : [];
     const filterPayload = new ModelFilterTable(
       filters,

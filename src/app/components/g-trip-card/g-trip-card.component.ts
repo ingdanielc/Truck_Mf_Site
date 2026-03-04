@@ -28,6 +28,19 @@ export class GTripCardComponent {
     this.edit.emit(this.trip);
   }
 
+  onExpensesClick(event: Event): void {
+    event.stopPropagation();
+    if (this.trip.id) {
+      const vehicleId = this.trip.vehicle?.id || this.trip.vehicleId;
+      this.router.navigate(['/site/expenses'], {
+        queryParams: {
+          tripId: this.trip.id,
+          vehicleId: vehicleId,
+        },
+      });
+    }
+  }
+
   get progressPercentage(): number {
     if (this.trip.paidBalance) return 100;
     const total = this.trip.freight || 0;

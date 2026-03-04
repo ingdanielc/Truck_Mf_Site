@@ -126,6 +126,7 @@
             [attr.aria-valuenow]="progressPercentage"
             aria-valuemin="0"
             aria-valuemax="100"
+            aria-label="progress"
           ></div>
         </div>
       </div>
@@ -150,11 +151,19 @@
         </span>
       }
     </div>
-    <button
-      class="btn btn-link text-primary p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2"
-      (click)="onEditClick($event)"
-    >
-      Detalles <i class="fa-solid fa-arrow-right"></i>
-    </button>
+    <div class="d-flex gap-3">
+      <button
+        class="btn btn-link text-primary p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2"
+        (click)="onExpensesClick($event)"
+      >
+        Gastos <i class="fa-solid fa-wallet"></i>
+      </button>
+      <button
+        class="btn btn-link text-primary p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2"
+        (click)="onEditClick($event)"
+      >
+        Editar <i class="fa-solid fa-pen-to-square"></i>
+      </button>
+    </div>
   </div>
 </div>
