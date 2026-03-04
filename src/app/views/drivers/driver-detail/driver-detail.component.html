@@ -148,7 +148,7 @@
           <h2 class="display-5 fw-bold mb-1 text-success">
             {{ stats.trips }}
           </h2>
-          <p class="text-secondary mb-0">Total Viajes Reality</p>
+          <p class="text-secondary mb-0">Total Viajes</p>
         </div>
       </div>
     </div>
@@ -258,7 +258,10 @@
         <div class="row g-4">
           @for (vehicle of vehicles; track vehicle) {
             <div class="col-12 col-md-12">
-              <g-vehicle-mini-card [vehicle]="vehicle"></g-vehicle-mini-card>
+              <g-vehicle-mini-card
+                [vehicle]="vehicle"
+                [showDriver]="false"
+              ></g-vehicle-mini-card>
             </div>
           }
           @if (vehicles.length === 0) {

@@ -57,7 +57,7 @@ export class GOwnerCardComponent {
   }
 
   get statusClass(): string {
-    return this.owner.user?.status === 'Active' ? 'bg-success' : 'bg-secondary';
+    return this.owner.user?.status === 'Activo' ? 'bg-success' : 'bg-secondary';
   }
 
   get formattedCellPhone(): string {
@@ -71,7 +71,7 @@ export class GOwnerCardComponent {
 
   formatDocNumber(value: any): string {
     const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
-    return isNaN(n) || value === ''
+    return Number.isNaN(n) || value === ''
       ? String(value ?? '')
       : new Intl.NumberFormat('es-CO').format(n);
   }

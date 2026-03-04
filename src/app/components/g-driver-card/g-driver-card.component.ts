@@ -60,12 +60,15 @@ export class GDriverCardComponent {
   }
 
   get statusClass(): string {
-    const status = this.driver.user?.status || 'Activo';
-    return status === 'Activo' ? 'bg-success' : 'bg-secondary';
+    const status = this.driver.user?.status;
+    const isActive = !this.driver.user || status === 'Activo';
+    return isActive ? 'bg-success' : 'bg-secondary';
   }
 
   get statusName(): string {
-    return this.driver.user?.status || 'Activo';
+    const status = this.driver.user?.status;
+    const isActive = !this.driver.user || status === 'Activo';
+    return isActive ? 'Activo' : 'Inactivo';
   }
 
   get formattedCellPhone(): string {
@@ -79,7 +82,7 @@ export class GDriverCardComponent {
 
   formatDocNumber(value: any): string {
     const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
-    return isNaN(n) || value === ''
+    return Number.isNaN(n) || value === ''
       ? String(value ?? '')
       : new Intl.NumberFormat('es-CO').format(n);
   }

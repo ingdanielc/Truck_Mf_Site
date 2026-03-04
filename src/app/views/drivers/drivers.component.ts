@@ -298,37 +298,30 @@ export class DriversComponent implements OnInit, OnDestroy {
     salaryControl?.updateValueAndValidity();
     // After updating validators, if there's a value, format it
     if (salaryControl?.value) {
-      const masked = this.applySalaryMask(salaryControl.value.toString());
+      const masked = this.applyNumberMask(salaryControl.value.toString());
       salaryControl.setValue(masked, { emitEvent: false });
     }
   }
 
   onSalaryInput(event: any): void {
     const input = event.target.value.replaceAll(/\D/g, ''); // Remove non-digits
-    const formatted = this.applySalaryMask(input);
+    const formatted = this.applyNumberMask(input);
     this.driverForm.get('salary')?.setValue(formatted, { emitEvent: false });
   }
 
-  private applySalaryMask(value: string): string {
+  private applyNumberMask(value: string): string {
     if (!value) return '';
     const numericValue = Number(value.replaceAll(/\D/g, ''));
-    if (isNaN(numericValue)) return '';
+    if (Number.isNaN(numericValue)) return '';
     return new Intl.NumberFormat('es-CO').format(numericValue);
   }
 
   onDocumentNumberInput(event: any): void {
     const input = event.target.value.replaceAll(/\D/g, ''); // Remove non-digits
-    const formatted = this.applyDocumentNumberMask(input);
+    const formatted = this.applyNumberMask(input);
     this.driverForm
       .get('documentNumber')
       ?.setValue(formatted, { emitEvent: false });
-  }
-
-  private applyDocumentNumberMask(value: string): string {
-    if (!value) return '';
-    const numericValue = Number(value.replaceAll(/\D/g, ''));
-    if (isNaN(numericValue)) return '';
-    return new Intl.NumberFormat('es-CO').format(numericValue);
   }
 
   loadOwners(): void {
@@ -475,7 +468,7 @@ export class DriversComponent implements OnInit, OnDestroy {
         this.driverForm.patchValue({
           name: driver.name,
           documentType: driver.documentTypeId,
-          documentNumber: this.applyDocumentNumberMask(
+          documentNumber: this.applyNumberMask(
             String(driver.documentNumber || ''),
           ),
           cellPhone: driver.cellPhone,
@@ -491,7 +484,7 @@ export class DriversComponent implements OnInit, OnDestroy {
           confirmPassword: '',
           ownerId: driver.ownerId,
           salaryTypeId: driver.salaryTypeId,
-          salary: this.applySalaryMask(String(driver.salary || '')),
+          salary: this.applyNumberMask(String(driver.salary || '')),
         });
 
         this.showAccessData = !!driver.email;
@@ -732,9 +725,10 @@ export class DriversComponent implements OnInit, OnDestroy {
 
   calculateStats(): void {
     this.totalDrivers = this.allDrivers.length;
-    this.activeDrivers = this.allDrivers.filter(
-      (d) => (d.user?.status || 'Active') === 'Active',
-    ).length;
+    this.activeDrivers = this.allDrivers.filter((d) => {
+      const status = d.user?.status;
+      return !d.user || status === 'Activo';
+    }).length;
     this.inactiveDrivers = this.totalDrivers - this.activeDrivers;
   }
 

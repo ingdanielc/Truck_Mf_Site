@@ -1,49 +1,56 @@
 .driver-detail-container {
-    min-height: 100vh;
-    transition: all 0.3s ease;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  min-height: 100vh;
+  transition: all 0.3s ease;
 
-    .hover-scale {
-        transition: transform 0.2s ease-in-out;
+  @media (min-width: 768px) {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
 
-        &:hover {
-            transform: translateY(-5px);
-        }
+  .hover-scale {
+    transition: transform 0.2s ease-in-out;
+
+    &:hover {
+      transform: translateY(-5px);
+    }
+  }
+
+  .avatar {
+    img {
+      transition: transform 0.5s ease;
     }
 
-    .avatar {
-        img {
-            transition: transform 0.5s ease;
-        }
-
-        &:hover img {
-            transform: scale(1.1);
-        }
+    &:hover img {
+      transform: scale(1.1);
     }
+  }
 
-    .icon-box {
-        width: 48px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+  .icon-box {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-    .tracking-wider {
-        letter-spacing: 0.05em;
-    }
+  .tracking-wider {
+    letter-spacing: 0.05em;
+  }
 
-    // Dark mode refinements for cards in primary section
-    .bg-primary {
-        .card {
-            backdrop-filter: blur(10px);
-        }
+  // Dark mode refinements for cards in primary section
+  .bg-primary {
+    .card {
+      backdrop-filter: blur(10px);
     }
+  }
 
-    p {
-        font-size: 0.95rem;
-    }
+  p {
+    font-size: 0.95rem;
+  }
 
-    .badge {
-        font-weight: 600;
-    }
+  .badge {
+    font-weight: 600;
+  }
 }

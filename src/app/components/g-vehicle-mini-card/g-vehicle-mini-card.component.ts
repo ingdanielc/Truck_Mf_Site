@@ -11,6 +11,7 @@ import { ModelVehicle } from '../../models/vehicle-model';
 })
 export class GVehicleMiniCardComponent {
   @Input({ required: true }) vehicle!: ModelVehicle;
+  @Input() showDriver: boolean = true;
 
   getStatusColorClass(): string {
     const status = (this.vehicle.status || '').toLowerCase();
