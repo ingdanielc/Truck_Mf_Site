@@ -32,6 +32,12 @@ export const routes: Routes = [
       import('./expenses/expenses.component').then((m) => m.ExpensesComponent),
   },
   {
+    path: 'maintenance',
+    loadComponent: () =>
+      import('./expenses/expenses.component').then((m) => m.ExpensesComponent),
+    data: { isMaintenance: true },
+  },
+  {
     path: 'drivers',
     canActivate: [RoleGuard],
     data: { allowedRoles: ['ADMINISTRADOR', 'PROPIETARIO'] },

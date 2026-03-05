@@ -37,6 +37,7 @@ export class GAddExpenseComponent implements OnInit {
   @Input() tripId: number | null = null;
   @Input() editingExpense: ModelExpense | null = null;
   @Input() preselectedTypeId?: number;
+  @Input() isMaintenance = false;
   @Output() close = new EventEmitter<any>();
 
   expenseForm!: FormGroup;
@@ -66,10 +67,21 @@ export class GAddExpenseComponent implements OnInit {
     );
     this.initForm();
     this.loadCategories();
+
+    if (this.isMaintenance) {
+      this.selectedType = 4;
+      this.expenseForm
+        .get('description')
+        ?.setValidators([Validators.required, Validators.maxLength(200)]);
+      this.expenseForm.get('description')?.updateValueAndValidity();
+    }
+
     if (this.editingExpense) {
       this.patchFormForEdit();
     } else if (this.preselectedTypeId) {
-      this.selectedType = this.preselectedTypeId;
+      if (!this.isMaintenance) {
+        this.selectedType = this.preselectedTypeId;
+      }
     }
   }
 

@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
+import { CommonModule } from '@angular/common';
 import { Observable, Subscription, map, of, switchMap } from 'rxjs';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
@@ -37,6 +38,7 @@ import { GVehicleTripCardComponent } from 'src/app/components/g-vehicle-trip-car
   selector: 'app-expenses',
   standalone: true,
   imports: [
+    CommonModule,
     GVehicleGoodCardComponent,
     GExpensesTripComponent,
     GAddExpenseComponent,
@@ -57,6 +59,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   preselectedExpenseTypeId: number | null = null;
   loadingVehicles = true;
   hideSelectionSections = false;
+  isMaintenance = false;
 
   brands: any[] = [];
   loadingBrands = false;
@@ -91,6 +94,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     this.updateVisibleCount();
     this.loadBrands();
     this.loadCities();
+
+    this.isMaintenance = this.route.snapshot.data['isMaintenance'] === true;
 
     this.route.queryParamMap.subscribe((params) => {
       const tripId = params.get('tripId');

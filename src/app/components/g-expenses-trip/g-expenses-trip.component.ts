@@ -30,6 +30,7 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
   @Input({ required: true }) vehicleId!: number;
   @Output() editExpense = new EventEmitter<ModelExpense>();
   @Output() addExpenseType = new EventEmitter<number>();
+  @Input() isMaintenance = false;
 
   expenses: ModelExpense[] = [];
   loading = false;
@@ -78,7 +79,10 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
   }
 
   get totalAmount(): number {
-    return this.expenses.reduce((sum, e) => sum + e.amount, 0);
+    const filtered = this.isMaintenance
+      ? this.maintenanceExpenses
+      : this.expenses;
+    return filtered.reduce((sum, e) => sum + e.amount, 0);
   }
 
   get remainingBudget(): number {
@@ -106,6 +110,11 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
   get vehicleExpenses(): ModelExpense[] {
     // Type 1 is Vehicle
     return this.expenses.filter((e) => e.category?.expenseTypeId === 1);
+  }
+
+  get maintenanceExpenses(): ModelExpense[] {
+    // Type 4 is Maintenance
+    return this.expenses.filter((e) => e.category?.expenseTypeId === 4);
   }
 
   get lastUpdateText(): string {
