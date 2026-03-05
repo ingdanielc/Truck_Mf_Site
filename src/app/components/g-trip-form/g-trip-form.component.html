@@ -228,6 +228,7 @@
               class="form-control py-2 px-3"
               [value]="getFormattedValue('freight')"
               (input)="formatCurrencyInput('freight', $event)"
+              (keypress)="allowOnlyNumbers($event)"
               [class.is-invalid]="
                 tripForm.get('freight')?.touched &&
                 tripForm.get('freight')?.invalid
@@ -251,6 +252,7 @@
               class="form-control py-2 px-3"
               [value]="getFormattedValue('advancePayment')"
               (input)="formatCurrencyInput('advancePayment', $event)"
+              (keypress)="allowOnlyNumbers($event)"
               [class.is-invalid]="
                 tripForm.get('advancePayment')?.touched &&
                 tripForm.get('advancePayment')?.invalid

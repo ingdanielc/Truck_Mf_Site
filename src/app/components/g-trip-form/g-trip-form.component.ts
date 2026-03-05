@@ -435,4 +435,13 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   onCancel(): void {
     this.cancel.emit();
   }
+
+  allowOnlyNumbers(event: any): void {
+    const pattern = /[0-9]/;
+    const inputChar = String.fromCodePoint(event.charCode);
+
+    if (!pattern.test(inputChar)) {
+      event.preventDefault();
+    }
+  }
 }
