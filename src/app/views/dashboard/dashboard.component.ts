@@ -5,6 +5,8 @@ import { VehicleService as ExpenseService } from '../../services/expense.service
 import { VehicleService } from '../../services/vehicle.service';
 import { SecurityService } from '../../services/security/security.service';
 import { OwnerService } from '../../services/owner.service';
+import { DriverService } from '../../services/driver.service';
+import { CommonService } from '../../services/common.service';
 import { TokenService } from '../../services/token.service';
 import {
   Filter,
@@ -24,18 +26,24 @@ import {
 import { ModelVehicle } from '../../models/vehicle-model';
 import { ModelTrip } from '../../models/trip-model';
 import { ModelExpense } from '../../models/expense-model';
+import { GVehicleTripExpCardComponent } from '../../components/g-vehicle-trip-exp-card/g-vehicle-trip-exp-card.component';
 
 Chart.register(...registerables);
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, GVehicleTripExpCardComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   loading = true;
+  activeTrips: {
+    vehicle: ModelVehicle;
+    trip: ModelTrip;
+    expenses: ModelExpense[];
+  }[] = [];
 
   // Chart 1: Trips por Vehículo
   public tripsByVehicleOptions: ChartConfiguration['options'] = {
@@ -167,6 +175,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private observer: MutationObserver | null = null;
   private userSub?: Subscription;
+  private brands: any[] = [];
+  private vehicles: ModelVehicle[] = [];
 
   constructor(
     private readonly tripService: TripService,
@@ -174,11 +184,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private readonly vehicleService: VehicleService,
     private readonly securityService: SecurityService,
     private readonly ownerService: OwnerService,
+    private readonly driverService: DriverService,
+    private readonly commonService: CommonService,
     private readonly tokenService: TokenService,
   ) {}
 
   ngOnInit(): void {
     this.setupThemeObserver();
+    this.loadBrands();
     this.userSub = this.securityService.userData$.subscribe((user) => {
       if (user) {
         this.loadData(user);
@@ -300,6 +313,47 @@ export class DashboardComponent implements OnInit, OnDestroy {
             return;
           }
         }
+      } else if (role.includes('CONDUCTOR') && user?.id) {
+        // 1. Get Driver linked to this User
+        const driverFilter = new ModelFilterTable(
+          [new Filter('user.id', '=', user.id.toString())],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        );
+        const driverResp: any = await lastValueFrom(
+          this.driverService.getDriverFilter(driverFilter),
+        );
+        const driverId = driverResp?.data?.content?.[0]?.id;
+
+        if (driverId) {
+          // 2. Filter vehicles by currentDriverId
+          const vehicleDriverFilter = new ModelFilterTable(
+            [new Filter('currentDriverId', '=', driverId.toString())],
+            new Pagination(9999, 0),
+            new Sort('id', true),
+          );
+          const vehiclesResp: any = await lastValueFrom(
+            this.vehicleService.getVehicleFilter(vehicleDriverFilter),
+          );
+          const vehiclesContext: ModelVehicle[] =
+            vehiclesResp?.data?.content ?? [];
+          const vehicleIds = vehiclesContext
+            .map((v) => v.id)
+            .filter((id) => id != null)
+            .join(',');
+
+          if (vehicleIds) {
+            tripFilters.push(new Filter('vehicle.id', 'in', vehicleIds));
+            expenseFilters.push(new Filter('vehicleId', 'in', vehicleIds));
+            vehicleFilters.push(new Filter('id', 'in', vehicleIds));
+          } else {
+            // No vehicles assigned to driver, data will be empty
+            this.clearChartData();
+            this.updateCharts();
+            this.loading = false;
+            return;
+          }
+        }
       }
 
       const vehicleFilterPayload = new ModelFilterTable(
@@ -330,13 +384,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       const trips: ModelTrip[] = tripsResp?.data?.content || [];
       const expenses: ModelExpense[] = expensesResp?.data?.content || [];
-      const vehicles: ModelVehicle[] = vehiclesResp?.data?.content || [];
+      this.vehicles = vehiclesResp?.data?.content || [];
 
-      this.processTripsByVehicle(trips, vehicles);
+      this.mapBrandNames(this.vehicles);
+      this.mapDriverNames(this.vehicles);
+
+      this.activeTrips = [];
+      this.vehicles.forEach((v) => {
+        const activeTrip = trips.find(
+          (t) =>
+            (t.vehicleId === v.id || t.vehiclePlate === v.plate) &&
+            (t.status?.toUpperCase() === 'EN CURSO' ||
+              t.status?.toUpperCase() === 'PENDIENTE'),
+        );
+        if (activeTrip) {
+          const tripExpenses = expenses.filter(
+            (e) => e.tripId === activeTrip.id,
+          );
+          this.activeTrips.push({
+            vehicle: v,
+            trip: activeTrip,
+            expenses: tripExpenses,
+          });
+        }
+      });
+
+      this.processTripsByVehicle(trips, this.vehicles);
       this.processFinancialData(trips, expenses);
-      this.processMaintenanceData(expenses, vehicles);
-      this.processTripsByMonth(trips, vehicles);
-      this.processProfitByMonth(trips, expenses, vehicles);
+      this.processMaintenanceData(expenses, this.vehicles);
+      this.processTripsByMonth(trips, this.vehicles);
+      this.processProfitByMonth(trips, expenses, this.vehicles);
 
       this.updateCharts();
     } catch (error) {
@@ -447,8 +524,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         const tripDate = t.startDate ? new Date(t.startDate) : null;
         return (
           plate?.toUpperCase() === v.plate.toUpperCase() &&
-          tripDate &&
-          tripDate.getFullYear() === currentYear
+          tripDate?.getFullYear() === currentYear
         );
       });
 
@@ -499,11 +575,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const vehicleTrips = trips.filter((t) => {
         const plate = t.vehicle?.plate || t.vehiclePlate;
         const tripDate = t.startDate ? new Date(t.startDate) : null;
-        return (
-          plate === v.plate &&
-          tripDate &&
-          tripDate.getFullYear() === currentYear
-        );
+        return plate === v.plate && tripDate?.getFullYear() === currentYear;
       });
 
       const monthlyProfit = new Array(12).fill(0);
@@ -535,5 +607,69 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private updateCharts() {
     // Force chart update after data changes
+  }
+
+  private loadBrands(): void {
+    this.commonService.getVehicleBrands().subscribe({
+      next: (response: any) => {
+        if (response?.data) {
+          this.brands = response.data;
+          this.mapBrandNames(this.vehicles);
+        }
+      },
+      error: (error: any) => {
+        console.error('Error loading brands:', error);
+      },
+    });
+  }
+
+  private mapBrandNames(vehicles: ModelVehicle[]): void {
+    if (this.brands.length > 0 && vehicles.length > 0) {
+      vehicles.forEach((v) => {
+        const brand = this.brands.find(
+          (b) => b.id.toString() === v.vehicleBrandId.toString(),
+        );
+        if (brand) {
+          v.vehicleBrandName = brand.name;
+        }
+      });
+    }
+  }
+
+  private mapDriverNames(vehicles: ModelVehicle[]): void {
+    if (vehicles.length === 0) return;
+
+    const missingIds = [
+      ...new Set(
+        vehicles
+          .filter((v) => v.currentDriverId != null && !v.currentDriverName)
+          .map((v) => v.currentDriverId as number),
+      ),
+    ];
+
+    missingIds.forEach((id) => this.fetchDriverDetail(id, vehicles));
+  }
+
+  private fetchDriverDetail(driverId: number, vehicles: ModelVehicle[]): void {
+    const filter = new ModelFilterTable(
+      [new Filter('id', '=', driverId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+
+    this.driverService.getDriverFilter(filter).subscribe({
+      next: (response: any) => {
+        const driver = response?.data?.content?.[0];
+        if (driver) {
+          vehicles.forEach((v) => {
+            if (v.currentDriverId === driverId) {
+              v.currentDriverName = driver.name;
+            }
+          });
+        }
+      },
+      error: (err: any) =>
+        console.error(`Error fetching driver ${driverId} details:`, err),
+    });
   }
 }
