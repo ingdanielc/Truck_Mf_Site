@@ -160,6 +160,61 @@ export const CATEGORY_UI_CONFIG: Record<string, CategoryConfig> = {
     icon: 'fa-solid fa-bank',
     colorClass: 'text-info bg-info',
   },
+  créditos: {
+    name: 'CRÉDITOS',
+    icon: 'fa-solid fa-credit-card',
+    colorClass: 'text-info bg-info',
+  },
+  'revisión tecnomecánica': {
+    name: 'REVISIÓN TECNOMECÁNICA',
+    icon: 'fa-solid fa-file-shield',
+    colorClass: 'text-warning bg-warning',
+  },
+  'llantas y rines': {
+    name: 'LLANTAS Y RINES',
+    icon: 'fa-solid fa-circle-notch',
+    colorClass: 'text-secondary bg-secondary',
+  },
+  'aceite, grasa, refrigerante': {
+    name: 'ACEITE, GRASA, REFRIGERANTE',
+    icon: 'fa-solid fa-oil-can',
+    colorClass: 'text-info bg-info',
+  },
+  carrocería: {
+    name: 'CARROCERÍA',
+    icon: 'fa-solid fa-truck-front',
+    colorClass: 'text-primary bg-primary',
+  },
+  'lujos y accesorios': {
+    name: 'LUJOS Y ACCESORIOS',
+    icon: 'fa-solid fa-sparkles',
+    colorClass: 'text-warning bg-warning',
+  },
+  eléctricos: {
+    name: 'ELÉCTRICOS',
+    icon: 'fa-solid fa-bolt',
+    colorClass: 'text-warning bg-warning',
+  },
+  'mecánica general': {
+    name: 'MECÁNICA GENERAL',
+    icon: 'fa-solid fa-wrench',
+    colorClass: 'text-danger bg-danger',
+  },
+  'mano de obra': {
+    name: 'MANO DE OBRA',
+    icon: 'fa-solid fa-user-gear',
+    colorClass: 'text-indigo bg-indigo',
+  },
+  viajes: {
+    name: 'VIAJES',
+    icon: 'fa-solid fa-route',
+    colorClass: 'text-primary bg-primary',
+  },
+  otro: {
+    name: 'OTRO',
+    icon: 'fa-solid fa-ellipsis',
+    colorClass: 'text-secondary bg-secondary',
+  },
 };
 
 export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {

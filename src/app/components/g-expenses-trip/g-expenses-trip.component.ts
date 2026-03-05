@@ -45,20 +45,23 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (
       (changes['tripId'] && !changes['tripId'].firstChange) ||
-      (changes['vehicleId'] && !changes['vehicleId'].firstChange)
+      (changes['vehicleId'] && !changes['vehicleId'].firstChange) ||
+      (changes['isMaintenance'] && !changes['isMaintenance'].firstChange)
     ) {
       this.loadExpenses();
     }
   }
 
   loadExpenses(): void {
-    if (!this.tripId || !this.vehicleId) return;
+    if (!this.vehicleId) return;
+    if (!this.isMaintenance && !this.tripId) return;
 
     this.loading = true;
-    const filters = [
-      new Filter('vehicleId', '=', this.vehicleId.toString()),
-      new Filter('tripId', '=', this.tripId.toString()),
-    ];
+    const filters = [new Filter('vehicleId', '=', this.vehicleId.toString())];
+
+    if (!this.isMaintenance) {
+      filters.push(new Filter('tripId', '=', this.tripId.toString()));
+    }
 
     const filterPayload = new ModelFilterTable(
       filters,

@@ -546,6 +546,14 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     console.log('Selected vehicle:', vehicle);
     this.selectedVehicle = vehicle;
     this.selectedTrip = null; // Clear selected trip when changing vehicle
+
+    if (this.isMaintenance) {
+      // For maintenance, we don't need a real trip, but g-expenses-trip needs a tripId
+      // and we use a dummy trip with id 0 which the service handles as "vehicle only"
+      this.selectedTrip = { id: 0 } as ModelTrip;
+      return;
+    }
+
     if (vehicle.id) {
       this.loadRecentTrips(vehicle.id);
     }
@@ -560,6 +568,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   loadRecentTrips(vehicleId: number): void {
+    if (this.isMaintenance) return;
     this.loadingTrips = true;
     this.recentTrips = [];
 
@@ -633,14 +642,20 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   // ── Add Expense Offcanvas ──────────────────────────────────────────
 
   openAddExpense(typeId?: number): void {
-    if (this.selectedVehicle && this.selectedTrip) {
+    const tripRequired = !this.isMaintenance;
+    const canOpen =
+      this.selectedVehicle && (!tripRequired || this.selectedTrip);
+
+    if (canOpen) {
       this.editingExpense = null;
       this.preselectedExpenseTypeId = typeId || null;
       this.showAddExpense = true;
     } else {
       this.toastService.showError(
         'Atención',
-        'Selecciona un vehículo y un viaje primero',
+        this.isMaintenance
+          ? 'Selecciona un vehículo primero'
+          : 'Selecciona un vehículo y un viaje primero',
       );
     }
   }
