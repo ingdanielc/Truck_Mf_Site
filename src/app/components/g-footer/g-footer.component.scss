@@ -11,7 +11,7 @@
 }
 
 .heart-icon {
-  font-size: 1.2rem;
+  font-size: 1rem;
   vertical-align: middle;
   display: inline-block;
   margin: 0 2px;
@@ -21,17 +21,23 @@ footer {
   border-top: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
 
   @media (max-width: 768px) {
-    margin-top: 1.5rem !important;
-    padding-top: 1rem !important;
-    padding-bottom: 1rem !important;
+    margin-top: 0.75rem !important; // Further reduced
+    padding-top: 0.2rem !important; // Ultra-compact
+    padding-bottom: 0.2rem !important;
 
     .row {
-      gap: 0.25rem !important;
+      gap: 0 !important;
     }
 
     p,
     span {
-      font-size: 0.72rem !important;
+      font-size: 0.68rem !important; // Slightly smaller
+      line-height: 1 !important; // Minimal line height
+    }
+
+    .heart-icon {
+      font-size: 0.95rem !important;
+      margin: 0 4px;
     }
   }
 }
