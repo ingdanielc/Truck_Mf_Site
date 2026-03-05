@@ -1,3 +1,15 @@
+.dashboard-container {
+  min-height: 100vh;
+  padding-left: 0.8rem;
+  padding-right: 0.8rem;
+  transition: all 0.3s ease;
+
+  @media (min-width: 768px) {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
 .min-vh-50 {
   min-height: 50vh;
 }

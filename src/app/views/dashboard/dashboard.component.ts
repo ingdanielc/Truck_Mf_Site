@@ -455,9 +455,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private processFinancialData(trips: ModelTrip[], expenses: ModelExpense[]) {
     // Top 10 most recent trips
     const recentTrips = trips.slice(0, 10).reverse();
-    const labels = recentTrips.map(
-      (t) => `#${t.numberTrip || t.manifestNumber}`,
-    );
+    const labels = recentTrips.map((t) => `Viaje #${t.numberTrip}`);
     const freights = recentTrips.map((t) => t.freight || 0);
     const tripExpenses = recentTrips.map((t) => {
       const tripExp = expenses.filter((e) => e.tripId === t.id);
