@@ -15,6 +15,13 @@ import { TokenService } from '../../services/token.service';
 export class HomeComponent implements OnInit, OnDestroy {
   private readonly allCards: any = [
     {
+      routing: '/site/dashboard',
+      title: 'Dashboard',
+      icon: 'fa-solid fa-gauge-high',
+      descriptions:
+        'Visualiza el rendimiento y métricas clave de tu flota con gráficos interactivos.',
+    },
+    {
       routing: '/site/owners',
       title: 'Propietarios',
       icon: 'fa-solid fa-user-tie',
