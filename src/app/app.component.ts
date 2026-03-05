@@ -3,6 +3,7 @@ import { Router, RouterOutlet } from '@angular/router';
 import pkg from 'package.json';
 import { GMenuComponent } from './components/g-menu/g-menu.component';
 import { GSidebarComponent } from './components/g-sidebar/g-sidebar.component';
+import { GFooterComponent } from './components/g-footer/g-footer.component';
 import { ToastContainerComponent } from './components/toast-container/toast-container.component';
 
 @Component({
@@ -12,6 +13,7 @@ import { ToastContainerComponent } from './components/toast-container/toast-cont
     RouterOutlet,
     GMenuComponent,
     GSidebarComponent,
+    GFooterComponent,
     ToastContainerComponent,
   ],
   standalone: true,
