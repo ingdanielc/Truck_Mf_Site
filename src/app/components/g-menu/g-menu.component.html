@@ -31,9 +31,14 @@
           </div>
         }
         @if (!isCollapsed) {
-          <span class="fs-5 fw-bold text-nowrap transition-fade">
-            {{ tituloMenuBar }}
-          </span>
+          <div class="d-flex flex-column transition-fade">
+            <span class="fs-5 fw-bold text-nowrap">
+              {{ tituloMenuBar }}
+            </span>
+            <span class="smaller text-secondary text-nowrap opacity-75">
+              Menos gastos, más camino.
+            </span>
+          </div>
         }
       </a>
     </div>
