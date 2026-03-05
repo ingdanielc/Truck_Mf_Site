@@ -1,0 +1,161 @@
+<div class="container-fluid p-2 p-md-4 animate__animated animate__fadeIn">
+  <!-- Header -->
+  <div class="row mb-5 align-items-center">
+    <div class="col">
+      <h1 class="h2 fw-bold mb-1 text-body tracking-tight">
+        <i class="fa-solid fa-gauge-high me-2 text-primary"></i>Dashboard
+        Analytics
+      </h1>
+      <p class="text-secondary mb-0">
+        Visualiza el rendimiento y métricas clave de tu flota.
+      </p>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="d-flex justify-content-center align-items-center min-vh-50">
+      <div class="text-center">
+        <div
+          class="spinner-border text-primary mb-3"
+          role="status"
+          style="width: 3rem; height: 3rem"
+        ></div>
+        <p class="text-secondary fw-semibold">Analizando datos...</p>
+      </div>
+    </div>
+  } @else {
+    <!-- Charts Grid -->
+    <div class="row g-4">
+      <!-- Chart 1 -->
+      <div class="col-12 col-xl-6">
+        <div
+          class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+        >
+          <div
+            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center"
+          >
+            <h5 class="fw-bold mb-0">Flota: Viajes por Vehículo</h5>
+            <i
+              class="fa-solid fa-truck-moving text-primary opacity-50 fs-4"
+            ></i>
+          </div>
+          <div class="card-body p-2 p-md-4 pt-2">
+            <div class="chart-container" style="height: 300px">
+              <canvas
+                baseChart
+                [data]="tripsByVehicleData"
+                [options]="tripsByVehicleOptions"
+                [type]="tripsByVehicleType"
+              >
+              </canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart 2 -->
+      <div class="col-12 col-xl-6">
+        <div
+          class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+        >
+          <div
+            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center"
+          >
+            <h5 class="fw-bold mb-0">Finanzas: Ingresos vs Egresos</h5>
+            <i class="fa-solid fa-dollar-sign text-success opacity-50 fs-4"></i>
+          </div>
+          <div class="card-body p-2 p-md-4 pt-2">
+            <div class="chart-container" style="height: 300px">
+              <canvas
+                baseChart
+                [data]="financialData"
+                [options]="financialOptions"
+                [type]="financialType"
+              >
+              </canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart 3 -->
+      <div class="col-12">
+        <div
+          class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+        >
+          <div
+            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center"
+          >
+            <h5 class="fw-bold mb-0">
+              Rendimiento: Viajes Mensuales por Vehículo
+            </h5>
+            <i class="fa-solid fa-chart-line text-info opacity-50 fs-4"></i>
+          </div>
+          <div class="card-body p-2 p-md-4 pt-2">
+            <div class="chart-container" style="height: 350px">
+              <canvas
+                baseChart
+                [data]="monthlyTripsData"
+                [options]="monthlyTripsOptions"
+                [type]="monthlyTripsType"
+              >
+              </canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart 4 -->
+      <div class="col-12">
+        <div
+          class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+        >
+          <div
+            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center"
+          >
+            <h5 class="fw-bold mb-0">Mantenimiento: Inversión por Vehículo</h5>
+            <i class="fa-solid fa-wrench text-warning opacity-50 fs-4"></i>
+          </div>
+          <div class="card-body p-2 p-md-4 pt-2">
+            <div class="chart-container" style="height: 350px">
+              <canvas
+                baseChart
+                [data]="maintenanceData"
+                [options]="maintenanceOptions"
+                [type]="maintenanceType"
+              >
+              </canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart 5 -->
+      <div class="col-12">
+        <div
+          class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+        >
+          <div
+            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center"
+          >
+            <h5 class="fw-bold mb-0">
+              Finanzas: Utilidad Mensual por Vehículo
+            </h5>
+            <i class="fa-solid fa-chart-area text-success opacity-50 fs-4"></i>
+          </div>
+          <div class="card-body p-2 p-md-4 pt-2">
+            <div class="chart-container" style="height: 350px">
+              <canvas
+                baseChart
+                [data]="monthlyProfitData"
+                [options]="monthlyProfitOptions"
+                [type]="monthlyProfitType"
+              >
+              </canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

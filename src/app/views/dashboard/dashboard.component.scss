@@ -1,0 +1,30 @@
+.min-vh-50 {
+  min-height: 50vh;
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+}
+
+.card {
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  }
+}
+
+[data-bs-theme="dark"] {
+  .card {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  }
+}
+
+.tracking-tight {
+  letter-spacing: -0.025em;
+}
