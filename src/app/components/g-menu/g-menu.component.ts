@@ -50,14 +50,14 @@ export class GMenuComponent implements OnInit, OnDestroy {
       route: '/site/maintenance',
     },
     {
-      label: 'Seguridad',
-      icon: 'fa-solid fa-shield-halved',
-      route: '/site/security',
-    },
-    {
       label: 'Configuración',
       icon: 'fa-solid fa-gear',
       route: '/site/configuration',
+    },
+    {
+      label: 'Seguridad',
+      icon: 'fa-solid fa-shield-halved',
+      route: '/site/security',
     },
   ];
 

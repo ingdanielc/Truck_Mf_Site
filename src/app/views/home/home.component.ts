@@ -50,14 +50,6 @@ export class HomeComponent implements OnInit, OnDestroy {
         'Registra y consulta todos los gastos operativos relacionados con los vehículos y viajes.',
     },
     {
-      routing: '/site/security',
-      title: 'Seguridad',
-      icon: 'fa-solid fa-shield-halved',
-      descriptions:
-        'Administra usuarios, roles y permisos de acceso al sistema.',
-    },
-
-    {
       routing: '/site/maintenance',
       title: 'Mantenimiento',
       icon: 'fa-solid fa-screwdriver-wrench',
@@ -70,6 +62,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       icon: 'fa-solid fa-gear',
       descriptions:
         'Edita catálogos, preferencias y ajusta el comportamiento general del ecosistema.',
+    },
+    {
+      routing: '/site/security',
+      title: 'Seguridad',
+      icon: 'fa-solid fa-shield-halved',
+      descriptions:
+        'Administra usuarios, roles y permisos de acceso al sistema.',
     },
   ];
 

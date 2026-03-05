@@ -14,8 +14,10 @@
           <div>
             <h1 class="h3 fw-bold mb-1 text-body">
               Viaje {{ trip.numberTrip || "N/A" }} -
+              <span class="text-uppercase">{{
+                trip.vehicle?.plate || trip.vehiclePlate || ""
+              }}</span>
               <span class="d-none d-md-inline">{{ vehicleBrandName }} </span>
-              {{ trip.vehicle?.plate || trip.vehiclePlate || "" }}
             </h1>
             <p class="text-body-secondary mb-0">
               {{ originName }} - {{ destinationName }}
@@ -43,11 +45,22 @@
           <div>
             <h5 class="fw-bold mb-1">Progreso del Viaje</h5>
             <p class="text-secondary small mb-0">
-              Ubicación actual: {{ originName }} - Punto de control
+              Ubicación actual: {{ currentLocationName }}
+              <span class="d-none d-sm-inline">- Punto de control</span>
             </p>
           </div>
-          <div class="text-primary h2 fw-bold mb-0">
-            {{ progressPercentage }}%
+          <div class="text-end">
+            <div class="text-primary h2 fw-bold mb-0">
+              {{ progressPercentage }}%
+            </div>
+            @if (trip.status === "Completado" || trip.status === "Pendiente") {
+              <div
+                class="badge bg-success bg-opacity-10 text-success small border-0 py-1 px-3 rounded-pill"
+              >
+                <i class="fa-solid fa-clock me-1"></i>
+                {{ tripDurationInHours }}h
+              </div>
+            }
           </div>
         </div>
         <div class="progress-stepper position-relative py-3">
@@ -90,14 +103,25 @@
             <!-- Destination -->
             <div class="step-point text-center">
               <div
-                class="icon-circle bg-secondary bg-opacity-25 text-secondary rounded-3 mb-2 mx-auto d-flex align-items-center justify-content-center"
+                class="icon-circle rounded-3 mb-2 mx-auto d-flex align-items-center justify-content-center transition-all"
+                [ngClass]="
+                  trip.status === 'Completado' || trip.status === 'Pendiente'
+                    ? 'bg-primary text-white shadow-primary'
+                    : 'bg-secondary bg-opacity-25 text-secondary'
+                "
                 style="width: 40px; height: 40px"
               >
                 <i class="fa-solid fa-flag-checkered"></i>
               </div>
               <div class="fw-bold small pt-3">{{ destinationName }}</div>
               <div class="text-secondary" style="font-size: 0.7rem">
-                Est: --:--
+                @if (
+                  trip.status === "Completado" || trip.status === "Pendiente"
+                ) {
+                  Finalizado: {{ tripDurationInHours }}h
+                } @else {
+                  Est: --:--
+                }
               </div>
             </div>
           </div>
@@ -123,7 +147,15 @@
               </div>
               <div>
                 <p class="text-secondary small mb-0">Duración del Viaje</p>
-                <h6 class="fw-bold mb-0">{{ trip.numberOfDays }} Días</h6>
+                <h6 class="fw-bold mb-0">
+                  @if (
+                    trip.status === "Completado" || trip.status === "Pendiente"
+                  ) {
+                    {{ tripDurationInHours }} Horas
+                  } @else {
+                    {{ trip.numberOfDays }} Días
+                  }
+                </h6>
               </div>
             </div>
             <div class="d-flex gap-3 mb-4">
@@ -136,8 +168,10 @@
               <div>
                 <p class="text-secondary small mb-0">Vehículo</p>
                 <h6 class="fw-bold mb-0">
+                  <span class="text-uppercase">{{
+                    trip.vehicle?.plate || trip.vehiclePlate || "N/A"
+                  }}</span>
                   {{ vehicleBrandName }}
-                  {{ trip.vehicle?.plate || trip.vehiclePlate || "N/A" }}
                 </h6>
               </div>
             </div>
@@ -178,7 +212,7 @@
                 </select>
               </div>
             </div>
-            <div class="d-flex gap-3 align-items-center mb-4">
+            <div class="d-flex gap-3 align-items-center">
               <div
                 class="icon-box bg-indigo bg-opacity-10 rounded-3 p-3 flex-shrink-0 d-flex align-items-center justify-content-center"
                 style="width: 50px; height: 50px"
@@ -198,6 +232,7 @@
                   role="switch"
                   [checked]="trip.paidBalance"
                   (change)="trip.paidBalance = !trip.paidBalance"
+                  aria-checked="true"
                 />
               </div>
             </div>
@@ -258,7 +293,9 @@
           </div>
           <div class="col-12 col-md-6">
             <div
-              class="card border-0 rounded-4 shadow-sm bg-body-tertiary hover-scale"
+              class="card border-0 rounded-4 shadow-sm bg-body-tertiary hover-scale cursor-pointer"
+              (click)="onExpensesClick()"
+              onkeypress
             >
               <div class="card-body p-4">
                 <div class="d-flex justify-content-between">

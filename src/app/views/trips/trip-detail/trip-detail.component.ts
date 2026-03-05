@@ -61,7 +61,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     private readonly ownerService: OwnerService,
     private readonly vehicleService: VehicleService,
     private readonly driverService: DriverService,
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.routeSub = this.route.paramMap.subscribe((params) => {
@@ -75,9 +75,9 @@ export class TripDetailComponent implements OnInit, OnDestroy {
           next: (user) => {
             if (user && this.tripId) {
               this.userRole = (
-                user.userRoles?.[0]?.role?.name || ""
+                user.userRoles?.[0]?.role?.name || ''
               ).toUpperCase();
-              if (this.userRole === "PROPIETARIO") {
+              if (this.userRole === 'PROPIETARIO') {
                 this.loggedInOwnerId = user.id ?? null;
               }
               this.validateAccess(this.tripId, user);
@@ -152,18 +152,18 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   }
 
   validateAccess(tripId: number, user: any): void {
-    const roleName = (user.userRoles?.[0]?.role?.name || "").toUpperCase();
+    const roleName = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
 
-    if (roleName === "ADMINISTRADOR") {
+    if (roleName === 'ADMINISTRADOR') {
       this.loadTrip(tripId);
       return;
     }
 
     // Load trip first to get vehicleId
     const tripFilter = new ModelFilterTable(
-      [new Filter("id", "=", tripId.toString())],
+      [new Filter('id', '=', tripId.toString())],
       new Pagination(1, 0),
-      new Sort("id", true)
+      new Sort('id', true),
     );
 
     this.tripService
@@ -171,17 +171,17 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       .pipe(
         switchMap((tripResp: any) => {
           if (!tripResp?.data?.content || tripResp.data.content.length === 0) {
-            return of({ hasAccess: false, error: "No se encontró el viaje" });
+            return of({ hasAccess: false, error: 'No se encontró el viaje' });
           }
 
           const tripData = tripResp.data.content[0];
           const vehicleId = tripData.vehicleId;
 
-          if (roleName === "PROPIETARIO") {
+          if (roleName === 'PROPIETARIO') {
             const ownerFilter = new ModelFilterTable(
-              [new Filter("user.id", "=", user.id.toString())],
+              [new Filter('user.id', '=', user.id.toString())],
               new Pagination(1, 0),
-              new Sort("id", true)
+              new Sort('id', true),
             );
 
             return this.ownerService.getOwnerFilter(ownerFilter).pipe(
@@ -191,25 +191,27 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
                 const vehicleFilter = new ModelFilterTable(
                   [
-                    new Filter("ownerId", "=", ownerId.toString()),
-                    new Filter("id", "=", vehicleId.toString()),
+                    new Filter('ownerId', '=', ownerId.toString()),
+                    new Filter('id', '=', vehicleId.toString()),
                   ],
                   new Pagination(1, 0),
-                  new Sort("id", true)
+                  new Sort('id', true),
                 );
 
-                return this.vehicleService.getVehicleOwnerFilter(vehicleFilter).pipe(
-                  map((vResp: any) => ({
-                    hasAccess: vResp?.data?.content?.length > 0,
-                  }))
-                );
-              })
+                return this.vehicleService
+                  .getVehicleOwnerFilter(vehicleFilter)
+                  .pipe(
+                    map((vResp: any) => ({
+                      hasAccess: vResp?.data?.content?.length > 0,
+                    })),
+                  );
+              }),
             );
-          } else if (roleName === "CONDUCTOR") {
+          } else if (roleName === 'CONDUCTOR') {
             const driverFilter = new ModelFilterTable(
-              [new Filter("userId", "=", user.id.toString())],
+              [new Filter('userId', '=', user.id.toString())],
               new Pagination(1, 0),
-              new Sort("id", true)
+              new Sort('id', true),
             );
 
             return this.driverService.getDriverFilter(driverFilter).pipe(
@@ -217,24 +219,24 @@ export class TripDetailComponent implements OnInit, OnDestroy {
                 const driver = driverResp?.data?.content?.[0];
                 const hasAccess = driver && driver.vehicleId === vehicleId;
                 return { hasAccess };
-              })
+              }),
             );
           }
 
           return of({ hasAccess: false });
         }),
         catchError((err) => {
-          console.error("Error validating access:", err);
-          return of({ hasAccess: false, error: "Error de validación" });
-        })
+          console.error('Error validating access:', err);
+          return of({ hasAccess: false, error: 'Error de validación' });
+        }),
       )
       .subscribe((result: any) => {
         if (result.hasAccess) {
           this.loadTrip(tripId);
         } else {
           this.toastService.showError(
-            "Acceso Denegado",
-            result.error || "No tiene permiso para ver este viaje"
+            'Acceso Denegado',
+            result.error || 'No tiene permiso para ver este viaje',
           );
           this.goBack();
         }
@@ -319,10 +321,26 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   get progressPercentage(): number {
     if (!this.trip) return 0;
+    if (['Completado', 'Pendiente'].includes(this.trip.status)) return 100;
     const total = this.trip.freight || 0;
     const paid = this.trip.advancePayment || 0;
     if (total === 0) return 0;
     return Math.round((paid / total) * 100);
+  }
+
+  get tripDurationInHours(): number {
+    if (!this.trip?.startDate || !this.trip?.endDate) return 0;
+    const start = new Date(this.trip.startDate);
+    const end = new Date(this.trip.endDate);
+    const diffMs = end.getTime() - start.getTime();
+    return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
+  }
+
+  get currentLocationName(): string {
+    if (['Completado', 'Pendiente'].includes(this.trip?.status || '')) {
+      return this.destinationName;
+    }
+    return this.originName;
   }
 
   loadExpenses(tripId: number, vehicleId: number): void {
@@ -366,6 +384,17 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     this.router.navigate(['/site/trips']);
+  }
+
+  onExpensesClick(): void {
+    if (this.tripId && this.trip?.vehicleId) {
+      this.router.navigate(['/site/expenses'], {
+        queryParams: {
+          tripId: this.tripId,
+          vehicleId: this.trip.vehicleId,
+        },
+      });
+    }
   }
 
   toggleOffcanvas(): void {
