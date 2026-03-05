@@ -70,8 +70,28 @@ export class GMenuComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.menuItems = [...this.allMenuItems];
+    // Start with empty menu to prevent flashing unauthorized options
+    this.menuItems = [];
+
+    // First attempt: recover role from token for immediate filtering
+    const tokenRole = this.extractRoleFromToken();
+    if (tokenRole) {
+      this.filterMenu(tokenRole);
+    }
+
+    // Subscribe for more detailed user data and reactive updates
     this.subscribeToUserContext();
+  }
+
+  private extractRoleFromToken(): string | null {
+    try {
+      const payload = this.tokenService.getPayload();
+      const roles: string | string[] = payload?.role ?? payload?.roles ?? '';
+      const roleStr = Array.isArray(roles) ? roles[0] : roles;
+      return (roleStr || '').toUpperCase();
+    } catch {
+      return null;
+    }
   }
 
   private subscribeToUserContext(): void {
