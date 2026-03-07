@@ -1,5 +1,4 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -44,6 +43,16 @@ export class TripsComponent implements OnInit, OnDestroy {
   totalTrips: number = 0;
   inProgressTrips: number = 0;
   completedTrips: number = 0;
+  pendingTrips: number = 0;
+
+  // Global cache for Admin role
+  globalStats = {
+    total: 0,
+    inProgress: 0,
+    completed: 0,
+    pending: 0,
+  };
+
   searchTerm: string = '';
   page: number = 0;
   rows: number = 9;
@@ -65,6 +74,9 @@ export class TripsComponent implements OnInit, OnDestroy {
   loggedInOwnerId: number | null = null;
   loggedInDriverId: number | null = null;
   private userSub?: Subscription;
+  expandedOwnerId: number | null = null;
+  ownerTrips: ModelTrip[] = [];
+  totalOwners: number = 0;
 
   // filters
   ownerIdFilter: number | null = null;
@@ -215,7 +227,7 @@ export class TripsComponent implements OnInit, OnDestroy {
 
     let filter = new ModelFilterTable(
       filtros,
-      new Pagination(100, 0),
+      new Pagination(this.rows, this.page),
       new Sort('name', true),
     );
     this.ownerService.getOwnerFilter(filter).subscribe({
@@ -230,6 +242,7 @@ export class TripsComponent implements OnInit, OnDestroy {
               this.loadTrips();
             }
           } else if (this.userRole === 'ADMINISTRADOR') {
+            this.totalOwners = response.data.totalElements ?? 0;
             this.applyFilter();
           }
         }
@@ -273,6 +286,16 @@ export class TripsComponent implements OnInit, OnDestroy {
         this.totalTrips = response?.data?.totalElements ?? 0;
         this.allTrips = response?.data?.content ?? [];
         this.calculateStats();
+
+        // Store global stats for Admin
+        if (this.userRole === 'ADMINISTRADOR') {
+          this.globalStats = {
+            total: this.totalTrips,
+            inProgress: this.inProgressTrips,
+            completed: this.completedTrips,
+            pending: this.pendingTrips,
+          };
+        }
 
         // Identify missing owners needed for grouping
         const getOwnerId = (t: ModelTrip): number | undefined => {
@@ -330,15 +353,36 @@ export class TripsComponent implements OnInit, OnDestroy {
     });
   }
 
-  calculateStats(): void {
-    this.inProgressTrips = this.allTrips.filter((t) => {
+  calculateStats(trips?: ModelTrip[]): void {
+    const source = trips ?? this.allTrips;
+
+    const inProgress = source.filter((t) => {
       const status = (t.status || '').toUpperCase();
       return status === 'IN_PROGRESS' || status === 'EN CURSO';
     }).length;
-    this.completedTrips = this.allTrips.filter((t) => {
+
+    const completed = source.filter((t) => {
       const status = (t.status || '').toUpperCase();
       return status === 'COMPLETED' || status === 'COMPLETADO';
     }).length;
+
+    const pending = source.filter((t) => {
+      const status = (t.status || '').toUpperCase();
+      return status === 'PENDING' || status === 'PENDIENTE';
+    }).length;
+
+    if (trips) {
+      // Temporary/Filtered stats
+      this.totalTrips = source.length;
+      this.inProgressTrips = inProgress;
+      this.completedTrips = completed;
+      this.pendingTrips = pending;
+    } else {
+      // Master stats
+      this.inProgressTrips = inProgress;
+      this.completedTrips = completed;
+      this.pendingTrips = pending;
+    }
   }
 
   applyFilter(): void {
@@ -412,8 +456,91 @@ export class TripsComponent implements OnInit, OnDestroy {
     this.groupedTrips = groups;
   }
 
+  toggleOwnerExpansion(owner: ModelOwner): void {
+    if (this.userRole !== 'ADMINISTRADOR') return;
+
+    if (this.expandedOwnerId === owner.id) {
+      this.expandedOwnerId = null;
+      this.ownerTrips = [];
+      // Restore global stats
+      this.totalTrips = this.globalStats.total;
+      this.inProgressTrips = this.globalStats.inProgress;
+      this.completedTrips = this.globalStats.completed;
+      this.pendingTrips = this.globalStats.pending;
+    } else {
+      this.expandedOwnerId = owner.id ?? null;
+      if (this.expandedOwnerId) {
+        this.loadTripsForAdmin(this.expandedOwnerId);
+      }
+    }
+  }
+
+  private loadTripsForAdmin(ownerId: number): void {
+    const vehicleFilter = new ModelFilterTable(
+      [new Filter('owner.id', '=', ownerId.toString())],
+      new Pagination(100, 0),
+      new Sort('id', true),
+    );
+
+    this.vehicleService.getVehicleOwnerFilter(vehicleFilter).subscribe({
+      next: (respVehicles: any) => {
+        const vehicles = respVehicles?.data?.content ?? [];
+        const vehicleIds = vehicles
+          .map((v: any) => v.id)
+          .filter((id: any) => id != null)
+          .join(',');
+
+        if (!vehicleIds) {
+          this.ownerTrips = [];
+          this.calculateStats(this.ownerTrips);
+          return;
+        }
+
+        const tripFiltros = [new Filter('vehicle.id', 'in', vehicleIds)];
+        if (this.searchTerm) {
+          tripFiltros.push(
+            new Filter('manifestNumber', 'like', this.searchTerm),
+          );
+        }
+
+        const tripFilter = new ModelFilterTable(
+          tripFiltros,
+          new Pagination(100, 0),
+          new Sort('startDate', false),
+        );
+
+        this.tripService.getTripFilter(tripFilter).subscribe({
+          next: (respTrips: any) => {
+            this.ownerTrips = respTrips?.data?.content ?? [];
+            this.calculateStats(this.ownerTrips);
+          },
+          error: () => {
+            this.ownerTrips = [];
+            this.calculateStats(this.ownerTrips);
+          },
+        });
+      },
+      error: () => {
+        this.ownerTrips = [];
+        this.calculateStats(this.ownerTrips);
+      },
+    });
+  }
+
+  get dataTotal(): number {
+    return this.userRole === 'ADMINISTRADOR'
+      ? this.totalOwners
+      : this.totalTrips;
+  }
+
+  get itemsShownCount(): number {
+    return this.userRole === 'ADMINISTRADOR'
+      ? this.owners.length
+      : this.allTrips.length;
+  }
+
   get totalPages(): number {
-    return Math.ceil(this.totalTrips / this.rows);
+    return Math.ceil(this.dataTotal / this.rows);
   }
 
   get pages(): number[] {
@@ -423,7 +550,13 @@ export class TripsComponent implements OnInit, OnDestroy {
   changePage(newPage: number): void {
     if (newPage >= 0 && newPage < this.totalPages && newPage !== this.page) {
       this.page = newPage;
-      this.loadTrips();
+      this.expandedOwnerId = null;
+      this.ownerTrips = [];
+      if (this.userRole === 'ADMINISTRADOR') {
+        this.loadOwners();
+      } else {
+        this.loadTrips();
+      }
     }
   }
 

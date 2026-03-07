@@ -33,7 +33,7 @@
 
   <!-- Stats Cards -->
   <div class="row g-4 mb-4">
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-md-6 col-xl-3">
       <div
         class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
       >
@@ -54,7 +54,7 @@
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-md-6 col-xl-3">
       <div
         class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
       >
@@ -75,7 +75,28 @@
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-md-6 col-xl-3">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Pendientes
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-warning">{{ pendingTrips }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-warning bg-opacity-10 text-warning rounded-4 p-3"
+          >
+            <i class="fa-solid fa-clock-rotate-left fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
       <div
         class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
       >
@@ -98,111 +119,188 @@
     </div>
   </div>
 
-  <!-- Trip List Grouped by Owner -->
-  <div class="trips-grid animate__animated animate__fadeIn">
-    @for (group of groupedTrips; track group) {
-      <div class="owner-section mb-5">
-        <div class="owner-header mb-4">
-          <g-vehicle-owner-card
-            [owner]="group.owner"
-            [itemCount]="group.trips.length"
-            [itemLabel]="'Viajes'"
-          >
-          </g-vehicle-owner-card>
+  <!-- Trip List Grouped by Owner (Owner/Driver roles) -->
+  @if (userRole !== "ADMINISTRADOR") {
+    <div class="trips-grid animate__animated animate__fadeIn">
+      @for (group of groupedTrips; track group) {
+        <div class="owner-section mb-5">
+          <div class="owner-header mb-4">
+            <g-vehicle-owner-card
+              [owner]="group.owner"
+              [itemCount]="group.trips.length"
+              [itemLabel]="'Viajes'"
+            >
+            </g-vehicle-owner-card>
+          </div>
+          <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+            @for (trip of group.trips; track trip) {
+              <div class="col">
+                <g-trip-card
+                  [trip]="trip"
+                  [cities]="cities"
+                  (edit)="toggleOffcanvas(trip)"
+                  class="hover-scale cursor-pointer"
+                  onkeypress
+                >
+                </g-trip-card>
+              </div>
+            }
+            <!-- Add Trip Card -->
+            @if (group.owner.id === loggedInOwnerId) {
+              <div class="col">
+                <div
+                  class="add-trip-card border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
+                  (click)="toggleOffcanvas()"
+                  (keypress)="toggleOffcanvas()"
+                  role="button"
+                  tabindex="0"
+                >
+                  <div
+                    class="add-trip-icon rounded-circle border d-flex align-items-center justify-content-center"
+                  >
+                    <i class="fa-solid fa-plus"></i>
+                  </div>
+                  <span class="small fw-semibold">Registrar Viaje</span>
+                  <small class="opacity-75">Para {{ group.owner.name }}</small>
+                </div>
+              </div>
+            }
+          </div>
         </div>
-        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-          @for (trip of group.trips; track trip) {
-            <div class="col">
-              <g-trip-card
-                [trip]="trip"
-                [cities]="cities"
-                (edit)="toggleOffcanvas(trip)"
-                class="hover-scale cursor-pointer"
+      }
+
+      <!-- Empty State -->
+      @if (groupedTrips.length === 0) {
+        <div class="text-center py-5 text-body-secondary">
+          <i class="fa-solid fa-route fs-1 mb-3 opacity-25"></i>
+          <p class="fw-bold">No se encontraron resultados</p>
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- Admin View: Owners List with expansion (Full Width) -->
+    <div class="owners-list animate__animated animate__fadeIn">
+      <div class="row g-2">
+        @for (owner of owners; track owner.id) {
+          <div class="col-12">
+            <div class="owner-item mb-2">
+              <g-vehicle-owner-card
+                [owner]="owner"
+                [itemCount]="owner.vehicleCount || 0"
+                [itemLabel]="'Vehículos'"
+                [disableClick]="true"
+                (click)="toggleOwnerExpansion(owner)"
+                [class.expanded]="expandedOwnerId === owner.id"
                 onkeypress
               >
-              </g-trip-card>
-            </div>
-          }
-          <!-- Add Trip Card -->
-          @if (
-            userRole === "ADMINISTRADOR" || group.owner.id === loggedInOwnerId
-          ) {
-            <div class="col">
-              <div
-                class="add-trip-card border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
-                (click)="toggleOffcanvas()"
-                (keypress)="toggleOffcanvas()"
-                role="button"
-                tabindex="0"
-              >
+              </g-vehicle-owner-card>
+
+              <!-- Expanded Trips List -->
+              @if (expandedOwnerId === owner.id) {
                 <div
-                  class="add-trip-icon rounded-circle border d-flex align-items-center justify-content-center"
+                  class="expanded-trips mt-4 mb-5 ps-3 animate__animated animate__fadeIn"
                 >
-                  <i class="fa-solid fa-plus"></i>
+                  <div class="d-flex align-items-center gap-3 mb-4">
+                    <div
+                      class="h-divider flex-grow-1 bg-primary opacity-10"
+                      style="height: 1px"
+                    ></div>
+                    <h6
+                      class="text-primary small fw-black mb-0 text-uppercase tracking-wider"
+                    >
+                      Viajes Recientes de {{ owner.name }}
+                    </h6>
+                    <div
+                      class="h-divider flex-grow-1 bg-primary opacity-10"
+                      style="height: 1px"
+                    ></div>
+                  </div>
+
+                  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                    @for (trip of ownerTrips; track trip.id) {
+                      <div class="col">
+                        <g-trip-card
+                          [trip]="trip"
+                          [cities]="cities"
+                          (edit)="toggleOffcanvas(trip)"
+                          class="hover-scale cursor-pointer"
+                          onkeypress
+                        >
+                        </g-trip-card>
+                      </div>
+                    }
+                    @if (ownerTrips.length === 0) {
+                      <div
+                        class="col-12 text-center py-5 text-body-secondary bg-body-tertiary rounded-4 border border-dashed"
+                      >
+                        <i class="fa-solid fa-route fs-2 mb-2 opacity-25"></i>
+                        <p class="mb-0 fw-semibold">Sin viajes registrados</p>
+                      </div>
+                    }
+                  </div>
                 </div>
-                <span class="small fw-semibold">Registrar Viaje</span>
-                <small class="opacity-75">Para {{ group.owner.name }}</small>
-              </div>
+              }
             </div>
-          }
+          </div>
+        }
+      </div>
+
+      <!-- Empty State -->
+      @if (owners.length === 0) {
+        <div class="text-center py-5 text-body-secondary">
+          <i class="fa-solid fa-users fs-1 mb-3 opacity-25"></i>
+          <p class="fw-bold">No se encontraron propietarios</p>
         </div>
-      </div>
-    }
+      }
+    </div>
+  }
 
-    <!-- Empty State -->
-    @if (groupedTrips.length === 0) {
-      <div class="text-center py-5 text-body-secondary">
-        <i class="fa-solid fa-route fs-1 mb-3 opacity-25"></i>
-        <p class="fw-bold">No se encontraron resultados</p>
-      </div>
-    }
-
-    <!-- Footer/Pagination -->
-    <div class="row align-items-center g-3 mb-4 mt-2">
-      <div class="col-12 col-md-6 text-center text-md-start">
-        <p class="text-secondary small mb-0">
-          Mostrando {{ allTrips.length }} de {{ totalTrips }} viajes
-        </p>
-      </div>
-      <div
-        class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end"
-      >
-        <nav aria-label="Navegación de páginas">
-          <ul class="pagination mb-0">
-            <li class="page-item" [class.disabled]="page === 0">
-              <button
-                class="page-link shadow-none px-3 py-2"
-                (click)="changePage(page - 1)"
-                aria-label="Anterior"
-              >
-                <span aria-hidden="true">&laquo;</span>
-              </button>
-            </li>
-            @for (p of pages; track p) {
-              <li class="page-item" [class.active]="p === page">
-                <button
-                  class="page-link shadow-none px-3 py-2"
-                  (click)="changePage(p)"
-                >
-                  {{ p + 1 }}
-                </button>
-              </li>
-            }
-            <li
-              class="page-item"
-              [class.disabled]="page >= totalPages - 1 || totalPages === 0"
+  <!-- Footer/Pagination -->
+  <div class="row align-items-center g-3 mb-4 mt-2">
+    <div class="col-12 col-md-6 text-center text-md-start">
+      <p class="text-secondary small mb-0">
+        Mostrando {{ itemsShownCount }} de {{ dataTotal }}
+        {{ userRole === "ADMINISTRADOR" ? "propietarios" : "viajes" }}
+      </p>
+    </div>
+    <div
+      class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end"
+    >
+      <nav aria-label="Navegación de páginas">
+        <ul class="pagination mb-0">
+          <li class="page-item" [class.disabled]="page === 0">
+            <button
+              class="page-link shadow-none px-3 py-2"
+              (click)="changePage(page - 1)"
+              aria-label="Anterior"
             >
+              <span aria-hidden="true">&laquo;</span>
+            </button>
+          </li>
+          @for (p of pages; track p) {
+            <li class="page-item" [class.active]="p === page">
               <button
                 class="page-link shadow-none px-3 py-2"
-                (click)="changePage(page + 1)"
-                aria-label="Siguiente"
+                (click)="changePage(p)"
               >
-                <span aria-hidden="true">&raquo;</span>
+                {{ p + 1 }}
               </button>
             </li>
-          </ul>
-        </nav>
-      </div>
+          }
+          <li
+            class="page-item"
+            [class.disabled]="page >= totalPages - 1 || totalPages === 0"
+          >
+            <button
+              class="page-link shadow-none px-3 py-2"
+              (click)="changePage(page + 1)"
+              aria-label="Siguiente"
+            >
+              <span aria-hidden="true">&raquo;</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
     </div>
   </div>
 

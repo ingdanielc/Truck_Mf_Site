@@ -40,6 +40,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   loadingCities: boolean = true;
   loadingBrands: boolean = true;
   tripCount: number = 0;
+  fromTrips: boolean = false;
 
   private routeSub?: Subscription;
 
@@ -57,6 +58,9 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    const fromParam = this.route.snapshot.queryParamMap.get('from');
+    this.fromTrips = fromParam === 'trips';
+
     this.routeSub = this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
       if (id) {
@@ -386,7 +390,11 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     const role = (user?.userRoles?.[0]?.role?.name ?? '').toUpperCase();
 
     if (role === 'ADMINISTRADOR') {
-      this.router.navigate(['/site/owners']);
+      if (this.fromTrips) {
+        this.router.navigate(['/site/trips']);
+      } else {
+        this.router.navigate(['/site/owners']);
+      }
     } else {
       this.location.back();
     }

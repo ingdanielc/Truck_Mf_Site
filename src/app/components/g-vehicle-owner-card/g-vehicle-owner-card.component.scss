@@ -35,3 +35,12 @@
   overflow: hidden;
   flex-shrink: 0;
 }
+
+.clickable-header {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}

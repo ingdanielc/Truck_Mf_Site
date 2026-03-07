@@ -276,6 +276,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.userSub?.unsubscribe();
   }
 
+  private formatMobileValue(value: number): string {
+    if (window.innerWidth >= 768) return value.toLocaleString();
+
+    const absValue = Math.abs(value);
+    if (absValue >= 1000000) {
+      return (value / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    } else if (absValue >= 1000) {
+      return (value / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    }
+    return value.toString();
+  }
+
   private setupThemeObserver() {
     this.updateChartTheme();
     this.observer = new MutationObserver(() => this.updateChartTheme());
@@ -306,6 +318,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         ...options.scales.y.ticks,
         color: textColor,
         font: { family: "'Inter', sans-serif", size: 11 },
+        callback: (value: any) => this.formatMobileValue(value),
       };
       options.scales.x.grid = { color: gridColor, drawBorder: false };
       options.scales.y.grid = { color: gridColor, drawBorder: false };
