@@ -16,6 +16,7 @@ import {
   Sort,
 } from 'src/app/models/model-filter-table';
 import { getCategoryConfigByName } from 'src/app/utils/category-config';
+import { NotificationsService } from '../../services/notifications.service';
 
 interface CategoryConfig {
   id: number;
@@ -58,6 +59,7 @@ export class GAddExpenseComponent implements OnInit {
   constructor(
     private readonly fb: FormBuilder,
     private readonly expenseService: VehicleService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   ngOnInit(): void {

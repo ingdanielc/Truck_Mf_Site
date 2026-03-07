@@ -8,6 +8,7 @@ import { ModelTrip } from 'src/app/models/trip-model';
 import { ToastService } from 'src/app/services/toast.service';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { GTripFormComponent } from '../../../components/g-trip-form/g-trip-form.component';
+import { NotificationsService } from 'src/app/services/notifications.service';
 import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { OwnerService } from 'src/app/services/owner.service';
@@ -48,7 +49,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   totalExpenses: number = 0;
 
   private routeSub?: Subscription;
-  private userSub?: Subscription;
+  private readonly userSub?: Subscription;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -61,6 +62,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     private readonly ownerService: OwnerService,
     private readonly vehicleService: VehicleService,
     private readonly driverService: DriverService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   ngOnInit(): void {
@@ -310,6 +312,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         if (this.tripId) {
           this.loadTrip(this.tripId);
         }
+        this.notificationsService.refreshNotifications();
       },
       error: (err: any) => {
         console.error('Error updating trip:', err);

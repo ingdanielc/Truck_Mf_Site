@@ -1,0 +1,59 @@
+.offcanvas {
+  visibility: visible;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  width: 100%;
+  max-width: 600px;
+  z-index: 1050;
+}
+
+.offcanvas.show {
+  transform: translateX(0);
+}
+
+.offcanvas-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.offcanvas-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.notifications-list {
+  max-height: calc(100vh - 120px);
+}
+
+.smallest {
+  font-size: 0.75rem;
+}
+
+.empty-state {
+  height: 200px;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--bs-secondary-bg);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--bs-secondary);
+}

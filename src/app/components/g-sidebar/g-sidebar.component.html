@@ -39,17 +39,24 @@
     <div class="notifications-wrapper me-3 me-md-4">
       <button
         class="btn btn-link position-relative p-0 text-decoration-none text-body"
+        (click)="toggleNotifications()"
       >
         <i class="fa-solid fa-bell fs-5"></i>
-        @if (notificationsCount > 0) {
+        @if ((unreadCount$ | async) ?? 0 > 0) {
           <span
             class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
           >
-            {{ notificationsCount }}
+            {{ unreadCount$ | async }}
           </span>
         }
       </button>
     </div>
+
+    <!-- Notifications Offcanvas -->
+    <app-g-notifications
+      [isOpen]="isNotificationsOpen"
+      (close)="isNotificationsOpen = false"
+    ></app-g-notifications>
 
     <!-- User Profile Dropdown -->
     <div class="user-profile-wrapper position-relative">

@@ -13,6 +13,9 @@ import { SecurityService } from '../../services/security/security.service';
 import { OwnerService } from '../../services/owner.service';
 import { DriverService } from '../../services/driver.service';
 import { Subscription } from 'rxjs';
+import { GNotificationsComponent } from '../g-notifications/g-notifications.component';
+import { NotificationsService } from '../../services/notifications.service';
+import { CommonModule } from '@angular/common';
 import {
   Filter,
   ModelFilterTable,
@@ -23,15 +26,18 @@ import {
 @Component({
   selector: 'g-sidebar',
   standalone: true,
-  imports: [],
+  imports: [GNotificationsComponent, CommonModule],
   templateUrl: './g-sidebar.component.html',
   styleUrls: ['./g-sidebar.component.scss'],
 })
 export class GSidebarComponent implements OnInit, OnDestroy {
   @Input() userName: string = 'Daniel Solis';
   @Input() userRole: string = 'Administrador';
-  @Input() notificationsCount: number = 5;
   @Output() toggleMenu = new EventEmitter<void>();
+
+  isNotificationsOpen = false;
+  unreadCount$ = this.notificationsService.unreadCount$;
+
   currentTheme: 'light' | 'dark' = 'dark';
   isUserMenuOpen: boolean = false;
   private userSub?: Subscription;
@@ -42,6 +48,7 @@ export class GSidebarComponent implements OnInit, OnDestroy {
     private readonly securityService: SecurityService,
     private readonly ownerService: OwnerService,
     private readonly driverService: DriverService,
+    public readonly notificationsService: NotificationsService,
   ) {}
 
   ngOnInit(): void {
@@ -160,5 +167,9 @@ export class GSidebarComponent implements OnInit, OnDestroy {
     this.tokenService.clearToken();
     this.router.navigateByUrl('/auth');
     this.isUserMenuOpen = false;
+  }
+
+  toggleNotifications() {
+    this.isNotificationsOpen = !this.isNotificationsOpen;
   }
 }

@@ -33,6 +33,7 @@ import { TripService } from 'src/app/services/trip.service';
 import { ModelTrip } from 'src/app/models/trip-model';
 import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-trip-mini-card.component';
 import { GVehicleTripCardComponent } from 'src/app/components/g-vehicle-trip-card/g-vehicle-trip-card.component';
+import { NotificationsService } from 'src/app/services/notifications.service';
 
 @Component({
   selector: 'app-expenses',
@@ -88,6 +89,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     private readonly toastService: ToastService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   ngOnInit(): void {
@@ -677,6 +679,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           this.showAddExpense = false;
           // Refresh list
           this.expensesTripComponent?.loadExpenses();
+          this.notificationsService.refreshNotifications();
         },
         error: (err) => {
           console.error('Error saving expense:', err);

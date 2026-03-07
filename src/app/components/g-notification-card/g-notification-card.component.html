@@ -1,0 +1,39 @@
+<div
+  class="notification-card p-3 border-bottom position-relative cursor-pointer transition-all"
+  [class.unread]="!notification.isRead"
+  (click)="onMarkRead()"
+  onkeypress
+>
+  <div class="d-flex align-items-start gap-3">
+    <div class="icon-wrapper fs-4 mt-1">
+      <i class="fa-solid" [ngClass]="getIconClass()"></i>
+    </div>
+
+    <div class="content-wrapper flex-grow-1">
+      <div class="d-flex justify-content-between align-items-start">
+        <h6 class="mb-1 fw-bold small text-primary">
+          {{ notification.eventType }}
+        </h6>
+        <button
+          class="btn btn-link btn-sm p-0 text-secondary opacity-50 hover-opacity-100"
+          (click)="onRemove($event)"
+          title="Eliminar"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <p class="mb-1 smaller text-body">{{ notification.message }}</p>
+
+      <span class="text-secondary smallest opacity-75">
+        {{ notification.creationDate | date: "short" }}
+      </span>
+    </div>
+  </div>
+
+  @if (!notification.isRead) {
+    <div
+      class="unread-dot position-absolute top-50 end-0 translate-middle-y me-2"
+    ></div>
+  }
+</div>
