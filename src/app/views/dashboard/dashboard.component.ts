@@ -45,6 +45,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     expenses: ModelExpense[];
   }[] = [];
 
+  public readonly currentMonthName: string = new Date()
+    .toLocaleString('es-CO', { month: 'long' })
+    .replace(/./, (c) => c.toUpperCase());
+  public readonly currentYear: number = new Date().getFullYear();
+
   // Chart 1: Trips por Vehículo
   public tripsByVehicleOptions: ChartConfiguration['options'] = {
     responsive: true,
@@ -59,6 +64,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
     labels: [],
     datasets: [
       { data: [], label: 'Cantidad de Viajes', backgroundColor: '#3b82f6' },
+    ],
+  };
+
+  // New Chart: Trips por Vehículo (Mes Actual)
+  public currentMonthTripsOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, position: 'top' },
+      title: {
+        display: true,
+        text: `Viajes por Vehículo (${this.currentMonthName})`,
+      },
+    },
+  };
+  public currentMonthTripsType: ChartType = 'bar';
+  public currentMonthTripsData: ChartData<'bar'> = {
+    labels: [],
+    datasets: [
+      { data: [], label: 'Viajes este Mes', backgroundColor: '#8b5cf6' },
     ],
   };
 
@@ -77,6 +102,48 @@ export class DashboardComponent implements OnInit, OnDestroy {
     datasets: [
       { data: [], label: 'Flete', backgroundColor: '#10b981' },
       { data: [], label: 'Gastos', backgroundColor: '#ef4444' },
+    ],
+  };
+
+  // New Chart: Ingresos vs Egresos por Viaje (Mes Actual)
+  public monthTripFinOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, position: 'top' },
+      title: {
+        display: true,
+        text: `Ingresos vs Egresos por Viaje (${this.currentMonthName})`,
+      },
+    },
+  };
+  public monthTripFinType: ChartType = 'bar';
+  public monthTripFinData: ChartData<'bar'> = {
+    labels: [],
+    datasets: [
+      { data: [], label: 'Ingresos (Flete)', backgroundColor: '#10b981' },
+      { data: [], label: 'Egresos (Gastos)', backgroundColor: '#f43f5e' },
+    ],
+  };
+
+  // New Chart: Ingresos vs Gastos por Vehículo (Mes Actual)
+  public monthVehicleFinOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, position: 'top' },
+      title: {
+        display: true,
+        text: `Ingresos vs Gastos por Vehículo (${this.currentMonthName})`,
+      },
+    },
+  };
+  public monthVehicleFinType: ChartType = 'bar';
+  public monthVehicleFinData: ChartData<'bar'> = {
+    labels: [],
+    datasets: [
+      { data: [], label: 'Ingresos (Flete)', backgroundColor: '#10b981' },
+      { data: [], label: 'Egresos (Gastos)', backgroundColor: '#f43f5e' },
     ],
   };
 
@@ -109,7 +176,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: true, position: 'top' },
-      title: { display: true, text: 'Viajes por Mes y Vehículo (Año Actual)' },
+      title: {
+        display: true,
+        text: `Viajes por Mes y Vehículo (${this.currentYear})`,
+      },
     },
     scales: {
       y: {
@@ -145,7 +215,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       legend: { display: true, position: 'top' },
       title: {
         display: true,
-        text: 'Utilidad por Mes y Vehículo (Año Actual)',
+        text: `Utilidad por Mes y Vehículo (${this.currentYear})`,
       },
     },
     scales: {
@@ -257,7 +327,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
 
     applyTheme(this.tripsByVehicleOptions);
+    applyTheme(this.currentMonthTripsOptions);
     applyTheme(this.financialOptions);
+    applyTheme(this.monthTripFinOptions);
+    applyTheme(this.monthVehicleFinOptions);
     applyTheme(this.maintenanceOptions);
     applyTheme(this.monthlyTripsOptions);
     applyTheme(this.monthlyProfitOptions);
@@ -410,7 +483,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
 
       this.processTripsByVehicle(trips, this.vehicles);
+      this.processCurrentMonthTrips(trips, this.vehicles);
       this.processFinancialData(trips, expenses);
+      this.processMonthTripFin(trips, expenses);
+      this.processMonthVehicleFin(trips, expenses, this.vehicles);
       this.processMaintenanceData(expenses, this.vehicles);
       this.processTripsByMonth(trips, this.vehicles);
       this.processProfitByMonth(trips, expenses, this.vehicles);
@@ -429,10 +505,46 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.financialData.labels = [];
     this.financialData.datasets[0].data = [];
     this.financialData.datasets[1].data = [];
+    this.currentMonthTripsData.datasets[0].data = [];
+    this.monthTripFinData.labels = [];
+    this.monthTripFinData.datasets[0].data = [];
+    this.monthTripFinData.datasets[1].data = [];
+    this.monthVehicleFinData.labels = [];
+    this.monthVehicleFinData.datasets[0].data = [];
+    this.monthVehicleFinData.datasets[1].data = [];
     this.maintenanceData.labels = [];
     this.maintenanceData.datasets[0].data = [];
     this.monthlyTripsData.datasets = [];
     this.monthlyProfitData.datasets = [];
+  }
+
+  private processMonthTripFin(trips: ModelTrip[], expenses: ModelExpense[]) {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const monthTrips = trips
+      .filter((t) => {
+        if (!t.startDate) return false;
+        const d = new Date(t.startDate);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      })
+      .sort((a, b) => Number(a.numberTrip ?? 0) - Number(b.numberTrip ?? 0));
+
+    const labels = monthTrips.map((t) => `Viaje #${t.numberTrip}`);
+    const incomeData = monthTrips.map((t) => t.freight || 0);
+    const expenseData = monthTrips.map((t) => {
+      const tripExp = expenses.filter((e) => e.tripId === t.id);
+      return tripExp.reduce((sum, e) => sum + e.amount, 0);
+    });
+
+    this.monthTripFinData = {
+      labels,
+      datasets: [
+        { ...this.monthTripFinData.datasets[0], data: incomeData },
+        { ...this.monthTripFinData.datasets[1], data: expenseData },
+      ],
+    };
   }
 
   private processTripsByVehicle(trips: ModelTrip[], vehicles: ModelVehicle[]) {
@@ -448,6 +560,98 @@ export class DashboardComponent implements OnInit, OnDestroy {
       labels: Object.keys(counts),
       datasets: [
         { ...this.tripsByVehicleData.datasets[0], data: Object.values(counts) },
+      ],
+    };
+  }
+
+  private processCurrentMonthTrips(
+    trips: ModelTrip[],
+    vehicles: ModelVehicle[],
+  ) {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const counts: Record<string, number> = {};
+    vehicles.forEach((v) => (counts[v.plate.toUpperCase()] = 0));
+
+    trips.forEach((t) => {
+      if (!t.startDate) return;
+      const tripDate = new Date(t.startDate);
+      if (
+        tripDate.getMonth() === currentMonth &&
+        tripDate.getFullYear() === currentYear
+      ) {
+        const plate = t.vehicle?.plate || t.vehiclePlate;
+        if (plate) {
+          counts[plate.toUpperCase()] = (counts[plate.toUpperCase()] || 0) + 1;
+        }
+      }
+    });
+
+    this.currentMonthTripsData = {
+      labels: Object.keys(counts),
+      datasets: [
+        {
+          ...this.currentMonthTripsData.datasets[0],
+          data: Object.values(counts),
+        },
+      ],
+    };
+  }
+
+  private processMonthVehicleFin(
+    trips: ModelTrip[],
+    expenses: ModelExpense[],
+    vehicles: ModelVehicle[],
+  ) {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const stats: Record<string, { income: number; expense: number }> = {};
+    vehicles.forEach(
+      (v) => (stats[v.plate.toUpperCase()] = { income: 0, expense: 0 }),
+    );
+
+    trips.forEach((t) => {
+      if (!t.startDate) return;
+      const tripDate = new Date(t.startDate);
+      if (
+        tripDate.getMonth() === currentMonth &&
+        tripDate.getFullYear() === currentYear
+      ) {
+        const plate = (t.vehicle?.plate || t.vehiclePlate)?.toUpperCase();
+        if (plate && stats[plate]) {
+          stats[plate].income += t.freight || 0;
+        }
+      }
+    });
+
+    expenses.forEach((e) => {
+      const expenseDate = e.creationDate ? new Date(e.creationDate) : null;
+      if (
+        expenseDate &&
+        expenseDate.getMonth() === currentMonth &&
+        expenseDate.getFullYear() === currentYear
+      ) {
+        const vehicle = vehicles.find((v) => v.id === e.vehicleId);
+        const plate = vehicle?.plate?.toUpperCase();
+        if (plate && stats[plate]) {
+          stats[plate].expense += e.amount || 0;
+        }
+      }
+    });
+
+    const labels = Object.keys(stats);
+    const incomeData = labels.map((l) => stats[l].income);
+    const expenseData = labels.map((l) => stats[l].expense);
+
+    this.monthVehicleFinData = {
+      labels: labels,
+      datasets: [
+        { ...this.monthVehicleFinData.datasets[0], data: incomeData },
+        { ...this.monthVehicleFinData.datasets[1], data: expenseData },
       ],
     };
   }

@@ -19,7 +19,6 @@ import { ModelTrip } from 'src/app/models/trip-model';
 import { TripService } from 'src/app/services/trip.service';
 import { CommonService } from 'src/app/services/common.service';
 import { ToastService } from 'src/app/services/toast.service';
-import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { DriverService } from 'src/app/services/driver.service';
@@ -60,7 +59,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
 
   private _pendingVehicleId: number | null = null;
   private _pendingDriverId: number | null = null;
-  private userSub?: Subscription;
+  private readonly userSub?: Subscription;
   private ownerChangeSub?: Subscription;
   private vehicleChangeSub?: Subscription;
 
@@ -78,20 +77,13 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     'Ruta Rápida',
     'Logística Avanzada',
   ];
-  tripStatuses: string[] = [
-    'Planeado',
-    'En Curso',
-    'Completado',
-    'Cancelado',
-    'Pendiente',
-  ];
+  tripStatuses: string[] = ['En Curso', 'Completado', 'Cancelado', 'Pendiente'];
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly tripService: TripService,
     private readonly commonService: CommonService,
     private readonly toastService: ToastService,
-    private readonly securityService: SecurityService,
     private readonly ownerService: OwnerService,
     private readonly vehicleService: VehicleService,
     private readonly driverService: DriverService,
@@ -304,6 +296,12 @@ export class GTripFormComponent implements OnInit, OnDestroy {
         this.vehicles = response?.data?.content ?? [];
         this.mapBrandNames();
         this.loadingVehicles = false;
+
+        // Pre-seleccionar si solo hay un vehículo (Solo para nuevos registros)
+        if (!this.trip && this.vehicles.length === 1) {
+          this.tripForm.get('vehicleId')?.setValue(this.vehicles[0].id);
+        }
+
         if (this._pendingVehicleId != null) {
           this.tripForm
             .get('vehicleId')
