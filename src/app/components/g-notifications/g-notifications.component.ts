@@ -28,6 +28,8 @@ export class GNotificationsComponent implements OnInit {
   @Input() isOpen = false;
   @Output() close = new EventEmitter<void>();
 
+  isConfirmOpen = false;
+
   private readonly notificationsService = inject(NotificationsService);
   private readonly securityService = inject(SecurityService);
 
@@ -81,17 +83,26 @@ export class GNotificationsComponent implements OnInit {
   }
 
   onClearAll() {
-    if (
-      confirm('¿Estás seguro de que quieres eliminar todas las notificaciones?')
-    ) {
-      this.notifications$.pipe(take(1)).subscribe((notifications) => {
-        if (notifications.length === 0) return;
+    this.isConfirmOpen = true;
+  }
 
-        const requests = notifications.map((n) =>
-          this.notificationsService.markAsDelete(n),
-        );
-        forkJoin(requests).subscribe();
+  confirmClearAll() {
+    this.notifications$.pipe(take(1)).subscribe((notifications) => {
+      if (notifications.length === 0) {
+        this.isConfirmOpen = false;
+        return;
+      }
+
+      const requests = notifications.map((n) =>
+        this.notificationsService.markAsDelete(n),
+      );
+      forkJoin(requests).subscribe(() => {
+        this.isConfirmOpen = false;
       });
-    }
+    });
+  }
+
+  cancelClearAll() {
+    this.isConfirmOpen = false;
   }
 }

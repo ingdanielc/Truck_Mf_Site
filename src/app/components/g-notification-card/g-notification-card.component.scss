@@ -66,12 +66,18 @@
     }
   }
 
+  .actions-column {
+    width: 24px;
+    padding-top: 2px;
+  }
+
   .unread-dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     background-color: var(--nc-indicator);
     border-radius: 50%;
     box-shadow: 0 0 10px rgba(var(--bs-primary-rgb), 0.4);
+    margin-bottom: 2px;
   }
 
   .smallest {
