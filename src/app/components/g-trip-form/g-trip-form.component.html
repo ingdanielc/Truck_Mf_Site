@@ -230,13 +230,27 @@
               (input)="formatCurrencyInput('freight', $event)"
               (keypress)="allowOnlyNumbers($event)"
               [class.is-invalid]="
-                tripForm.get('freight')?.touched &&
-                tripForm.get('freight')?.invalid
+                (tripForm.get('freight')?.invalid &&
+                  (tripForm.get('freight')?.touched ||
+                    tripForm.get('freight')?.dirty)) ||
+                (tripForm.hasError('advanceLimitExceeded') &&
+                  (tripForm.touched || tripForm.dirty)) ||
+                (trip && tripForm.invalid && !tripForm.pristine)
               "
             />
-            <div class="invalid-feedback small">
-              Este campo es obligatorio para continuar
-            </div>
+            @if (tripForm.hasError("advanceLimitExceeded")) {
+              <div class="invalid-feedback d-block small">
+                El flete debe ser mayor o igual al anticipo
+              </div>
+            } @else if (
+              tripForm.get("freight")?.invalid &&
+              (tripForm.get("freight")?.touched ||
+                tripForm.get("freight")?.dirty)
+            ) {
+              <div class="invalid-feedback d-block small">
+                Este campo es obligatorio para continuar
+              </div>
+            }
           </div>
         </div>
         <div class="col-6 mb-3">
@@ -254,13 +268,27 @@
               (input)="formatCurrencyInput('advancePayment', $event)"
               (keypress)="allowOnlyNumbers($event)"
               [class.is-invalid]="
-                tripForm.get('advancePayment')?.touched &&
-                tripForm.get('advancePayment')?.invalid
+                (tripForm.get('advancePayment')?.invalid &&
+                  (tripForm.get('advancePayment')?.touched ||
+                    tripForm.get('advancePayment')?.dirty)) ||
+                (tripForm.hasError('advanceLimitExceeded') &&
+                  (tripForm.touched || tripForm.dirty)) ||
+                (trip && tripForm.invalid && !tripForm.pristine)
               "
             />
-            <div class="invalid-feedback small">
-              Este campo es obligatorio para continuar
-            </div>
+            @if (tripForm.hasError("advanceLimitExceeded")) {
+              <div class="invalid-feedback d-block small">
+                El anticipo no puede ser mayor que el flete
+              </div>
+            } @else if (
+              tripForm.get("advancePayment")?.invalid &&
+              (tripForm.get("advancePayment")?.touched ||
+                tripForm.get("advancePayment")?.dirty)
+            ) {
+              <div class="invalid-feedback d-block small">
+                Este campo es obligatorio para continuar
+              </div>
+            }
           </div>
         </div>
 

@@ -17,6 +17,7 @@ import {
 import { Subscription } from 'rxjs';
 import { ModelTrip } from 'src/app/models/trip-model';
 import { TripService } from 'src/app/services/trip.service';
+import { NotificationsService } from 'src/app/services/notifications.service';
 import { CommonService } from 'src/app/services/common.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { OwnerService } from 'src/app/services/owner.service';
@@ -87,34 +88,44 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     private readonly ownerService: OwnerService,
     private readonly vehicleService: VehicleService,
     private readonly driverService: DriverService,
+    private readonly notificationsService: NotificationsService,
   ) {
-    this.tripForm = this.fb.group({
-      numberTrip: ['', [Validators.required]],
-      manifestNumber: ['', [Validators.required]],
-      originId: ['', [Validators.required]],
-      destinationId: ['', [Validators.required]],
-      freight: [
-        0,
-        [Validators.required, Validators.min(0), Validators.max(999999999)],
-      ],
-      advancePayment: [
-        0,
-        [Validators.required, Validators.min(0), Validators.max(999999999)],
-      ],
-      balance: [0],
-      startDate: [
-        new Date().toISOString().split('T')[0],
-        [Validators.required],
-      ],
-      ownerId: [null, [Validators.required]],
-      vehicleId: [null, [Validators.required]],
-      driverId: [null, [Validators.required]],
-      loadType: ['', [Validators.required]],
-      company: ['', [Validators.required]],
-      status: ['En Curso'],
-    });
+    this.tripForm = this.fb.group(
+      {
+        numberTrip: ['', [Validators.required]],
+        manifestNumber: ['', [Validators.required]],
+        originId: ['', [Validators.required]],
+        destinationId: ['', [Validators.required]],
+        freight: [
+          0,
+          [Validators.required, Validators.min(0), Validators.max(999999999)],
+        ],
+        advancePayment: [
+          0,
+          [Validators.required, Validators.min(0), Validators.max(999999999)],
+        ],
+        balance: [0],
+        startDate: [
+          new Date().toISOString().split('T')[0],
+          [Validators.required],
+        ],
+        ownerId: [null, [Validators.required]],
+        vehicleId: [null, [Validators.required]],
+        driverId: [null, [Validators.required]],
+        loadType: ['', [Validators.required]],
+        company: ['', [Validators.required]],
+        status: ['En Curso'],
+      },
+      { validators: this.advancePaymentValidator },
+    );
 
     this.setupFormSubscriptions();
+  }
+
+  private advancePaymentValidator(group: FormGroup) {
+    const freight = Number(group.get('freight')?.value) || 0;
+    const advance = Number(group.get('advancePayment')?.value) || 0;
+    return advance <= freight ? null : { advanceLimitExceeded: true };
   }
 
   ngOnInit(): void {
@@ -197,26 +208,36 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       this.loadDriversByOwner(Number(tripOwnerId));
     }
 
+    // Asegurarse de que el valor inicial sea un string de fecha válido para el input type="date"
+    let startDateStr = '';
+    if (trip.startDate) {
+      const dateObj = new Date(trip.startDate);
+      if (!Number.isNaN(dateObj.getTime())) {
+        startDateStr = dateObj.toISOString().split('T')[0];
+      }
+    }
+
     this.tripForm.patchValue({
-      numberTrip: trip.numberTrip,
-      manifestNumber: trip.manifestNumber,
-      originId: trip.originId,
-      destinationId: trip.destinationId,
-      freight: trip.freight,
-      advancePayment: trip.advancePayment,
-      startDate: trip.startDate,
-      vehicleId: trip.vehicleId,
-      driverId: trip.driverId,
-      loadType: trip.loadType,
-      company: trip.company,
-      status: trip.status,
       ownerId: tripOwnerId,
+      numberTrip: trip.numberTrip ?? '',
+      manifestNumber: trip.manifestNumber ?? '',
+      originId: trip.originId ? String(trip.originId) : '',
+      destinationId: trip.destinationId ? String(trip.destinationId) : '',
+      freight: Number(trip.freight) || 0,
+      advancePayment: Number(trip.advancePayment) || 0,
+      startDate: startDateStr,
+      loadType: trip.loadType ?? '',
+      company: trip.company ?? '',
+      status: trip.status || 'En Curso',
     });
 
     if (this.userRole === 'PROPIETARIO') {
-      this.tripForm.get('ownerId')?.disable();
+      this.tripForm.get('ownerId')?.disable({ emitEvent: false });
+      this.tripForm
+        .get('ownerId')
+        ?.setValue(this.loggedInOwnerId, { emitEvent: false });
     } else {
-      this.tripForm.get('ownerId')?.enable();
+      this.tripForm.get('ownerId')?.enable({ emitEvent: false });
     }
   }
 
@@ -399,6 +420,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
             'Éxito',
             `Viaje ${this.trip ? 'actualizado' : 'creado'} correctamente`,
           );
+          this.notificationsService.refreshNotifications();
           this.saved.emit();
         },
         error: (error) => {
