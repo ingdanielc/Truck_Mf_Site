@@ -61,10 +61,6 @@ export class GAddExpenseComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    console.log(
-      'GAddExpenseComponent initialized with vehicleId:',
-      this.vehicleId,
-    );
     this.initForm();
     this.loadCategories();
 

@@ -27,7 +27,7 @@ export class GVehicleOwnerCardComponent {
 
   formatDocNumber(value: any): string {
     const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
-    return isNaN(n) || value === ''
+    return Number.isNaN(n) || value === ''
       ? String(value ?? '')
       : new Intl.NumberFormat('es-CO').format(n);
   }

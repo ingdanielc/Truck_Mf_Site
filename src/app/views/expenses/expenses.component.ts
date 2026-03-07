@@ -115,7 +115,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
           this.validateAccess(tripId, vehicleId, user).subscribe({
             next: (hasAccess: boolean) => {
-              console.log('acceso: ', hasAccess);
               if (!hasAccess) {
                 this.toastService.showError(
                   'Acceso denegado',
