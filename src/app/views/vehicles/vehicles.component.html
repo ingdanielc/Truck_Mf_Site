@@ -160,6 +160,56 @@
     </div>
   }
 
+  <!-- Footer/Pagination -->
+  <div class="row align-items-center g-3 mb-4">
+    <div class="col-12 col-md-6 text-center text-md-start">
+      <p class="text-secondary small mb-0">
+        Mostrando {{ allVehicles.length }} de {{ totalVehicles }} vehículos
+      </p>
+    </div>
+    @if (userRole === "ADMINISTRADOR") {
+      <div
+        class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end"
+      >
+        <nav aria-label="Navegación de páginas">
+          <ul class="pagination mb-0">
+            <li class="page-item" [class.disabled]="page === 0">
+              <button
+                class="page-link shadow-none px-3 py-2"
+                (click)="changePage(page - 1)"
+                aria-label="Anterior"
+              >
+                <span aria-hidden="true">&laquo;</span>
+              </button>
+            </li>
+            @for (p of pages; track p) {
+              <li class="page-item" [class.active]="p === page">
+                <button
+                  class="page-link shadow-none px-3 py-2"
+                  (click)="changePage(p)"
+                >
+                  {{ p + 1 }}
+                </button>
+              </li>
+            }
+            <li
+              class="page-item"
+              [class.disabled]="page >= totalPages - 1 || totalPages === 0"
+            >
+              <button
+                class="page-link shadow-none px-3 py-2"
+                (click)="changePage(page + 1)"
+                aria-label="Siguiente"
+              >
+                <span aria-hidden="true">&raquo;</span>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    }
+  </div>
+
   <!-- Mobile Floating Action Button -->
   <button
     class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"

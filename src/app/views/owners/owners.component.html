@@ -111,38 +111,54 @@
   </div>
 
   <!-- Footer/Pagination -->
-  <div
-    class="d-flex justify-content-between align-items-center text-body-secondary small"
-  >
-    <p class="mb-0">
-      Mostrando 1 a {{ owners.length }} de {{ totalOwners }} propietarios
-    </p>
-    <nav aria-label="Navegación de propietarios">
-      <ul class="pagination pagination-sm mb-0">
-        <li class="page-item disabled">
-          <a
-            class="page-link rounded-start-3"
-            href="#"
-            tabindex="-1"
-            aria-disabled="true"
-          >
-            <i class="fa-solid fa-chevron-left"></i>
-          </a>
-        </li>
-        <li class="page-item active" aria-current="page">
-          <a class="page-link" href="#">1</a>
-        </li>
-        <li class="page-item"><a class="page-link" href="#">2</a></li>
-        <li class="page-item"><a class="page-link" href="#">3</a></li>
-        <li class="page-item disabled"><span class="page-link">...</span></li>
-        <li class="page-item"><a class="page-link" href="#">214</a></li>
-        <li class="page-item">
-          <a class="page-link rounded-end-3" href="#">
-            <i class="fa-solid fa-chevron-right"></i>
-          </a>
-        </li>
-      </ul>
-    </nav>
+  <!-- Footer/Pagination -->
+  <div class="row align-items-center g-3 mb-4">
+    <div class="col-12 col-md-6 text-center text-md-start">
+      <p class="text-secondary small mb-0">
+        Mostrando {{ owners.length }} de {{ totalOwners }} propietarios
+      </p>
+    </div>
+    @if (userRole === "ADMINISTRADOR") {
+      <div
+        class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end"
+      >
+        <nav aria-label="Navegación de páginas">
+          <ul class="pagination mb-0">
+            <li class="page-item" [class.disabled]="page === 0">
+              <button
+                class="page-link shadow-none px-3 py-2"
+                (click)="changePage(page - 1)"
+                aria-label="Anterior"
+              >
+                <span aria-hidden="true">&laquo;</span>
+              </button>
+            </li>
+            @for (p of pages; track p) {
+              <li class="page-item" [class.active]="p === page">
+                <button
+                  class="page-link shadow-none px-3 py-2"
+                  (click)="changePage(p)"
+                >
+                  {{ p + 1 }}
+                </button>
+              </li>
+            }
+            <li
+              class="page-item"
+              [class.disabled]="page >= totalPages - 1 || totalPages === 0"
+            >
+              <button
+                class="page-link shadow-none px-3 py-2"
+                (click)="changePage(page + 1)"
+                aria-label="Siguiente"
+              >
+                <span aria-hidden="true">&raquo;</span>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    }
   </div>
 
   <!-- Mobile Floating Action Button -->

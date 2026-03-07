@@ -56,7 +56,7 @@ export class DriversComponent implements OnInit, OnDestroy {
   groupedDrivers: DriverOwnerGroup[] = [];
   searchTerm: string = '';
   page: number = 0;
-  rows: number = 10;
+  rows: number = 9;
 
   // Role management
   userRole: string = '';
@@ -204,6 +204,12 @@ export class DriversComponent implements OnInit, OnDestroy {
       next: (user: any) => {
         if (user) {
           this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+          if (this.userRole !== 'ADMINISTRADOR') {
+            this.rows = 100;
+          } else {
+            this.rows = 9;
+          }
+
           if (this.userRole === 'PROPIETARIO') {
             this.loggedInOwnerId = user.id ?? null;
             this.loadOwners(); // This will trigger loadDrivers upon success
@@ -724,7 +730,6 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   calculateStats(): void {
-    this.totalDrivers = this.allDrivers.length;
     this.activeDrivers = this.allDrivers.filter((d) => {
       const status = d.user?.status;
       return !d.user || status === 'Activo';
@@ -805,6 +810,21 @@ export class DriversComponent implements OnInit, OnDestroy {
     });
 
     this.groupedDrivers = result;
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.totalDrivers / this.rows);
+  }
+
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i);
+  }
+
+  changePage(newPage: number): void {
+    if (newPage >= 0 && newPage < this.totalPages && newPage !== this.page) {
+      this.page = newPage;
+      this.loadDrivers();
+    }
   }
 
   openAddDriverForOwner(owner: ModelOwner): void {

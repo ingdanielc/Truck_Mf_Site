@@ -56,7 +56,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   occupiedVehicles: number = 0;
   searchTerm: string = '';
   page: number = 0;
-  rows: number = 100;
+  rows: number = 9;
 
   // Grouped display
   groupedVehicles: VehicleOwnerGroup[] = [];
@@ -198,6 +198,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       next: (user) => {
         if (user) {
           this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+
+          if (this.userRole !== 'ADMINISTRADOR') {
+            this.rows = 100;
+          } else {
+            this.rows = 9;
+          }
 
           if (this.userRole === 'ADMINISTRADOR') {
             this.vehicleForm
@@ -623,7 +629,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   calculateStats(): void {
-    this.totalVehicles = this.allVehicles.length;
     this.availableVehicles = this.allVehicles.filter(
       (v) => v.status?.toLowerCase() === 'activo',
     ).length;
@@ -651,6 +656,21 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     }
 
     this.buildGroups(filtered);
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.totalVehicles / this.rows);
+  }
+
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i);
+  }
+
+  changePage(newPage: number): void {
+    if (newPage >= 0 && newPage < this.totalPages && newPage !== this.page) {
+      this.page = newPage;
+      this.loadVehicles();
+    }
   }
 
   buildGroups(vehicles: ModelVehicle[]): void {

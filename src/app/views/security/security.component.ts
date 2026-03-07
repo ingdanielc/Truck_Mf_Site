@@ -42,7 +42,7 @@ export class SecurityComponent implements OnInit {
   searchTerm: string = '';
   activeFilter: string = 'Todos';
   filters: string[] = ['Todos'];
-  rows: number = 10;
+  rows: number = 9;
   page: number = 0;
 
   userForm: FormGroup;
@@ -183,7 +183,6 @@ export class SecurityComponent implements OnInit {
   }
 
   calculateStats(): void {
-    this.totalUsers = this.allUsers.length;
     this.ownersCount = this.allUsers.filter(
       (u) => u.roleType === 'propietario',
     ).length;
@@ -214,7 +213,7 @@ export class SecurityComponent implements OnInit {
 
   setFilter(filter: string): void {
     this.activeFilter = filter;
-    this.page = 0; // Reset pagination when filter changes
+    this.page = 0;
     this.loadUsers();
   }
 
@@ -228,6 +227,21 @@ export class SecurityComponent implements OnInit {
           u.name.toLowerCase().includes(term) ||
           u.email.toLowerCase().includes(term),
       );
+    }
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.totalUsers / this.rows);
+  }
+
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i);
+  }
+
+  changePage(newPage: number): void {
+    if (newPage >= 0 && newPage < this.totalPages && newPage !== this.page) {
+      this.page = newPage;
+      this.loadUsers();
     }
   }
 

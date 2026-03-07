@@ -46,7 +46,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   completedTrips: number = 0;
   searchTerm: string = '';
   page: number = 0;
-  rows: number = 100;
+  rows: number = 9;
 
   // Grouped display
   groupedTrips: TripOwnerGroup[] = [];
@@ -83,7 +83,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     private readonly vehicleService: VehicleService,
     private readonly driverService: DriverService,
     private readonly route: ActivatedRoute,
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     const rawOwnerId = this.route.snapshot.queryParamMap.get('ownerId');
@@ -270,6 +270,7 @@ export class TripsComponent implements OnInit, OnDestroy {
 
     this.tripService.getTripFilter(filter).subscribe({
       next: (response: any) => {
+        this.totalTrips = response?.data?.totalElements ?? 0;
         this.allTrips = response?.data?.content ?? [];
         this.calculateStats();
 
@@ -282,16 +283,19 @@ export class TripsComponent implements OnInit, OnDestroy {
           return undefined;
         };
 
-        const currentOwnerIds = this.owners.map(o => o.id);
-        const missingOwnerIds = [...new Set(
-          this.allTrips
-            .map(t => getOwnerId(t))
-            .filter((id): id is number =>
-              id != null &&
-              !currentOwnerIds.includes(id) &&
-              id !== this.ownerIdFilter
-            )
-        )];
+        const currentOwnerIds = this.owners.map((o) => o.id);
+        const missingOwnerIds = [
+          ...new Set(
+            this.allTrips
+              .map((t) => getOwnerId(t))
+              .filter(
+                (id): id is number =>
+                  id != null &&
+                  !currentOwnerIds.includes(id) &&
+                  id !== this.ownerIdFilter,
+              ),
+          ),
+        ];
 
         if (missingOwnerIds.length > 0) {
           this.fetchMissingOwners(missingOwnerIds);
@@ -322,12 +326,11 @@ export class TripsComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error fetching missing owners:', err);
         this.applyFilter();
-      }
+      },
     });
   }
 
   calculateStats(): void {
-    this.totalTrips = this.allTrips.length;
     this.inProgressTrips = this.allTrips.filter((t) => {
       const status = (t.status || '').toUpperCase();
       return status === 'IN_PROGRESS' || status === 'EN CURSO';
@@ -403,6 +406,21 @@ export class TripsComponent implements OnInit, OnDestroy {
     });
 
     this.groupedTrips = groups;
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.totalTrips / this.rows);
+  }
+
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i);
+  }
+
+  changePage(newPage: number): void {
+    if (newPage >= 0 && newPage < this.totalPages && newPage !== this.page) {
+      this.page = newPage;
+      this.loadTrips();
+    }
   }
 
   toggleOffcanvas(trip?: ModelTrip): void {

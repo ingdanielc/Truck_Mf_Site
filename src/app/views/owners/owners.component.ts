@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 
 import {
   FormBuilder,
@@ -10,6 +10,7 @@ import {
 import { ModelOwner } from 'src/app/models/owner-model';
 import { GOwnerCardComponent } from '../../components/g-owner-card/g-owner-card.component';
 import { GPasswordCardComponent } from '../../components/g-password-card/g-password-card.component';
+import { Subscription } from 'rxjs';
 import {
   Filter,
   ModelFilterTable,
@@ -35,7 +36,7 @@ import { CustomValidators } from 'src/app/utils/custom-validators';
   templateUrl: './owners.component.html',
   styleUrls: ['./owners.component.scss'],
 })
-export class OwnersComponent implements OnInit {
+export class OwnersComponent implements OnInit, OnDestroy {
   owners: ModelOwner[] = [];
   allOwners: ModelOwner[] = [];
   totalOwners: number = 0;
@@ -43,7 +44,10 @@ export class OwnersComponent implements OnInit {
   inactiveOwners: number = 0;
   searchTerm: string = '';
   page: number = 0;
-  rows: number = 10;
+  rows: number = 9;
+
+  userRole: string = 'ROL';
+  private userSub?: Subscription;
 
   // Offcanvas and Form
   isOffcanvasOpen: boolean = false;
@@ -129,8 +133,29 @@ export class OwnersComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadOwners();
+    this.subscribeToUserContext();
     this.loadReferenceData();
+  }
+
+  subscribeToUserContext(): void {
+    this.userSub = this.securityService.userData$.subscribe({
+      next: (user) => {
+        if (user) {
+          this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+          if (this.userRole !== 'ADMINISTRADOR') {
+            this.rows = 100;
+          } else {
+            this.rows = 9;
+          }
+          this.loadOwners();
+        }
+      },
+      error: (err) => console.error('Error loading role:', err),
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.userSub?.unsubscribe();
   }
 
   loadReferenceData(): void {
@@ -414,6 +439,7 @@ export class OwnersComponent implements OnInit {
     this.ownerService.getOwnerFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
+          this.totalOwners = response.data.totalElements || 0;
           this.allOwners = response.data.content;
           this.calculateStats();
           this.applyFilter();
@@ -424,7 +450,6 @@ export class OwnersComponent implements OnInit {
   }
 
   calculateStats(): void {
-    this.totalOwners = this.allOwners.length;
     this.activeOwners = this.allOwners.filter(
       (p) => p.user?.status === 'Activo',
     ).length;
@@ -447,6 +472,21 @@ export class OwnersComponent implements OnInit {
     this.owners = filtered;
   }
 
+  get totalPages(): number {
+    return Math.ceil(this.totalOwners / this.rows);
+  }
+
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i);
+  }
+
+  changePage(newPage: number): void {
+    if (newPage >= 0 && newPage < this.totalPages && newPage !== this.page) {
+      this.page = newPage;
+      this.loadOwners();
+    }
+  }
+
   allowOnlyNumbers(event: any): void {
     const pattern = /[0-9]/;
     const inputChar = String.fromCharCode(event.charCode);
@@ -467,7 +507,7 @@ export class OwnersComponent implements OnInit {
   private applyDocumentNumberMask(value: string): string {
     if (!value) return '';
     const numericValue = Number(value.replaceAll(/\D/g, ''));
-    if (isNaN(numericValue)) return '';
+    if (Number.isNaN(numericValue)) return '';
     return new Intl.NumberFormat('es-CO').format(numericValue);
   }
 
