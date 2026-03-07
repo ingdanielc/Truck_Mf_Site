@@ -15,6 +15,7 @@ import {
   Pagination,
   Sort,
 } from '../../models/model-filter-table';
+import { forkJoin, take } from 'rxjs';
 
 @Component({
   selector: 'app-g-notifications',
@@ -61,22 +62,36 @@ export class GNotificationsComponent implements OnInit {
   }
 
   onRemove(id: number) {
-    this.notificationsService.deleteNotification(id.toString()).subscribe();
+    const notification = this.notificationsService.getNotificationById(id);
+    if (notification) {
+      this.notificationsService.markAsDelete(notification).subscribe();
+    }
   }
 
   onMarkAllRead() {
-    const user = this.securityService.getUserData();
-    if (user?.id === undefined) return;
-    this.notificationsService.markAllAsRead(user.id!.toString()).subscribe();
+    this.notifications$.pipe(take(1)).subscribe((notifications) => {
+      const unread = notifications.filter((n) => !n.isRead);
+      if (unread.length === 0) return;
+
+      const requests = unread.map((n) =>
+        this.notificationsService.markAsRead(n),
+      );
+      forkJoin(requests).subscribe();
+    });
   }
 
   onClearAll() {
     if (
       confirm('¿Estás seguro de que quieres eliminar todas las notificaciones?')
     ) {
-      const user = this.securityService.getUserData();
-      if (user?.id === undefined) return;
-      this.notificationsService.clearAll(user.id!.toString()).subscribe();
+      this.notifications$.pipe(take(1)).subscribe((notifications) => {
+        if (notifications.length === 0) return;
+
+        const requests = notifications.map((n) =>
+          this.notificationsService.markAsDelete(n),
+        );
+        forkJoin(requests).subscribe();
+      });
     }
   }
 }

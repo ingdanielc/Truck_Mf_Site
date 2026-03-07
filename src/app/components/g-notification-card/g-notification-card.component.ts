@@ -1,8 +1,8 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
+  EVENT_TRANSLATIONS,
   GNotification,
-  NotificationType,
 } from '../../models/g-notification.model';
 
 @Component({
@@ -10,7 +10,7 @@ import {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './g-notification-card.component.html',
-  styleUrl: './g-notification-card.component.css',
+  styleUrl: './g-notification-card.component.scss',
 })
 export class GNotificationCardComponent {
   @Input({ required: true }) notification!: GNotification;
@@ -18,18 +18,22 @@ export class GNotificationCardComponent {
   @Output() remove = new EventEmitter<number>();
 
   getIconClass(): string {
-    switch (this.notification.eventType) {
-      case NotificationType.BIRTHDAY:
-        return 'fa-cake-candles text-primary';
-      case NotificationType.EXPIRATION:
-        return 'fa-calendar-xmark text-danger';
-      case NotificationType.CREATE:
-        return 'fa-circle-plus text-success';
-      case NotificationType.EDIT:
-        return 'fa-pen-to-square text-warning';
-      default:
-        return 'fa-circle-info text-info';
-    }
+    const type = this.notification.eventType.toUpperCase();
+    if (type.includes('BIRTHDAY')) return 'fa-cake-candles text-primary';
+    if (type.includes('EXPIRATION')) return 'fa-calendar-xmark text-danger';
+    if (type.includes('TRIP')) return 'fa-truck-fast text-info';
+    if (type.includes('EXPENSE')) return 'fa-money-bill-transfer text-success';
+    if (type.includes('VEHICLE')) return 'fa-car text-secondary';
+    if (type.includes('DRIVER')) return 'fa-id-card text-warning';
+
+    return 'fa-circle-info text-info';
+  }
+
+  get translatedType(): string {
+    return (
+      EVENT_TRANSLATIONS[this.notification.eventType] ||
+      this.notification.eventType
+    );
   }
 
   onMarkRead() {

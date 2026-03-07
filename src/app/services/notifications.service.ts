@@ -19,7 +19,9 @@ export class NotificationsService {
   private readonly notificationsSubject = new BehaviorSubject<GNotification[]>(
     [],
   );
-  notifications$ = this.notificationsSubject.asObservable();
+  notifications$ = this.notificationsSubject
+    .asObservable()
+    .pipe(map((notifications) => notifications.filter((n) => !n.isDeleted)));
 
   unreadCount$ = this.notifications$.pipe(
     map((notifications) => notifications.filter((n) => !n.isRead).length),
@@ -74,40 +76,20 @@ export class NotificationsService {
       );
   }
 
-  deleteNotification(id: string): Observable<any> {
+  markAsDelete(notification: GNotification): Observable<any> {
     const headers = { 'content-type': 'application/json' };
-    return this.http.delete<any>(`${this.basePath}/${id}`, { headers }).pipe(
-      tap(() => {
-        const current = this.notificationsSubject.value;
-        const updated = current.filter((n) => n.id !== Number(id));
-        this.notificationsSubject.next(updated);
-      }),
-    );
-  }
-
-  markAllAsRead(userId: string): Observable<any> {
-    const headers = { 'content-type': 'application/json' };
-
+    const updatedNotification = { ...notification, isDeleted: true };
     return this.http
-      .post<any>(`${this.basePath}/markAllAsRead/${userId}`, {}, { headers })
+      .post<any>(`${this.basePath}/save`, JSON.stringify(updatedNotification), {
+        headers,
+      })
       .pipe(
         tap(() => {
-          const updated = this.notificationsSubject.value.map((n) => ({
-            ...n,
-            isRead: true,
-          }));
+          const current = this.notificationsSubject.value;
+          const updated = current.map((n) =>
+            n.id === notification.id ? { ...n, isDeleted: true } : n,
+          );
           this.notificationsSubject.next(updated);
-        }),
-      );
-  }
-
-  clearAll(userId: string): Observable<any> {
-    const headers = { 'content-type': 'application/json' };
-    return this.http
-      .post<any>(`${this.basePath}/clearAll/${userId}`, {}, { headers })
-      .pipe(
-        tap(() => {
-          this.notificationsSubject.next([]);
         }),
       );
   }
