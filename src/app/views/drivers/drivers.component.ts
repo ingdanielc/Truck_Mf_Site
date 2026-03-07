@@ -806,7 +806,7 @@ export class DriversComponent implements OnInit, OnDestroy {
       const bName = b.owner.name ?? '';
       if (aName === 'Sin socio') return 1;
       if (bName === 'Sin socio') return -1;
-      return aName.localeCompare(bName);
+      return aName.localeCompare(bName, 'es');
     });
 
     this.groupedDrivers = result;

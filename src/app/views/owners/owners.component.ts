@@ -434,7 +434,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
     const filter = new ModelFilterTable(
       [],
       new Pagination(this.rows, this.page),
-      new Sort('id', true),
+      new Sort('name', false),
     );
     this.ownerService.getOwnerFilter(filter).subscribe({
       next: (response: any) => {

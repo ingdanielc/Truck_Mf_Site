@@ -405,6 +405,10 @@ export class TripsComponent implements OnInit, OnDestroy {
       }
     });
 
+    groups.sort((a, b) =>
+      (a.owner.name || '').localeCompare(b.owner.name || '', 'es'),
+    );
+
     this.groupedTrips = groups;
   }
 

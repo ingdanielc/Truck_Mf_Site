@@ -742,7 +742,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         const bName = b.owner.name ?? '';
         if (aName === 'Sin propietario') return 1;
         if (bName === 'Sin propietario') return -1;
-        return aName.localeCompare(bName);
+        return aName.localeCompare(bName, 'es');
       });
 
       this.groupedVehicles = result;
