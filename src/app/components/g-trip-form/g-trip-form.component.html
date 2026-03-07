@@ -371,15 +371,8 @@
         class="offcanvas-footer border-top pt-4 mt-2 d-flex gap-3 align-items-center"
       >
         <button
-          type="button"
-          class="btn btn-outline-primary flex-fill py-2 rounded-3 fw-bold d-none d-sm-block"
-          (click)="onCancel()"
-        >
-          Atrás
-        </button>
-        <button
           type="submit"
-          class="btn btn-primary flex-fill py-2 rounded-3 fw-bold shadow-primary"
+          class="btn btn-primary flex-fill py-3 rounded-3 fw-bold shadow-primary"
           [disabled]="tripForm.invalid"
         >
           {{ trip ? "Guardar cambios" : "Crear viaje" }}

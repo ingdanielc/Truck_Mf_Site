@@ -24,12 +24,14 @@ export class GOwnerCardComponent {
     this.isMenuOpen = !this.isMenuOpen;
   }
 
-  onChangePasswordClick(): void {
+  onChangePasswordClick(event?: Event): void {
+    event?.stopPropagation();
     this.isMenuOpen = false;
     this.changePassword.emit(this.owner);
   }
 
-  onEditClick(): void {
+  onEditClick(event?: Event): void {
+    event?.stopPropagation();
     this.isMenuOpen = false;
     this.edit.emit(this.owner);
   }
