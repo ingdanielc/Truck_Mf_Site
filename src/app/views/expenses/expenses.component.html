@@ -45,7 +45,7 @@
         <!-- Loading -->
         @if (loadingVehicles) {
           <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status"></div>
+            <output class="spinner-border text-primary"></output>
           </div>
         }
 
@@ -64,7 +64,8 @@
             <div class="d-flex align-items-center gap-2">
               <!-- Prev -->
               <button
-                class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0 d-none d-md-flex"
+                class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0 d-none"
+                [class.d-md-flex]="vehicles.length > 3"
                 (click)="prev()"
                 [disabled]="!canPrev"
                 aria-label="Anterior"
@@ -91,7 +92,8 @@
               </div>
               <!-- Next -->
               <button
-                class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0 d-none d-md-flex"
+                class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0 d-none"
+                [class.d-md-flex]="vehicles.length > 3"
                 (click)="next()"
                 [disabled]="!canNext"
                 aria-label="Siguiente"
@@ -132,10 +134,9 @@
 
           @if (loadingTrips) {
             <div class="text-center py-4">
-              <div
+              <output
                 class="spinner-border text-primary spinner-border-sm"
-                role="status"
-              ></div>
+              ></output>
               <p class="small text-secondary mt-2">Cargando viajes...</p>
             </div>
           } @else if (recentTrips.length === 0) {
