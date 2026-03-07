@@ -66,7 +66,7 @@ export const routes: Routes = [
   {
     path: 'owners/:id',
     canActivate: [RoleGuard],
-    data: { allowedRoles: ['ADMINISTRADOR', 'PROPIETARIO'] },
+    data: { allowedRoles: ['ADMINISTRADOR', 'PROPIETARIO', 'CONDUCTOR'] },
     loadComponent: () =>
       import('./owners/owner-detail/owner-detail.component').then(
         (m) => m.OwnerDetailComponent,

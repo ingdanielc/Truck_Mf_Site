@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, of, catchError } from 'rxjs';
 import { OwnerService } from 'src/app/services/owner.service';
@@ -53,6 +53,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     private readonly toastService: ToastService,
     private readonly commonService: CommonService,
     private readonly securityService: SecurityService,
+    private readonly location: Location,
   ) {}
 
   ngOnInit(): void {
@@ -60,6 +61,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
       const id = params.get('id');
       if (id) {
         this.ownerId = Number(id);
+        this.owner = null; // Reset to avoid showing previous/incorrect data
         this.loadCities();
         this.loadBrands();
         // Wait for user data to be available before validating access
@@ -140,14 +142,105 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
             this.goBack();
           }
         });
-    } else {
-      // Conductores u otros roles (por defecto denegar acceso a perfiles de propietario si no es admin)
-      this.toastService.showError(
-        'Acceso Denegado',
-        'No tiene permiso para ver esta información',
-      );
-      this.goBack();
+      return;
     }
+
+    if (roleName === 'CONDUCTOR') {
+      this.loadDriverVehicleData(ownerId, user.id);
+      return;
+    }
+
+    // Otros roles
+    this.toastService.showError(
+      'Acceso Denegado',
+      'No tiene permiso para ver esta información',
+    );
+    this.goBack();
+  }
+
+  loadDriverVehicleData(ownerId: number, userId: number): void {
+    // 1. Get Driver Info to get driver ID
+    const driverFilter = new ModelFilterTable(
+      [new Filter('user.id', '=', userId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+
+    this.driverService.getDriverFilter(driverFilter).subscribe({
+      next: (response: any) => {
+        const driver = response?.data?.content?.[0];
+        if (driver) {
+          // Security check: ensure the driver belongs to the owner in the URL
+          if (driver.ownerId !== ownerId) {
+            this.toastService.showError(
+              'Acceso Denegado',
+              'No tiene permiso para ver este perfil de propietario',
+            );
+            this.goBack();
+            return;
+          }
+
+          // AUTHORIZED: Now we can load the owner and vehicle data
+          this.loadOwner(ownerId);
+
+          // 2. Get the specific vehicle assigned to this driver
+          const vehicleFilter = new ModelFilterTable(
+            [new Filter('currentDriverId', '=', driver.id.toString())],
+            new Pagination(1, 0),
+            new Sort('id', true),
+          );
+
+          this.vehicleService.getVehicleFilter(vehicleFilter).subscribe({
+            next: (vResponse: any) => {
+              this.vehicles = vResponse?.data?.content ?? [];
+              this.mapBrandNames();
+              this.mapDriverNames();
+              this.loadingVehicles = false;
+
+              if (this.vehicles.length > 0) {
+                // 3. Load trips ONLY for this vehicle
+                this.loadTripCountForVehicle(this.vehicles[0].id!);
+              } else {
+                this.tripCount = 0;
+              }
+            },
+            error: () => {
+              this.loadingVehicles = false;
+              this.tripCount = 0;
+            },
+          });
+
+          // Drivers list (maybe show all drivers of the owner or just themselves? The request says "el listado de vehiculos se debe mostrar unicamente el vehiculo del conductor", it doesn't mention driver list filtering specifically but usually it's better to hide others)
+          this.drivers = [driver];
+          this.loadingDrivers = false;
+        } else {
+          this.loadingVehicles = false;
+          this.loadingDrivers = false;
+          this.toastService.showError(
+            'Error',
+            'No se encontró información del conductor',
+          );
+        }
+      },
+      error: () => {
+        this.loadingVehicles = false;
+        this.loadingDrivers = false;
+      },
+    });
+  }
+
+  loadTripCountForVehicle(vehicleId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('vehicle.id', '=', vehicleId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.tripService.getTripFilter(filter).subscribe({
+      next: (response: any) => {
+        this.tripCount = response?.data?.totalElements ?? 0;
+      },
+      error: (err) => console.error('Error loading trip count:', err),
+    });
   }
 
   loadAllData(ownerId: number): void {
@@ -289,7 +382,14 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['/site/owners']);
+    const user = this.securityService.getUserData();
+    const role = (user?.userRoles?.[0]?.role?.name ?? '').toUpperCase();
+
+    if (role === 'ADMINISTRADOR') {
+      this.router.navigate(['/site/owners']);
+    } else {
+      this.location.back();
+    }
   }
 
   manageFleet(): void {
