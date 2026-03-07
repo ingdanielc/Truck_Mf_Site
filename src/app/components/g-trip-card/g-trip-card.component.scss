@@ -92,6 +92,17 @@
     left: 7.5px;
     top: 10px;
     z-index: 0;
+
+    &.solid-line {
+      border-left-style: solid;
+      border-left-color: var(--bs-primary);
+      opacity: 0.8;
+    }
+  }
+
+  .dot-filled {
+    background: var(--bs-primary) !important;
+    border: none !important;
   }
 }
 

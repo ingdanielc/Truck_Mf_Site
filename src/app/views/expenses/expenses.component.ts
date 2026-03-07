@@ -310,7 +310,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
         const vehicleFilter = new ModelFilterTable(
           [
-            new Filter('currentDriver.id', '=', driver.id.toString()),
+            new Filter('currentDriverId', '=', driver.id.toString()),
             new Filter('id', '=', vehicleId),
           ],
           new Pagination(1, 0),
