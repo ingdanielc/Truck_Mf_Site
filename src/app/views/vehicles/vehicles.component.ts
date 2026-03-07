@@ -65,6 +65,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   isOffcanvasOpen: boolean = false;
   editingVehicle: ModelVehicle | null = null;
   vehicleForm: FormGroup;
+  isPatching: boolean = false;
 
   // Selection Lists
   brands: any[] = [];
@@ -116,12 +117,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           this.duplicatePlateValidator(),
         ],
       ],
-      motorNumber: ['', [Validators.required]],
-      chassisNumber: ['', [Validators.required]],
-      axleCount: [
-        2,
-        [Validators.required, Validators.min(1), Validators.max(6)],
-      ],
+      motorNumber: [''],
+      chassisNumber: [''],
+      axleCount: [2, [Validators.min(1), Validators.max(6)]],
       photo: [''],
       ownerId: [null, [Validators.required]],
       driverId: [null, [Validators.required]],
@@ -131,7 +129,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.ownerChangeSub = this.vehicleForm
       .get('ownerId')!
       .valueChanges.subscribe((ownerId) => {
-        this.vehicleForm.get('driverId')?.setValue(null, { emitEvent: false });
+        if (!this.isPatching) {
+          this.vehicleForm
+            .get('driverId')
+            ?.setValue(null, { emitEvent: false });
+        }
         this.drivers = [];
         if (ownerId != null) {
           this.loadDriversByOwner(ownerId);
@@ -248,6 +250,25 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         this.drivers = response?.data?.content ?? [];
         this.loadingDrivers = false;
+
+        const originalOwnerRel = this.editingVehicle?.owners?.[0];
+        const originalOwnerId = originalOwnerRel?.ownerId ?? null;
+
+        if (
+          this.editingVehicle?.currentDriverId &&
+          originalOwnerId === ownerId
+        ) {
+          const hasDriver = this.drivers.some(
+            (d) => d.id === this.editingVehicle!.currentDriverId,
+          );
+          if (hasDriver) {
+            this.vehicleForm
+              .get('driverId')
+              ?.setValue(this.editingVehicle.currentDriverId, {
+                emitEvent: false,
+              });
+          }
+        }
       },
       error: () => {
         this.drivers = [];
@@ -315,6 +336,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         const ownerId = ownerRel?.ownerId ?? null;
 
         // Patch fields
+        this.isPatching = true;
         this.vehicleForm.patchValue({
           brand: vehicle.vehicleBrandId,
           model: vehicle.model,
@@ -327,6 +349,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           ownerId: ownerId,
           driverId: vehicle.currentDriverId,
         });
+        this.isPatching = false;
 
         // Disable owner field if PROPIETARIO
         if (this.userRole === 'PROPIETARIO') {

@@ -205,6 +205,7 @@
       <button
         type="submit"
         class="btn btn-primary btn-lg rounded-3 fw-bold py-3"
+        [disabled]="expenseForm.invalid"
       >
         <i class="fa-solid fa-check-circle me-2"></i>
         {{
