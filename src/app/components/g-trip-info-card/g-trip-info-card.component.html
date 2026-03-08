@@ -77,26 +77,102 @@
           </div>
         </div>
 
-        <!-- Peajes -->
+        <!-- Combustible -->
         <div
-          class="alert alert-success d-flex align-items-center mb-0 border-0 rounded-4 shadow-sm"
+          class="alert alert-danger d-flex align-items-center mb-0 border-0 rounded-4 shadow-sm"
           role="alert"
         >
           <div
-            class="icon-box bg-success bg-opacity-25 rounded-circle p-3 me-3 text-success d-flex align-items-center justify-content-center"
+            class="icon-box bg-danger bg-opacity-25 rounded-circle p-3 me-3 text-danger d-flex align-items-center justify-content-center"
             style="width: 48px; height: 48px"
           >
-            <i class="fa-solid fa-money-bill-wave fs-5"></i>
+            <i class="fa-solid fa-gas-pump fs-5"></i>
           </div>
           <div>
             <div class="small fw-bold text-uppercase text-body-secondary mb-1">
-              Peajes en la Ruta
+              Consumo Est. Combustible
             </div>
-            <div class="fs-5 fw-bold text-body">{{ tollsCount }} peajes</div>
-            <div class="small text-muted">
-              Costo total: No disponible nativamente
+            <div class="fs-5 fw-bold text-body">
+              ~{{ fuelEstimatedGals }} Gal
+            </div>
+            @if (fuelEstimatedCost > 0) {
+              <div class="small text-muted mt-1">
+                Costo estimado Diesel:
+                <strong class="text-body"
+                  >${{ fuelEstimatedCost | number: "1.0-0" }}</strong
+                >
+              </div>
+            }
+            <div class="small text-muted mt-1">
+              Basado en rendimientos de 10 km/gal
             </div>
           </div>
+        </div>
+
+        <!-- Peajes -->
+        <div
+          class="alert alert-success d-flex flex-column mb-0 border-0 rounded-4 shadow-sm transition-all"
+          role="alert"
+        >
+          <div
+            class="d-flex align-items-center justify-content-between cursor-pointer w-100"
+            (click)="toggleTolls()"
+            onkeypress
+          >
+            <div class="d-flex align-items-center">
+              <div
+                class="icon-box bg-success bg-opacity-25 rounded-circle p-3 me-3 text-success d-flex align-items-center justify-content-center"
+                style="width: 48px; height: 48px"
+              >
+                <i class="fa-solid fa-money-bill-wave fs-5"></i>
+              </div>
+              <div>
+                <div
+                  class="small fw-bold text-uppercase text-body-secondary mb-1"
+                >
+                  Peajes en la Ruta
+                </div>
+                <div class="fs-5 fw-bold text-body">
+                  {{ tollsCount }} peajes
+                </div>
+                @if (tollsTotalCost > 0) {
+                  <div class="small text-muted mt-1">
+                    Estimado total:
+                    <strong class="text-body">${{ tollsTotalCost | number: "1.0-0" }}</strong>
+                  </div>
+                }
+              </div>
+            </div>
+            <div>
+              <i
+                class="fa-solid"
+                [ngClass]="showTolls ? 'fa-chevron-up' : 'fa-chevron-down'"
+              ></i>
+            </div>
+          </div>
+
+          @if (showTolls && tollsList.length > 0) {
+            <hr class="my-3 opacity-25" />
+            <ul
+              class="mb-0 ps-3 small text-muted list-unstyled d-flex flex-column gap-2"
+            >
+              @for (toll of tollsList; track $index) {
+                <li
+                  class="d-flex justify-content-between align-items-center border-bottom border-success border-opacity-10 pb-2"
+                >
+                  <span>
+                    <i
+                      class="fa-solid fa-location-dot me-2 text-success opacity-75"
+                    ></i>
+                    {{ toll.name }}
+                  </span>
+                  <span class="fw-bold"
+                    >${{ toll.price | number: "1.0-0" }}</span
+                  >
+                </li>
+              }
+            </ul>
+          }
         </div>
       </div>
     }

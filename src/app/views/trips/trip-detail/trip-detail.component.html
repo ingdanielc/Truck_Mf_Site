@@ -491,5 +491,6 @@
   [isOpen]="isTripInfoOpen"
   [originName]="originName"
   [destinationName]="destinationName"
+  [vehicleAxles]="trip?.vehicle?.numberOfAxles || 2"
   (close)="closeTripInfo()"
 ></g-trip-info-card>

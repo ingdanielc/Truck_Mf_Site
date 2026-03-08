@@ -1,8 +1,11 @@
 .custom-offcanvas {
   position: fixed;
   top: 0;
+  bottom: 0;
   right: -100%;
   width: 100%;
+  height: 100vh;
+  height: 100dvh;
   max-width: 600px;
   background: var(--bs-body-bg);
   z-index: 1060; // Keep it above other offcanvases

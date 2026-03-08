@@ -21,6 +21,7 @@ export class GTripInfoCardComponent implements OnChanges {
   @Input() isOpen: boolean = false;
   @Input() originName: string = '';
   @Input() destinationName: string = '';
+  @Input() vehicleAxles: number = 2;
   @Output() close = new EventEmitter<void>();
 
   loading: boolean = false;
@@ -30,6 +31,15 @@ export class GTripInfoCardComponent implements OnChanges {
   duration: string = '';
   durationInTraffic: string = '';
   tollsCount: number = 0;
+
+  // New features
+  tollsList: { name: string; price: number }[] = [];
+  tollsTotalCost: number = 0;
+  showTolls: boolean = false;
+  fuelEstimatedGals: string = '0';
+  fuelEstimatedCost: number = 0;
+  readonly KM_PER_GALLON = 10; // Simple average baseline for trucks
+  readonly DIESEL_PRICE_GALLON = 9065; // Estimated COP per gallon
 
   ngOnChanges(changes: SimpleChanges): void {
     if (
@@ -48,10 +58,7 @@ export class GTripInfoCardComponent implements OnChanges {
     this.routeData = null;
     this.tollsCount = 0;
 
-    if (
-      typeof globalThis.google === 'undefined' ||
-      !globalThis.google?.maps?.routes
-    ) {
+    if (globalThis.google === 'undefined' || !globalThis.google?.maps?.routes) {
       // Fallback to old directions service if modern routes not available in SDK version
       if (globalThis.google?.maps?.DirectionsService) {
         this.fallbackToDirectionsService();
@@ -73,9 +80,14 @@ export class GTripInfoCardComponent implements OnChanges {
         if (response.routes && response.routes.length > 0) {
           const route = response.routes[0];
           // The new API structure returns distanceMeters and duration natively
-          this.distance = route.distanceMeters
-            ? `${(route.distanceMeters / 1000).toFixed(1)} km`
-            : 'N/A';
+          const km = route.distanceMeters ? route.distanceMeters / 1000 : 0;
+          this.distance = km ? `${km.toFixed(1)} km` : 'N/A';
+          this.fuelEstimatedGals = km
+            ? (km / this.KM_PER_GALLON).toFixed(1)
+            : '0';
+          this.fuelEstimatedCost =
+            Number.parseFloat(this.fuelEstimatedGals) *
+            this.DIESEL_PRICE_GALLON;
 
           // Standard duration
           if (route.duration) {
@@ -100,26 +112,43 @@ export class GTripInfoCardComponent implements OnChanges {
             this.durationInTraffic = this.duration;
           }
 
-          this.tollsCount = 0; // Modern API requires explicit toll data fields which might need extra properties
-          if (route.travelAdvisory?.tollInfo) {
-            // If the new API provides explicit toll counts
-            this.tollsCount = route.travelAdvisory.tollInfo.estimatedPrice
-              ? 1
-              : 0;
-          } else if (route.legs) {
+          this.tollsList = [];
+          if (route.legs) {
             for (const leg of route.legs) {
               if (leg.steps) {
                 for (const step of leg.steps) {
                   if (step.navigationInstruction?.instructions) {
-                    const ins =
-                      step.navigationInstruction.instructions.toLowerCase();
-                    if (ins.includes('peaje') || ins.includes('toll')) {
-                      this.tollsCount++;
+                    const ins = step.navigationInstruction.instructions;
+                    if (
+                      ins.toLowerCase().includes('peaje') ||
+                      ins.toLowerCase().includes('toll')
+                    ) {
+                      const tollName = this.cleanInstructionString(ins);
+                      const price = this.mockTollPrice();
+                      this.tollsList.push({ name: tollName, price: price });
+                      this.tollsTotalCost += price;
                     }
                   }
                 }
               }
             }
+          }
+          this.tollsCount = this.tollsList.length;
+
+          // If no tolls found in instructions but travelAdvisory says there are tolls, add a generic message
+          if (
+            this.tollsCount === 0 &&
+            route.travelAdvisory?.tollInfo?.estimatedPrice
+          ) {
+            this.tollsCount = 1;
+            const fallbackPrice =
+              route.travelAdvisory.tollInfo.estimatedPrice.units ||
+              this.mockTollPrice();
+            this.tollsList.push({
+              name: 'Peajes detectados en la ruta',
+              price: fallbackPrice,
+            });
+            this.tollsTotalCost += fallbackPrice;
           }
 
           this.routeData = route;
@@ -134,6 +163,23 @@ export class GTripInfoCardComponent implements OnChanges {
         // Try fallback
         this.fallbackToDirectionsService();
       });
+  }
+
+  toggleTolls(): void {
+    this.showTolls = !this.showTolls;
+  }
+
+  private mockTollPrice(): number {
+    // Base 10000 COP + 4000 COP for each recorded axle
+    return 10000 + this.vehicleAxles * 4000;
+  }
+
+  private cleanInstructionString(htmlString: string): string {
+    let unescaped = htmlString.replaceAll(/<[^>]*>?/gm, '');
+    unescaped = unescaped.replaceAll(/Continúa por/gi, '');
+    unescaped = unescaped.replaceAll(/Carretera con peajes/gi, '');
+    unescaped = unescaped.replaceAll(/Carretera con peaje/gi, '');
+    return unescaped.trim();
   }
 
   private formatDuration(seconds: number): string {
@@ -164,25 +210,37 @@ export class GTripInfoCardComponent implements OnChanges {
           const route = response.routes[0];
           if (route?.legs && route.legs.length > 0) {
             const leg = route.legs[0];
+            const km = leg.distance?.value ? leg.distance.value / 1000 : 0;
             this.distance = leg.distance?.text || 'N/A';
+            this.fuelEstimatedGals = km
+              ? (km / this.KM_PER_GALLON).toFixed(1)
+              : '0';
+            this.fuelEstimatedCost =
+              Number.parseFloat(this.fuelEstimatedGals) *
+              this.DIESEL_PRICE_GALLON;
+
             this.duration = leg.duration?.text || 'N/A';
             this.durationInTraffic =
               leg.duration_in_traffic?.text || leg.duration?.text || 'N/A';
 
             // Calculate tolls
-            let tolls = 0;
+            this.tollsList = [];
+            this.tollsTotalCost = 0;
             if (leg.steps) {
               for (const step of leg.steps) {
-                const instructions = step.instructions?.toLowerCase() || '';
+                const instructions = step.instructions || '';
                 if (
-                  instructions.includes('peaje') ||
-                  instructions.includes('toll')
+                  instructions.toLowerCase().includes('peaje') ||
+                  instructions.toLowerCase().includes('toll')
                 ) {
-                  tolls++;
+                  const tollName = this.cleanInstructionString(instructions);
+                  const price = this.mockTollPrice();
+                  this.tollsList.push({ name: tollName, price: price });
+                  this.tollsTotalCost += price;
                 }
               }
             }
-            this.tollsCount = tolls;
+            this.tollsCount = this.tollsList.length;
             this.routeData = route;
           } else {
             this.errorMsg = 'No se encontraron las rutas esperadas.';

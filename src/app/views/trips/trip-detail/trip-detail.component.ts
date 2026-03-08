@@ -232,7 +232,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
             );
           } else if (roleName === 'CONDUCTOR') {
             const driverFilter = new ModelFilterTable(
-              [new Filter('userId', '=', user.id.toString())],
+              [new Filter('user.id', '=', user.id.toString())],
               new Pagination(1, 0),
               new Sort('id', true),
             );
@@ -240,7 +240,11 @@ export class TripDetailComponent implements OnInit, OnDestroy {
             return this.driverService.getDriverFilter(driverFilter).pipe(
               map((driverResp: any) => {
                 const driver = driverResp?.data?.content?.[0];
-                const hasAccess = driver && driver.vehicleId === vehicleId;
+                const hasAccess =
+                  driver &&
+                  (Number(driver.id) === Number(tripData.driverId) ||
+                    Number(driver.id) === Number(tripData.driver?.id) ||
+                    driver.vehicleId === vehicleId);
                 return { hasAccess };
               }),
             );
