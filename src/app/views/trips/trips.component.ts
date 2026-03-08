@@ -88,6 +88,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   // filters
   ownerIdFilter: number | null = null;
   filteredOwner: ModelOwner | null = null;
+  isLoadingExpandedTrips: boolean = false;
 
   /** driverId filter when navigated from driver profile (query param) */
   driverIdFilter: number | null = null;
@@ -102,7 +103,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     private readonly vehicleService: VehicleService,
     private readonly driverService: DriverService,
     private readonly route: ActivatedRoute,
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     const rawOwnerId = this.route.snapshot.queryParamMap.get('ownerId');
@@ -477,6 +478,8 @@ export class TripsComponent implements OnInit, OnDestroy {
     } else {
       this.expandedOwnerId = owner.id ?? null;
       if (this.expandedOwnerId) {
+        this.isLoadingExpandedTrips = true;
+        this.ownerTrips = []; // Clear previous to avoid flicker
         this.loadTripsForAdmin(this.expandedOwnerId);
       }
     }
@@ -500,6 +503,7 @@ export class TripsComponent implements OnInit, OnDestroy {
         if (!vehicleIds) {
           this.ownerTrips = [];
           this.calculateStats(this.ownerTrips);
+          this.isLoadingExpandedTrips = false;
           return;
         }
 
@@ -520,16 +524,19 @@ export class TripsComponent implements OnInit, OnDestroy {
           next: (respTrips: any) => {
             this.ownerTrips = respTrips?.data?.content ?? [];
             this.calculateStats(this.ownerTrips);
+            this.isLoadingExpandedTrips = false;
           },
           error: () => {
             this.ownerTrips = [];
             this.calculateStats(this.ownerTrips);
+            this.isLoadingExpandedTrips = false;
           },
         });
       },
       error: () => {
         this.ownerTrips = [];
         this.calculateStats(this.ownerTrips);
+        this.isLoadingExpandedTrips = false;
       },
     });
   }
