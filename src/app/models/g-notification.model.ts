@@ -28,4 +28,5 @@ export interface GNotification {
   isDeleted: boolean;
   creationDate: string | Date;
   updateDate?: string | Date;
+  ownerId?: number;
 }
