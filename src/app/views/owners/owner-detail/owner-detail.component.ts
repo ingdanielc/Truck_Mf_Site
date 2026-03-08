@@ -199,6 +199,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
               this.vehicles = vResponse?.data?.content ?? [];
               this.mapBrandNames();
               this.mapDriverNames();
+              this.mapLastTripStatuses();
               this.loadingVehicles = false;
 
               if (this.vehicles.length > 0) {
@@ -266,6 +267,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
         this.vehicles = response?.data?.content ?? [];
         this.mapBrandNames();
         this.mapDriverNames();
+        this.mapLastTripStatuses();
         this.loadingVehicles = false;
       },
       error: (err) => {
@@ -417,5 +419,25 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     return Number.isNaN(n) || value === ''
       ? String(value ?? '')
       : new Intl.NumberFormat('es-CO').format(n);
+  }
+
+  mapLastTripStatuses(): void {
+    if (this.vehicles.length === 0) return;
+
+    this.vehicles.forEach((v) => {
+      if (!v.id) return;
+      const tripFilter = new ModelFilterTable(
+        [new Filter('vehicle.id', '=', v.id.toString())],
+        new Pagination(1, 0),
+        new Sort('startDate', false),
+      );
+
+      this.tripService.getTripFilter(tripFilter).subscribe({
+        next: (resp: any) => {
+          const lastTrip = resp?.data?.content?.[0];
+          v.lastTripStatus = lastTrip?.status ?? '';
+        },
+      });
+    });
   }
 }

@@ -28,4 +28,5 @@ export interface ModelVehicle {
   owners?: VehicleOwnerRelation[];
   currentDriverId: number | null;
   currentDriverName?: string;
+  lastTripStatus?: string;
 }

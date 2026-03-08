@@ -55,19 +55,34 @@
     font-size: 0.7rem;
     letter-spacing: 0.5px;
 
-    &.status-available {
+    &.badge-completed {
       background-color: rgba(16, 185, 129, 0.1);
       color: #10b981;
+      border: 1px solid #10b981;
     }
 
-    &.status-busy {
+    &.badge-pending {
+      background-color: rgba(251, 191, 36, 0.12);
+      color: #d97706;
+      border: 1px solid rgba(251, 191, 36, 0.5);
+    }
+
+    &.badge-in-progress {
+      background-color: rgba(var(--bs-primary-rgb), 0.1);
+      color: var(--bs-primary);
+      border: 1px solid var(--bs-primary);
+    }
+
+    &.badge-cancelled {
       background-color: rgba(239, 68, 68, 0.1);
       color: #ef4444;
+      border: 1px solid #ef4444;
     }
 
-    &.status-default {
+    &.badge-default {
       background-color: rgba(107, 114, 128, 0.1);
       color: #9ca3af;
+      border: 1px solid #9ca3af;
     }
   }
 

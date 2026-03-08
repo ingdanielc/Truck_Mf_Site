@@ -30,6 +30,7 @@ import { ModelOwner } from 'src/app/models/owner-model';
 import { DriverService } from 'src/app/services/driver.service';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { DocumentNumberPipe } from 'src/app/pipes/document-number.pipe';
+import { TripService } from 'src/app/services/trip.service';
 
 export interface VehicleOwnerGroup {
   owner: ModelOwner;
@@ -98,6 +99,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     private readonly securityService: SecurityService,
     private readonly ownerService: OwnerService,
     private readonly driverService: DriverService,
+    private readonly tripService: TripService,
     private readonly route: ActivatedRoute,
   ) {
     this.generateYears();
@@ -480,6 +482,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = response.data.content;
             this.mapBrandNames();
             this.mapDriverNames();
+            this.mapLastTripStatuses();
             this.calculateStats();
             this.applyFilter();
             this.calculateStats();
@@ -514,6 +517,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = response.data.content;
             this.mapBrandNames();
             this.mapDriverNames();
+            this.mapLastTripStatuses();
             this.calculateStats();
             this.applyFilter();
           } else {
@@ -548,6 +552,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = response.data.content;
             this.mapBrandNames();
             this.mapDriverNames();
+            this.mapLastTripStatuses();
             this.calculateStats();
             this.applyFilter();
           } else {
@@ -582,6 +587,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = response.data.content;
             this.mapBrandNames();
             this.mapDriverNames();
+            this.mapLastTripStatuses();
             this.calculateStats();
             this.applyFilter();
           } else {
@@ -613,6 +619,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = response.data.content;
             this.mapBrandNames();
             this.mapDriverNames();
+            this.mapLastTripStatuses();
             this.calculateStats();
             this.applyFilter();
           } else {
@@ -800,14 +807,31 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         const driver = response?.data?.content?.[0];
         if (driver) {
           this.allVehicles.forEach((v) => {
-            if (v.currentDriverId === driverId) {
+            if (v.currentDriverId === driver.id)
               v.currentDriverName = driver.name;
-            }
           });
         }
       },
-      error: (err: any) =>
-        console.error(`Error fetching driver ${driverId} details:`, err),
+    });
+  }
+
+  mapLastTripStatuses(): void {
+    if (this.allVehicles.length === 0) return;
+
+    this.allVehicles.forEach((v) => {
+      if (!v.id) return;
+      const tripFilter = new ModelFilterTable(
+        [new Filter('vehicle.id', '=', v.id.toString())],
+        new Pagination(1, 0),
+        new Sort('startDate', false),
+      );
+
+      this.tripService.getTripFilter(tripFilter).subscribe({
+        next: (resp: any) => {
+          const lastTrip = resp?.data?.content?.[0];
+          v.lastTripStatus = lastTrip?.status ?? '';
+        },
+      });
     });
   }
 

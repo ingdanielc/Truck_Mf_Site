@@ -23,14 +23,24 @@ export class GVehicleCardComponent {
   }
 
   get statusClass(): string {
-    switch (this.vehicle.status?.toLowerCase()) {
-      case 'activo':
-        return 'status-available';
-      case 'inactivo':
-        return 'status-busy';
+    const status = (this.vehicle.lastTripStatus || '').toUpperCase();
+    switch (status) {
+      case 'COMPLETADO':
+      case 'PENDIENTE':
+        return 'badge-completed';
+      case 'EN CURSO':
+        return 'badge-in-progress';
+      case 'CANCELADO':
+        return 'badge-cancelled';
       default:
-        return 'status-default';
+        return 'badge-default';
     }
+  }
+
+  get displayTripStatus(): string {
+    const status = (this.vehicle.lastTripStatus || '').toUpperCase();
+    if (status === 'COMPLETADO' || status === 'PENDIENTE') return 'DISPONIBLE';
+    return this.vehicle.lastTripStatus || 'SIN VIAJES';
   }
 
   get statusDotClass(): string {
