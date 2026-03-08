@@ -8,6 +8,7 @@ import { ModelTrip } from 'src/app/models/trip-model';
 import { ToastService } from 'src/app/services/toast.service';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { GTripFormComponent } from '../../../components/g-trip-form/g-trip-form.component';
+import { GTripInfoCardComponent } from '../../../components/g-trip-info-card/g-trip-info-card.component';
 import { NotificationsService } from 'src/app/services/notifications.service';
 import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
@@ -27,7 +28,7 @@ declare var globalThis: any;
 @Component({
   selector: 'app-trip-detail',
   standalone: true,
-  imports: [CommonModule, GTripFormComponent],
+  imports: [CommonModule, GTripFormComponent, GTripInfoCardComponent],
   templateUrl: './trip-detail.component.html',
   styleUrls: ['./trip-detail.component.scss'],
 })
@@ -44,6 +45,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   // UI State
   isOffcanvasOpen: boolean = false;
+  isTripInfoOpen: boolean = false;
+  estimatedArrivalTime: string = '--:--';
 
   // User context
   userRole: string = 'ROL';
@@ -73,7 +76,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     private readonly driverService: DriverService,
     private readonly notificationsService: NotificationsService,
     private readonly locationService: LocationService,
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.routeSub = this.route.paramMap.subscribe((params) => {
@@ -148,6 +151,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
                 this.userRole === 'ADMINISTRADOR'
               ) {
                 this.loadVehicleLocation(this.trip.vehicleId);
+              } else {
+                this.calculateETA();
               }
             }
           }
@@ -405,8 +410,12 @@ export class TripDetailComponent implements OnInit, OnDestroy {
           this.lastLocation = resp.data.content[0];
           this.initMap();
         }
+        this.calculateETA();
       },
-      error: (err) => console.error('Error loading vehicle location', err),
+      error: (err) => {
+        console.error('Error loading vehicle location', err);
+        this.calculateETA();
+      },
     });
   }
 
@@ -417,30 +426,30 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       const mapElement = document.getElementById('vehicleMap');
       if (
         mapElement &&
-        typeof (globalThis as any).google !== 'undefined' &&
-        (globalThis as any).google?.maps?.Map
+        typeof globalThis.google !== 'undefined' &&
+        globalThis.google?.maps?.Map
       ) {
         const position = {
           lat: this.lastLocation!.latitude,
           lng: this.lastLocation!.longitude,
         };
 
-        this.mapInstance = new (globalThis as any).google.maps.Map(mapElement, {
+        this.mapInstance = new globalThis.google.maps.Map(mapElement, {
           center: position,
           zoom: 15,
           mapTypeControl: false,
           streetViewControl: false,
         });
 
-        this.mapMarker = new (globalThis as any).google.maps.Marker({
+        this.mapMarker = new globalThis.google.maps.Marker({
           position: position,
           map: this.mapInstance,
           title: this.lastLocation!.addressText || 'Ubicación del vehículo',
-          animation: (globalThis as any).google.maps.Animation.DROP,
+          animation: globalThis.google.maps.Animation.DROP,
         });
 
         if (this.lastLocation!.addressText) {
-          const infoWindow = new (globalThis as any).google.maps.InfoWindow({
+          const infoWindow = new globalThis.google.maps.InfoWindow({
             content: `<div style="padding:5px 0;margin:0;font-size:13px"><p class="mb-1 fw-bold">Última ubicación:</p><p class="mb-0 text-secondary">${this.lastLocation!.addressText}</p></div>`,
           });
           this.mapMarker.addListener('click', () => {
@@ -491,5 +500,120 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (this.tripId) {
       this.loadTrip(this.tripId);
     }
+  }
+
+  openTripInfo(): void {
+    if (
+      this.originName &&
+      this.originName !== 'N/A' &&
+      this.destinationName &&
+      this.destinationName !== 'N/A'
+    ) {
+      this.isTripInfoOpen = true;
+    }
+  }
+
+  closeTripInfo(): void {
+    this.isTripInfoOpen = false;
+  }
+
+  calculateETA(): void {
+    if (!this.destinationName || this.destinationName === 'N/A') {
+      return;
+    }
+
+    if (
+      typeof globalThis.google === 'undefined' ||
+      !globalThis.google?.maps?.routes
+    ) {
+      this.fallbackToDirectionsServiceETA();
+      return;
+    }
+
+    const originQuery =
+      this.lastLocation?.latitude && this.lastLocation?.longitude
+        ? {
+            location: {
+              latLng: {
+                latitude: this.lastLocation.latitude,
+                longitude: this.lastLocation.longitude,
+              },
+            },
+          }
+        : { address: `${this.originName}, Colombia` };
+
+    globalThis.google.maps.routes.Route.computeRoutes({
+      origin: originQuery,
+      destination: { address: `${this.destinationName}, Colombia` },
+      travelMode: 'DRIVING',
+      routingPreference: 'TRAFFIC_AWARE',
+    })
+      .then((response: any) => {
+        if (response.routes && response.routes.length > 0) {
+          const route = response.routes[0];
+          let duration = '';
+          if (route.staticDuration) {
+            const sDurationSec = Number.parseInt(
+              route.staticDuration.replace('s', ''),
+              10,
+            );
+            duration = this.formatDuration(sDurationSec);
+          } else if (route.duration) {
+            const durationSec = Number.parseInt(
+              route.duration.replace('s', ''),
+              10,
+            );
+            duration = this.formatDuration(durationSec);
+          }
+          this.estimatedArrivalTime = duration || '--:--';
+        }
+      })
+      .catch((error: any) => {
+        console.error('Error in computeRoutes ETA:', error);
+        this.fallbackToDirectionsServiceETA();
+      });
+  }
+
+  private formatDuration(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours} h ${minutes} min`;
+    }
+    return `${minutes} min`;
+  }
+
+  private fallbackToDirectionsServiceETA(): void {
+    if (
+      typeof globalThis.google === 'undefined' ||
+      !globalThis.google?.maps?.DirectionsService
+    ) {
+      return;
+    }
+
+    const directionsService = new globalThis.google.maps.DirectionsService();
+    const originQuery =
+      this.lastLocation?.latitude && this.lastLocation?.longitude
+        ? { lat: this.lastLocation.latitude, lng: this.lastLocation.longitude }
+        : `${this.originName}, Colombia`;
+
+    directionsService.route(
+      {
+        origin: originQuery,
+        destination: `${this.destinationName}, Colombia`,
+        travelMode: globalThis.google.maps.TravelMode.DRIVING,
+        drivingOptions: {
+          departureTime: new Date(),
+          trafficModel: 'bestguess',
+        },
+      },
+      (response: any, status: any) => {
+        if (status === 'OK' && response.routes && response.routes.length > 0) {
+          const leg = response.routes[0].legs[0];
+          this.estimatedArrivalTime =
+            leg.duration_in_traffic?.text || leg.duration?.text || '--:--';
+        }
+      },
+    );
   }
 }

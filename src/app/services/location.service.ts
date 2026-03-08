@@ -34,8 +34,9 @@ export class LocationService {
     driverId: number,
     vehicleId: number,
     tripId?: number | null,
+    force: boolean = false,
   ): void {
-    if (this.hasReportedLocation) {
+    if (this.hasReportedLocation && !force) {
       return;
     }
     this.hasReportedLocation = true;

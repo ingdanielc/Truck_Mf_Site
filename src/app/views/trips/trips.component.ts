@@ -20,6 +20,7 @@ import { ModelOwner } from 'src/app/models/owner-model';
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { GTripFormComponent } from '../../components/g-trip-form/g-trip-form.component';
+import { GTripInfoCardComponent } from '../../components/g-trip-info-card/g-trip-info-card.component';
 
 export interface TripOwnerGroup {
   owner: ModelOwner;
@@ -34,6 +35,7 @@ export interface TripOwnerGroup {
     GTripCardComponent,
     GVehicleOwnerCardComponent,
     GTripFormComponent,
+    GTripInfoCardComponent,
   ],
   templateUrl: './trips.component.html',
   styleUrls: ['./trips.component.scss'],
@@ -63,6 +65,11 @@ export class TripsComponent implements OnInit, OnDestroy {
   // Offcanvas state
   isOffcanvasOpen: boolean = false;
   editingTrip: ModelTrip | null = null;
+
+  // Maps info card state
+  isTripInfoOpen: boolean = false;
+  latestTripOrigin: string = '';
+  latestTripDestination: string = '';
 
   // Selection Lists for parent context
   owners: ModelOwner[] = [];
@@ -567,8 +574,31 @@ export class TripsComponent implements OnInit, OnDestroy {
     }
   }
 
-  onTripSaved(): void {
+  onTripSaved(savedTrip?: ModelTrip): void {
+    const wasEditing = !!this.editingTrip;
     this.toggleOffcanvas();
     this.loadTrips();
+
+    if (
+      !wasEditing &&
+      savedTrip &&
+      (this.userRole === 'PROPIETARIO' || this.userRole === 'ADMINISTRADOR')
+    ) {
+      const originName =
+        this.cities.find((c) => String(c.id) === String(savedTrip.originId))
+          ?.name || 'N/A';
+      const destName =
+        this.cities.find(
+          (c) => String(c.id) === String(savedTrip.destinationId),
+        )?.name || 'N/A';
+
+      this.latestTripOrigin = originName;
+      this.latestTripDestination = destName;
+      this.isTripInfoOpen = true;
+    }
+  }
+
+  closeTripInfo(): void {
+    this.isTripInfoOpen = false;
   }
 }

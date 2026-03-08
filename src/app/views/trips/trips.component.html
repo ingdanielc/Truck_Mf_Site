@@ -11,20 +11,14 @@
       <div class="d-flex flex-column flex-sm-row gap-3">
         <div class="search-wrapper position-relative" style="min-width: 300px">
           <i
-            class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary"
-          ></i>
-          <input
-            type="text"
-            class="form-control ps-5 py-2 rounded-3 w-100"
-            placeholder="Buscar viaje, manifiesto, placa o conductor..."
-            [(ngModel)]="searchTerm"
-            (input)="applyFilter()"
-          />
+            class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary"></i>
+          <input type="text" class="form-control ps-5 py-2 rounded-3 w-100"
+            placeholder="Buscar viaje, manifiesto, placa o conductor..." [(ngModel)]="searchTerm"
+            (input)="applyFilter()" />
         </div>
         <button
           class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
-          (click)="toggleOffcanvas()"
-        >
+          (click)="toggleOffcanvas()">
           <i class="fa-solid fa-plus me-2"></i>Nuevo Viaje
         </button>
       </div>
@@ -34,84 +28,60 @@
   <!-- Stats Cards -->
   <div class="row g-4 mb-4">
     <div class="col-12 col-md-6 col-xl-3">
-      <div
-        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
-      >
-        <div
-          class="card-body p-4 d-flex justify-content-between align-items-center"
-        >
+      <div class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary">
+        <div class="card-body p-4 d-flex justify-content-between align-items-center">
           <div>
             <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
               Total Viajes
             </p>
             <h2 class="h1 fw-bold mb-0 text-body">{{ totalTrips }}</h2>
           </div>
-          <div
-            class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3"
-          >
+          <div class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3">
             <i class="fa-solid fa-route fs-3"></i>
           </div>
         </div>
       </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
-      <div
-        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
-      >
-        <div
-          class="card-body p-4 d-flex justify-content-between align-items-center"
-        >
+      <div class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary">
+        <div class="card-body p-4 d-flex justify-content-between align-items-center">
           <div>
             <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
               En Curso
             </p>
             <h2 class="h1 fw-bold mb-0 text-primary">{{ inProgressTrips }}</h2>
           </div>
-          <div
-            class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3"
-          >
+          <div class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3">
             <i class="fa-solid fa-spinner fs-3 fa-spin"></i>
           </div>
         </div>
       </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
-      <div
-        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
-      >
-        <div
-          class="card-body p-4 d-flex justify-content-between align-items-center"
-        >
+      <div class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary">
+        <div class="card-body p-4 d-flex justify-content-between align-items-center">
           <div>
             <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
               Pendientes
             </p>
             <h2 class="h1 fw-bold mb-0 text-warning">{{ pendingTrips }}</h2>
           </div>
-          <div
-            class="icon-shape bg-warning bg-opacity-10 text-warning rounded-4 p-3"
-          >
+          <div class="icon-shape bg-warning bg-opacity-10 text-warning rounded-4 p-3">
             <i class="fa-solid fa-clock-rotate-left fs-3"></i>
           </div>
         </div>
       </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
-      <div
-        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
-      >
-        <div
-          class="card-body p-4 d-flex justify-content-between align-items-center"
-        >
+      <div class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary">
+        <div class="card-body p-4 d-flex justify-content-between align-items-center">
           <div>
             <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
               Completados
             </p>
             <h2 class="h1 fw-bold mb-0 text-success">{{ completedTrips }}</h2>
           </div>
-          <div
-            class="icon-shape bg-success bg-opacity-10 text-success rounded-4 p-3"
-          >
+          <div class="icon-shape bg-success bg-opacity-10 text-success rounded-4 p-3">
             <i class="fa-solid fa-circle-check fs-3"></i>
           </div>
         </div>
@@ -121,138 +91,100 @@
 
   <!-- Trip List Grouped by Owner (Owner/Driver roles) -->
   @if (userRole !== "ADMINISTRADOR") {
-    <div class="trips-grid animate__animated animate__fadeIn">
-      @for (group of groupedTrips; track group) {
-        <div class="owner-section mb-5">
-          <div class="owner-header mb-4">
-            <g-vehicle-owner-card
-              [owner]="group.owner"
-              [itemCount]="group.trips.length"
-              [itemLabel]="'Viajes'"
-            >
-            </g-vehicle-owner-card>
+  <div class="trips-grid animate__animated animate__fadeIn">
+    @for (group of groupedTrips; track group) {
+    <div class="owner-section mb-5">
+      <div class="owner-header mb-4">
+        <g-vehicle-owner-card [owner]="group.owner" [itemCount]="group.trips.length" [itemLabel]="'Viajes'">
+        </g-vehicle-owner-card>
+      </div>
+      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+        @for (trip of group.trips; track trip) {
+        <div class="col">
+          <g-trip-card [trip]="trip" [cities]="cities" (edit)="toggleOffcanvas(trip)" class="hover-scale cursor-pointer"
+            onkeypress>
+          </g-trip-card>
+        </div>
+        }
+        <!-- Add Trip Card -->
+        @if (group.owner.id === loggedInOwnerId) {
+        <div class="col">
+          <div
+            class="add-trip-card border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
+            (click)="toggleOffcanvas()" (keypress)="toggleOffcanvas()" role="button" tabindex="0">
+            <div class="add-trip-icon rounded-circle border d-flex align-items-center justify-content-center">
+              <i class="fa-solid fa-plus"></i>
+            </div>
+            <span class="small fw-semibold">Registrar Viaje</span>
+            <small class="opacity-75">Para {{ group.owner.name }}</small>
           </div>
-          <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-            @for (trip of group.trips; track trip) {
+        </div>
+        }
+      </div>
+    </div>
+    }
+
+    <!-- Empty State -->
+    @if (groupedTrips.length === 0) {
+    <div class="text-center py-5 text-body-secondary">
+      <i class="fa-solid fa-route fs-1 mb-3 opacity-25"></i>
+      <p class="fw-bold">No se encontraron resultados</p>
+    </div>
+    }
+  </div>
+  } @else {
+  <!-- Admin View: Owners List with expansion (Full Width) -->
+  <div class="owners-list animate__animated animate__fadeIn">
+    <div class="row g-2">
+      @for (owner of owners; track owner.id) {
+      <div class="col-12">
+        <div class="owner-item mb-2">
+          <g-vehicle-owner-card [owner]="owner" [itemCount]="owner.vehicleCount || 0" [itemLabel]="'Vehículos'"
+            [disableClick]="true" (click)="toggleOwnerExpansion(owner)" [class.expanded]="expandedOwnerId === owner.id"
+            onkeypress>
+          </g-vehicle-owner-card>
+
+          <!-- Expanded Trips List -->
+          @if (expandedOwnerId === owner.id) {
+          <div class="expanded-trips mt-4 mb-5 ps-3 animate__animated animate__fadeIn">
+            <div class="d-flex align-items-center gap-3 mb-4">
+              <div class="h-divider flex-grow-1 bg-primary opacity-10" style="height: 1px"></div>
+              <h6 class="text-primary small fw-black mb-0 text-uppercase tracking-wider">
+                Viajes Recientes de {{ owner.name }}
+              </h6>
+              <div class="h-divider flex-grow-1 bg-primary opacity-10" style="height: 1px"></div>
+            </div>
+
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+              @for (trip of ownerTrips; track trip.id) {
               <div class="col">
-                <g-trip-card
-                  [trip]="trip"
-                  [cities]="cities"
-                  (edit)="toggleOffcanvas(trip)"
-                  class="hover-scale cursor-pointer"
-                  onkeypress
-                >
+                <g-trip-card [trip]="trip" [cities]="cities" (edit)="toggleOffcanvas(trip)"
+                  class="hover-scale cursor-pointer" onkeypress>
                 </g-trip-card>
               </div>
-            }
-            <!-- Add Trip Card -->
-            @if (group.owner.id === loggedInOwnerId) {
-              <div class="col">
-                <div
-                  class="add-trip-card border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
-                  (click)="toggleOffcanvas()"
-                  (keypress)="toggleOffcanvas()"
-                  role="button"
-                  tabindex="0"
-                >
-                  <div
-                    class="add-trip-icon rounded-circle border d-flex align-items-center justify-content-center"
-                  >
-                    <i class="fa-solid fa-plus"></i>
-                  </div>
-                  <span class="small fw-semibold">Registrar Viaje</span>
-                  <small class="opacity-75">Para {{ group.owner.name }}</small>
-                </div>
+              }
+              @if (ownerTrips.length === 0) {
+              <div class="col-12 text-center py-5 text-body-secondary bg-body-tertiary rounded-4 border border-dashed">
+                <i class="fa-solid fa-route fs-2 mb-2 opacity-25"></i>
+                <p class="mb-0 fw-semibold">Sin viajes registrados</p>
               </div>
-            }
-          </div>
-        </div>
-      }
-
-      <!-- Empty State -->
-      @if (groupedTrips.length === 0) {
-        <div class="text-center py-5 text-body-secondary">
-          <i class="fa-solid fa-route fs-1 mb-3 opacity-25"></i>
-          <p class="fw-bold">No se encontraron resultados</p>
-        </div>
-      }
-    </div>
-  } @else {
-    <!-- Admin View: Owners List with expansion (Full Width) -->
-    <div class="owners-list animate__animated animate__fadeIn">
-      <div class="row g-2">
-        @for (owner of owners; track owner.id) {
-          <div class="col-12">
-            <div class="owner-item mb-2">
-              <g-vehicle-owner-card
-                [owner]="owner"
-                [itemCount]="owner.vehicleCount || 0"
-                [itemLabel]="'Vehículos'"
-                [disableClick]="true"
-                (click)="toggleOwnerExpansion(owner)"
-                [class.expanded]="expandedOwnerId === owner.id"
-                onkeypress
-              >
-              </g-vehicle-owner-card>
-
-              <!-- Expanded Trips List -->
-              @if (expandedOwnerId === owner.id) {
-                <div
-                  class="expanded-trips mt-4 mb-5 ps-3 animate__animated animate__fadeIn"
-                >
-                  <div class="d-flex align-items-center gap-3 mb-4">
-                    <div
-                      class="h-divider flex-grow-1 bg-primary opacity-10"
-                      style="height: 1px"
-                    ></div>
-                    <h6
-                      class="text-primary small fw-black mb-0 text-uppercase tracking-wider"
-                    >
-                      Viajes Recientes de {{ owner.name }}
-                    </h6>
-                    <div
-                      class="h-divider flex-grow-1 bg-primary opacity-10"
-                      style="height: 1px"
-                    ></div>
-                  </div>
-
-                  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-                    @for (trip of ownerTrips; track trip.id) {
-                      <div class="col">
-                        <g-trip-card
-                          [trip]="trip"
-                          [cities]="cities"
-                          (edit)="toggleOffcanvas(trip)"
-                          class="hover-scale cursor-pointer"
-                          onkeypress
-                        >
-                        </g-trip-card>
-                      </div>
-                    }
-                    @if (ownerTrips.length === 0) {
-                      <div
-                        class="col-12 text-center py-5 text-body-secondary bg-body-tertiary rounded-4 border border-dashed"
-                      >
-                        <i class="fa-solid fa-route fs-2 mb-2 opacity-25"></i>
-                        <p class="mb-0 fw-semibold">Sin viajes registrados</p>
-                      </div>
-                    }
-                  </div>
-                </div>
               }
             </div>
           </div>
-        }
-      </div>
-
-      <!-- Empty State -->
-      @if (owners.length === 0) {
-        <div class="text-center py-5 text-body-secondary">
-          <i class="fa-solid fa-users fs-1 mb-3 opacity-25"></i>
-          <p class="fw-bold">No se encontraron propietarios</p>
+          }
         </div>
+      </div>
       }
     </div>
+
+    <!-- Empty State -->
+    @if (owners.length === 0) {
+    <div class="text-center py-5 text-body-secondary">
+      <i class="fa-solid fa-users fs-1 mb-3 opacity-25"></i>
+      <p class="fw-bold">No se encontraron propietarios</p>
+    </div>
+    }
+  </div>
   }
 
   <!-- Footer/Pagination -->
@@ -263,39 +195,23 @@
         {{ userRole === "ADMINISTRADOR" ? "propietarios" : "viajes" }}
       </p>
     </div>
-    <div
-      class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end"
-    >
+    <div class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end">
       <nav aria-label="Navegación de páginas">
         <ul class="pagination mb-0">
           <li class="page-item" [class.disabled]="page === 0">
-            <button
-              class="page-link shadow-none px-3 py-2"
-              (click)="changePage(page - 1)"
-              aria-label="Anterior"
-            >
+            <button class="page-link shadow-none px-3 py-2" (click)="changePage(page - 1)" aria-label="Anterior">
               <span aria-hidden="true">&laquo;</span>
             </button>
           </li>
           @for (p of pages; track p) {
-            <li class="page-item" [class.active]="p === page">
-              <button
-                class="page-link shadow-none px-3 py-2"
-                (click)="changePage(p)"
-              >
-                {{ p + 1 }}
-              </button>
-            </li>
+          <li class="page-item" [class.active]="p === page">
+            <button class="page-link shadow-none px-3 py-2" (click)="changePage(p)">
+              {{ p + 1 }}
+            </button>
+          </li>
           }
-          <li
-            class="page-item"
-            [class.disabled]="page >= totalPages - 1 || totalPages === 0"
-          >
-            <button
-              class="page-link shadow-none px-3 py-2"
-              (click)="changePage(page + 1)"
-              aria-label="Siguiente"
-            >
+          <li class="page-item" [class.disabled]="page >= totalPages - 1 || totalPages === 0">
+            <button class="page-link shadow-none px-3 py-2" (click)="changePage(page + 1)" aria-label="Siguiente">
               <span aria-hidden="true">&raquo;</span>
             </button>
           </li>
@@ -305,64 +221,47 @@
   </div>
 
   <!-- Offcanvas Form -->
-  <div
-    class="custom-offcanvas shadow-lg border-start transition-all"
-    [class.open]="isOffcanvasOpen"
-  >
+  <div class="custom-offcanvas shadow-lg border-start transition-all" [class.open]="isOffcanvasOpen">
     <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
       <div class="d-flex justify-content-between align-items-start w-100">
         <h2 class="h4 fw-bold mb-0 text-body">
           {{ editingTrip ? "Editar Viaje" : "Nuevo Viaje" }}
         </h2>
-        <button
-          type="button"
-          class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
-          (click)="toggleOffcanvas()"
-          aria-label="Cerrar"
-          onkeypress
-        >
+        <button type="button" class="btn btn-link text-body p-0 border-0 shadow-none mt-n2" (click)="toggleOffcanvas()"
+          aria-label="Cerrar" onkeypress>
           <i class="fa-solid fa-xmark fs-3"></i>
         </button>
       </div>
       <p class="text-secondary small mb-0 mt-1">
         {{
-          editingTrip
-            ? "Actualice la información del viaje"
-            : "Complete los datos para registrar un nuevo viaje"
+        editingTrip
+        ? "Actualice la información del viaje"
+        : "Complete los datos para registrar un nuevo viaje"
         }}
       </p>
     </div>
 
     <div class="offcanvas-body p-0">
       @if (isOffcanvasOpen) {
-        <g-trip-form
-          [trip]="editingTrip"
-          [userRole]="userRole"
-          [loggedInOwnerId]="loggedInOwnerId"
-          (saved)="onTripSaved()"
-          (cancel)="toggleOffcanvas()"
-        >
-        </g-trip-form>
+      <g-trip-form [trip]="editingTrip" [userRole]="userRole" [loggedInOwnerId]="loggedInOwnerId"
+        (saved)="onTripSaved($event)" (cancel)="toggleOffcanvas()">
+      </g-trip-form>
       }
     </div>
   </div>
 
   <!-- Mobile Floating Action Button -->
-  <button
-    class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
-    [class.d-none]="isOffcanvasOpen"
-    aria-label="Nuevo Viaje"
-    (click)="toggleOffcanvas()"
-  >
+  <button class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
+    [class.d-none]="isOffcanvasOpen || isTripInfoOpen" aria-label="Nuevo Viaje" (click)="toggleOffcanvas()">
     <i class="fa-solid fa-plus fs-4"></i>
   </button>
 
   <!-- Backdrop -->
-  @if (isOffcanvasOpen) {
-    <div
-      class="offcanvas-backdrop transition-all d-none d-md-block"
-      (click)="toggleOffcanvas()"
-      onkeypress
-    ></div>
+  @if (isOffcanvasOpen && !isTripInfoOpen) {
+  <div class="offcanvas-backdrop transition-all d-none d-md-block" (click)="toggleOffcanvas()" onkeypress></div>
   }
+
+  <!-- Route Info Card -->
+  <g-trip-info-card [isOpen]="isTripInfoOpen" [originName]="latestTripOrigin" [destinationName]="latestTripDestination"
+    (close)="closeTripInfo()"></g-trip-info-card>
 </div>

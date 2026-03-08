@@ -51,7 +51,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   @Input() trip: ModelTrip | null = null;
   @Input() userRole: string = 'ROL';
   @Input() loggedInOwnerId: number | null = null;
-  @Output() saved = new EventEmitter<void>();
+  @Output() saved = new EventEmitter<ModelTrip>();
   @Output() cancel = new EventEmitter<void>();
 
   tripForm: FormGroup;
@@ -427,7 +427,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
             `Viaje ${this.trip ? 'actualizado' : 'creado'} correctamente`,
           );
           this.notificationsService.refreshNotifications();
-          this.saved.emit();
+          this.saved.emit(tripData);
         },
         error: (error) => {
           console.error('Error saving trip:', error);

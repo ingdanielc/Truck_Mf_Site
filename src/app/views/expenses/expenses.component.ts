@@ -8,7 +8,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { CommonModule } from '@angular/common';
-import { Observable, Subscription, map, of, switchMap } from 'rxjs';
+import { Observable, Subscription, map, of, switchMap, take } from 'rxjs';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
@@ -34,6 +34,7 @@ import { ModelTrip } from 'src/app/models/trip-model';
 import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-trip-mini-card.component';
 import { GVehicleTripCardComponent } from 'src/app/components/g-vehicle-trip-card/g-vehicle-trip-card.component';
 import { NotificationsService } from 'src/app/services/notifications.service';
+import { LocationService } from 'src/app/services/location.service';
 
 @Component({
   selector: 'app-expenses',
@@ -90,6 +91,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly notificationsService: NotificationsService,
+    private readonly locationService: LocationService,
   ) {}
 
   ngOnInit(): void {
@@ -680,6 +682,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           // Refresh list
           this.expensesTripComponent?.loadExpenses();
           this.notificationsService.refreshNotifications();
+          this.reportLocationIfDriver();
         },
         error: (err) => {
           console.error('Error saving expense:', err);
@@ -691,5 +694,27 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     }
     this.editingExpense = null;
     this.preselectedExpenseTypeId = null;
+  }
+
+  private reportLocationIfDriver(): void {
+    this.securityService.userData$.pipe(take(1)).subscribe((user) => {
+      if (user) {
+        const role = (user.userRoles?.[0]?.role?.name ?? '').toUpperCase();
+        if (role.includes('CONDUCTOR')) {
+          const vehicleId = this.selectedVehicle?.id;
+          const tripId = this.selectedTrip?.id || null;
+          const driverId = this.selectedVehicle?.currentDriverId;
+
+          if (driverId && vehicleId) {
+            this.locationService.reportDriverLocation(
+              driverId,
+              vehicleId,
+              tripId,
+              true,
+            );
+          }
+        }
+      }
+    });
   }
 }
