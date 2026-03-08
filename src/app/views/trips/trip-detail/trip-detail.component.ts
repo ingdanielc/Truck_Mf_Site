@@ -73,7 +73,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     private readonly driverService: DriverService,
     private readonly notificationsService: NotificationsService,
     private readonly locationService: LocationService,
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.routeSub = this.route.paramMap.subscribe((params) => {
@@ -441,7 +441,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
         if (this.lastLocation!.addressText) {
           const infoWindow = new (globalThis as any).google.maps.InfoWindow({
-            content: `<div style="padding:5px 0;margin:0;font-size:13px"><p class="mb-1 fw-bold">Última ubicación registrada:</p><p class="mb-0 text-secondary">${this.lastLocation!.addressText}</p></div>`,
+            content: `<div style="padding:5px 0;margin:0;font-size:13px"><p class="mb-1 fw-bold">Última ubicación:</p><p class="mb-0 text-secondary">${this.lastLocation!.addressText}</p></div>`,
           });
           this.mapMarker.addListener('click', () => {
             infoWindow.open(this.mapInstance, this.mapMarker);
