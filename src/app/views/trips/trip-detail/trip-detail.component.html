@@ -368,27 +368,34 @@
                     <i class="fa-solid fa-up-right-from-square ms-1"></i>
                   </button>
                 </div>
-                <!-- Placeholder for map -->
+                <!-- Map Container -->
                 <div
-                  class="map-placeholder rounded-4 bg-secondary bg-opacity-10 d-flex flex-column align-items-center justify-content-center position-relative overflow-hidden"
-                  style="height: 300px"
-                >
-                  <img
-                    src="assets/images/map-mockup.png"
-                    alt="Static Map"
-                    class="w-100 h-100 object-fit-cover opacity-50"
-                  />
+                  id="vehicleMap"
+                  class="rounded-4 bg-secondary bg-opacity-10 d-flex flex-column align-items-center justify-content-center position-relative overflow-hidden w-100"
+                  style="height: 350px"
+                  [class.d-none]="!lastLocation"
+                ></div>
+
+                <!-- Fallback when no location is found -->
+                @if (!lastLocation) {
                   <div
-                    class="position-absolute top-50 start-50 translate-middle text-center"
+                    class="map-placeholder rounded-4 bg-secondary bg-opacity-10 d-flex flex-column align-items-center justify-content-center position-relative overflow-hidden"
+                    style="height: 350px"
                   >
-                    <i
-                      class="fa-solid fa-map-location-dot fs-1 text-primary mb-2"
-                    ></i>
-                    <p class="small text-secondary fw-bold">
-                      Mapa interactivo próximamente
-                    </p>
+                    <div class="text-center p-4">
+                      <i
+                        class="fa-solid fa-location-dot fs-1 text-secondary opacity-50 mb-3"
+                      ></i>
+                      <p class="small text-secondary fw-bold mb-1">
+                        Ubicación no disponible
+                      </p>
+                      <p class="small text-secondary fw-normal mb-0">
+                        El conductor aún no ha reportado su ubicación en este
+                        viaje.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                }
               </div>
             </div>
           </div>

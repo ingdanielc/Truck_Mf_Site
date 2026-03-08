@@ -1,9 +1,19 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, lastValueFrom } from 'rxjs';
 import { SecurityService } from '../../services/security/security.service';
 import { TokenService } from '../../services/token.service';
+import { LocationService } from '../../services/location.service';
+import { DriverService } from '../../services/driver.service';
+import { VehicleService } from '../../services/vehicle.service';
+import { TripService } from '../../services/trip.service';
+import {
+  ModelFilterTable,
+  Filter,
+  Pagination,
+  Sort,
+} from '../../models/model-filter-table';
 
 @Component({
   selector: 'app-home',
@@ -86,6 +96,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly securityService: SecurityService,
     private readonly tokenService: TokenService,
+    private readonly locationService: LocationService,
+    private readonly driverService: DriverService,
+    private readonly vehicleService: VehicleService,
+    private readonly tripService: TripService,
   ) {}
 
   ngOnInit(): void {
@@ -95,10 +109,14 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private subscribeToUserContext(): void {
     this.userSub = this.securityService.userData$.subscribe({
-      next: (user) => {
+      next: (user: any) => {
         if (user) {
           const role = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
           this.filterCards(role);
+
+          if (role.includes('CONDUCTOR') && user.id) {
+            this.handleDriverLocation(user.id);
+          }
         } else {
           // If no user data yet, try to fetch it using token payload if available
           const payload = this.tokenService.getPayload();
@@ -135,5 +153,74 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   navigateTo(path: string): void {
     this.router.navigateByUrl(path);
+  }
+
+  private async handleDriverLocation(userId: number) {
+    try {
+      const driverFilter = new ModelFilterTable(
+        [new Filter('user.id', '=', userId.toString())],
+        new Pagination(1, 0),
+        new Sort('id', true),
+      );
+      const driverResp: any = await lastValueFrom(
+        this.driverService.getDriverFilter(driverFilter),
+      );
+      const currentDriverId = driverResp?.data?.content?.[0]?.id;
+
+      if (!currentDriverId) return;
+
+      const vehicleDriverFilter = new ModelFilterTable(
+        [new Filter('currentDriverId', '=', currentDriverId.toString())],
+        new Pagination(9999, 0),
+        new Sort('id', true),
+      );
+      const vehiclesResp: any = await lastValueFrom(
+        this.vehicleService.getVehicleFilter(vehicleDriverFilter),
+      );
+      const vehiclesContext: any[] = vehiclesResp?.data?.content ?? [];
+
+      if (vehiclesContext.length === 0) return;
+
+      const vehicleIds = vehiclesContext
+        .map((v) => v.id)
+        .filter((id) => id != null)
+        .join(',');
+
+      const tripFilterPayload = new ModelFilterTable(
+        [new Filter('vehicle.id', 'in', vehicleIds)],
+        new Pagination(1000, 0),
+        new Sort('id', false),
+      );
+
+      const tripsResp: any = await lastValueFrom(
+        this.tripService.getTripFilter(tripFilterPayload),
+      );
+      const trips: any[] = tripsResp?.data?.content || [];
+
+      let activeVehicleId = vehiclesContext[0].id;
+      let activeTripId: number | null = null;
+
+      for (const v of vehiclesContext) {
+        const activeTrip = trips.find(
+          (t) =>
+            (t.vehicleId === v.id || t.vehiclePlate === v.plate) &&
+            (t.status?.toUpperCase() === 'EN CURSO' ||
+              t.status?.toUpperCase() === 'PENDIENTE'),
+        );
+        if (activeTrip) {
+          activeVehicleId = v.id;
+          activeTripId = activeTrip.id;
+          break; // Use the first active trip context found
+        }
+      }
+
+      this.locationService.reportDriverLocation(
+        currentDriverId,
+        activeVehicleId,
+        activeTripId,
+      );
+    } catch (error) {
+      console.error('Error fetching data for location tracking in Home', error);
+    }
   }
 }

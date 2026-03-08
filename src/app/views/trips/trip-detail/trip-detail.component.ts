@@ -13,12 +13,16 @@ import { VehicleService as ExpenseService } from 'src/app/services/expense.servi
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { DriverService } from 'src/app/services/driver.service';
+import { LocationService } from 'src/app/services/location.service';
 import {
   Filter,
   ModelFilterTable,
   Pagination,
   Sort,
 } from 'src/app/models/model-filter-table';
+import { ModelDriverLocation } from 'src/app/models/location-model';
+
+declare var globalThis: any;
 
 @Component({
   selector: 'app-trip-detail',
@@ -48,6 +52,11 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   // Expenses
   totalExpenses: number = 0;
 
+  // Location
+  lastLocation: ModelDriverLocation | null = null;
+  mapInstance: any = null;
+  mapMarker: any = null;
+
   private routeSub?: Subscription;
   private readonly userSub?: Subscription;
 
@@ -63,6 +72,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     private readonly vehicleService: VehicleService,
     private readonly driverService: DriverService,
     private readonly notificationsService: NotificationsService,
+    private readonly locationService: LocationService,
   ) {}
 
   ngOnInit(): void {
@@ -133,6 +143,12 @@ export class TripDetailComponent implements OnInit, OnDestroy {
             this.originalPaidBalance = this.trip.paidBalance ?? false;
             if (this.trip.id && this.trip.vehicleId) {
               this.loadExpenses(this.trip.id, this.trip.vehicleId);
+              if (
+                this.userRole === 'PROPIETARIO' ||
+                this.userRole === 'ADMINISTRADOR'
+              ) {
+                this.loadVehicleLocation(this.trip.vehicleId);
+              }
             }
           }
         } else {
@@ -373,6 +389,68 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         console.error('Error loading expenses:', err);
       },
     });
+  }
+
+  loadVehicleLocation(vehicleId: number): void {
+    const filters = [new Filter('vehicleId', '=', vehicleId.toString())];
+    const filterPayload = new ModelFilterTable(
+      filters,
+      new Pagination(1, 0),
+      new Sort('creationDate', true), // Get the latest one
+    );
+
+    this.locationService.getLocationService(filterPayload).subscribe({
+      next: (resp: any) => {
+        if (resp?.data?.content && resp.data.content.length > 0) {
+          this.lastLocation = resp.data.content[0];
+          this.initMap();
+        }
+      },
+      error: (err) => console.error('Error loading vehicle location', err),
+    });
+  }
+
+  initMap(): void {
+    if (!this.lastLocation?.latitude || !this.lastLocation?.longitude) return;
+
+    setTimeout(() => {
+      const mapElement = document.getElementById('vehicleMap');
+      if (
+        mapElement &&
+        typeof (globalThis as any).google !== 'undefined' &&
+        (globalThis as any).google?.maps?.Map
+      ) {
+        const position = {
+          lat: this.lastLocation!.latitude,
+          lng: this.lastLocation!.longitude,
+        };
+
+        this.mapInstance = new (globalThis as any).google.maps.Map(mapElement, {
+          center: position,
+          zoom: 15,
+          mapTypeControl: false,
+          streetViewControl: false,
+        });
+
+        this.mapMarker = new (globalThis as any).google.maps.Marker({
+          position: position,
+          map: this.mapInstance,
+          title: this.lastLocation!.addressText || 'Ubicación del vehículo',
+          animation: (globalThis as any).google.maps.Animation.DROP,
+        });
+
+        if (this.lastLocation!.addressText) {
+          const infoWindow = new (globalThis as any).google.maps.InfoWindow({
+            content: `<div style="padding:5px 0;margin:0;font-size:13px"><p class="mb-1 fw-bold">Última ubicación registrada:</p><p class="mb-0 text-secondary">${this.lastLocation!.addressText}</p></div>`,
+          });
+          this.mapMarker.addListener('click', () => {
+            infoWindow.open(this.mapInstance, this.mapMarker);
+          });
+          // Also open by default
+          infoWindow.open(this.mapInstance, this.mapMarker);
+        }
+      }
+    }, 100);
   }
 
   get netProfit(): number {
