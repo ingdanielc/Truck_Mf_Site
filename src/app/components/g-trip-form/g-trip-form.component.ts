@@ -33,11 +33,17 @@ import {
   Pagination,
   Sort,
 } from 'src/app/models/model-filter-table';
+import { UpperCasePipe } from '@angular/common';
 
 @Component({
   selector: 'g-trip-form',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, DocumentNumberPipe],
+  imports: [
+    FormsModule,
+    ReactiveFormsModule,
+    DocumentNumberPipe,
+    UpperCasePipe,
+  ],
   templateUrl: './g-trip-form.component.html',
   styleUrls: ['./g-trip-form.component.scss'],
 })

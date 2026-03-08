@@ -17,7 +17,9 @@
         {{ translatedType }}
       </h6>
 
-      <p class="mb-1 smaller text-body">{{ notification.message }}</p>
+      <p class="mb-1 smaller text-body">
+        {{ notification.message }}
+      </p>
 
       <span class="text-secondary smallest opacity-75">
         {{ notification.creationDate | date: "short" }}
