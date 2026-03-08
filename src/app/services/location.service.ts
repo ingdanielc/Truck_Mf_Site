@@ -67,7 +67,7 @@ export class LocationService {
         };
 
         if (
-          typeof (globalThis as any).google !== 'undefined' &&
+          (globalThis as any).google !== 'undefined' &&
           (globalThis as any).google?.maps?.Geocoder
         ) {
           const geocoder = new (globalThis as any).google.maps.Geocoder();

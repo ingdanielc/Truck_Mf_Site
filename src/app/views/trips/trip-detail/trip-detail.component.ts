@@ -343,13 +343,133 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  calculatedProgressPercentage: number = 0;
+
   get progressPercentage(): number {
     if (!this.trip) return 0;
     if (['Completado', 'Pendiente'].includes(this.trip.status)) return 100;
-    const total = this.trip.freight || 0;
-    const paid = this.trip.advancePayment || 0;
-    if (total === 0) return 0;
-    return Math.round((paid / total) * 100);
+    if (this.trip.status === 'Planeado') return 0;
+    return this.calculatedProgressPercentage;
+  }
+
+  calculateLocationProgress(): void {
+    if (
+      !this.trip ||
+      !this.originName ||
+      this.originName === 'N/A' ||
+      !this.destinationName ||
+      this.destinationName === 'N/A'
+    ) {
+      this.calculatedProgressPercentage = 0;
+      return;
+    }
+
+    if (globalThis.google === 'undefined' || !globalThis.google?.maps?.routes) {
+      this.fallbackToDirectionsServiceProgress();
+      return;
+    }
+
+    const currentLoc =
+      this.lastLocation?.latitude && this.lastLocation?.longitude
+        ? {
+            location: {
+              latLng: {
+                latitude: this.lastLocation.latitude,
+                longitude: this.lastLocation.longitude,
+              },
+            },
+          }
+        : null;
+
+    if (!currentLoc) {
+      this.calculatedProgressPercentage = 0;
+      return; // No location reported = 0%
+    }
+
+    const routesApi = globalThis.google.maps.routes.Route;
+
+    // We do two concurrent calls to get total distance, and distance left
+    Promise.all([
+      routesApi.computeRoutes({
+        origin: { address: `${this.originName}, Colombia` },
+        destination: { address: `${this.destinationName}, Colombia` },
+        travelMode: 'DRIVING',
+      }),
+      routesApi.computeRoutes({
+        origin: currentLoc,
+        destination: { address: `${this.destinationName}, Colombia` },
+        travelMode: 'DRIVING',
+      }),
+    ])
+      .then(([totalResponse, remainingResponse]) => {
+        const totalDistance = totalResponse.routes?.[0]?.distanceMeters || 1;
+        const remainingDistance =
+          remainingResponse.routes?.[0]?.distanceMeters || totalDistance;
+
+        let progress =
+          ((totalDistance - remainingDistance) / totalDistance) * 100;
+        if (progress < 0) progress = 0;
+        if (progress > 100) progress = 100;
+
+        this.calculatedProgressPercentage = Math.round(progress);
+      })
+      .catch((e) => {
+        console.error('Error computing progress distance:', e);
+        this.fallbackToDirectionsServiceProgress();
+      });
+  }
+
+  private fallbackToDirectionsServiceProgress(): void {
+    if (
+      globalThis.google === 'undefined' ||
+      !globalThis.google?.maps?.DirectionsService
+    ) {
+      return;
+    }
+    const currentLoc =
+      this.lastLocation?.latitude && this.lastLocation?.longitude
+        ? { lat: this.lastLocation.latitude, lng: this.lastLocation.longitude }
+        : null;
+
+    if (!currentLoc) {
+      this.calculatedProgressPercentage = 0;
+      return;
+    }
+
+    // Geometry logic as fallback
+    const directionsService = new globalThis.google.maps.DirectionsService();
+
+    // Call 1: Total Route
+    directionsService.route(
+      {
+        origin: `${this.originName}, Colombia`,
+        destination: `${this.destinationName}, Colombia`,
+        travelMode: globalThis.google.maps.TravelMode.DRIVING,
+      },
+      (totalRes: any, totalStatus: any) => {
+        if (totalStatus === 'OK' && totalRes.routes.length > 0) {
+          const totalDist = totalRes.routes[0].legs[0].distance.value || 1;
+
+          directionsService.route(
+            {
+              origin: currentLoc,
+              destination: `${this.destinationName}, Colombia`,
+              travelMode: globalThis.google.maps.TravelMode.DRIVING,
+            },
+            (remRes: any, remStatus: any) => {
+              if (remStatus === 'OK' && remRes.routes.length > 0) {
+                const remDist =
+                  remRes.routes[0].legs[0].distance.value || totalDist;
+                let progress = ((totalDist - remDist) / totalDist) * 100;
+                if (progress < 0) progress = 0;
+                if (progress > 100) progress = 100;
+                this.calculatedProgressPercentage = Math.round(progress);
+              }
+            },
+          );
+        }
+      },
+    );
   }
 
   get tripDurationInHours(): number {
@@ -411,10 +531,12 @@ export class TripDetailComponent implements OnInit, OnDestroy {
           this.initMap();
         }
         this.calculateETA();
+        this.calculateLocationProgress();
       },
       error: (err) => {
         console.error('Error loading vehicle location', err);
         this.calculateETA();
+        this.calculateLocationProgress();
       },
     });
   }
@@ -426,7 +548,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       const mapElement = document.getElementById('vehicleMap');
       if (
         mapElement &&
-        typeof globalThis.google !== 'undefined' &&
+        globalThis.google !== 'undefined' &&
         globalThis.google?.maps?.Map
       ) {
         const position = {
@@ -522,10 +644,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (
-      typeof globalThis.google === 'undefined' ||
-      !globalThis.google?.maps?.routes
-    ) {
+    if (globalThis.google === 'undefined' || !globalThis.google?.maps?.routes) {
       this.fallbackToDirectionsServiceETA();
       return;
     }
@@ -585,7 +704,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   private fallbackToDirectionsServiceETA(): void {
     if (
-      typeof globalThis.google === 'undefined' ||
+      globalThis.google === 'undefined' ||
       !globalThis.google?.maps?.DirectionsService
     ) {
       return;
