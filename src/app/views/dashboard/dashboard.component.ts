@@ -542,9 +542,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
         const d = new Date(t.startDate);
         return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
       })
-      .sort((a, b) => Number(a.numberTrip ?? 0) - Number(b.numberTrip ?? 0));
+      .sort((a, b) => {
+        const plateA = (a.vehiclePlate || a.vehicle?.plate || '').toUpperCase();
+        const plateB = (b.vehiclePlate || b.vehicle?.plate || '').toUpperCase();
+        if (plateA < plateB) return -1;
+        if (plateA > plateB) return 1;
+        return Number(a.numberTrip ?? 0) - Number(b.numberTrip ?? 0);
+      });
 
-    const labels = monthTrips.map((t) => `Viaje #${t.numberTrip}`);
+    const labels = monthTrips.map(
+      (t) =>
+        `${(t.vehiclePlate || t.vehicle?.plate || 'S/P').toUpperCase()} - #${t.numberTrip}`,
+    );
     const incomeData = monthTrips.map((t) => t.freight || 0);
     const expenseData = monthTrips.map((t) => {
       const tripExp = expenses.filter((e) => e.tripId === t.id);
@@ -644,9 +653,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     expenses.forEach((e) => {
       const expenseDate = e.creationDate ? new Date(e.creationDate) : null;
       if (
-        expenseDate &&
-        expenseDate.getMonth() === currentMonth &&
-        expenseDate.getFullYear() === currentYear
+        expenseDate?.getMonth() === currentMonth &&
+        expenseDate?.getFullYear() === currentYear
       ) {
         const vehicle = vehicles.find((v) => v.id === e.vehicleId);
         const plate = vehicle?.plate?.toUpperCase();
@@ -671,8 +679,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private processFinancialData(trips: ModelTrip[], expenses: ModelExpense[]) {
     // Top 10 most recent trips
-    const recentTrips = trips.slice(0, 10).reverse();
-    const labels = recentTrips.map((t) => `Viaje #${t.numberTrip}`);
+    // Top 10 most recent trips, grouped by vehicle for visualization
+    const recentTrips = trips
+      .slice(0, 10)
+      .sort((a, b) => {
+        const plateA = (a.vehiclePlate || a.vehicle?.plate || '').toUpperCase();
+        const plateB = (b.vehiclePlate || b.vehicle?.plate || '').toUpperCase();
+        if (plateA < plateB) return -1;
+        if (plateA > plateB) return 1;
+        return Number(a.numberTrip ?? 0) - Number(b.numberTrip ?? 0);
+      })
+      .reverse();
+    const labels = recentTrips.map(
+      (t) =>
+        `${(t.vehiclePlate || t.vehicle?.plate || 'S/P').toUpperCase()} - #${t.numberTrip}`,
+    );
     const freights = recentTrips.map((t) => t.freight || 0);
     const tripExpenses = recentTrips.map((t) => {
       const tripExp = expenses.filter((e) => e.tripId === t.id);
