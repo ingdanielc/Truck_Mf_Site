@@ -287,7 +287,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     const filter = new ModelFilterTable(
       filtros,
       new Pagination(this.rows, this.page),
-      new Sort('id', true),
+      new Sort('startDate', false),
     );
 
     this.tripService.getTripFilter(filter).subscribe({
