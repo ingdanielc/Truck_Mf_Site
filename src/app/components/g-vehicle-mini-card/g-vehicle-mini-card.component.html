@@ -45,15 +45,10 @@
   <!-- Status Right Side -->
   <div class="ms-auto text-end me-2 d-none d-sm-block">
     <span
-      class="badge rounded-pill px-3 py-2 fw-bold text-uppercase"
-      [ngClass]="{
-        'bg-success bg-opacity-10': getStatusLabel() === 'Activo',
-        'bg-danger bg-opacity-10': getStatusLabel() === 'Inactivo',
-        'bg-warning bg-opacity-10':
-          getStatusLabel() !== 'Activo' && getStatusLabel() !== 'Inactivo',
-      }"
+      class="badge rounded-pill px-3 py-2 fw-bold"
+      [ngClass]="statusBadgeClass"
     >
-      {{ getStatusLabel() }}
+      {{ displayTripStatus }}
     </span>
   </div>
 </div>

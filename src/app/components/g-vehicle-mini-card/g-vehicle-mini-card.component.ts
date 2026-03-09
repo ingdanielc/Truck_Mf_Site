@@ -21,32 +21,32 @@ export class GVehicleMiniCardComponent {
     return 'status-other';
   }
 
-  getStatusLabel(): string {
-    const status = (this.vehicle.status || '').toLowerCase();
-    if (status === 'activo' || status === 'active') return 'Activo';
-    if (status === 'inactivo' || status === 'inactive') return 'Inactivo';
-    return this.vehicle.status || 'En Ruta';
+  get statusColorClass(): string {
+    const status = (this.vehicle.lastTripStatus || '').toUpperCase();
+    if (status === 'EN CURSO') return 'status-in-progress';
+    if (status === 'COMPLETADO' || status === 'PENDIENTE')
+      return 'status-available';
+    return 'status-other';
   }
 
-  get statusClass(): string {
-    switch (this.vehicle.status?.toLowerCase()) {
-      case 'activo':
-        return 'status-available';
-      case 'inactivo':
-        return 'status-busy';
-      default:
-        return 'status-default';
-    }
+  get displayTripStatus(): string {
+    const status = (this.vehicle.lastTripStatus || '').toUpperCase();
+    if (status === 'COMPLETADO' || status === 'PENDIENTE') return 'Disponible';
+    return this.vehicle.lastTripStatus || 'Sin Viajes';
   }
 
-  get statusDotClass(): string {
-    switch (this.vehicle.status?.toLowerCase()) {
-      case 'activo':
-        return 'dot-available';
-      case 'inactivo':
-        return 'dot-busy';
+  get statusBadgeClass(): string {
+    const status = (this.vehicle.lastTripStatus || '').toUpperCase();
+    switch (status) {
+      case 'COMPLETADO':
+      case 'PENDIENTE':
+        return 'bg-success bg-opacity-10 text-success border border-success border-opacity-25';
+      case 'EN CURSO':
+        return 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25';
+      case 'CANCELADO':
+        return 'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25';
       default:
-        return 'dot-default';
+        return 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25';
     }
   }
 }
