@@ -77,13 +77,24 @@
           <span>50%</span>
         </div>
       </div>
-      <span
-        class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
-        (click)="onEditClick()"
-        onkeypress
-      >
-        <i class="fa-solid fa-pencil"></i>
-      </span>
+      <div class="d-flex gap-2">
+        <span
+          class="btn btn-outline-warning btn-sm rounded-3 p-2 shadow-none action-btn"
+          (click)="onMaintenanceClick()"
+          onkeypress
+          title="Mantenimiento"
+        >
+          <i class="fa-solid fa-wrench"></i>
+        </span>
+        <span
+          class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
+          (click)="onEditClick()"
+          onkeypress
+          title="Editar"
+        >
+          <i class="fa-solid fa-pencil"></i>
+        </span>
+      </div>
     </div>
   </div>
 </div>

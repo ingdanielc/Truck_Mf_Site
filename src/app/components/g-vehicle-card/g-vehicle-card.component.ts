@@ -13,6 +13,7 @@ export class GVehicleCardComponent {
   @Input() vehicle!: ModelVehicle;
   @Output() edit = new EventEmitter<ModelVehicle>();
   @Output() viewDetails = new EventEmitter<ModelVehicle>();
+  @Output() maintenance = new EventEmitter<ModelVehicle>();
 
   onEditClick(): void {
     this.edit.emit(this.vehicle);
@@ -20,6 +21,9 @@ export class GVehicleCardComponent {
 
   onViewDetails(): void {
     this.viewDetails.emit(this.vehicle);
+  }
+  onMaintenanceClick(): void {
+    this.maintenance.emit(this.vehicle);
   }
 
   get statusClass(): string {

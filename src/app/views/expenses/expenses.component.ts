@@ -103,21 +103,71 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
     this.route.queryParamMap.subscribe((params) => {
       const tripId = params.get('tripId');
-      const vehicleId = params.get('vehicleId');
+      const vehicleIdInput = params.get('vehicleId');
+      const vehicleId = vehicleIdInput ? Number(vehicleIdInput) : null;
 
-      if (tripId && vehicleId) {
-        // Resolve user then validate access before loading data
-        this.userSub = this.securityService.userData$.subscribe((user) => {
-          if (!user) {
-            const payload = this.tokenService.getPayload();
-            const userId = payload?.nameid ?? payload?.id ?? payload?.sub;
-            if (userId) {
-              this.securityService.fetchUserData(userId);
-            }
-            return;
+      // Reset state for new params
+      this.selectedVehicle = null;
+      this.selectedTrip = null;
+      this.hideSelectionSections = !!tripId; // Only hide if we have a focused trip
+
+      this.userSub = this.securityService.userData$.subscribe((user) => {
+        if (!user) {
+          const payload = this.tokenService.getPayload();
+          const userId = payload?.nameid ?? payload?.id ?? payload?.sub;
+          if (userId) {
+            this.securityService.fetchUserData(userId);
           }
+          return;
+        }
 
-          this.validateAccess(tripId, vehicleId, user).subscribe({
+        // 1. Always load the list of vehicles for the user
+        this.loadVehiclesForUser(user, vehicleId);
+
+        if (vehicleId) {
+          // Load the full vehicle data so g-vehicle-trip-card has plate, brand, year, etc.
+          const vFilter = new ModelFilterTable(
+            [new Filter('id', '=', vehicleId.toString())],
+            new Pagination(1, 0),
+            new Sort('id', true),
+          );
+          this.vehicleService.getVehicleFilter(vFilter).subscribe({
+            next: (resp: any) => {
+              if (resp?.data?.content?.length > 0) {
+                this.selectedVehicle = resp.data.content[0];
+                this.mapBrandNames();
+
+                // Also load driver name if vehicle has a driver assigned
+                if (this.selectedVehicle?.currentDriverId) {
+                  const dFilter = new ModelFilterTable(
+                    [
+                      new Filter(
+                        'id',
+                        '=',
+                        this.selectedVehicle.currentDriverId.toString(),
+                      ),
+                    ],
+                    new Pagination(1, 0),
+                    new Sort('id', true),
+                  );
+                  this.driverService.getDriverFilter(dFilter).subscribe({
+                    next: (dResp: any) => {
+                      if (dResp?.data?.content?.length > 0) {
+                        const drv = dResp.data.content[0];
+                        if (this.selectedVehicle)
+                          this.selectedVehicle.currentDriverName = drv.name;
+                      }
+                    },
+                  });
+                }
+              }
+            },
+          });
+        }
+
+        // 2. If it's a focused trip view, perform additional validation and loading
+        if (tripId && vehicleIdInput) {
+          this.validateAccess(tripId, vehicleIdInput, user).subscribe({
             next: (hasAccess: boolean) => {
               if (!hasAccess) {
                 this.toastService.showError(
@@ -128,11 +178,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
                 return;
               }
 
-              // Access validated – proceed to load data
-              this.hideSelectionSections = true;
               this.selectedTrip = { id: Number(tripId) } as ModelTrip;
-              this.selectedVehicle = { id: Number(vehicleId) } as ModelVehicle;
-              this.loadingVehicles = false;
 
               // Load the full trip data
               const tripFilter = new ModelFilterTable(
@@ -146,50 +192,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
                     this.selectedTrip = resp.data.content[0];
                 },
               });
-
-              // Load the full vehicle data so g-vehicle-trip-card has plate, brand, year, etc.
-              const vehicleFilter = new ModelFilterTable(
-                [new Filter('id', '=', vehicleId)],
-                new Pagination(1, 0),
-                new Sort('id', true),
-              );
-              this.vehicleService.getVehicleFilter(vehicleFilter).subscribe({
-                next: (resp: any) => {
-                  const v: ModelVehicle | undefined = resp?.data?.content?.[0];
-                  if (v) {
-                    // Enrich brand name if brands already loaded
-                    if (!v.vehicleBrandName && this.brands.length > 0) {
-                      const brand = this.brands.find(
-                        (b) => String(b.id) === String(v.vehicleBrandId),
-                      );
-                      if (brand) v.vehicleBrandName = brand.name;
-                    }
-                    this.selectedVehicle = v;
-
-                    // Also load driver name if vehicle has a driver assigned
-                    if (v.currentDriverId) {
-                      const driverFilter = new ModelFilterTable(
-                        [new Filter('id', '=', String(v.currentDriverId))],
-                        new Pagination(1, 0),
-                        new Sort('id', true),
-                      );
-                      this.driverService
-                        .getDriverFilter(driverFilter)
-                        .subscribe({
-                          next: (driverResp: any) => {
-                            const driver = driverResp?.data?.content?.[0];
-                            if (driver) {
-                              this.selectedVehicle = {
-                                ...this.selectedVehicle!,
-                                currentDriverName: driver.name,
-                              };
-                            }
-                          },
-                        });
-                    }
-                  }
-                },
-              });
             },
             error: () => {
               this.toastService.showError(
@@ -199,21 +201,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
               this.router.navigate(['/expenses']);
             },
           });
-        });
-      } else {
-        this.hideSelectionSections = false;
-        this.userSub = this.securityService.userData$.subscribe((user) => {
-          if (user) {
-            this.loadVehiclesForUser(user);
-          } else {
-            const payload = this.tokenService.getPayload();
-            const userId = payload?.nameid ?? payload?.id ?? payload?.sub;
-            if (userId) {
-              this.securityService.fetchUserData(userId);
-            }
-          }
-        });
-      }
+        }
+      });
     });
   }
 
@@ -279,6 +268,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
             switchMap((vResp: any) => {
               if (vResp?.data?.content?.length === 0) return of(false);
 
+              if (this.isMaintenance) return of(true);
+
               // 2. Validate Vehicle -> Trip
               const tripFilter = new ModelFilterTable(
                 [
@@ -322,6 +313,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           switchMap((vResp: any) => {
             if (vResp?.data?.content?.length === 0) return of(false);
 
+            if (this.isMaintenance) return of(true);
+
             // 2. Validate Vehicle -> Trip
             const tripFilter = new ModelFilterTable(
               [
@@ -344,7 +337,10 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   // ── Data loading ─────────────────────────────────────────────────
 
-  private loadVehiclesForUser(user: any): void {
+  private loadVehiclesForUser(
+    user: any,
+    preselectedId: number | null = null,
+  ): void {
     const role = (user.userRoles?.[0]?.role?.name ?? '').toUpperCase();
 
     if (role.includes('PROPIETARIO')) {
@@ -357,7 +353,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         next: (resp: any) => {
           const owner = resp?.data?.content?.[0];
           if (owner?.id) {
-            this.loadVehiclesByOwner(owner.id);
+            this.loadVehiclesByOwner(owner.id, preselectedId);
           } else {
             this.loadingVehicles = false;
           }
@@ -365,7 +361,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         error: () => (this.loadingVehicles = false),
       });
     } else if (role.includes('CONDUCTOR')) {
-      this.loadVehiclesByDriver(user.id);
+      this.loadVehiclesByDriver(user.id, preselectedId);
     } else {
       const filter = new ModelFilterTable(
         [],
@@ -376,7 +372,15 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         next: (resp: any) => {
           this.vehicles = resp?.data?.content ?? [];
           if (this.vehicles.length > 0) {
-            this.selectVehicle(this.vehicles[0]);
+            const index = preselectedId
+              ? this.vehicles.findIndex((v) => v.id === preselectedId)
+              : -1;
+            const pre = index !== -1 ? this.vehicles[index] : null;
+            this.selectVehicle(pre || this.vehicles[0]);
+
+            if (index !== -1) {
+              this.ensureVehicleIsVisible(index);
+            }
           }
           this.loadingVehicles = false;
           this.mapBrandNames();
@@ -387,7 +391,10 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     }
   }
 
-  private loadVehiclesByOwner(ownerId: number): void {
+  private loadVehiclesByOwner(
+    ownerId: number,
+    preselectedId: number | null = null,
+  ): void {
     const filter = new ModelFilterTable(
       [new Filter('owner.id', '=', ownerId.toString())],
       new Pagination(9999, 0),
@@ -397,7 +404,15 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       next: (resp: any) => {
         this.vehicles = resp?.data?.content ?? [];
         if (this.vehicles.length > 0) {
-          this.selectVehicle(this.vehicles[0]);
+          const index = preselectedId
+            ? this.vehicles.findIndex((v) => v.id === preselectedId)
+            : -1;
+          const pre = index !== -1 ? this.vehicles[index] : null;
+          this.selectVehicle(pre || this.vehicles[0]);
+
+          if (index !== -1) {
+            this.ensureVehicleIsVisible(index);
+          }
         }
         this.carouselIndex = 0;
         this.loadingVehicles = false;
@@ -408,7 +423,10 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadVehiclesByDriver(userId: number): void {
+  private loadVehiclesByDriver(
+    userId: number,
+    preselectedId: number | null = null,
+  ): void {
     const driverFilter = new ModelFilterTable(
       [new Filter('user.id', '=', userId.toString())],
       new Pagination(1, 0),
@@ -427,7 +445,15 @@ export class ExpensesComponent implements OnInit, OnDestroy {
             next: (resp: any) => {
               this.vehicles = resp?.data?.content ?? [];
               if (this.vehicles.length > 0) {
-                this.selectVehicle(this.vehicles[0]);
+                const index = preselectedId
+                  ? this.vehicles.findIndex((v) => v.id === preselectedId)
+                  : -1;
+                const pre = index !== -1 ? this.vehicles[index] : null;
+                this.selectVehicle(pre || this.vehicles[0]);
+
+                if (index !== -1) {
+                  this.ensureVehicleIsVisible(index);
+                }
               }
               this.carouselIndex = 0;
               this.loadingVehicles = false;
@@ -444,6 +470,16 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       },
       error: () => (this.loadingVehicles = false),
     });
+  }
+
+  private ensureVehicleIsVisible(index: number): void {
+    if (index >= 0) {
+      // Try to center it or at least make it the first one
+      this.carouselIndex = Math.max(
+        0,
+        Math.min(index, this.vehicles.length - this.visibleCount),
+      );
+    }
   }
 
   loadBrands(): void {
@@ -489,15 +525,18 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   mapBrandNames(): void {
-    if (this.brands.length > 0 && this.vehicles.length > 0) {
-      this.vehicles.forEach((v) => {
-        if (!v.vehicleBrandName) {
-          const brand = this.brands.find(
-            (b) => String(b.id) === String(v.vehicleBrandId),
-          );
-          if (brand) v.vehicleBrandName = brand.name;
-        }
-      });
+    const mapFn = (v: ModelVehicle) => {
+      if (!v.vehicleBrandName) {
+        const brand = this.brands.find(
+          (b) => String(b.id) === String(v.vehicleBrandId),
+        );
+        if (brand) v.vehicleBrandName = brand.name;
+      }
+    };
+
+    if (this.brands.length > 0) {
+      this.vehicles.forEach(mapFn);
+      if (this.selectedVehicle) mapFn(this.selectedVehicle);
     }
   }
 
@@ -526,13 +565,16 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   mapDriverNames(): void {
-    if (this.drivers.length > 0 && this.vehicles.length > 0) {
-      this.vehicles.forEach((v) => {
-        const driver = this.drivers.find(
-          (d) => String(d.id) === String(v.currentDriverId),
-        );
-        if (driver) v.currentDriverName = `${driver.name}`;
-      });
+    const mapFn = (v: ModelVehicle) => {
+      const driver = this.drivers.find(
+        (d) => String(d.id) === String(v.currentDriverId),
+      );
+      if (driver) v.currentDriverName = `${driver.name}`;
+    };
+
+    if (this.drivers.length > 0) {
+      this.vehicles.forEach(mapFn);
+      if (this.selectedVehicle) mapFn(this.selectedVehicle);
     }
   }
 

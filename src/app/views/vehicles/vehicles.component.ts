@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   FormBuilder,
   FormGroup,
@@ -101,6 +101,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     private readonly driverService: DriverService,
     private readonly tripService: TripService,
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
   ) {
     this.generateYears();
     this.vehicleForm = this.fb.group({
@@ -851,5 +852,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       );
       return isDuplicate ? { duplicate: true } : null;
     };
+  }
+  goToMaintenance(vehicle: ModelVehicle): void {
+    if (vehicle.id) {
+      this.router.navigate(['/site/maintenance'], {
+        queryParams: { vehicleId: vehicle.id },
+      });
+    }
   }
 }
