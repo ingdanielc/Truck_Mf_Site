@@ -19,11 +19,13 @@ export class SecurityService {
   private readonly userSubject = new BehaviorSubject<ModelUser | null>(null);
   userData$ = this.userSubject.asObservable();
 
+  private pendingUserId_?: string | number | null = null;
+
   getUserData(): ModelUser | null {
     return this.userSubject.value;
   }
 
-  constructor(private readonly http: HttpClient) { }
+  constructor(private readonly http: HttpClient) {}
 
   getUserFilter(filter: any) {
     const headers = { 'content-type': 'application/json' };
@@ -47,6 +49,9 @@ export class SecurityService {
 
   fetchUserData(userId: string | number): void {
     if (this.userSubject.value && this.userSubject.value?.id == userId) return;
+    if (this.pendingUserId_ == userId) return;
+
+    this.pendingUserId_ = userId;
 
     const filter = new ModelFilterTable(
       [new Filter('id', '=', userId.toString())],
@@ -60,9 +65,11 @@ export class SecurityService {
           const user = response.data.content[0];
           this.userSubject.next(user);
         }
+        this.pendingUserId_ = null;
       },
       error: (err: any) => {
         console.error('Error fetching user data in SecurityService:', err);
+        this.pendingUserId_ = null;
       },
     });
   }

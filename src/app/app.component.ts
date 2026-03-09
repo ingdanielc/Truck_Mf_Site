@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import pkg from 'package.json';
 import { GMenuComponent } from './components/g-menu/g-menu.component';
@@ -7,7 +7,7 @@ import { GFooterComponent } from './components/g-footer/g-footer.component';
 import { ToastContainerComponent } from './components/toast-container/toast-container.component';
 import { NotificationsService } from './services/notifications.service';
 import { SecurityService } from './services/security/security.service';
-import { Subscription, interval, filter } from 'rxjs';
+import { Subscription, interval, filter, distinctUntilChanged } from 'rxjs';
 
 @Component({
   selector: 'app-site',
@@ -21,7 +21,7 @@ import { Subscription, interval, filter } from 'rxjs';
   ],
   standalone: true,
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   title: string = 'CashTruck';
   version = pkg.version;
   isLogoMenuBar: boolean = true;
@@ -51,7 +51,10 @@ export class AppComponent implements OnInit {
   private setupNotificationPolling(): void {
     // 1. Al Iniciar Sesión: Cargar cuando el usuario esté disponible
     this.userSubscription = this.securityService.userData$
-      .pipe(filter((user) => !!user))
+      .pipe(
+        filter((user) => !!user),
+        distinctUntilChanged((prev, curr) => prev?.id === curr?.id),
+      )
       .subscribe(() => {
         this.notificationsService.refreshNotifications();
       });
