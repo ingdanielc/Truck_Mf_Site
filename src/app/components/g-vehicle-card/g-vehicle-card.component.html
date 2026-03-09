@@ -78,22 +78,26 @@
         </div>
       </div>
       <div class="d-flex gap-2">
-        <span
+        <button
+          type="button"
           class="btn btn-outline-warning btn-sm rounded-3 p-2 shadow-none action-btn"
           (click)="onMaintenanceClick()"
+          style="width: 40px"
           onkeypress
           title="Mantenimiento"
         >
           <i class="fa-solid fa-wrench"></i>
-        </span>
-        <span
+        </button>
+        <button
+          type="button"
           class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
           (click)="onEditClick()"
+          style="width: 40px"
           onkeypress
           title="Editar"
         >
           <i class="fa-solid fa-pencil"></i>
-        </span>
+        </button>
       </div>
     </div>
   </div>

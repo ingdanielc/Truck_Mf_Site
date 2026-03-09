@@ -73,7 +73,11 @@
                 <i class="fa-solid fa-chevron-left"></i>
               </button>
               <!-- Cards window -->
-              <div class="flex-grow-1 overflow-hidden" style="margin: -1rem">
+              <div
+                class="flex-grow-1 overflow-hidden"
+                [class.px-3]="vehicles.length < 4"
+                style="margin: -1rem"
+              >
                 <div
                   class="d-flex flex-nowrap gap-3 overflow-auto snap-x hide-scrollbar"
                   style="padding: 1rem"

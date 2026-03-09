@@ -130,7 +130,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: transparent;
     transition: all 0.2s ease;
   }
 }
@@ -148,12 +147,7 @@
     }
 
     .action-btn {
-      background-color: #15171a;
       border-color: rgba(255, 255, 255, 0.05);
-
-      &:hover {
-        background-color: #212529;
-      }
     }
   }
 }

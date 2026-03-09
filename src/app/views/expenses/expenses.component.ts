@@ -636,8 +636,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           const activeTrips = trips.filter((t) => isActive(t.status));
           const otherTrips = trips.filter((t) => !isActive(t.status));
 
-          // Combine and take top 4
-          this.recentTrips = [...activeTrips, ...otherTrips].slice(0, 4);
+          // Combine and take top 3
+          this.recentTrips = [...activeTrips, ...otherTrips].slice(0, 3);
 
           // Auto-select the first trip (prioritized active then newest)
           if (this.recentTrips.length > 0) {

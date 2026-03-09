@@ -40,8 +40,9 @@ export class GTripInfoCardComponent implements OnChanges {
   showTolls: boolean = false;
   fuelEstimatedGals: string = '0';
   fuelEstimatedCost: number = 0;
-  readonly KM_PER_GALLON = 10; // Simple average baseline for trucks
-  readonly DIESEL_PRICE_GALLON = 9065; // Estimated COP per gallon
+  readonly KM_PER_GALLON = 7; // More realistic average for loaded trucks in Colombia
+  readonly DIESEL_PRICE_GALLON = 11001; // Estimated COP per gallon
+  readonly CARGO_DURATION_FACTOR = 1.35; // 35% more time for heavy vehicles
 
   ngOnChanges(changes: SimpleChanges): void {
     if (
@@ -97,7 +98,9 @@ export class GTripInfoCardComponent implements OnChanges {
               route.duration.replace('s', ''),
               10,
             );
-            this.duration = this.formatDuration(durationSec);
+            this.duration = this.formatDuration(
+              Math.floor(durationSec * this.CARGO_DURATION_FACTOR),
+            );
           } else {
             this.duration = 'N/A';
           }
@@ -109,7 +112,9 @@ export class GTripInfoCardComponent implements OnChanges {
               10,
             );
             this.durationInTraffic = this.duration; // 'duration' field is traffic aware when pref is TRAFFIC_AWARE
-            this.duration = this.formatDuration(sDurationSec);
+            this.duration = this.formatDuration(
+              Math.floor(sDurationSec * this.CARGO_DURATION_FACTOR),
+            );
           } else {
             this.durationInTraffic = this.duration;
           }
@@ -255,9 +260,17 @@ export class GTripInfoCardComponent implements OnChanges {
               Number.parseFloat(this.fuelEstimatedGals) *
               this.DIESEL_PRICE_GALLON;
 
-            this.duration = leg.duration?.text || 'N/A';
-            this.durationInTraffic =
-              leg.duration_in_traffic?.text || leg.duration?.text || 'N/A';
+            this.duration = this.formatDuration(
+              Math.floor(
+                (leg.duration?.value || 0) * this.CARGO_DURATION_FACTOR,
+              ),
+            );
+            this.durationInTraffic = this.formatDuration(
+              Math.floor(
+                (leg.duration_in_traffic?.value || leg.duration?.value || 0) *
+                  this.CARGO_DURATION_FACTOR,
+              ),
+            );
 
             // Calculate tolls
             this.tollsList = [];

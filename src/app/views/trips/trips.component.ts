@@ -602,7 +602,13 @@ export class TripsComponent implements OnInit, OnDestroy {
 
       this.latestTripOrigin = originName;
       this.latestTripDestination = destName;
-      this.latestTripAxles = savedTrip.vehicle?.numberOfAxles || 2;
+
+      // Find the full vehicle object to get the correct number of axles
+      const fullVehicle = this.vehicles.find(
+        (v) => String(v.id) === String(savedTrip.vehicleId),
+      );
+      this.latestTripAxles = fullVehicle?.numberOfAxles || 2;
+
       this.isTripInfoOpen = true;
     }
   }
