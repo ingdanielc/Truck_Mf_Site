@@ -39,8 +39,8 @@ export class GVehicleCardComponent {
 
   get displayTripStatus(): string {
     const status = (this.vehicle.lastTripStatus || '').toUpperCase();
-    if (status === 'COMPLETADO' || status === 'PENDIENTE') return 'DISPONIBLE';
-    return this.vehicle.lastTripStatus || 'SIN VIAJES';
+    if (status === 'COMPLETADO' || status === 'PENDIENTE') return 'Disponible';
+    return this.vehicle.lastTripStatus || 'Sin Viajes';
   }
 
   get statusDotClass(): string {
