@@ -31,6 +31,8 @@ export class GTripInfoCardComponent implements OnChanges {
   duration: string = '';
   durationInTraffic: string = '';
   tollsCount: number = 0;
+  mapInstance: any = null;
+  directionsRenderer: any = null;
 
   // New features
   tollsList: { name: string; price: number }[] = [];
@@ -58,14 +60,14 @@ export class GTripInfoCardComponent implements OnChanges {
     this.routeData = null;
     this.tollsCount = 0;
 
+    if (!this.originName || !this.destinationName) {
+      this.loading = false;
+      return;
+    }
+
     if (globalThis.google === 'undefined' || !globalThis.google?.maps?.routes) {
       // Fallback to old directions service if modern routes not available in SDK version
-      if (globalThis.google?.maps?.DirectionsService) {
-        this.fallbackToDirectionsService();
-      } else {
-        this.errorMsg = 'Google Maps no está disponible.';
-        this.loading = false;
-      }
+      this.fallbackToDirectionsService();
       return;
     }
 
@@ -152,6 +154,7 @@ export class GTripInfoCardComponent implements OnChanges {
           }
 
           this.routeData = route;
+          this.renderRouteOnMap(route);
           this.loading = false;
         } else {
           this.errorMsg = 'No se encontraron las rutas esperadas.';
@@ -170,15 +173,48 @@ export class GTripInfoCardComponent implements OnChanges {
   }
 
   private mockTollPrice(): number {
-    // Base 10000 COP + 4000 COP for each recorded axle
-    return 10000 + this.vehicleAxles * 4000;
+    // Current Colombian Toll rates 2024 (estimates per category)
+    const axles = this.vehicleAxles || 2;
+
+    if (axles <= 2) return 16700; // Category I/II
+    if (axles === 3) return 25000; // Category III
+    if (axles === 4) return 33000; // Category IV/V
+    if (axles === 5) return 50000; // Category VI
+    if (axles >= 6) return 75000; // Category VII
+
+    return 16700; // Fallback
   }
 
   private cleanInstructionString(htmlString: string): string {
     let unescaped = htmlString.replaceAll(/<[^>]*>?/gm, '');
-    unescaped = unescaped.replaceAll(/Continúa por/gi, '');
-    unescaped = unescaped.replaceAll(/Carretera con peajes/gi, '');
-    unescaped = unescaped.replaceAll(/Carretera con peaje/gi, '');
+
+    // Common prefixes to remove
+    const patternsToRemove = [
+      /En la rotonda, toma la .* salida en dirección/gi,
+      /Toma la salida .* hacia/gi,
+      /Continúa por/gi,
+      /Continúa hacia/gi,
+      /Carretera con peajes/gi,
+      /Carretera con peaje/gi,
+      /Pasa por el peaje .* en/gi,
+      /Pasa por el peaje/gi,
+    ];
+
+    patternsToRemove.forEach((pattern) => {
+      unescaped = unescaped.replaceAll(pattern, '');
+    });
+
+    // If 'Peaje' is mentioned, try to keep only from 'Peaje' onwards
+    const peajeIndex = unescaped.toLowerCase().indexOf('peaje');
+    if (peajeIndex !== -1) {
+      unescaped = unescaped.substring(peajeIndex);
+    } else {
+      const tollIndex = unescaped.toLowerCase().indexOf('toll');
+      if (tollIndex !== -1) {
+        unescaped = unescaped.substring(tollIndex);
+      }
+    }
+
     return unescaped.trim();
   }
 
@@ -242,6 +278,7 @@ export class GTripInfoCardComponent implements OnChanges {
             }
             this.tollsCount = this.tollsList.length;
             this.routeData = route;
+            this.renderRouteOnMap(response); // DirectionsService returns the full response for renderer
           } else {
             this.errorMsg = 'No se encontraron las rutas esperadas.';
           }
@@ -255,5 +292,49 @@ export class GTripInfoCardComponent implements OnChanges {
 
   onClose(): void {
     this.close.emit();
+  }
+
+  private initMap(): void {
+    const mapElement = document.getElementById('tripMap');
+    if (
+      mapElement &&
+      globalThis.google !== 'undefined' &&
+      globalThis.google?.maps?.Map
+    ) {
+      if (!this.mapInstance) {
+        this.mapInstance = new globalThis.google.maps.Map(mapElement, {
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+        });
+      }
+
+      if (!this.directionsRenderer) {
+        this.directionsRenderer = new globalThis.google.maps.DirectionsRenderer(
+          {
+            map: this.mapInstance,
+            suppressMarkers: false,
+            polylineOptions: {
+              strokeColor: '#0d6efd',
+              strokeWeight: 5,
+              strokeOpacity: 0.8,
+            },
+          },
+        );
+      }
+    }
+  }
+
+  private renderRouteOnMap(data: any): void {
+    setTimeout(() => {
+      this.initMap();
+      if (this.directionsRenderer && data) {
+        // DirectionsRenderer expects a DirectionsResult object.
+        // If data has 'routes', we assume it's compatible.
+        if (data.routes) {
+          this.directionsRenderer.setDirections(data);
+        }
+      }
+    }, 100);
   }
 }

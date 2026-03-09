@@ -56,3 +56,19 @@
     background: rgba(255, 255, 255, 0.1);
   }
 }
+
+#tripMap {
+  width: 100%;
+  height: 250px;
+  border-radius: 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+  background-color: var(--bs-tertiary-bg);
+}
+
+[data-bs-theme="dark"] {
+  #tripMap {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}

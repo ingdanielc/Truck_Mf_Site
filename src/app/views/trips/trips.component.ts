@@ -70,6 +70,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   isTripInfoOpen: boolean = false;
   latestTripOrigin: string = '';
   latestTripDestination: string = '';
+  latestTripAxles: number = 2;
 
   // Selection Lists for parent context
   owners: ModelOwner[] = [];
@@ -103,7 +104,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     private readonly vehicleService: VehicleService,
     private readonly driverService: DriverService,
     private readonly route: ActivatedRoute,
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     const rawOwnerId = this.route.snapshot.queryParamMap.get('ownerId');
@@ -601,6 +602,7 @@ export class TripsComponent implements OnInit, OnDestroy {
 
       this.latestTripOrigin = originName;
       this.latestTripDestination = destName;
+      this.latestTripAxles = savedTrip.vehicle?.numberOfAxles || 2;
       this.isTripInfoOpen = true;
     }
   }
