@@ -14,7 +14,10 @@
     <!-- Text details -->
     <div class="min-width-0">
       <h6 class="fw-bold mb-1 text-body text-truncate">
-        {{ config.name }}
+        <!-- Mobile: truncated to 24 chars -->
+        <span class="d-sm-none">{{ mobileDisplayName }}</span>
+        <!-- Desktop: full name with CSS truncation -->
+        <span class="d-none d-sm-inline text-truncate">{{ config.name }}</span>
       </h6>
       <p class="small text-secondary mb-0 text-truncate">
         {{ expense.description }}

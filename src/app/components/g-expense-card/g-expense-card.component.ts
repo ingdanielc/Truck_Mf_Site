@@ -33,4 +33,9 @@ export class GExpenseCardComponent implements OnInit {
     if (!this.totalAmount || this.totalAmount <= 0) return 0;
     return Math.round((this.expense.amount / this.totalAmount) * 100);
   }
+
+  get mobileDisplayName(): string {
+    const name = this.config.name || '';
+    return name.length > 23 ? name.slice(0, 23) + '…' : name;
+  }
 }
