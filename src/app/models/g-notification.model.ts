@@ -15,6 +15,7 @@ export const EVENT_TRANSLATIONS: { [key: string]: string } = {
   BIRTHDAY_EVENT: 'CUMPLEAÑOS',
   EXPIRATION_EVENT: 'VENCIMIENTO',
   SYSTEM_EVENT: 'SISTEMA',
+  TRIP_INACTIVITY_ALERT: 'INACTIVIDAD',
 };
 
 export interface GNotification {

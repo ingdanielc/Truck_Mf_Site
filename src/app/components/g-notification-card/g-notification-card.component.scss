@@ -35,6 +35,9 @@
   .icon-wrapper {
     width: 42px;
     height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
