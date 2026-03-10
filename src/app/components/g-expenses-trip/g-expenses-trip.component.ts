@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 import { GExpenseCardComponent } from '../g-expense-card/g-expense-card.component';
 import { ModelExpense } from '../../models/expense-model';
 import { VehicleService as ExpenseService } from '../../services/expense.service';
+import { TripService } from '../../services/trip.service';
 import {
   Filter,
   ModelFilterTable,
@@ -31,15 +32,21 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
   @Output() editExpense = new EventEmitter<ModelExpense>();
   @Output() addExpenseType = new EventEmitter<number>();
   @Input() isMaintenance = false;
+  @Input() monthsToQuery = 2;
 
   expenses: ModelExpense[] = [];
   loading = false;
+  totalPreviousTrip: number = 0;
   @Input() budget: number = 0;
 
-  constructor(private readonly expenseService: ExpenseService) {}
+  constructor(
+    private readonly expenseService: ExpenseService,
+    private readonly tripService: TripService,
+  ) {}
 
   ngOnInit(): void {
     this.loadExpenses();
+    this.loadPreviousTripTotal();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -49,6 +56,7 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
       (changes['isMaintenance'] && !changes['isMaintenance'].firstChange)
     ) {
       this.loadExpenses();
+      this.loadPreviousTripTotal();
     }
   }
 
@@ -61,6 +69,17 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
 
     if (!this.isMaintenance) {
       filters.push(new Filter('tripId', '=', this.tripId.toString()));
+    } else {
+      // For maintenance, filter by expenseDate based on monthsToQuery (from the 1st of the month)
+      const startDate = new Date();
+      // Adjust to the desired month
+      startDate.setMonth(startDate.getMonth() - (this.monthsToQuery - 1));
+      // Snap to the 1st of that month
+      startDate.setDate(1);
+
+      // Format dates to ISO string or a format accepted by the backend (assuming YYYY-MM-DD)
+      const startDateStr = startDate.toISOString().split('T')[0];
+      filters.push(new Filter('expenseDate', '>=', startDateStr));
     }
 
     const filterPayload = new ModelFilterTable(
@@ -77,6 +96,51 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
       error: (err) => {
         console.error('Error loading expenses:', err);
         this.loading = false;
+      },
+    });
+  }
+
+  loadPreviousTripTotal(): void {
+    if (this.isMaintenance || !this.vehicleId || !this.tripId) {
+      this.totalPreviousTrip = 0;
+      return;
+    }
+
+    const tripFilters = [
+      new Filter('vehicleId', '=', this.vehicleId.toString()),
+      new Filter('id', '<', this.tripId.toString()),
+    ];
+
+    const filterPayload = new ModelFilterTable(
+      tripFilters,
+      new Pagination(1, 0),
+      new Sort('id', false),
+    );
+
+    this.tripService.getTripFilter(filterPayload).subscribe({
+      next: (resp: any) => {
+        const previousTrip = resp?.data?.content?.[0];
+        if (previousTrip) {
+          const expenseFilters = [
+            new Filter('tripId', '=', previousTrip.id.toString()),
+          ];
+          const expensePayload = new ModelFilterTable(
+            expenseFilters,
+            new Pagination(100, 0),
+            new Sort('id', false),
+          );
+          this.expenseService.getExpenseFilter(expensePayload).subscribe({
+            next: (expResp: any) => {
+              const prevExpenses: ModelExpense[] = expResp?.data?.content || [];
+              this.totalPreviousTrip = prevExpenses.reduce(
+                (sum, e) => sum + e.amount,
+                0,
+              );
+            },
+          });
+        } else {
+          this.totalPreviousTrip = 0;
+        }
       },
     });
   }
@@ -118,6 +182,58 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
   get maintenanceExpenses(): ModelExpense[] {
     // Type 4 is Maintenance
     return this.expenses.filter((e) => e.category?.expenseTypeId === 4);
+  }
+
+  get totalCurrentMonth(): number {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    return this.maintenanceExpenses
+      .filter((e) => {
+        const d = new Date(e.expenseDate);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      })
+      .reduce((sum, e) => sum + e.amount, 0);
+  }
+
+  get totalPreviousMonth(): number {
+    const now = new Date();
+    now.setMonth(now.getMonth() - 1);
+    const prevMonth = now.getMonth();
+    const prevYear = now.getFullYear();
+
+    return this.maintenanceExpenses
+      .filter((e) => {
+        const d = new Date(e.expenseDate);
+        return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
+      })
+      .reduce((sum, e) => sum + e.amount, 0);
+  }
+
+  get maintenanceDifferential(): { percentage: number; isIncrease: boolean } {
+    const current = this.totalCurrentMonth;
+    const previous = this.totalPreviousMonth;
+
+    if (previous === 0) {
+      return { percentage: current > 0 ? 100 : 0, isIncrease: current > 0 };
+    }
+
+    const diff = current - previous;
+    const percentage = Math.abs(Math.round((diff / previous) * 100));
+    return { percentage, isIncrease: diff > 0 };
+  }
+
+  get tripDifferential(): { percentage: number; isIncrease: boolean } {
+    if (this.totalPreviousTrip === 0) {
+      return { percentage: 0, isIncrease: false };
+    }
+
+    const current = this.totalAmount;
+    const previous = this.totalPreviousTrip;
+    const diff = current - previous;
+    const percentage = Math.abs(Math.round((diff / previous) * 100));
+    return { percentage, isIncrease: diff > 0 };
   }
 
   get lastUpdateText(): string {

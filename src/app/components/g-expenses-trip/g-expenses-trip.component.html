@@ -32,63 +32,128 @@
           <span
             class="badge rounded-pill bg-white bg-opacity-25 px-3 py-2 fw-medium border border-white border-opacity-25 text-wrap text-start lh-base d-inline-block max-width-100"
           >
-            <i class="fa-solid fa-arrow-trend-down me-1"></i> 12% vs. último
-            viaje
+            @if (isMaintenance) {
+              <i
+                class="fa-solid me-1"
+                [class.fa-arrow-trend-up]="maintenanceDifferential.isIncrease"
+                [class.fa-arrow-trend-down]="
+                  !maintenanceDifferential.isIncrease
+                "
+              ></i>
+              {{ maintenanceDifferential.percentage }}% vs. mes anterior
+            } @else {
+              <i
+                class="fa-solid me-1"
+                [class.fa-arrow-trend-up]="tripDifferential.isIncrease"
+                [class.fa-arrow-trend-down]="!tripDifferential.isIncrease"
+              ></i>
+              {{ tripDifferential.percentage }}% vs. último viaje
+            }
           </span>
         </div>
       </div>
     </div>
 
-    <!-- Budget Status Block -->
+    <!-- Budget or Maintenance Summary Block -->
     <div class="col-12 col-lg-5">
-      <div class="card border-0 rounded-4 shadow-sm bg-body-tertiary h-100 p-4">
-        <p class="small fw-bold tracking-wider text-secondary mb-4">
-          ESTADO DEL PRESUPUESTO
-        </p>
-
-        <div class="d-flex justify-content-between mb-2">
-          <span class="text-body fw-medium">Presupuestado</span>
-          <span class="fw-bold fs-5">{{
-            budget | currency: "COP" : "symbol-narrow" : "1.0-0"
-          }}</span>
-        </div>
-
+      @if (!isMaintenance) {
         <div
-          class="progress rounded-pill bg-secondary bg-opacity-10 mb-2"
-          style="height: 10px"
+          class="card border-0 rounded-4 shadow-sm bg-body-tertiary h-100 p-4"
         >
-          <div
-            class="progress-bar bg-primary rounded-pill"
-            role="progressbar"
-            [style.width]="budgetPercentage + '%'"
-            onkeypress
-            aria-label="progress"
-          ></div>
-        </div>
+          <p class="small fw-bold tracking-wider text-secondary mb-4">
+            ESTADO DEL PRESUPUESTO
+          </p>
 
-        <p class="small text-secondary fst-italic mb-4">
-          Te quedan
-          {{ remainingBudget | currency: "COP" : "symbol-narrow" : "1.0-0" }}
-          para este trayecto.
-        </p>
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-body fw-medium">Presupuestado</span>
+            <span class="fw-bold fs-5">{{
+              budget | currency: "COP" : "symbol-narrow" : "1.0-0"
+            }}</span>
+          </div>
 
-        <div
-          class="mt-auto pt-3 border-top border-secondary border-opacity-10 d-flex gap-3 align-items-center"
-        >
           <div
-            class="icon-shape rounded-circle bg-primary bg-opacity-10 text-primary flex-shrink-0 d-flex align-items-center justify-content-center"
-            style="width: 40px; height: 40px"
+            class="progress rounded-pill bg-secondary bg-opacity-10 mb-2"
+            style="height: 10px"
           >
-            <i class="fa-solid fa-clock"></i>
+            <div
+              class="progress-bar bg-primary rounded-pill"
+              role="progressbar"
+              [style.width]="budgetPercentage + '%'"
+              onkeypress
+              aria-label="progress"
+            ></div>
           </div>
-          <div>
-            <p class="small text-secondary mb-0 mb-1 lh-1">
-              Última actualización
-            </p>
-            <p class="fw-bold mb-0 text-body lh-1">{{ lastUpdateText }}</p>
+
+          <p class="small text-secondary fst-italic mb-4">
+            Te quedan
+            {{ remainingBudget | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+            para este trayecto.
+          </p>
+
+          <div
+            class="mt-auto pt-3 border-top border-secondary border-opacity-10 d-flex gap-3 align-items-center"
+          >
+            <div
+              class="icon-shape rounded-circle bg-primary bg-opacity-10 text-primary flex-shrink-0 d-flex align-items-center justify-content-center"
+              style="width: 40px; height: 40px"
+            >
+              <i class="fa-solid fa-clock"></i>
+            </div>
+            <div>
+              <p class="small text-secondary mb-0 mb-1 lh-1">
+                Última actualización
+              </p>
+              <p class="fw-bold mb-0 text-body lh-1">{{ lastUpdateText }}</p>
+            </div>
           </div>
         </div>
-      </div>
+      } @else {
+        <div
+          class="card border-0 rounded-4 shadow-sm bg-body-tertiary h-100 p-4"
+        >
+          <p class="small fw-bold tracking-wider text-secondary mb-4">
+            RESUMEN MANTENIMIENTO
+          </p>
+
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <p class="small text-secondary mb-0">
+                  Mantenimiento mes anterior
+                </p>
+                <h4 class="fw-bold mb-0 text-secondary">
+                  {{
+                    totalPreviousMonth
+                      | currency: "COP" : "symbol-narrow" : "1.0-0"
+                  }}
+                </h4>
+              </div>
+              <div
+                class="icon-shape rounded-pill bg-secondary bg-opacity-10 text-secondary px-3 py-1 small fw-bold"
+              >
+                Anterior
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="mt-auto pt-3 border-top border-secondary border-opacity-10 d-flex gap-3 align-items-center"
+          >
+            <div
+              class="icon-shape rounded-circle bg-primary bg-opacity-10 text-primary flex-shrink-0 d-flex align-items-center justify-content-center"
+              style="width: 40px; height: 40px"
+            >
+              <i class="fa-solid fa-clock"></i>
+            </div>
+            <div>
+              <p class="small text-secondary mb-0 mb-1 lh-1">
+                Última actualización
+              </p>
+              <p class="fw-bold mb-0 text-body lh-1">{{ lastUpdateText }}</p>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   </div>
 

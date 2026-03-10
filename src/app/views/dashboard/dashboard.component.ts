@@ -480,8 +480,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         const activeTrip = trips.find(
           (t) =>
             (t.vehicleId === v.id || t.vehiclePlate === v.plate) &&
-            (t.status?.toUpperCase() === 'EN CURSO' ||
-              t.status?.toUpperCase() === 'PENDIENTE'),
+            t.status?.toUpperCase() === 'EN CURSO',
         );
         if (activeTrip) {
           const tripExpenses = expenses.filter(
