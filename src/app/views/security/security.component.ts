@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { forkJoin } from 'rxjs';
 
 import {
   AbstractControl,
@@ -39,6 +40,7 @@ export class SecurityComponent implements OnInit {
   users: User[] = [];
   allUsers: User[] = [];
   totalUsers: number = 0;
+  totalUsersStable: number = 0;
   searchTerm: string = '';
   activeFilter: string = 'Todos';
   filters: string[] = ['Todos'];
@@ -101,6 +103,7 @@ export class SecurityComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadRoles();
+    this.updateUserCounts();
     this.loadUsers();
   }
 
@@ -146,7 +149,6 @@ export class SecurityComponent implements OnInit {
           this.allUsers = response.data.content.map((u: ModelUser) =>
             this.mapUser(u),
           );
-          this.calculateStats();
           this.applyFilter();
         } else {
           this.allUsers = [];
@@ -182,13 +184,32 @@ export class SecurityComponent implements OnInit {
     return 'otro';
   }
 
-  calculateStats(): void {
-    this.ownersCount = this.allUsers.filter(
-      (u) => u.roleType === 'propietario',
-    ).length;
-    this.driversCount = this.allUsers.filter(
-      (u) => u.roleType === 'conductor',
-    ).length;
+  updateUserCounts(): void {
+    forkJoin({
+      total: this.securityService.getUserFilter(
+        new ModelFilterTable([], new Pagination(1, 0), new Sort('id', true)),
+      ),
+      owners: this.securityService.getUserFilter(
+        new ModelFilterTable(
+          [new Filter('userRoles.role.name', '=', 'PROPIETARIO')],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        ),
+      ),
+      drivers: this.securityService.getUserFilter(
+        new ModelFilterTable(
+          [new Filter('userRoles.role.name', '=', 'CONDUCTOR')],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        ),
+      ),
+    }).subscribe({
+      next: (resps: any) => {
+        this.totalUsersStable = resps.total?.data?.totalElements ?? 0;
+        this.ownersCount = resps.owners?.data?.totalElements ?? 0;
+        this.driversCount = resps.drivers?.data?.totalElements ?? 0;
+      },
+    });
   }
 
   get strength(): number {
@@ -331,6 +352,7 @@ export class SecurityComponent implements OnInit {
                 ? 'Usuario actualizado exitosamente!'
                 : 'Usuario creado exitosamente!',
             );
+            this.updateUserCounts();
             this.loadUsers();
             this.toggleOffcanvas();
           },
