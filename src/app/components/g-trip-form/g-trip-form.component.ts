@@ -14,7 +14,8 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Subscription, forkJoin } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import { ModelTrip } from 'src/app/models/trip-model';
 import { TripService } from 'src/app/services/trip.service';
 import { NotificationsService } from 'src/app/services/notifications.service';
@@ -51,6 +52,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   @Input() trip: ModelTrip | null = null;
   @Input() userRole: string = 'ROL';
   @Input() loggedInOwnerId: number | null = null;
+  @Input() loggedInDriverId: number | null = null;
   @Output() saved = new EventEmitter<ModelTrip>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -262,6 +264,13 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       this.tripForm.get('ownerId')?.setValue(this.loggedInOwnerId);
       this.tripForm.get('ownerId')?.disable();
     }
+
+    if (this.userRole === 'CONDUCTOR' && this.loggedInDriverId) {
+      this.tripForm.get('ownerId')?.setValue(this.loggedInOwnerId);
+      this.tripForm.get('ownerId')?.disable();
+      this.tripForm.get('driverId')?.setValue(this.loggedInDriverId);
+      this.tripForm.get('driverId')?.disable();
+    }
   }
 
   loadCities(): void {
@@ -319,48 +328,77 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       new Sort('owner.id', true),
     );
 
-    const activeTripsFilter = new ModelFilterTable(
-      [new Filter('status', 'in', 'En Curso')],
-      new Pagination(20000, 0),
-      new Sort('id', true),
-    );
+    this.vehicleService
+      .getVehicleOwnerFilter(vehicleFilter)
+      .pipe(
+        switchMap((respVehicles: any) => {
+          const allVehicles: ModelVehicle[] = respVehicles?.data?.content ?? [];
+          if (allVehicles.length === 0) {
+            return of({ allVehicles, activeTrips: [] });
+          }
 
-    forkJoin({
-      vehicles: this.vehicleService.getVehicleOwnerFilter(vehicleFilter),
-      activeTrips: this.tripService.getTripFilter(activeTripsFilter),
-    }).subscribe({
-      next: (resps: any) => {
-        const allVehicles: ModelVehicle[] = resps.vehicles?.data?.content ?? [];
-        const activeTrips: ModelTrip[] = resps.activeTrips?.data?.content ?? [];
+          const vehicleIds = allVehicles.map((v) => v.id).join(',');
+          const activeTripsFilter = new ModelFilterTable(
+            [
+              new Filter('status', 'in', 'En Curso'),
+              new Filter('vehicleId', 'in', vehicleIds),
+            ],
+            new Pagination(20000, 0),
+            new Sort('id', true),
+          );
 
-        // Identify vehicle IDs that have active trips
-        const busyVehicleIds = activeTrips.map((t) => t.vehicleId);
+          return this.tripService.getTripFilter(activeTripsFilter).pipe(
+            map((respTrips: any) => ({
+              allVehicles,
+              activeTrips: respTrips?.data?.content ?? [],
+            })),
+          );
+        }),
+      )
+      .subscribe({
+        next: (resps: any) => {
+          const { allVehicles, activeTrips } = resps;
 
-        // Filter: Keep vehicles that are NOT busy,
-        // OR is the vehicle of the trip we are currently editing
-        this.vehicles = allVehicles.filter((v) => {
-          const isBusy = busyVehicleIds.includes(v.id);
-          const isSameAsEditing = this.trip && v.id === this.trip.vehicleId;
-          return !isBusy || isSameAsEditing;
-        });
+          // Identify vehicle IDs that have active trips
+          const busyVehicleIds = activeTrips.map((t: any) => t.vehicleId);
 
-        this.mapBrandNames();
-        this.loadingVehicles = false;
+          // Filter: Keep vehicles that are NOT busy,
+          // OR is the vehicle of the trip we are currently editing
+          this.vehicles = allVehicles.filter((v: any) => {
+            const isBusy = busyVehicleIds.includes(v.id);
+            const isSameAsEditing = this.trip && v.id === this.trip.vehicleId;
+            return !isBusy || isSameAsEditing;
+          });
 
-        // Pre-select if only one vehicle is available (New trip)
-        if (!this.trip && this.vehicles.length === 1) {
-          this.tripForm.get('vehicleId')?.setValue(this.vehicles[0].id);
-        }
+          this.mapBrandNames();
+          this.loadingVehicles = false;
 
-        if (this._pendingVehicleId != null) {
-          this.tripForm
-            .get('vehicleId')
-            ?.setValue(this._pendingVehicleId, { emitEvent: true });
-          this._pendingVehicleId = null;
-        }
-      },
-      error: () => (this.loadingVehicles = false),
-    });
+          // NEW: If CONDUCTOR, auto-select their vehicle
+          if (
+            !this.trip &&
+            this.userRole === 'CONDUCTOR' &&
+            this.loggedInDriverId
+          ) {
+            const driverVehicle = allVehicles.find(
+              (v: any) => v.currentDriverId === this.loggedInDriverId,
+            );
+            if (driverVehicle) {
+              this.tripForm.get('vehicleId')?.setValue(driverVehicle.id);
+            }
+          } else if (!this.trip && this.vehicles.length === 1) {
+            // Pre-select if only one vehicle is available (New trip)
+            this.tripForm.get('vehicleId')?.setValue(this.vehicles[0].id);
+          }
+
+          if (this._pendingVehicleId != null) {
+            this.tripForm
+              .get('vehicleId')
+              ?.setValue(this._pendingVehicleId, { emitEvent: true });
+            this._pendingVehicleId = null;
+          }
+        },
+        error: () => (this.loadingVehicles = false),
+      });
   }
 
   fetchNextTripNumber(vehicleId: number): void {

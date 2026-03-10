@@ -201,6 +201,7 @@ export class TripsComponent implements OnInit, OnDestroy {
         if (response?.data?.content?.length > 0) {
           const driver = response.data.content[0];
           this.loggedInDriverId = driver.id;
+          this.loggedInOwnerId = driver.ownerId; // Crucial for form context
           this.loadTrips();
         }
       },

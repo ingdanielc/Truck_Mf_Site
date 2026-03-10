@@ -38,7 +38,7 @@
     }
 
     <!-- Logistics Section -->
-    <div class="mb-4">
+    <div class="mb-4" [class.d-none]="userRole === 'CONDUCTOR'">
       <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
         <i class="fa-solid fa-truck me-2"></i>Vehículo y Conductor
       </h6>
