@@ -14,7 +14,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { ModelTrip } from 'src/app/models/trip-model';
 import { TripService } from 'src/app/services/trip.service';
 import { NotificationsService } from 'src/app/services/notifications.service';
@@ -313,18 +313,41 @@ export class GTripFormComponent implements OnInit, OnDestroy {
 
   loadVehiclesByOwner(ownerId: number): void {
     this.loadingVehicles = true;
-    const filter = new ModelFilterTable(
+    const vehicleFilter = new ModelFilterTable(
       [new Filter('owner.id', '=', ownerId.toString())],
       new Pagination(100, 0),
       new Sort('owner.id', true),
     );
-    this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
-      next: (response: any) => {
-        this.vehicles = response?.data?.content ?? [];
+
+    const activeTripsFilter = new ModelFilterTable(
+      [new Filter('status', 'in', 'En Curso')],
+      new Pagination(20000, 0),
+      new Sort('id', true),
+    );
+
+    forkJoin({
+      vehicles: this.vehicleService.getVehicleOwnerFilter(vehicleFilter),
+      activeTrips: this.tripService.getTripFilter(activeTripsFilter),
+    }).subscribe({
+      next: (resps: any) => {
+        const allVehicles: ModelVehicle[] = resps.vehicles?.data?.content ?? [];
+        const activeTrips: ModelTrip[] = resps.activeTrips?.data?.content ?? [];
+
+        // Identify vehicle IDs that have active trips
+        const busyVehicleIds = activeTrips.map((t) => t.vehicleId);
+
+        // Filter: Keep vehicles that are NOT busy,
+        // OR is the vehicle of the trip we are currently editing
+        this.vehicles = allVehicles.filter((v) => {
+          const isBusy = busyVehicleIds.includes(v.id);
+          const isSameAsEditing = this.trip && v.id === this.trip.vehicleId;
+          return !isBusy || isSameAsEditing;
+        });
+
         this.mapBrandNames();
         this.loadingVehicles = false;
 
-        // Pre-seleccionar si solo hay un vehículo (Solo para nuevos registros)
+        // Pre-select if only one vehicle is available (New trip)
         if (!this.trip && this.vehicles.length === 1) {
           this.tripForm.get('vehicleId')?.setValue(this.vehicles[0].id);
         }

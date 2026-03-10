@@ -92,6 +92,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   ownerIdFilter: number | null = null;
   filteredOwner: ModelOwner | null = null;
   isLoadingExpandedTrips: boolean = false;
+  expandedOwnerVehiclesCount: number = 0;
 
   /** driverId filter when navigated from driver profile (query param) */
   driverIdFilter: number | null = null;
@@ -526,6 +527,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     if (this.expandedOwnerId === owner.id) {
       this.expandedOwnerId = null;
       this.ownerTrips = [];
+      this.expandedOwnerVehiclesCount = 0;
       // Restore global stats
       this.totalTrips = this.globalStats.total;
       this.inProgressTrips = this.globalStats.inProgress;
@@ -536,6 +538,7 @@ export class TripsComponent implements OnInit, OnDestroy {
       if (this.expandedOwnerId) {
         this.isLoadingExpandedTrips = true;
         this.ownerTrips = []; // Clear previous to avoid flicker
+        this.expandedOwnerVehiclesCount = 0;
         this.loadTripsForAdmin(this.expandedOwnerId);
       }
     }
@@ -551,6 +554,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     this.vehicleService.getVehicleOwnerFilter(vehicleFilter).subscribe({
       next: (respVehicles: any) => {
         const vehicles = respVehicles?.data?.content ?? [];
+        this.expandedOwnerVehiclesCount = vehicles.length;
         const vehicleIds = vehicles
           .map((v: any) => v.id)
           .filter((id: any) => id != null)
@@ -586,6 +590,7 @@ export class TripsComponent implements OnInit, OnDestroy {
             this.ownerTrips = [];
             this.calculateStats(this.ownerTrips);
             this.isLoadingExpandedTrips = false;
+            this.expandedOwnerVehiclesCount = 0;
           },
         });
       },
@@ -593,6 +598,7 @@ export class TripsComponent implements OnInit, OnDestroy {
         this.ownerTrips = [];
         this.calculateStats(this.ownerTrips);
         this.isLoadingExpandedTrips = false;
+        this.expandedOwnerVehiclesCount = 0;
       },
     });
   }
@@ -624,14 +630,21 @@ export class TripsComponent implements OnInit, OnDestroy {
 
   get showActiveTripAlert(): boolean {
     if (this.userRole === 'ADMINISTRADOR') {
-      // For Admin, only show when an owner is expanded and has active trips
+      // For Admin, only show when an owner is expanded and has active trips equal or more than his vehicles count
       if (!this.expandedOwnerId) return false;
-      return this.ownerTrips.some((t) => {
+      const activeOwnerTripsCount = this.ownerTrips.filter((t) => {
         const s = (t.status || '').toUpperCase();
         return s === 'EN CURSO' || s === 'IN_PROGRESS';
-      });
+      }).length;
+      return activeOwnerTripsCount >= this.expandedOwnerVehiclesCount;
     }
-    // For other roles, check global inProgress count
+
+    if (this.userRole === 'PROPIETARIO') {
+      // If owner has 3 vehicles, they can have up to 3 trips in progress
+      return this.inProgressTrips >= this.vehicles.length;
+    }
+
+    // For CONDUCTOR, check global inProgress count (they have 1 vehicle)
     return this.inProgressTrips > 0;
   }
 

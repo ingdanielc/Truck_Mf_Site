@@ -79,8 +79,9 @@
                 style="margin: -1rem"
               >
                 <div
+                  id="vehicles"
                   class="d-flex flex-nowrap gap-3 overflow-auto snap-x hide-scrollbar"
-                  style="padding: 1rem"
+                  [style.padding]="vehicles.length < 4 ? '1rem 0' : '1rem'"
                 >
                   @for (v of visibleVehicles; track v) {
                     <div
