@@ -187,7 +187,7 @@ export const CATEGORY_UI_CONFIG: Record<string, CategoryConfig> = {
   },
   'lujos y accesorios': {
     name: 'LUJOS Y ACCESORIOS',
-    icon: 'fa-solid fa-sparkles',
+    icon: 'fa-solid fa-star',
     colorClass: 'text-warning bg-warning',
   },
   eléctricos: {

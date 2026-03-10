@@ -20,12 +20,14 @@
             (input)="applyFilter()"
           />
         </div>
-        <button
-          class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
-          (click)="toggleOffcanvas()"
-        >
-          <i class="fa-solid fa-plus me-2"></i>Agregar Vehículo
-        </button>
+        @if (userRole !== "CONDUCTOR") {
+          <button
+            class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+            (click)="toggleOffcanvas()"
+          >
+            <i class="fa-solid fa-plus me-2"></i>Agregar Vehículo
+          </button>
+        }
       </div>
     </div>
   </div>
@@ -137,6 +139,7 @@
         <div class="col">
           <app-g-vehicle-card
             [vehicle]="vehicle"
+            [canEdit]="userRole !== 'CONDUCTOR'"
             (edit)="toggleOffcanvas($event)"
             (maintenance)="goToMaintenance($event)"
           ></app-g-vehicle-card>
@@ -234,13 +237,15 @@
   </div>
 
   <!-- Mobile Floating Action Button -->
-  <button
-    class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
-    aria-label="Agregar Vehículo"
-    (click)="toggleOffcanvas()"
-  >
-    <i class="fa-solid fa-plus fs-4"></i>
-  </button>
+  @if (userRole !== "CONDUCTOR") {
+    <button
+      class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
+      aria-label="Agregar Vehículo"
+      (click)="toggleOffcanvas()"
+    >
+      <i class="fa-solid fa-plus fs-4"></i>
+    </button>
+  }
 
   <!-- Create/Edit Vehicle Offcanvas -->
   <div

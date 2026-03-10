@@ -338,6 +338,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   toggleOffcanvas(vehicle?: ModelVehicle): void {
+    if (this.userRole === 'CONDUCTOR') return;
+
     // For NEW vehicles, validate the owner's vehicle limit
     if (!vehicle && !this.isOffcanvasOpen) {
       const owner =
@@ -747,7 +749,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       vehicles.forEach((v) => {
         const firstOwnerRel = v.owners?.[0];
 
-        if (!firstOwnerRel || !firstOwnerRel.owner) {
+        if (!firstOwnerRel?.owner) {
           // Vehicle without owner → "Sin propietario" group
           if (!groups.has(noOwnerKey)) {
             groups.set(noOwnerKey, {

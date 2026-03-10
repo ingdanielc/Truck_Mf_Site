@@ -11,6 +11,7 @@ import { ModelVehicle } from 'src/app/models/vehicle-model';
 })
 export class GVehicleCardComponent {
   @Input() vehicle!: ModelVehicle;
+  @Input() canEdit: boolean = true;
   @Output() edit = new EventEmitter<ModelVehicle>();
   @Output() viewDetails = new EventEmitter<ModelVehicle>();
   @Output() maintenance = new EventEmitter<ModelVehicle>();

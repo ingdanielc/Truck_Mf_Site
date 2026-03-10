@@ -88,16 +88,18 @@
         >
           <i class="fa-solid fa-wrench"></i>
         </button>
-        <button
-          type="button"
-          class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
-          (click)="onEditClick()"
-          style="width: 40px"
-          onkeypress
-          title="Editar"
-        >
-          <i class="fa-solid fa-pencil"></i>
-        </button>
+        @if (canEdit) {
+          <button
+            type="button"
+            class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
+            (click)="onEditClick()"
+            style="width: 40px"
+            onkeypress
+            title="Editar"
+          >
+            <i class="fa-solid fa-pencil"></i>
+          </button>
+        }
       </div>
     </div>
   </div>
