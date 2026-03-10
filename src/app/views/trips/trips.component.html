@@ -31,6 +31,27 @@
     </div>
   </div>
 
+  <!-- Active Trip Alert -->
+  @if (showingActiveTripWarning) {
+    <div
+      class="alert alert-warning alert-dismissible d-flex align-items-center gap-3 rounded-4 shadow-sm mb-4"
+      role="alert"
+    >
+      <i class="fa-solid fa-triangle-exclamation fs-4 flex-shrink-0"></i>
+      <div>
+        <strong>Viaje en curso activo.</strong>
+        No puedes crear un nuevo viaje mientras el actual siga en curso. Por
+        favor, completa o cancela el viaje activo primero.
+      </div>
+      <button
+        type="button"
+        class="btn-close"
+        aria-label="Cerrar"
+        (click)="dismissActiveTripWarning()"
+      ></button>
+    </div>
+  }
+
   <!-- Stats Cards -->
   <div class="row g-4 mb-4">
     <div class="col-12 col-md-6 col-xl-3">

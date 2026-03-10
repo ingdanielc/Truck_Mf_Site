@@ -67,6 +67,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   editingVehicle: ModelVehicle | null = null;
   vehicleForm: FormGroup;
   isPatching: boolean = false;
+  showingVehicleLimitWarning: boolean = false;
 
   // Selection Lists
   brands: any[] = [];
@@ -337,6 +338,15 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   toggleOffcanvas(vehicle?: ModelVehicle): void {
+    // For NEW vehicles, validate the owner's vehicle limit
+    if (!vehicle && !this.isOffcanvasOpen) {
+      const owner =
+        this.userRole === 'PROPIETARIO'
+          ? this.loggedInOwner
+          : (this.filteredOwner ?? null);
+      if (this.checkVehicleLimit(owner)) return;
+    }
+    this.showingVehicleLimitWarning = false;
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
     if (this.isOffcanvasOpen) {
       if (vehicle) {
@@ -391,8 +401,27 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Returns true and shows warning if the owner is at their vehicle limit */
+  private checkVehicleLimit(owner: ModelOwner | null): boolean {
+    if (!owner) return false;
+    const max = owner.maxVehicles;
+    const current = owner.vehicleCount ?? this.totalVehicles;
+    if (max != null && current >= max) {
+      this.showingVehicleLimitWarning = true;
+      return true;
+    }
+    return false;
+  }
+
+  dismissVehicleLimitWarning(): void {
+    this.showingVehicleLimitWarning = false;
+  }
+
   /** Abre el offcanvas de creación precargando el propietario del grupo */
   openAddVehicleForOwner(owner: ModelOwner): void {
+    // Validate vehicle limit for this owner
+    if (this.checkVehicleLimit(owner)) return;
+    this.showingVehicleLimitWarning = false;
     this.editingVehicle = null;
     this.isOffcanvasOpen = true;
     // Primero reseteamos sin emitir eventos para evitar doble disparo

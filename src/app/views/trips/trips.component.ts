@@ -66,6 +66,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   // Offcanvas state
   isOffcanvasOpen: boolean = false;
   editingTrip: ModelTrip | null = null;
+  showingActiveTripWarning: boolean = false;
 
   // Maps info card state
   isTripInfoOpen: boolean = false;
@@ -621,6 +622,19 @@ export class TripsComponent implements OnInit, OnDestroy {
     });
   }
 
+  get showActiveTripAlert(): boolean {
+    if (this.userRole === 'ADMINISTRADOR') {
+      // For Admin, only show when an owner is expanded and has active trips
+      if (!this.expandedOwnerId) return false;
+      return this.ownerTrips.some((t) => {
+        const s = (t.status || '').toUpperCase();
+        return s === 'EN CURSO' || s === 'IN_PROGRESS';
+      });
+    }
+    // For other roles, check global inProgress count
+    return this.inProgressTrips > 0;
+  }
+
   get totalPages(): number {
     return Math.ceil(this.dataTotal / this.rows);
   }
@@ -643,10 +657,20 @@ export class TripsComponent implements OnInit, OnDestroy {
   }
 
   toggleOffcanvas(trip?: ModelTrip): void {
+    // If opening for a NEW trip, check if there's already an active one
+    if (!this.isOffcanvasOpen && !trip && this.showActiveTripAlert) {
+      this.showingActiveTripWarning = true;
+      return;
+    }
+    this.showingActiveTripWarning = false;
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
     if (this.isOffcanvasOpen) {
       this.editingTrip = trip ?? null;
     }
+  }
+
+  dismissActiveTripWarning(): void {
+    this.showingActiveTripWarning = false;
   }
 
   filterByStatus(status: string | null): void {

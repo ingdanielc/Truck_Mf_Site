@@ -30,6 +30,28 @@
     </div>
   </div>
 
+  <!-- Vehicle Limit Warning Alert -->
+  @if (showingVehicleLimitWarning) {
+    <div
+      class="alert alert-danger alert-dismissible d-flex align-items-center gap-3 rounded-4 shadow-sm mb-4"
+      role="alert"
+    >
+      <i class="fa-solid fa-ban fs-4 flex-shrink-0"></i>
+      <div>
+        <strong>Límite de vehículos alcanzado.</strong>
+        Has alcanzado el máximo de vehículos permitidos en tu plan. Para agregar
+        más vehículos, por favor contacta al administrador de CashTruck para
+        ampliar tu plan.
+      </div>
+      <button
+        type="button"
+        class="btn-close"
+        aria-label="Cerrar"
+        (click)="dismissVehicleLimitWarning()"
+      ></button>
+    </div>
+  }
+
   <!-- Stats Cards -->
   <div class="row g-4 mb-4">
     <div class="col-12 col-md-4">
