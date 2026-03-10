@@ -5,7 +5,12 @@ import {
   FormsModule,
   ReactiveFormsModule,
   Validators,
+  AbstractControl,
+  AsyncValidatorFn,
+  ValidationErrors,
 } from '@angular/forms';
+import { Observable, of, timer } from 'rxjs';
+import { map, switchMap, catchError } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 
 import {
@@ -42,7 +47,11 @@ interface CategoryConfig {
 })
 export class ConfigurationComponent implements OnInit {
   categories: CategoryConfig[] = [];
+  paginatedCategories: CategoryConfig[] = [];
   allCategories: CategoryConfig[] = [];
+
+  page: number = 0;
+  rows: number = 12;
 
   // Counters
   totalCategoriesStable: number = 0;
@@ -71,7 +80,7 @@ export class ConfigurationComponent implements OnInit {
     private readonly toastService: ToastService,
   ) {
     this.categoryForm = this.fb.group({
-      name: ['', [Validators.required]],
+      name: ['', [Validators.required], [this.duplicateNameValidator()]],
       typeId: [null, [Validators.required]],
     });
   }
@@ -154,6 +163,67 @@ export class ConfigurationComponent implements OnInit {
     }
 
     this.categories = filtered;
+    this.page = 0;
+    this.updatePagination();
+  }
+
+  updatePagination(): void {
+    const startIndex = this.page * this.rows;
+    const endIndex = startIndex + this.rows;
+    this.paginatedCategories = this.categories.slice(startIndex, endIndex);
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.categories.length / this.rows);
+  }
+
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i);
+  }
+
+  changePage(newPage: number): void {
+    if (newPage >= 0 && newPage < this.totalPages && newPage !== this.page) {
+      this.page = newPage;
+      this.updatePagination();
+    }
+  }
+
+  duplicateNameValidator(): AsyncValidatorFn {
+    return (control: AbstractControl): Observable<ValidationErrors | null> => {
+      if (!control.value) {
+        return of(null);
+      }
+
+      const currentName = control.value.trim().toLowerCase();
+      if (
+        this.editingCategory &&
+        this.editingCategory.name.toLowerCase() === currentName
+      ) {
+        return of(null);
+      }
+
+      const filtros = [new Filter('name', '=', control.value.trim())];
+      const filter = new ModelFilterTable(
+        filtros,
+        new Pagination(10, 0),
+        new Sort('id', true),
+      );
+
+      return timer(500).pipe(
+        switchMap(() => this.expenseService.getExpenseCategoryFilter(filter)),
+        map((response: any) => {
+          const data = response?.data?.content || response?.data || response;
+          if (data && Array.isArray(data) && data.length > 0) {
+            const exists = data.some(
+              (c: any) => c.name.toLowerCase() === currentName,
+            );
+            return exists ? { duplicate: true } : null;
+          }
+          return null;
+        }),
+        catchError(() => of(null)),
+      );
+    };
   }
 
   toggleOffcanvas(category?: CategoryConfig): void {

@@ -171,7 +171,7 @@
 
   <!-- Categories Grid -->
   <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3 mb-5">
-    @for (cat of categories; track cat.id) {
+    @for (cat of paginatedCategories; track cat.id) {
       <div class="col">
         <g-expense-category-card
           [icon]="cat.icon"
@@ -182,6 +182,55 @@
         ></g-expense-category-card>
       </div>
     }
+  </div>
+
+  <!-- Footer/Pagination -->
+  <div class="row align-items-center g-3 mb-4">
+    <div class="col-12 col-md-6 text-center text-md-start">
+      <p class="text-secondary small mb-0">
+        Mostrando {{ paginatedCategories.length }} de
+        {{ categories.length }} categorías
+      </p>
+    </div>
+    <div
+      class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end"
+    >
+      <nav aria-label="Navegación de páginas">
+        <ul class="pagination mb-0">
+          <li class="page-item" [class.disabled]="page === 0">
+            <button
+              class="page-link shadow-none px-3 py-2"
+              (click)="changePage(page - 1)"
+              aria-label="Anterior"
+            >
+              <span aria-hidden="true">&laquo;</span>
+            </button>
+          </li>
+          @for (p of pages; track p) {
+            <li class="page-item" [class.active]="p === page">
+              <button
+                class="page-link shadow-none px-3 py-2"
+                (click)="changePage(p)"
+              >
+                {{ p + 1 }}
+              </button>
+            </li>
+          }
+          <li
+            class="page-item"
+            [class.disabled]="page >= totalPages - 1 || totalPages === 0"
+          >
+            <button
+              class="page-link shadow-none px-3 py-2"
+              (click)="changePage(page + 1)"
+              aria-label="Siguiente"
+            >
+              <span aria-hidden="true">&raquo;</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
   </div>
 
   <hr class="op-10 mb-4" />
@@ -237,7 +286,7 @@
               type="text"
               class="form-control rounded-3 py-2 px-3"
               formControlName="name"
-              placeholder="Ej. Combustible, Peajes..."
+              placeholder="Escribe"
               [class.is-invalid]="
                 categoryForm.get('name')?.invalid &&
                 categoryForm.get('name')?.touched
@@ -248,7 +297,13 @@
             categoryForm.get("name")?.invalid &&
             categoryForm.get("name")?.touched
           ) {
-            <div class="text-danger small mt-1">Este campo es obligatorio</div>
+            <div class="text-danger small mt-1">
+              @if (categoryForm.get("name")?.hasError("required")) {
+                Este campo es obligatorio para continuar
+              } @else if (categoryForm.get("name")?.hasError("duplicate")) {
+                Esta categoría ya se encuentra registrada
+              }
+            </div>
           }
         </div>
 
