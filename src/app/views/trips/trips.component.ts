@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { ModelTrip } from 'src/app/models/trip-model';
 import {
   Filter,
@@ -46,6 +46,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   inProgressTrips: number = 0;
   completedTrips: number = 0;
   pendingTrips: number = 0;
+  selectedStatus: string | null = null;
 
   // Global cache for Admin role
   globalStats = {
@@ -259,7 +260,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadTrips(): void {
+  private getBaseFilters(): Filter[] {
     let filtros: Filter[] = [];
 
     if (this.driverIdFilter) {
@@ -283,6 +284,71 @@ export class TripsComponent implements OnInit, OnDestroy {
         filtros.push(new Filter('vehicle.id', 'in', vehicleIds));
       }
     }
+    return filtros;
+  }
+
+  private updateStatusCounts(): void {
+    const baseFilters = this.getBaseFilters();
+
+    forkJoin({
+      total: this.tripService.getTripFilter(
+        new ModelFilterTable(
+          baseFilters,
+          new Pagination(1, 0),
+          new Sort('id', true),
+        ),
+      ),
+      inProgress: this.tripService.getTripFilter(
+        new ModelFilterTable(
+          [...baseFilters, new Filter('status', '=', 'En Curso')],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        ),
+      ),
+      pending: this.tripService.getTripFilter(
+        new ModelFilterTable(
+          [...baseFilters, new Filter('status', '=', 'Pendiente')],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        ),
+      ),
+      completed: this.tripService.getTripFilter(
+        new ModelFilterTable(
+          [...baseFilters, new Filter('status', '=', 'Completado')],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        ),
+      ),
+    }).subscribe({
+      next: (resps: any) => {
+        this.totalTrips = resps.total?.data?.totalElements ?? 0;
+        this.inProgressTrips = resps.inProgress?.data?.totalElements ?? 0;
+        this.pendingTrips = resps.pending?.data?.totalElements ?? 0;
+        this.completedTrips = resps.completed?.data?.totalElements ?? 0;
+
+        if (this.userRole === 'ADMINISTRADOR') {
+          this.globalStats = {
+            total: this.totalTrips,
+            inProgress: this.inProgressTrips,
+            completed: this.completedTrips,
+            pending: this.pendingTrips,
+          };
+        }
+      },
+    });
+  }
+
+  loadTrips(): void {
+    const filtros = this.getBaseFilters();
+
+    // Only update global counters if NO owner is expanded (Admin)
+    if (!this.expandedOwnerId) {
+      this.updateStatusCounts();
+    }
+
+    if (this.selectedStatus) {
+      filtros.push(new Filter('status', '=', this.selectedStatus));
+    }
 
     const filter = new ModelFilterTable(
       filtros,
@@ -292,19 +358,7 @@ export class TripsComponent implements OnInit, OnDestroy {
 
     this.tripService.getTripFilter(filter).subscribe({
       next: (response: any) => {
-        this.totalTrips = response?.data?.totalElements ?? 0;
         this.allTrips = response?.data?.content ?? [];
-        this.calculateStats();
-
-        // Store global stats for Admin
-        if (this.userRole === 'ADMINISTRADOR') {
-          this.globalStats = {
-            total: this.totalTrips,
-            inProgress: this.inProgressTrips,
-            completed: this.completedTrips,
-            pending: this.pendingTrips,
-          };
-        }
 
         // Identify missing owners needed for grouping
         const getOwnerId = (t: ModelTrip): number | undefined => {
@@ -517,7 +571,7 @@ export class TripsComponent implements OnInit, OnDestroy {
 
         const tripFilter = new ModelFilterTable(
           tripFiltros,
-          new Pagination(100, 0),
+          new Pagination(20000, 0),
           new Sort('startDate', false),
         );
 
@@ -554,6 +608,19 @@ export class TripsComponent implements OnInit, OnDestroy {
       : this.allTrips.length;
   }
 
+  get filteredOwnerTrips(): ModelTrip[] {
+    if (!this.selectedStatus) return this.ownerTrips;
+    return this.ownerTrips.filter((t) => {
+      const s = (t.status || '').toUpperCase();
+      const target = this.selectedStatus!.toUpperCase();
+      if (target === 'EN CURSO') return s === 'EN CURSO' || s === 'IN_PROGRESS';
+      if (target === 'PENDIENTE') return s === 'PENDIENTE' || s === 'PENDING';
+      if (target === 'COMPLETADO')
+        return s === 'COMPLETADO' || s === 'COMPLETED';
+      return s === target;
+    });
+  }
+
   get totalPages(): number {
     return Math.ceil(this.dataTotal / this.rows);
   }
@@ -579,6 +646,16 @@ export class TripsComponent implements OnInit, OnDestroy {
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
     if (this.isOffcanvasOpen) {
       this.editingTrip = trip ?? null;
+    }
+  }
+
+  filterByStatus(status: string | null): void {
+    this.selectedStatus = status;
+    this.page = 0;
+    this.loadTrips();
+
+    if (this.userRole === 'ADMINISTRADOR' && this.expandedOwnerId) {
+      this.loadTripsForAdmin(this.expandedOwnerId);
     }
   }
 
