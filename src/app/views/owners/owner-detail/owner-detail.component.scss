@@ -44,6 +44,7 @@
   .profile-img-container {
     margin: 0 auto;
     width: fit-content;
+    overflow: visible;
   }
 
   .text-center-mobile {
@@ -70,9 +71,34 @@
 .photo-edit-btn,
 .photo-camera-btn,
 .photo-remove-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease-in-out;
 
   &:hover {
     transform: scale(1.1);
   }
+}
+
+.photo-edit-btn {
+  bottom: -4px;
+  right: 5px;
+}
+
+.photo-camera-btn {
+  bottom: -4px;
+  right: 5px; // Default to right (mobile)
+
+  @media (min-width: 768px) {
+    right: 42px; // Move next to edit button on desktop
+  }
+}
+
+.photo-remove-btn {
+  top: 5px;
+  right: 5px;
 }

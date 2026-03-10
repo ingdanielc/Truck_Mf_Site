@@ -52,8 +52,7 @@
               </div>
               <button
                 type="button"
-                class="btn btn-light btn-sm rounded-circle position-absolute photo-edit-btn shadow-sm"
-                style="bottom: 5px; right: 5px; width: 32px; height: 32px"
+                class="btn btn-light btn-sm rounded-circle position-absolute photo-edit-btn shadow-sm d-none d-md-flex align-items-center justify-content-center"
                 aria-label="Editar foto"
                 (click)="triggerPhotoInput(photoInput)"
                 title="Seleccionar desde archivo"
@@ -62,19 +61,17 @@
               </button>
               <button
                 type="button"
-                class="btn btn-info btn-sm rounded-circle position-absolute photo-camera-btn shadow-sm text-white"
-                style="bottom: 5px; left: 5px; width: 32px; height: 32px"
+                class="btn btn-light btn-sm rounded-circle position-absolute photo-camera-btn shadow-sm"
                 aria-label="Cámara"
                 (click)="showCamera = true"
                 title="Tomar fotografía"
               >
-                <i class="fa-solid fa-camera"></i>
+                <i class="fa-solid fa-camera text-primary"></i>
               </button>
               @if (owner.photo) {
                 <button
                   type="button"
                   class="btn btn-danger btn-sm rounded-circle position-absolute photo-remove-btn shadow-sm"
-                  style="top: 5px; right: 5px; width: 32px; height: 32px"
                   aria-label="Eliminar foto"
                   (click)="removePhoto()"
                 >
@@ -312,4 +309,11 @@
     <output class="spinner-border text-primary mb-3"></output>
     <p class="text-secondary fw-bold">Cargando perfil del propietario...</p>
   </div>
+}
+
+@if (showCamera) {
+  <g-camera
+    (capture)="onCameraCapture($event)"
+    (close)="onCameraClose()"
+  ></g-camera>
 }

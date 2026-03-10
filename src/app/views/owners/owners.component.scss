@@ -120,7 +120,7 @@
     }
 
     .photo-edit-btn {
-      bottom: 5px;
+      bottom: -6px;
       right: 5px;
       width: 32px;
       height: 32px;
@@ -132,8 +132,8 @@
     }
 
     .photo-camera-btn {
-      bottom: 5px;
-      left: 5px;
+      bottom: -6px;
+      right: 5px; // Mobile: same spot as folder button
       width: 32px;
       height: 32px;
       padding: 0;
@@ -141,6 +141,11 @@
       align-items: center;
       justify-content: center;
       z-index: 2;
+
+      @media (min-width: 768px) {
+        right: 42px; // Move next to edit button on desktop
+        left: auto;
+      }
     }
 
     .photo-remove-btn {

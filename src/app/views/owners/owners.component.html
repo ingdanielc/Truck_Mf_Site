@@ -202,7 +202,7 @@
     <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
       <form [formGroup]="ownerForm" (ngSubmit)="onSubmit()">
         <!-- Photo Upload Section -->
-        <div class="text-center mb-4">
+        <div class="text-center mb-3">
           <input
             type="file"
             #photoInput
@@ -228,21 +228,21 @@
             </div>
             <button
               type="button"
-              class="btn btn-primary btn-sm rounded-circle position-absolute photo-edit-btn"
-              aria-label="Foto"
+              class="btn btn-light btn-sm rounded-circle position-absolute photo-edit-btn shadow-sm d-none d-md-flex align-items-center justify-content-center"
+              aria-label="Editar foto"
               (click)="triggerPhotoInput(photoInput)"
               title="Seleccionar desde archivo"
             >
-              <i class="fa-solid fa-folder-open"></i>
+              <i class="fa-solid fa-folder-open text-primary"></i>
             </button>
             <button
               type="button"
-              class="btn btn-info btn-sm rounded-circle position-absolute photo-camera-btn text-white"
+              class="btn btn-light btn-sm rounded-circle position-absolute photo-camera-btn shadow-sm"
               aria-label="Cámara"
               (click)="showCamera = true"
               title="Tomar fotografía"
             >
-              <i class="fa-solid fa-camera"></i>
+              <i class="fa-solid fa-camera text-primary"></i>
             </button>
             @if (photoBase64) {
               <button
@@ -255,7 +255,6 @@
               </button>
             }
           </div>
-          <p class="text-secondary small mt-2">Foto de perfil</p>
         </div>
 
         <!-- Personal Information Section -->

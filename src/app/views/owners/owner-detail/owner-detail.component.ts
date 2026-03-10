@@ -24,7 +24,7 @@ import {
 @Component({
   selector: 'app-owner-detail',
   standalone: true,
-  imports: [CommonModule, GVehicleMiniCardComponent],
+  imports: [CommonModule, GVehicleMiniCardComponent, GCameraComponent],
   templateUrl: './owner-detail.component.html',
   styleUrls: ['./owner-detail.component.scss'],
 })
