@@ -36,6 +36,6 @@ export class GExpenseCardComponent implements OnInit {
 
   get mobileDisplayName(): string {
     const name = this.config.name || '';
-    return name.length > 23 ? name.slice(0, 23) + '…' : name;
+    return name.length > 21 ? name.slice(0, 21) + '…' : name;
   }
 }
