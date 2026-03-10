@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, of, catchError } from 'rxjs';
@@ -23,7 +24,7 @@ import {
 @Component({
   selector: 'app-owner-detail',
   standalone: true,
-  imports: [CommonModule, GVehicleMiniCardComponent],
+  imports: [CommonModule, GVehicleMiniCardComponent, GCameraComponent],
   templateUrl: './owner-detail.component.html',
   styleUrls: ['./owner-detail.component.scss'],
 })
@@ -41,6 +42,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   loadingBrands: boolean = true;
   tripCount: number = 0;
   fromTrips: boolean = false;
+  showCamera: boolean = false;
 
   private routeSub?: Subscription;
 
@@ -439,5 +441,74 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
         },
       });
     });
+  }
+
+  triggerPhotoInput(photoInput: HTMLInputElement): void {
+    photoInput.click();
+  }
+
+  onPhotoSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        this.toastService.showError(
+          'Error',
+          'La imagen no debe pesar más de 2MB',
+        );
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const photoBase64 = e.target.result;
+        this.updateOwnerPhoto(photoBase64);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removePhoto(): void {
+    if (this.owner) {
+      this.updateOwnerPhoto('');
+    }
+  }
+
+  private updateOwnerPhoto(photoBase64: string): void {
+    if (!this.owner) return;
+
+    const ownerToUpdate: ModelOwner = {
+      ...this.owner,
+      photo: photoBase64,
+    };
+
+    // Remove calculated/computed properties that shouldn't be sent back as is or cause issues
+    delete (ownerToUpdate as any).age;
+    delete (ownerToUpdate as any).cityName;
+
+    this.ownerService.createOwner(ownerToUpdate).subscribe({
+      next: (response: any) => {
+        this.toastService.showSuccess(
+          'Perfil',
+          'Foto actualizada exitosamente',
+        );
+        this.owner!.photo = photoBase64;
+      },
+      error: (err) => {
+        console.error('Error updating owner photo:', err);
+        this.toastService.showError(
+          'Error',
+          'No se pudo actualizar la foto de perfil',
+        );
+      },
+    });
+  }
+
+  onCameraCapture(dataUrl: string): void {
+    this.updateOwnerPhoto(dataUrl);
+    this.showCamera = false;
+  }
+
+  onCameraClose(): void {
+    this.showCamera = false;
   }
 }

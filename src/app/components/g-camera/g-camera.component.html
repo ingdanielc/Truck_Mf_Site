@@ -1,0 +1,87 @@
+<div
+  class="camera-modal-overlay d-flex align-items-center justify-content-center p-3 animate-fade-in"
+>
+  <div
+    class="camera-container bg-dark rounded-4 shadow-lg overflow-hidden position-relative animate-scale-up"
+  >
+    <!-- Header -->
+    <div
+      class="camera-header p-3 d-flex justify-content-between align-items-center position-absolute top-0 start-0 w-100 z-3 text-white"
+    >
+      <h5 class="mb-0 fw-bold">Captura de Foto</h5>
+      <button
+        class="btn btn-link text-white p-0 border-0 shadow-none"
+        (click)="onClose()"
+        aria-label="Captura"
+      >
+        <i class="fa-solid fa-xmark fs-4"></i>
+      </button>
+    </div>
+
+    <!-- Video Area -->
+    <div
+      class="video-wrapper bg-black position-relative d-flex align-items-center justify-content-center"
+    >
+      @if (loading) {
+        <div class="text-center text-white">
+          <div class="spinner-border text-primary mb-2"></div>
+          <p class="small mb-0">Iniciando cámara...</p>
+        </div>
+      }
+
+      @if (error) {
+        <div class="text-center text-white p-4">
+          <i
+            class="fa-solid fa-triangle-exclamation text-warning fs-1 mb-3"
+          ></i>
+          <p class="mb-0">{{ error }}</p>
+          <button
+            class="btn btn-outline-light btn-sm mt-3"
+            (click)="initCamera()"
+          >
+            Reintentar
+          </button>
+        </div>
+      }
+
+      <video
+        #video
+        autoplay
+        playsinline
+        muted
+        [class.d-none]="loading || error"
+      ></video>
+
+      <!-- Overlay Viewfinder Circle -->
+      <div class="viewfinder-overlay" *ngIf="!loading && !error">
+        <div class="viewfinder-circle"></div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div
+      class="camera-controls p-4 d-flex justify-content-around align-items-center bg-dark z-3"
+    >
+      <button
+        class="btn btn-outline-light rounded-circle shadow-none p-3"
+        (click)="switchCamera()"
+        [disabled]="devices.length < 2 || loading || error"
+        title="Cambiar Cámara"
+      >
+        <i class="fa-solid fa-camera-rotate fs-5"></i>
+      </button>
+
+      <button
+        class="btn btn-primary rounded-circle shadow-primary btn-capture p-4 animate-pulse"
+        (click)="capturePhoto()"
+        [disabled]="loading || error"
+        title="Tomar Foto"
+      >
+        <div class="capture-inner"></div>
+      </button>
+
+      <div style="width: 52px"></div>
+      <!-- Spacer to match layout -->
+    </div>
+  </div>
+</div>

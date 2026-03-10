@@ -128,7 +128,36 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      z-index: 2;
     }
+
+    .photo-camera-btn {
+      bottom: 5px;
+      left: 5px;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+
+    .photo-remove-btn {
+      top: 5px;
+      right: 5px;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+  }
+
+  .cursor-pointer {
+    cursor: pointer;
   }
 
   .password-strength-wrapper {

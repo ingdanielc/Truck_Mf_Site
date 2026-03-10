@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 
 import {
   FormBuilder,
@@ -32,6 +33,7 @@ import { CustomValidators } from 'src/app/utils/custom-validators';
     ReactiveFormsModule,
     GOwnerCardComponent,
     GPasswordCardComponent,
+    GCameraComponent,
   ],
   templateUrl: './owners.component.html',
   styleUrls: ['./owners.component.scss'],
@@ -58,8 +60,12 @@ export class OwnersComponent implements OnInit, OnDestroy {
   genders: any[] = [];
   cities: any[] = [];
   groupedCities: { state: string; cities: any[] }[] = [];
+
+  showCamera: boolean = false;
   showPassword = false;
   showConfirmPassword = false;
+
+  photoBase64: string = '';
 
   isPasswordOffcanvasOpen: boolean = false;
   ownerChangingPassword: ModelOwner | null = null;
@@ -252,6 +258,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
         email: owner.email,
         maxVehicles: owner.maxVehicles,
       });
+      this.photoBase64 = owner.photo || '';
 
       // Update validators to include the current owner's ID for duplication checks
       this.ownerForm
@@ -289,6 +296,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
       this.ownerForm.get('confirmPassword')?.updateValueAndValidity();
     } else {
       this.editingOwner = null;
+      this.photoBase64 = '';
       this.ownerForm.reset({
         name: '',
         documentType: null,
@@ -379,7 +387,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
           maxVehicles: formValue.maxVehicles,
           password: password || undefined,
           status: this.editingOwner?.status || 'Activo',
-          photo: this.editingOwner?.photo || '',
+          photo: this.photoBase64,
         };
 
         this.ownerService.createOwner(ownerToSave).subscribe({
@@ -489,7 +497,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
 
   allowOnlyNumbers(event: any): void {
     const pattern = /[0-9]/;
-    const inputChar = String.fromCharCode(event.charCode);
+    const inputChar = String.fromCodePoint(event.charCode);
 
     if (!pattern.test(inputChar)) {
       event.preventDefault();
@@ -546,7 +554,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
   }
 
   async onUpdatePassword(passwords: any): Promise<void> {
-    if (!this.ownerChangingPassword || !this.ownerChangingPassword.user?.id) {
+    if (!this.ownerChangingPassword?.user?.id) {
       this.toastService.showError(
         'Error',
         'No se encontró el usuario asociado al propietario',
@@ -609,5 +617,41 @@ export class OwnersComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error in onUpdatePassword:', error);
     }
+  }
+
+  triggerPhotoInput(photoInput: HTMLInputElement): void {
+    photoInput.click();
+  }
+
+  onPhotoSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        this.toastService.showError(
+          'Error',
+          'La imagen no debe pesar más de 2MB',
+        );
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.photoBase64 = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removePhoto(): void {
+    this.photoBase64 = '';
+  }
+
+  onCameraCapture(dataUrl: string): void {
+    this.photoBase64 = dataUrl;
+    this.showCamera = false;
+  }
+
+  onCameraClose(): void {
+    this.showCamera = false;
   }
 }

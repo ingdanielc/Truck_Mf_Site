@@ -25,9 +25,18 @@
             class="col-12 col-md-auto d-flex justify-content-center justify-content-md-start"
           >
             <div class="profile-img-container position-relative">
+              <input
+                type="file"
+                #photoInput
+                class="d-none"
+                accept="image/*"
+                (change)="onPhotoSelected($event)"
+              />
               <div
-                class="avatar rounded-circle overflow-hidden bg-white bg-opacity-10 d-flex align-items-center justify-content-center border border-4 border-white border-opacity-10 shadow-lg"
+                class="avatar rounded-circle overflow-hidden bg-white bg-opacity-10 d-flex align-items-center justify-content-center border border-4 border-white border-opacity-10 shadow-lg cursor-pointer"
                 style="width: 140px; height: 140px"
+                (click)="triggerPhotoInput(photoInput)"
+                onkeypress
               >
                 @if (owner.photo) {
                   <img
@@ -41,9 +50,46 @@
                   ></i>
                 }
               </div>
+              <button
+                type="button"
+                class="btn btn-light btn-sm rounded-circle position-absolute photo-edit-btn shadow-sm"
+                style="bottom: 5px; right: 5px; width: 32px; height: 32px"
+                aria-label="Editar foto"
+                (click)="triggerPhotoInput(photoInput)"
+                title="Seleccionar desde archivo"
+              >
+                <i class="fa-solid fa-folder-open text-primary"></i>
+              </button>
+              <button
+                type="button"
+                class="btn btn-info btn-sm rounded-circle position-absolute photo-camera-btn shadow-sm text-white"
+                style="bottom: 5px; left: 5px; width: 32px; height: 32px"
+                aria-label="Cámara"
+                (click)="showCamera = true"
+                title="Tomar fotografía"
+              >
+                <i class="fa-solid fa-camera"></i>
+              </button>
+              @if (owner.photo) {
+                <button
+                  type="button"
+                  class="btn btn-danger btn-sm rounded-circle position-absolute photo-remove-btn shadow-sm"
+                  style="top: 5px; right: 5px; width: 32px; height: 32px"
+                  aria-label="Eliminar foto"
+                  (click)="removePhoto()"
+                >
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              }
               <div
                 class="status-indicator position-absolute bg-success border border-3 border-dark rounded-circle"
-                style="width: 24px; height: 24px; bottom: 8px; right: 8px"
+                style="
+                  width: 24px;
+                  height: 24px;
+                  bottom: 8px;
+                  left: 8px;
+                  right: auto;
+                "
               ></div>
             </div>
           </div>

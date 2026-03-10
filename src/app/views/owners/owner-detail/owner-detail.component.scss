@@ -62,3 +62,17 @@
 .object-fit-cover {
   object-fit: cover;
 }
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.photo-edit-btn,
+.photo-camera-btn,
+.photo-remove-btn {
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
