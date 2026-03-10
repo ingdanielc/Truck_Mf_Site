@@ -1,0 +1,302 @@
+<div class="configuration-container py-4 bg-body">
+  <!-- Header Section -->
+  <header class="row align-items-center g-3 mb-4 mb-md-5 gx-0">
+    <div class="col-12 col-md">
+      <h1 class="h3 fw-bold mb-1">Categorías de Gastos</h1>
+      <p class="text-secondary mb-0">
+        Gestión de categorías de gastos (Viaje, Vehículo, Conductor,
+        Mantenimiento)
+      </p>
+    </div>
+    <div class="col-12 col-md-auto">
+      <div class="d-flex flex-column flex-sm-row gap-3">
+        <div class="search-wrapper position-relative flex-grow-1">
+          <i
+            class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary"
+          ></i>
+          <input
+            type="text"
+            class="form-control ps-5 py-2 rounded-3 w-100"
+            placeholder="Buscar por nombre..."
+            (input)="applyFilter()"
+            [(ngModel)]="searchTerm"
+          />
+        </div>
+        <button
+          class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+          (click)="toggleOffcanvas()"
+        >
+          <i class="fa-solid fa-plus me-2"></i>Nueva Categoría
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats Cards -->
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-5 g-4 mb-4">
+    <!-- Totals -->
+    <div class="col">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
+        [class.border-primary]="activeFilter === -1"
+        (click)="setFilter(-1)"
+        onkeypress
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Total
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-body">
+              {{ totalCategoriesStable }}
+            </h2>
+          </div>
+          <div
+            class="icon-shape bg-primary bg-opacity-10 text-primary rounded-4 p-3 d-flex align-items-center justify-content-center"
+          >
+            <i class="fa-solid fa-list fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Viaje -->
+    <div class="col">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
+        [class.border-success]="activeFilter === 3"
+        (click)="setFilter(3)"
+        onkeypress
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Viaje
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-success">{{ viajeCount }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-success bg-opacity-10 text-success rounded-4 p-3 d-flex align-items-center justify-content-center"
+          >
+            <i class="fa-solid fa-route fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vehículo -->
+    <div class="col">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
+        [class.border-danger]="activeFilter === 1"
+        (click)="setFilter(1)"
+        onkeypress
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Vehículo
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-danger">{{ vehiculoCount }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-danger bg-opacity-10 text-danger rounded-4 p-3 d-flex align-items-center justify-content-center"
+          >
+            <i class="fa-solid fa-truck fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conductor -->
+    <div class="col">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
+        [class.border-info]="activeFilter === 2"
+        (click)="setFilter(2)"
+        onkeypress
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Conductor
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-info">{{ conductorCount }}</h2>
+          </div>
+          <div
+            class="icon-shape bg-info bg-opacity-10 text-info rounded-4 p-3 d-flex align-items-center justify-content-center"
+          >
+            <i class="fa-solid fa-id-card fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mantenimiento -->
+    <div class="col">
+      <div
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
+        [class.border-warning]="activeFilter === 4"
+        (click)="setFilter(4)"
+        onkeypress
+      >
+        <div
+          class="card-body p-4 d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
+              Mantenimiento
+            </p>
+            <h2 class="h1 fw-bold mb-0 text-warning">
+              {{ mantenimientoCount }}
+            </h2>
+          </div>
+          <div
+            class="icon-shape bg-warning bg-opacity-10 text-warning rounded-4 p-3 d-flex align-items-center justify-content-center"
+          >
+            <i class="fa-solid fa-wrench fs-3"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Categories Grid -->
+  <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3 mb-5">
+    @for (cat of categories; track cat.id) {
+      <div class="col">
+        <g-expense-category-card
+          [icon]="cat.icon"
+          [name]="cat.name"
+          [colorClass]="cat.colorClass"
+          (cardClick)="toggleOffcanvas(cat)"
+          class="h-100"
+        ></g-expense-category-card>
+      </div>
+    }
+  </div>
+
+  <hr class="op-10 mb-4" />
+
+  <!-- Mobile Floating Action Button -->
+  <button
+    class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center position-fixed bottom-0 end-0 m-4 rounded-circle"
+    style="width: 56px; height: 56px; z-index: 1040"
+    aria-label="Nueva Categoría"
+    (click)="toggleOffcanvas()"
+  >
+    <i class="fa-solid fa-plus fs-4"></i>
+  </button>
+
+  <!-- Create/Edit Category Offcanvas -->
+  <div
+    class="custom-offcanvas shadow-lg border-start transition-all"
+    [class.open]="isOffcanvasOpen"
+  >
+    <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-start w-100">
+        <h2 class="h4 fw-bold mb-0 text-body">
+          {{ editingCategory ? "Editar categoría" : "Crear categoría" }}
+        </h2>
+        <button
+          type="button"
+          class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
+          (click)="toggleOffcanvas()"
+          onkeypress
+          aria-label="Cerrar"
+        >
+          <i class="fa-solid fa-xmark fs-3"></i>
+        </button>
+      </div>
+      <p class="text-secondary small mb-0 mt-1">
+        {{
+          editingCategory
+            ? "Actualiza la información de esta categoría de gasto"
+            : "Completa la información para crear una nueva categoría"
+        }}
+      </p>
+    </div>
+
+    <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
+      <form [formGroup]="categoryForm" (ngSubmit)="onSubmit()">
+        <div class="mb-4">
+          <label for="name" class="form-label small fw-bold mb-2"
+            >Nombre*</label
+          >
+          <div class="input-group">
+            <input
+              id="name"
+              type="text"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="name"
+              placeholder="Ej. Combustible, Peajes..."
+              [class.is-invalid]="
+                categoryForm.get('name')?.invalid &&
+                categoryForm.get('name')?.touched
+              "
+            />
+          </div>
+          @if (
+            categoryForm.get("name")?.invalid &&
+            categoryForm.get("name")?.touched
+          ) {
+            <div class="text-danger small mt-1">Este campo es obligatorio</div>
+          }
+        </div>
+
+        <div class="mb-4">
+          <label for="typeId" class="form-label small fw-bold mb-2"
+            >Tipo de Gasto*</label
+          >
+          <select
+            id="typeId"
+            class="form-select rounded-3 py-2 px-3"
+            formControlName="typeId"
+            [class.is-invalid]="
+              categoryForm.get('typeId')?.invalid &&
+              categoryForm.get('typeId')?.touched
+            "
+          >
+            <option [ngValue]="null" disabled selected>Selecciona</option>
+            @for (type of expenseTypes; track type.id) {
+              <option [value]="type.id">{{ type.label }}</option>
+            }
+          </select>
+          @if (
+            categoryForm.get("typeId")?.invalid &&
+            categoryForm.get("typeId")?.touched
+          ) {
+            <div class="text-danger small mt-1">Este campo es obligatorio</div>
+          }
+        </div>
+
+        <div class="offcanvas-footer border-top pt-4 mt-auto d-flex gap-3">
+          <button
+            type="submit"
+            class="btn btn-primary flex-fill py-3 rounded-3 fw-bold shadow-primary"
+            [disabled]="categoryForm.invalid"
+          >
+            {{ editingCategory ? "Guardar cambios" : "Crear categoría" }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Backdrop -->
+  @if (isOffcanvasOpen) {
+    <div
+      class="offcanvas-backdrop transition-all d-none d-md-block"
+      (click)="toggleOffcanvas()"
+      onkeypress
+    ></div>
+  }
+</div>

@@ -9,7 +9,7 @@ import { ModelExpense } from '../models/expense-model';
 export class VehicleService {
   basePath: string = environment._APIUrl + '/expense';
 
-  constructor(private readonly http: HttpClient) { }
+  constructor(private readonly http: HttpClient) {}
 
   getExpenseFilter(filter: any) {
     const headers = { 'content-type': 'application/json' };
@@ -31,6 +31,14 @@ export class VehicleService {
     const headers = { 'content-type': 'application/json' };
     const body = JSON.stringify(filter);
     return this.http.post<any>(`${this.basePath}/filterExpenseCategory`, body, {
+      headers: headers,
+    });
+  }
+
+  saveExpenseCategory(category: any) {
+    const headers = { 'content-type': 'application/json' };
+    const body = JSON.stringify(category);
+    return this.http.post<any>(`${this.basePath}/saveExpenseCategory`, body, {
       headers: headers,
     });
   }

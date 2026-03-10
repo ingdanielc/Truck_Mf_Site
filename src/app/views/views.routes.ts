@@ -90,4 +90,13 @@ export const routes: Routes = [
         (m) => m.AdminDetailComponent,
       ),
   },
+  {
+    path: 'configuration',
+    canActivate: [RoleGuard],
+    data: { allowedRoles: ['ADMINISTRADOR', 'PROPIETARIO'] },
+    loadComponent: () =>
+      import('./configuration/configuration.component').then(
+        (m) => m.ConfigurationComponent,
+      ),
+  },
 ];
