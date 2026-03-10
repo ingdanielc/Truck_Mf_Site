@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import {
   FormBuilder,
   FormGroup,
@@ -78,6 +79,7 @@ export class ConfigurationComponent implements OnInit {
     private readonly expenseService: VehicleService,
     private readonly fb: FormBuilder,
     private readonly toastService: ToastService,
+    private readonly route: ActivatedRoute,
   ) {
     this.categoryForm = this.fb.group({
       name: ['', [Validators.required], [this.duplicateNameValidator()]],
@@ -87,6 +89,15 @@ export class ConfigurationComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCategories();
+
+    this.route.queryParamMap.subscribe((params) => {
+      const typeIdStr = params.get('typeId');
+      if (typeIdStr) {
+        const typeId = Number(typeIdStr);
+        this.activeFilter = typeId;
+        this.toggleOffcanvas();
+      }
+    });
   }
 
   loadCategories(): void {
@@ -239,6 +250,9 @@ export class ConfigurationComponent implements OnInit {
       } else {
         this.editingCategory = null;
         this.categoryForm.reset();
+        if (this.activeFilter !== -1) {
+          this.categoryForm.patchValue({ typeId: this.activeFilter });
+        }
       }
     }
   }

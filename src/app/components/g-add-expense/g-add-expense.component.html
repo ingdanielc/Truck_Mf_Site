@@ -100,16 +100,18 @@
             </div>
           }
           <!-- New Category Card -->
-          <div class="col-4">
-            <g-expense-category-card
-              icon="fa-solid fa-plus"
-              name="Nueva"
-              [isNew]="true"
-              colorClass="text-primary bg-primary"
-              (cardClick)="selectCategory(-1)"
-              class="h-100"
-            ></g-expense-category-card>
-          </div>
+          @if (userRole !== "CONDUCTOR") {
+            <div class="col-4">
+              <g-expense-category-card
+                icon="fa-solid fa-plus"
+                name="Nueva"
+                [isNew]="true"
+                colorClass="text-primary bg-primary"
+                (cardClick)="selectCategory(-1)"
+                class="h-100"
+              ></g-expense-category-card>
+            </div>
+          }
         </div>
       }
 

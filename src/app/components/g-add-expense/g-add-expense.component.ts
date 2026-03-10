@@ -6,6 +6,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { Router } from '@angular/router';
 import { GExpenseCategoryCardComponent } from '../g-expense-category-card/g-expense-category-card.component';
 import { VehicleService } from '../../services/expense.service';
 import { ModelExpense } from 'src/app/models/expense-model';
@@ -16,7 +17,6 @@ import {
   Sort,
 } from 'src/app/models/model-filter-table';
 import { getCategoryConfigByName } from 'src/app/utils/category-config';
-import { NotificationsService } from '../../services/notifications.service';
 
 interface CategoryConfig {
   id: number;
@@ -39,6 +39,7 @@ export class GAddExpenseComponent implements OnInit {
   @Input() editingExpense: ModelExpense | null = null;
   @Input() preselectedTypeId?: number;
   @Input() isMaintenance = false;
+  @Input() userRole = '';
   @Output() close = new EventEmitter<any>();
 
   expenseForm!: FormGroup;
@@ -59,7 +60,7 @@ export class GAddExpenseComponent implements OnInit {
   constructor(
     private readonly fb: FormBuilder,
     private readonly expenseService: VehicleService,
-    private readonly notificationsService: NotificationsService,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -185,6 +186,13 @@ export class GAddExpenseComponent implements OnInit {
   }
 
   selectCategory(id: number): void {
+    if (id === -1) {
+      this.router.navigate(['/site/configuration'], {
+        queryParams: { typeId: this.selectedType },
+      });
+      this.dismiss();
+      return;
+    }
     this.selectedCategoryId = id;
     this.expenseForm.patchValue({ categoryId: id });
   }

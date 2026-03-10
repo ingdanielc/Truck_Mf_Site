@@ -62,6 +62,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   loadingVehicles = true;
   hideSelectionSections = false;
   isMaintenance = false;
+  userRole = '';
 
   brands: any[] = [];
   loadingBrands = false;
@@ -120,6 +121,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           }
           return;
         }
+
+        this.userRole = (user.userRoles?.[0]?.role?.name ?? '').toUpperCase();
 
         // 1. Always load the list of vehicles for the user
         this.loadVehiclesForUser(user, vehicleId);
