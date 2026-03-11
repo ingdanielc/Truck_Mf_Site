@@ -14,7 +14,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Subscription, forkJoin, of } from 'rxjs';
+import { Subscription, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { ModelTrip } from 'src/app/models/trip-model';
 import { TripService } from 'src/app/services/trip.service';
@@ -53,6 +53,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   @Input() userRole: string = 'ROL';
   @Input() loggedInOwnerId: number | null = null;
   @Input() loggedInDriverId: number | null = null;
+  @Input() preselectedOwnerId: number | null = null;
   @Output() saved = new EventEmitter<ModelTrip>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -263,6 +264,8 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId) {
       this.tripForm.get('ownerId')?.setValue(this.loggedInOwnerId);
       this.tripForm.get('ownerId')?.disable();
+    } else if (this.preselectedOwnerId) {
+      this.tripForm.get('ownerId')?.setValue(this.preselectedOwnerId);
     }
 
     if (this.userRole === 'CONDUCTOR' && this.loggedInDriverId) {

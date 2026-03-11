@@ -178,26 +178,6 @@
                 </g-trip-card>
               </div>
             }
-            <!-- Add Trip Card -->
-            @if (group.owner.id === loggedInOwnerId) {
-              <div class="col">
-                <div
-                  class="add-trip-card border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
-                  (click)="toggleOffcanvas()"
-                  (keypress)="toggleOffcanvas()"
-                  role="button"
-                  tabindex="0"
-                >
-                  <div
-                    class="add-trip-icon rounded-circle border d-flex align-items-center justify-content-center"
-                  >
-                    <i class="fa-solid fa-plus"></i>
-                  </div>
-                  <span class="small fw-semibold">Registrar Viaje</span>
-                  <small class="opacity-75">Para {{ group.owner.name }}</small>
-                </div>
-              </div>
-            }
           </div>
         </div>
       }
@@ -274,6 +254,27 @@
                           </g-trip-card>
                         </div>
                       }
+
+                      <!-- Add Trip Card (Admin Only) -->
+                      <div class="col">
+                        <div
+                          class="add-trip-card border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
+                          (click)="toggleOffcanvas()"
+                          (keypress)="toggleOffcanvas()"
+                          role="button"
+                          tabindex="0"
+                        >
+                          <div
+                            class="add-trip-icon rounded-circle border d-flex align-items-center justify-content-center"
+                          >
+                            <i class="fa-solid fa-plus"></i>
+                          </div>
+                          <span class="small fw-semibold">Registrar Viaje</span>
+                          <small class="opacity-75"
+                            >Para {{ owner.name }}</small
+                          >
+                        </div>
+                      </div>
 
                       @if (!isLoadingExpandedTrips && ownerTrips.length === 0) {
                         <div
@@ -387,6 +388,7 @@
           [userRole]="userRole"
           [loggedInOwnerId]="loggedInOwnerId"
           [loggedInDriverId]="loggedInDriverId"
+          [preselectedOwnerId]="expandedOwnerId"
           (saved)="onTripSaved($event)"
           (cancel)="toggleOffcanvas()"
         >
