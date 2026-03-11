@@ -148,9 +148,7 @@
 
           @if (loadingTrips) {
             <div class="text-center py-4">
-              <output
-                class="spinner-border text-primary spinner-border-sm"
-              ></output>
+              <output class="spinner-border text-primary"></output>
               <p class="small text-secondary mt-2">Cargando viajes...</p>
             </div>
           } @else if (recentTrips.length === 0) {
