@@ -59,6 +59,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   searchTerm: string = '';
   page: number = 0;
   rows: number = 9;
+  loading: boolean = true;
 
   // Grouped display
   groupedTrips: TripOwnerGroup[] = [];
@@ -359,6 +360,7 @@ export class TripsComponent implements OnInit, OnDestroy {
       new Sort('startDate', false),
     );
 
+    this.loading = true;
     this.tripService.getTripFilter(filter).subscribe({
       next: (response: any) => {
         this.allTrips = response?.data?.content ?? [];
@@ -395,6 +397,7 @@ export class TripsComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error loading trips:', error);
         this.toastService.showError('Error', 'Error al cargar viajes');
+        this.loading = false;
       },
     });
   }
@@ -476,6 +479,7 @@ export class TripsComponent implements OnInit, OnDestroy {
       });
     }
     this.buildGroups(filtered);
+    this.loading = false;
   }
 
   buildGroups(trips: ModelTrip[]): void {

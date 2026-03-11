@@ -46,6 +46,7 @@ export class SecurityComponent implements OnInit {
   filters: string[] = ['Todos'];
   rows: number = 9;
   page: number = 0;
+  loading: boolean = true;
 
   userForm: FormGroup;
   isOffcanvasOpen: boolean = false;
@@ -142,6 +143,7 @@ export class SecurityComponent implements OnInit {
       new Pagination(this.rows, this.page),
       new Sort('id', true),
     );
+    this.loading = true;
     this.securityService.getUserFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
@@ -154,9 +156,11 @@ export class SecurityComponent implements OnInit {
           this.allUsers = [];
           this.users = [];
         }
+        this.loading = false;
       },
       error: (err) => {
         console.error('Error loading users:', err);
+        this.loading = false;
       },
     });
   }

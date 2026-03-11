@@ -74,6 +74,7 @@ export class ConfigurationComponent implements OnInit {
   editingCategory: CategoryConfig | null = null;
   categoryForm: FormGroup;
   searchTerm: string = '';
+  loading: boolean = true;
 
   constructor(
     private readonly expenseService: VehicleService,
@@ -102,11 +103,17 @@ export class ConfigurationComponent implements OnInit {
 
   loadCategories(): void {
     let filtros: Filter[] = [];
+    if (this.activeFilter !== -1) {
+      filtros.push(
+        new Filter('expenseType.id', '=', this.activeFilter.toString()),
+      );
+    }
     const filter = new ModelFilterTable(
       filtros,
-      new Pagination(500, 0),
+      new Pagination(1000, 0),
       new Sort('id', true),
     );
+    this.loading = true;
 
     this.expenseService.getExpenseCategoryFilter(filter).subscribe({
       next: (response: any) => {
@@ -134,10 +141,15 @@ export class ConfigurationComponent implements OnInit {
           });
           this.updateCounts();
           this.applyFilter();
+        } else {
+          this.allCategories = [];
+          this.categories = [];
         }
+        this.loading = false;
       },
       error: (err) => {
         console.error('Error loading expense categories:', err);
+        this.loading = false;
       },
     });
   }

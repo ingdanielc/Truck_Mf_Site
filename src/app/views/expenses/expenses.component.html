@@ -44,8 +44,17 @@
       <div>
         <!-- Loading -->
         @if (loadingVehicles) {
-          <div class="text-center py-4">
-            <output class="spinner-border text-primary"></output>
+          <div class="section-loader">
+            <output class="spinner-border text-primary">
+              <span class="visually-hidden">Cargando...</span>
+            </output>
+            <p class="mt-3 text-body-secondary fw-medium">
+              {{
+                isMaintenance
+                  ? "Obteniendo mantenimientos..."
+                  : "Obteniendo gastos..."
+              }}
+            </p>
           </div>
         }
 

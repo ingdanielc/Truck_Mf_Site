@@ -54,3 +54,27 @@
     padding: 1.2rem; // p-4 (md+)
   }
 }
+
+.section-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 0;
+  width: 100%;
+  animation: fadeInSpinner 0.3s ease-in-out;
+
+  .spinner-border {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+}
+
+@keyframes fadeInSpinner {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

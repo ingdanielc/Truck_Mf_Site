@@ -59,6 +59,7 @@ export class DriversComponent implements OnInit, OnDestroy {
   searchTerm: string = '';
   page: number = 0;
   rows: number = 9;
+  loading: boolean = true;
 
   // Role management
   userRole: string = '';
@@ -790,6 +791,7 @@ export class DriversComponent implements OnInit, OnDestroy {
       new Pagination(this.rows, this.page),
       new Sort('id', true),
     );
+    this.loading = true;
     this.driverService.getDriverFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
@@ -813,11 +815,15 @@ export class DriversComponent implements OnInit, OnDestroy {
           missingOwnerIds.forEach((id) => this.fetchOwnerDetails(id));
         } else {
           this.allDrivers = [];
-          this.drivers = [];
+          this.groupedDrivers = [];
           this.calculateStats();
         }
+        this.loading = false;
       },
-      error: (err: any) => console.error('Error loading drivers:', err),
+      error: (err: any) => {
+        console.error('Error loading drivers:', err);
+        this.loading = false;
+      },
     });
   }
 

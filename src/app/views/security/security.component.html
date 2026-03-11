@@ -110,17 +110,26 @@
   </div>
 
   <!-- Users Grid -->
-  <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-5">
-    @for (user of users; track user.id) {
-      <div class="col">
-        <g-user-card
-          [user]="user"
-          (edit)="toggleOffcanvas($event)"
-          (changePassword)="togglePasswordOffcanvas($event)"
-        ></g-user-card>
-      </div>
-    }
-  </div>
+  @if (loading) {
+    <div class="section-loader">
+      <output class="spinner-border text-primary">
+        <span class="visually-hidden">Cargando...</span>
+      </output>
+      <p class="mt-3 text-body-secondary fw-medium">Obteniendo usuarios...</p>
+    </div>
+  } @else {
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-5">
+      @for (user of users; track user.id) {
+        <div class="col">
+          <g-user-card
+            [user]="user"
+            (edit)="toggleOffcanvas($event)"
+            (changePassword)="togglePasswordOffcanvas($event)"
+          ></g-user-card>
+        </div>
+      }
+    </div>
+  }
 
   <hr class="op-10 mb-4" />
 

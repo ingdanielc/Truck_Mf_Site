@@ -47,6 +47,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
   searchTerm: string = '';
   page: number = 0;
   rows: number = 9;
+  loading: boolean = true;
 
   userRole: string = 'ROL';
   private userSub?: Subscription;
@@ -512,6 +513,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
       new Pagination(this.rows, this.page),
       new Sort('name', false),
     );
+    this.loading = true;
     this.ownerService.getOwnerFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
@@ -520,8 +522,12 @@ export class OwnersComponent implements OnInit, OnDestroy {
           this.calculateStats();
           this.applyFilter();
         }
+        this.loading = false;
       },
-      error: (err) => console.error('Error loading owners:', err),
+      error: (err) => {
+        console.error('Error loading owners:', err);
+        this.loading = false;
+      },
     });
   }
 

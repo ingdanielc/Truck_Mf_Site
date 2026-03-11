@@ -61,6 +61,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   searchTerm: string = '';
   page: number = 0;
   rows: number = 9;
+  loading: boolean = true;
 
   // Grouped display
   groupedVehicles: VehicleOwnerGroup[] = [];
@@ -607,6 +608,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         new Pagination(this.rows, this.page),
         new Sort('id', true),
       );
+      this.loading = true;
       this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
         next: (response: any) => {
           if (response?.data?.content) {
@@ -620,12 +622,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.calculateStats();
             this.applyFilter();
           }
+          this.loading = false;
         },
         error: (err) => {
           console.error('Error loading vehicles via owner filter:', err);
           this.allVehicles = [];
           this.calculateStats();
           this.applyFilter();
+          this.loading = false;
         },
       });
 
@@ -642,6 +646,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         new Pagination(this.rows, this.page),
         new Sort('id', true),
       );
+      this.loading = true;
       this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
         next: (response: any) => {
           if (response?.data?.content) {
@@ -658,12 +663,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.calculateStats();
             this.applyFilter();
           }
+          this.loading = false;
         },
         error: (err) => {
           console.error('Error loading vehicles for owner:', err);
           this.allVehicles = [];
           this.calculateStats();
           this.applyFilter();
+          this.loading = false;
         },
       });
 
@@ -677,6 +684,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         new Pagination(this.rows, this.page),
         new Sort('id', true),
       );
+      this.loading = true;
       this.vehicleService.getVehicleFilter(filter).subscribe({
         next: (response: any) => {
           if (response?.data?.content) {
@@ -693,12 +701,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.calculateStats();
             this.applyFilter();
           }
+          this.loading = false;
         },
         error: (err) => {
           console.error('Error loading vehicles for driver:', err);
           this.allVehicles = [];
           this.calculateStats();
           this.applyFilter();
+          this.loading = false;
         },
       });
 
@@ -712,6 +722,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         new Pagination(this.rows, this.page),
         new Sort('id', true),
       );
+      this.loading = true;
       this.vehicleService.getVehicleFilter(filter).subscribe({
         next: (response: any) => {
           if (response?.data?.content) {
@@ -728,12 +739,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.calculateStats();
             this.applyFilter();
           }
+          this.loading = false;
         },
         error: (err) => {
           console.error('Error loading vehicles for logged-in driver:', err);
           this.allVehicles = [];
           this.calculateStats();
           this.applyFilter();
+          this.loading = false;
         },
       });
 
@@ -744,6 +757,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         new Pagination(this.rows, this.page),
         new Sort('id', true),
       );
+      this.loading = true;
       this.vehicleService.getVehicleFilter(filter).subscribe({
         next: (response: any) => {
           if (response?.data?.content) {
@@ -759,9 +773,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.groupedVehicles = [];
             this.calculateStats();
           }
+          this.loading = false;
         },
         error: (err) => {
           console.error('Error loading vehicles:', err);
+          this.loading = false;
         },
       });
     }

@@ -124,66 +124,75 @@
   </div>
 
   <!-- Vehicles Grouped by Owner -->
-  @for (group of groupedVehicles; track group.owner.id) {
-    <!-- Owner Header Card — independent, only the header -->
-    <g-vehicle-owner-card
-      [owner]="group.owner"
-      [itemCount]="group.vehicles.length"
-      itemLabel="Vehículos"
-      (viewProfile)="onViewProfile($event)"
-    ></g-vehicle-owner-card>
-
-    <!-- Vehicle Grid — rendered OUTSIDE the owner card component -->
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-4 px-1">
-      @for (vehicle of group.vehicles; track vehicle.id) {
-        <div class="col">
-          <app-g-vehicle-card
-            [vehicle]="vehicle"
-            [canEdit]="userRole !== 'CONDUCTOR'"
-            (edit)="toggleOffcanvas($event)"
-            (maintenance)="goToMaintenance($event)"
-          ></app-g-vehicle-card>
-        </div>
-      }
-      @if (userRole === "ADMINISTRADOR") {
-        <div class="col">
-          <div
-            class="add-vehicle-tile border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
-            (click)="openAddVehicleForOwner(group.owner)"
-            (keypress)="openAddVehicleForOwner(group.owner)"
-            role="button"
-            tabindex="0"
-          >
-            <div
-              class="add-vehicle-icon rounded-circle border d-flex align-items-center justify-content-center"
-            >
-              <i class="fa-solid fa-plus"></i>
-            </div>
-            <span class="small fw-semibold">Agregar Vehículo</span>
-          </div>
-        </div>
-      }
+  @if (loading) {
+    <div class="section-loader">
+      <output class="spinner-border text-primary">
+        <span class="visually-hidden">Cargando...</span>
+      </output>
+      <p class="mt-3 text-body-secondary fw-medium">Obteniendo vehículos...</p>
     </div>
+  } @else {
+    @for (group of groupedVehicles; track group.owner.id) {
+      <!-- Owner Header Card — independent, only the header -->
+      <g-vehicle-owner-card
+        [owner]="group.owner"
+        [itemCount]="group.vehicles.length"
+        itemLabel="Vehículos"
+        (viewProfile)="onViewProfile($event)"
+      ></g-vehicle-owner-card>
 
-    @if (group.vehicles.length === 0) {
-      <div
-        class="text-center py-4 bg-body-tertiary rounded-4 mb-4 border border-dashed"
-      >
-        <i
-          class="fa-solid fa-truck-moving fs-3 mb-2 opacity-50 text-body-secondary"
-        ></i>
-        <p class="small text-body-secondary mb-0">
-          No se encontraron vehículos para este propietario
-        </p>
+      <!-- Vehicle Grid — rendered OUTSIDE the owner card component -->
+      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-4 px-1">
+        @for (vehicle of group.vehicles; track vehicle.id) {
+          <div class="col">
+            <app-g-vehicle-card
+              [vehicle]="vehicle"
+              [canEdit]="userRole !== 'CONDUCTOR'"
+              (edit)="toggleOffcanvas($event)"
+              (maintenance)="goToMaintenance($event)"
+            ></app-g-vehicle-card>
+          </div>
+        }
+        @if (userRole === "ADMINISTRADOR") {
+          <div class="col">
+            <div
+              class="add-vehicle-tile border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
+              (click)="openAddVehicleForOwner(group.owner)"
+              (keypress)="openAddVehicleForOwner(group.owner)"
+              role="button"
+              tabindex="0"
+            >
+              <div
+                class="add-vehicle-icon rounded-circle border d-flex align-items-center justify-content-center"
+              >
+                <i class="fa-solid fa-plus"></i>
+              </div>
+              <span class="small fw-semibold">Agregar Vehículo</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (group.vehicles.length === 0) {
+        <div
+          class="text-center py-4 bg-body-tertiary rounded-4 mb-4 border border-dashed"
+        >
+          <i
+            class="fa-solid fa-truck-moving fs-3 mb-2 opacity-50 text-body-secondary"
+          ></i>
+          <p class="small text-body-secondary mb-0">
+            No se encontraron vehículos para este propietario
+          </p>
+        </div>
+      }
+    }
+
+    @if (groupedVehicles.length === 0) {
+      <div class="text-center py-5 text-body-secondary">
+        <i class="fa-solid fa-truck-moving fs-1 mb-3 opacity-25"></i>
+        <p class="fw-bold">No se encontraron resultados</p>
       </div>
     }
-  }
-
-  @if (groupedVehicles.length === 0) {
-    <div class="text-center py-5 text-body-secondary">
-      <i class="fa-solid fa-truck-moving fs-1 mb-3 opacity-25"></i>
-      <p class="fw-bold">No se encontraron resultados</p>
-    </div>
   }
 
   <!-- Footer/Pagination -->
