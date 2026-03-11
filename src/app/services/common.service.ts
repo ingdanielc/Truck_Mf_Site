@@ -56,4 +56,16 @@ export class CommonService {
   getSalaryTypes() {
     return this.http.get<any>(`${this.basePath}/getSalaryTypes`);
   }
+
+  uploadPhoto(
+    type: 'owner' | 'driver' | 'vehicle',
+    id: number,
+    photo: File | Blob,
+  ) {
+    const formData = new FormData();
+    formData.append('type', type);
+    formData.append('id', id.toString());
+    formData.append('photo', photo, `photo${id}.jpg`);
+    return this.http.post<any>(`${this.basePath}/upload-photo`, formData);
+  }
 }

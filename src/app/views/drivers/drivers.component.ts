@@ -23,7 +23,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { CommonService } from '../../services/common.service';
-import { Subscription } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 import { OwnerService } from 'src/app/services/owner.service';
 import { ModelOwner } from 'src/app/models/owner-model';
@@ -76,7 +76,8 @@ export class DriversComponent implements OnInit, OnDestroy {
   showPassword = false;
   showConfirmPassword = false;
   showCamera = false;
-  photoBase64: string = '';
+  photoFile: File | Blob | null = null;
+  photoPreview: string = '';
   documentTypes: any[] = [];
   genders: any[] = [];
   cities: any[] = [];
@@ -471,7 +472,8 @@ export class DriversComponent implements OnInit, OnDestroy {
   toggleOffcanvas(driver?: ModelDriver): void {
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
     this.editingDriver = driver || null;
-    this.photoBase64 = driver?.photo || '';
+    this.photoFile = null;
+    this.photoPreview = driver?.photo || '';
     this.showPassword = false;
     this.showConfirmPassword = false;
     if (this.isOffcanvasOpen) {
@@ -608,77 +610,160 @@ export class DriversComponent implements OnInit, OnDestroy {
           password = await this.securityService.getHashSHA512(password);
         }
 
-        const driverToSave: ModelDriver = {
-          id: this.editingDriver?.id || null,
-          name: formValue.name,
-          documentTypeId: formValue.documentType,
-          documentNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
-          cellPhone: formValue.cellPhone,
-          birthdate: formValue.birthdate,
-          cityId: formValue.city,
-          genderId: formValue.gender,
-          licenseCategory: formValue.licenseCategory,
-          licenseNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
-          licenseExpiry: formValue.licenseExpiry,
-          email: formValue.email || undefined,
-          password: this.showAccessData ? password || null : null,
-          status: this.editingDriver?.status || 'Activo',
-          photo: this.photoBase64,
-          ownerId:
-            this.userRole === 'ADMINISTRADOR'
-              ? formValue.ownerId
-              : this.loggedInOwnerId || undefined,
-          salaryTypeId: formValue.salaryTypeId,
-          salary: formValue.salary
-            ? Number(formValue.salary.toString().replaceAll(/\D/g, ''))
-            : undefined,
-        };
+        if (this.editingDriver) {
+          let photoUrl = this.editingDriver.photo || '';
 
-        this.driverService.createDriver(driverToSave).subscribe({
-          next: (response: any) => {
-            this.toastService.showSuccess(
-              'Gestión de Conductores',
-              this.editingDriver
-                ? 'Conductor actualizado exitosamente!'
-                : 'Conductor creado exitosamente!',
-            );
+          if (this.photoFile) {
+            try {
+              const uploadRes = await firstValueFrom(
+                this.commonService.uploadPhoto(
+                  'driver',
+                  this.editingDriver.id!,
+                  this.photoFile,
+                ),
+              );
+              photoUrl = uploadRes?.data || photoUrl;
+            } catch (uploadErr) {
+              console.error('Error uploading photo:', uploadErr);
+            }
+          }
 
-            // After save, the backend returns the updated driver
-            const updatedDriver = response?.data || driverToSave;
+          const driverToSave: ModelDriver = {
+            id: this.editingDriver.id,
+            name: formValue.name,
+            documentTypeId: formValue.documentType,
+            documentNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
+            cellPhone: formValue.cellPhone,
+            birthdate: formValue.birthdate,
+            cityId: formValue.city,
+            genderId: formValue.gender,
+            licenseCategory: formValue.licenseCategory,
+            licenseNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
+            licenseExpiry: formValue.licenseExpiry,
+            email: formValue.email || undefined,
+            password: this.showAccessData ? password || null : null,
+            status: this.editingDriver.status || 'Activo',
+            photo: photoUrl,
+            ownerId:
+              this.userRole === 'ADMINISTRADOR'
+                ? formValue.ownerId
+                : this.loggedInOwnerId || undefined,
+            salaryTypeId: formValue.salaryTypeId,
+            salary: formValue.salary
+              ? Number(formValue.salary.toString().replaceAll(/\D/g, ''))
+              : undefined,
+          };
 
-            if (this.editingDriver) {
-              // Update in the local list for immediate reflection
+          this.driverService.createDriver(driverToSave).subscribe({
+            next: (response: any) => {
+              this.toastService.showSuccess(
+                'Gestión de Conductores',
+                'Conductor actualizado exitosamente!',
+              );
+
+              const updatedDriver = response?.data || driverToSave;
               const index = this.allDrivers.findIndex(
                 (d) => d.id === this.editingDriver?.id,
               );
               if (index !== -1) {
-                // Preserve names and other fields not necessarily in the update payload
                 this.allDrivers[index] = {
                   ...this.allDrivers[index],
                   ...updatedDriver,
                 };
               }
-            } else {
-              // If it's a new driver, we might need a full reload to get ID and other generated fields
-              this.loadDrivers();
-            }
 
-            this.applyFilter();
-            this.toggleOffcanvas();
-
-            // Still call loadDrivers to ensure everything is in sync with the server
-            if (this.editingDriver) {
+              this.applyFilter();
+              this.toggleOffcanvas();
               this.loadDrivers();
-            }
-          },
-          error: (err: any) => {
-            console.error('Error saving driver:', err);
-            this.toastService.showError(
-              'Error',
-              'No se pudo procesar la solicitud.',
-            );
-          },
-        });
+            },
+            error: (err: any) => {
+              console.error('Error saving driver:', err);
+              this.toastService.showError(
+                'Error',
+                'No se pudo procesar la solicitud.',
+              );
+            },
+          });
+        } else {
+          // CREATE
+          const driverToSave: ModelDriver = {
+            id: null,
+            name: formValue.name,
+            documentTypeId: formValue.documentType,
+            documentNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
+            cellPhone: formValue.cellPhone,
+            birthdate: formValue.birthdate,
+            cityId: formValue.city,
+            genderId: formValue.gender,
+            licenseCategory: formValue.licenseCategory,
+            licenseNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
+            licenseExpiry: formValue.licenseExpiry,
+            email: formValue.email || undefined,
+            password: this.showAccessData ? password || null : null,
+            status: 'Activo',
+            photo: '',
+            ownerId:
+              this.userRole === 'ADMINISTRADOR'
+                ? formValue.ownerId
+                : this.loggedInOwnerId || undefined,
+            salaryTypeId: formValue.salaryTypeId,
+            salary: formValue.salary
+              ? Number(formValue.salary.toString().replaceAll(/\D/g, ''))
+              : undefined,
+          };
+
+          this.driverService.createDriver(driverToSave).subscribe({
+            next: async (response: any) => {
+              const savedDriver = response?.data;
+              const newId: number | null = savedDriver?.id ?? null;
+
+              if (this.photoFile && newId) {
+                try {
+                  const uploadRes = await firstValueFrom(
+                    this.commonService.uploadPhoto(
+                      'driver',
+                      newId,
+                      this.photoFile,
+                    ),
+                  );
+                  const photoUrl = uploadRes?.data || '';
+
+                  if (photoUrl) {
+                    const driverWithPhoto: ModelDriver = {
+                      ...savedDriver,
+                      photo: photoUrl,
+                    };
+                    this.driverService.createDriver(driverWithPhoto).subscribe({
+                      error: (err) =>
+                        console.error('Error updating photo URL:', err),
+                    });
+                  }
+                } catch (uploadErr) {
+                  console.error(
+                    'Error uploading photo after create:',
+                    uploadErr,
+                  );
+                }
+              }
+
+              this.toastService.showSuccess(
+                'Gestión de Conductores',
+                'Conductor creado exitosamente!',
+              );
+
+              this.applyFilter();
+              this.toggleOffcanvas();
+              this.loadDrivers();
+            },
+            error: (err: any) => {
+              console.error('Error saving driver:', err);
+              this.toastService.showError(
+                'Error',
+                'No se pudo procesar la solicitud.',
+              );
+            },
+          });
+        }
       } catch (error) {
         console.error('Error in onSubmit:', error);
       }
@@ -962,18 +1047,34 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   onPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
     CustomValidators.readPhotoFile(event).then(
-      (base64) => (this.photoBase64 = base64),
+      (base64) => {
+        this.photoFile = file;
+        this.photoPreview = base64;
+      },
       (err) => this.toastService.showError('Error', err),
     );
   }
 
   removePhoto(): void {
-    this.photoBase64 = '';
+    this.photoFile = null;
+    this.photoPreview = '';
   }
 
   onCameraCapture(dataUrl: string): void {
-    this.photoBase64 = dataUrl;
+    const byteString = atob(dataUrl.split(',')[1]);
+    const mimeType = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    this.photoFile = new Blob([ab], { type: mimeType });
+    this.photoPreview = dataUrl;
     this.showCamera = false;
   }
 

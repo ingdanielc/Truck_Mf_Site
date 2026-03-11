@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, of, catchError } from 'rxjs';
+import { Subscription, of, catchError, firstValueFrom } from 'rxjs';
 import { OwnerService } from 'src/app/services/owner.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { ToastService } from 'src/app/services/toast.service';
@@ -14,7 +14,6 @@ import { DriverService } from 'src/app/services/driver.service';
 import { TripService } from 'src/app/services/trip.service';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
-import { CustomValidators } from 'src/app/utils/custom-validators';
 import {
   Filter,
   ModelFilterTable,
@@ -448,11 +447,21 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     photoInput.click();
   }
 
-  onPhotoSelected(event: Event): void {
-    CustomValidators.readPhotoFile(event).then(
-      (base64) => this.updateOwnerPhoto(base64),
-      (err) => this.toastService.showError('Error', err),
-    );
+  async onPhotoSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !this.owner?.id) return;
+
+    try {
+      const uploadRes = await firstValueFrom(
+        this.commonService.uploadPhoto('owner', this.owner.id, file),
+      );
+      if (uploadRes?.data) {
+        this.updateOwnerPhoto(uploadRes.data);
+      }
+    } catch (err) {
+      this.toastService.showError('Error', 'No se pudo subir la foto');
+    }
   }
 
   removePhoto(): void {
@@ -461,12 +470,12 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  private updateOwnerPhoto(photoBase64: string): void {
+  private updateOwnerPhoto(photoUrl: string): void {
     if (!this.owner) return;
 
     const ownerToUpdate: ModelOwner = {
       ...this.owner,
-      photo: photoBase64,
+      photo: photoUrl,
     };
 
     // Remove calculated/computed properties that shouldn't be sent back as is or cause issues
@@ -479,7 +488,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
           'Perfil',
           'Foto actualizada exitosamente',
         );
-        this.owner!.photo = photoBase64;
+        this.owner!.photo = photoUrl;
       },
       error: (err) => {
         console.error('Error updating owner photo:', err);
@@ -491,8 +500,29 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  onCameraCapture(dataUrl: string): void {
-    this.updateOwnerPhoto(dataUrl);
+  async onCameraCapture(dataUrl: string): Promise<void> {
+    if (!this.owner?.id) return;
+
+    const byteString = atob(dataUrl.split(',')[1]);
+    const mimeType = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    const file = new Blob([ab], { type: mimeType });
+
+    try {
+      const uploadRes = await firstValueFrom(
+        this.commonService.uploadPhoto('owner', this.owner.id, file),
+      );
+      if (uploadRes?.data) {
+        this.updateOwnerPhoto(uploadRes.data);
+      }
+    } catch (err) {
+      this.toastService.showError('Error', 'No se pudo subir la foto');
+    }
+
     this.showCamera = false;
   }
 

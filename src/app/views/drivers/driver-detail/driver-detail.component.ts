@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 import { DriverService } from 'src/app/services/driver.service';
 import { TripService } from 'src/app/services/trip.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
@@ -11,7 +11,6 @@ import { ToastService } from 'src/app/services/toast.service';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
-import { CustomValidators } from 'src/app/utils/custom-validators';
 import {
   Filter,
   ModelFilterTable,
@@ -39,7 +38,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   tripCount: number = 0;
   now: Date = new Date();
   showCamera: boolean = false;
-  photoBase64: string = '';
+  photoPreview: string = '';
 
   private routeSub?: Subscription;
 
@@ -82,7 +81,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content?.length > 0) {
           this.driver = response.data.content[0];
-          this.photoBase64 = this.driver?.photo || '';
+          this.photoPreview = this.driver?.photo || '';
           this.resolveCityName();
         } else {
           this.toastService.showError('Error', 'No se encontró el conductor');
@@ -223,37 +222,66 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
     photoInput.click();
   }
 
-  onPhotoSelected(event: Event): void {
-    CustomValidators.readPhotoFile(event).then(
-      (base64) => {
-        this.photoBase64 = base64;
-        this.savePhoto();
-      },
-      (err) => this.toastService.showError('Error', err),
-    );
+  async onPhotoSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !this.driver?.id) return;
+
+    try {
+      const uploadRes = await firstValueFrom(
+        this.commonService.uploadPhoto('driver', this.driver.id, file),
+      );
+      if (uploadRes?.data) {
+        this.photoPreview = uploadRes.data;
+        this.savePhoto(uploadRes.data);
+      }
+    } catch (err) {
+      this.toastService.showError('Error', 'No se pudo subir la foto');
+    }
   }
 
   removePhoto(): void {
-    this.photoBase64 = '';
-    this.savePhoto();
+    this.photoPreview = '';
+    this.savePhoto('');
   }
 
-  onCameraCapture(dataUrl: string): void {
-    this.photoBase64 = dataUrl;
+  async onCameraCapture(dataUrl: string): Promise<void> {
+    if (!this.driver?.id) return;
+
+    const byteString = atob(dataUrl.split(',')[1]);
+    const mimeType = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    const file = new Blob([ab], { type: mimeType });
+
+    try {
+      const uploadRes = await firstValueFrom(
+        this.commonService.uploadPhoto('driver', this.driver.id, file),
+      );
+      if (uploadRes?.data) {
+        this.photoPreview = uploadRes.data;
+        this.savePhoto(uploadRes.data);
+      }
+    } catch (err) {
+      this.toastService.showError('Error', 'No se pudo subir la foto');
+    }
+
     this.showCamera = false;
-    this.savePhoto();
   }
 
   onCameraClose(): void {
     this.showCamera = false;
   }
 
-  savePhoto(): void {
+  savePhoto(photoUrl: string): void {
     if (!this.driver) return;
 
     const driverToSave: ModelDriver = {
       ...this.driver,
-      photo: this.photoBase64,
+      photo: photoUrl,
     };
 
     this.driverService.createDriver(driverToSave).subscribe({
@@ -262,7 +290,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
           'Perfil',
           'Fotografía actualizada exitosamente',
         );
-        if (this.driver) this.driver.photo = this.photoBase64;
+        if (this.driver) this.driver.photo = photoUrl;
       },
       error: (err) => {
         console.error('Error saving photo:', err);

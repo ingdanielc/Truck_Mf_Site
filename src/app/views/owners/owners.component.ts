@@ -11,7 +11,7 @@ import {
 import { ModelOwner } from 'src/app/models/owner-model';
 import { GOwnerCardComponent } from '../../components/g-owner-card/g-owner-card.component';
 import { GPasswordCardComponent } from '../../components/g-password-card/g-password-card.component';
-import { Subscription } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 import {
   Filter,
   ModelFilterTable,
@@ -65,7 +65,8 @@ export class OwnersComponent implements OnInit, OnDestroy {
   showPassword = false;
   showConfirmPassword = false;
 
-  photoBase64: string = '';
+  photoFile: File | Blob | null = null;
+  photoPreview: string = '';
 
   isPasswordOffcanvasOpen: boolean = false;
   ownerChangingPassword: ModelOwner | null = null;
@@ -258,7 +259,8 @@ export class OwnersComponent implements OnInit, OnDestroy {
         email: owner.email,
         maxVehicles: owner.maxVehicles,
       });
-      this.photoBase64 = owner.photo || '';
+      this.photoFile = null;
+      this.photoPreview = owner.photo || '';
 
       // Update validators to include the current owner's ID for duplication checks
       this.ownerForm
@@ -296,7 +298,8 @@ export class OwnersComponent implements OnInit, OnDestroy {
       this.ownerForm.get('confirmPassword')?.updateValueAndValidity();
     } else {
       this.editingOwner = null;
-      this.photoBase64 = '';
+      this.photoFile = null;
+      this.photoPreview = '';
       this.ownerForm.reset({
         name: '',
         documentType: null,
@@ -365,7 +368,6 @@ export class OwnersComponent implements OnInit, OnDestroy {
 
   async onSubmit(): Promise<void> {
     if (this.ownerForm.valid) {
-      // Logic for save/update would go here
       try {
         const formValue = this.ownerForm.getRawValue();
         let password = formValue.password;
@@ -374,62 +376,128 @@ export class OwnersComponent implements OnInit, OnDestroy {
           password = await this.securityService.getHashSHA512(password);
         }
 
-        const ownerToSave: ModelOwner = {
-          id: this.editingOwner?.id || null,
-          name: formValue.name,
-          documentTypeId: formValue.documentType,
-          documentNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
-          cellPhone: formValue.cellPhone,
-          birthdate: formValue.birthdate,
-          cityId: formValue.city,
-          genderId: formValue.gender,
-          email: formValue.email,
-          maxVehicles: formValue.maxVehicles,
-          password: password || undefined,
-          status: this.editingOwner?.status || 'Activo',
-          photo: this.photoBase64,
-        };
+        if (this.editingOwner) {
+          // EDICIÓN: subir foto primero (si hay nueva), luego guardar
+          let photoUrl = this.editingOwner.photo || '';
 
-        this.ownerService.createOwner(ownerToSave).subscribe({
-          next: (response: any) => {
-            this.toastService.showSuccess(
-              'Gestión de Propietarios',
-              this.editingOwner
-                ? 'Propietario actualizado exitosamente!'
-                : 'Propietario creado exitosamente!',
-            );
-
-            const updatedOwner = response?.data || ownerToSave;
-
-            if (this.editingOwner) {
-              const index = this.allOwners.findIndex(
-                (o) => o.id === this.editingOwner?.id,
+          if (this.photoFile) {
+            try {
+              const uploadRes = await firstValueFrom(
+                this.commonService.uploadPhoto(
+                  'owner',
+                  this.editingOwner.id!,
+                  this.photoFile,
+                ),
               );
-              if (index !== -1) {
-                this.allOwners[index] = {
-                  ...this.allOwners[index],
-                  ...updatedOwner,
-                };
+              photoUrl = uploadRes?.data || photoUrl;
+            } catch (uploadErr) {
+              console.error('Error uploading photo:', uploadErr);
+            }
+          }
+
+          const ownerToSave: ModelOwner = {
+            id: this.editingOwner.id,
+            name: formValue.name,
+            documentTypeId: formValue.documentType,
+            documentNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
+            cellPhone: formValue.cellPhone,
+            birthdate: formValue.birthdate,
+            cityId: formValue.city,
+            genderId: formValue.gender,
+            email: formValue.email,
+            maxVehicles: formValue.maxVehicles,
+            password: password || undefined,
+            status: this.editingOwner.status || 'Activo',
+            photo: photoUrl,
+          };
+
+          this.ownerService.createOwner(ownerToSave).subscribe({
+            next: () => {
+              this.toastService.showSuccess(
+                'Gestión de Propietarios',
+                'Propietario actualizado exitosamente!',
+              );
+              this.toggleOffcanvas();
+              this.loadOwners();
+            },
+            error: (err) => {
+              console.error('Error saving owner:', err);
+              this.toastService.showError(
+                'Error',
+                'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
+              );
+            },
+          });
+        } else {
+          // CREACIÓN: guardar owner primero, obtener ID, luego subir foto
+          const ownerToSave: ModelOwner = {
+            id: null,
+            name: formValue.name,
+            documentTypeId: formValue.documentType,
+            documentNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
+            cellPhone: formValue.cellPhone,
+            birthdate: formValue.birthdate,
+            cityId: formValue.city,
+            genderId: formValue.gender,
+            email: formValue.email,
+            maxVehicles: formValue.maxVehicles,
+            password: password || undefined,
+            status: 'Activo',
+            photo: '',
+          };
+
+          this.ownerService.createOwner(ownerToSave).subscribe({
+            next: async (response: any) => {
+              const savedOwner = response?.data;
+              const newId: number | null = savedOwner?.id ?? null;
+
+              // Subir foto si hay archivo y se obtuvo el ID
+              if (this.photoFile && newId) {
+                try {
+                  const uploadRes = await firstValueFrom(
+                    this.commonService.uploadPhoto(
+                      'owner',
+                      newId,
+                      this.photoFile,
+                    ),
+                  );
+                  const photoUrl = uploadRes?.data || '';
+
+                  if (photoUrl) {
+                    // Actualizar owner con la URL de la foto
+                    const ownerWithPhoto: ModelOwner = {
+                      ...savedOwner,
+                      photo: photoUrl,
+                    };
+                    this.ownerService.createOwner(ownerWithPhoto).subscribe({
+                      error: (err) =>
+                        console.error('Error updating photo URL:', err),
+                    });
+                  }
+                } catch (uploadErr) {
+                  console.error(
+                    'Error uploading photo after create:',
+                    uploadErr,
+                  );
+                }
               }
-            } else {
-              this.loadOwners();
-            }
 
-            this.applyFilter();
-            this.toggleOffcanvas();
-
-            if (this.editingOwner) {
+              this.toastService.showSuccess(
+                'Gestión de Propietarios',
+                'Propietario creado exitosamente!',
+              );
+              this.toggleOffcanvas();
               this.loadOwners();
-            }
-          },
-          error: (err) => {
-            console.error('Error saving owner:', err);
-            this.toastService.showError(
-              'Error',
-              'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
-            );
-          },
-        });
+            },
+            error: (err) => {
+              console.error('Error saving owner:', err);
+              this.toastService.showError(
+                'Error',
+                'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
+              );
+            },
+          });
+        }
       } catch (error) {
         console.error('Error in onSubmit:', error);
       }
@@ -624,18 +692,36 @@ export class OwnersComponent implements OnInit, OnDestroy {
   }
 
   onPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    // Validar con CustomValidators para feedback de errores
     CustomValidators.readPhotoFile(event).then(
-      (base64) => (this.photoBase64 = base64),
+      (base64) => {
+        this.photoFile = file;
+        this.photoPreview = base64;
+      },
       (err) => this.toastService.showError('Error', err),
     );
   }
 
   removePhoto(): void {
-    this.photoBase64 = '';
+    this.photoFile = null;
+    this.photoPreview = '';
   }
 
   onCameraCapture(dataUrl: string): void {
-    this.photoBase64 = dataUrl;
+    // La cámara devuelve un data URL; convertir a Blob para poder subir
+    const byteString = atob(dataUrl.split(',')[1]);
+    const mimeType = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    this.photoFile = new Blob([ab], { type: mimeType });
+    this.photoPreview = dataUrl;
     this.showCamera = false;
   }
 

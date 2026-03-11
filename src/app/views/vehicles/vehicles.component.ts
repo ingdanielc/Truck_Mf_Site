@@ -12,7 +12,7 @@ import {
   ValidationErrors,
   ValidatorFn,
 } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import {
   Filter,
@@ -72,7 +72,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   isPatching: boolean = false;
   showingVehicleLimitWarning: boolean = false;
   showCamera = false;
-  photoBase64: string = '';
+  photoFile: File | Blob | null = null;
+  photoPreview: string = '';
 
   // Selection Lists
   brands: any[] = [];
@@ -356,7 +357,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.showingVehicleLimitWarning = false;
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
     this.editingVehicle = vehicle || null;
-    this.photoBase64 = vehicle?.photo || '';
+    this.photoFile = null;
+    this.photoPreview = vehicle?.photo || '';
     if (this.isOffcanvasOpen) {
       if (vehicle) {
         this.editingVehicle = vehicle;
@@ -450,51 +452,142 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.vehicleForm.get('ownerId')?.setValue(owner.id ?? null);
   }
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (this.vehicleForm.valid) {
       try {
         const formValue = this.vehicleForm.getRawValue();
 
-        const vehicleToSave: ModelVehicle = {
-          id: this.editingVehicle?.id || undefined,
-          photo: this.photoBase64,
-          plate: formValue.plate,
-          vehicleBrandId: Number(formValue.brand),
-          model: formValue.model,
-          year: Number(formValue.year),
-          color: formValue.color,
-          engineNumber: formValue.motorNumber,
-          chassisNumber: formValue.chassisNumber,
-          numberOfAxles: formValue.axleCount,
-          status: this.editingVehicle?.status || 'Activo',
-          ownerId:
-            this.userRole === 'ADMINISTRADOR'
-              ? Number(formValue.ownerId)
-              : this.loggedInOwnerId || undefined,
-          currentDriverId: formValue.driverId
-            ? Number(formValue.driverId)
-            : null,
-        };
+        if (this.editingVehicle) {
+          let photoUrl = this.editingVehicle.photo || '';
 
-        this.vehicleService.createVehicle(vehicleToSave).subscribe({
-          next: () => {
-            this.toastService.showSuccess(
-              'Gestión de Vehículos',
-              this.editingVehicle
-                ? 'Vehículo actualizado exitosamente!'
-                : 'Vehículo creado exitosamente!',
-            );
-            this.loadVehicles();
-            this.toggleOffcanvas();
-          },
-          error: (err) => {
-            console.error('Error saving vehicle:', err);
-            this.toastService.showError(
-              'Error',
-              'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
-            );
-          },
-        });
+          if (this.photoFile) {
+            try {
+              const uploadRes = await firstValueFrom(
+                this.commonService.uploadPhoto(
+                  'vehicle',
+                  this.editingVehicle.id!,
+                  this.photoFile,
+                ),
+              );
+              photoUrl = uploadRes?.data || photoUrl;
+            } catch (uploadErr) {
+              console.error('Error uploading photo:', uploadErr);
+            }
+          }
+
+          const vehicleToSave: ModelVehicle = {
+            id: this.editingVehicle.id,
+            photo: photoUrl,
+            plate: formValue.plate,
+            vehicleBrandId: Number(formValue.brand),
+            model: formValue.model,
+            year: Number(formValue.year),
+            color: formValue.color,
+            engineNumber: formValue.motorNumber,
+            chassisNumber: formValue.chassisNumber,
+            numberOfAxles: formValue.axleCount,
+            status: this.editingVehicle.status || 'Activo',
+            ownerId:
+              this.userRole === 'ADMINISTRADOR'
+                ? Number(formValue.ownerId)
+                : this.loggedInOwnerId || undefined,
+            currentDriverId: formValue.driverId
+              ? Number(formValue.driverId)
+              : null,
+          };
+
+          this.vehicleService.createVehicle(vehicleToSave).subscribe({
+            next: () => {
+              this.toastService.showSuccess(
+                'Gestión de Vehículos',
+                'Vehículo actualizado exitosamente!',
+              );
+              this.loadVehicles();
+              this.toggleOffcanvas();
+            },
+            error: (err) => {
+              console.error('Error saving vehicle:', err);
+              this.toastService.showError(
+                'Error',
+                'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
+              );
+            },
+          });
+        } else {
+          // CREATE MODE
+          const vehicleToSave: ModelVehicle = {
+            id: undefined,
+            photo: '',
+            plate: formValue.plate,
+            vehicleBrandId: Number(formValue.brand),
+            model: formValue.model,
+            year: Number(formValue.year),
+            color: formValue.color,
+            engineNumber: formValue.motorNumber,
+            chassisNumber: formValue.chassisNumber,
+            numberOfAxles: formValue.axleCount,
+            status: 'Activo',
+            ownerId:
+              this.userRole === 'ADMINISTRADOR'
+                ? Number(formValue.ownerId)
+                : this.loggedInOwnerId || undefined,
+            currentDriverId: formValue.driverId
+              ? Number(formValue.driverId)
+              : null,
+          };
+
+          this.vehicleService.createVehicle(vehicleToSave).subscribe({
+            next: async (response: any) => {
+              const savedVehicle = response?.data;
+              const newId: number | null = savedVehicle?.id ?? null;
+
+              if (this.photoFile && newId) {
+                try {
+                  const uploadRes = await firstValueFrom(
+                    this.commonService.uploadPhoto(
+                      'vehicle',
+                      newId,
+                      this.photoFile,
+                    ),
+                  );
+                  const photoUrl = uploadRes?.data || '';
+
+                  if (photoUrl) {
+                    const vehicleWithPhoto: ModelVehicle = {
+                      ...savedVehicle,
+                      photo: photoUrl,
+                    };
+                    this.vehicleService
+                      .createVehicle(vehicleWithPhoto)
+                      .subscribe({
+                        error: (err) =>
+                          console.error('Error updating photo URL:', err),
+                      });
+                  }
+                } catch (uploadErr) {
+                  console.error(
+                    'Error uploading photo after create:',
+                    uploadErr,
+                  );
+                }
+              }
+
+              this.toastService.showSuccess(
+                'Gestión de Vehículos',
+                'Vehículo creado exitosamente!',
+              );
+              this.loadVehicles();
+              this.toggleOffcanvas();
+            },
+            error: (err) => {
+              console.error('Error saving vehicle:', err);
+              this.toastService.showError(
+                'Error',
+                'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
+              );
+            },
+          });
+        }
       } catch (error) {
         console.error('Error in onSubmit:', error);
       }
@@ -905,18 +998,34 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   onPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
     CustomValidators.readPhotoFile(event).then(
-      (base64) => (this.photoBase64 = base64),
+      (base64) => {
+        this.photoFile = file;
+        this.photoPreview = base64;
+      },
       (err) => this.toastService.showError('Error', err),
     );
   }
 
   removePhoto(): void {
-    this.photoBase64 = '';
+    this.photoFile = null;
+    this.photoPreview = '';
   }
 
   onCameraCapture(dataUrl: string): void {
-    this.photoBase64 = dataUrl;
+    const byteString = atob(dataUrl.split(',')[1]);
+    const mimeType = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    this.photoFile = new Blob([ab], { type: mimeType });
+    this.photoPreview = dataUrl;
     this.showCamera = false;
   }
 

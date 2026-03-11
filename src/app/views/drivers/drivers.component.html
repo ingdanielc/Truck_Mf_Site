@@ -242,9 +242,9 @@
               (click)="triggerPhotoInput(photoInput)"
               onkeypress
             >
-              @if (photoBase64) {
+              @if (photoPreview) {
                 <img
-                  [src]="photoBase64"
+                  [src]="photoPreview"
                   alt="Vista previa"
                   class="w-100 h-100 object-fit-cover"
                 />
@@ -270,7 +270,7 @@
             >
               <i class="fa-solid fa-camera text-primary"></i>
             </button>
-            @if (photoBase64) {
+            @if (photoPreview) {
               <button
                 type="button"
                 class="btn btn-danger btn-sm rounded-circle position-absolute photo-remove-btn"
