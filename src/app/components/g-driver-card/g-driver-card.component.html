@@ -82,7 +82,7 @@
       {{ driver.user?.email || driver.email }}
     </p>
 
-    <div class="d-flex flex-column gap-2 mb-4">
+    <div class="d-flex flex-column gap-2 mb-3">
       <div class="d-flex align-items-center text-body-secondary small">
         <i class="fa-solid fa-id-card me-2 opacity-50" style="width: 16px"></i>
         <span>{{ formatDocNumber(driver.documentNumber) }}</span>
@@ -103,34 +103,37 @@
           años)</span
         >
       </div>
-      @if (driver.licenseCategory || driver.licenseExpiry) {
-        <div class="d-flex align-items-center text-body-secondary small">
-          <i
-            class="fa-solid fa-id-card-clip me-2 opacity-50"
-            style="width: 16px"
-          ></i>
-          <span>
-            Categoría: <strong>{{ driver.licenseCategory | uppercase }}</strong>
-            @if (driver.licenseExpiry) {
-              — Vence:
-              <strong>{{ driver.licenseExpiry | date: "d MMM, yyyy" }}</strong>
-            }
-          </span>
-        </div>
-      }
     </div>
 
     <div
-      class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top border-secondary-subtle"
+      class="d-flex justify-content-between align-items-end mt-auto pt-3 border-top border-secondary-subtle"
     >
-      @if (salaryInfo) {
-        <div class="text-secondary small d-flex align-items-center gap-2">
-          <i class="fa-solid fa-hand-holding-dollar opacity-50"></i>
-          <span class="fw-medium">{{ salaryInfo }}</span>
-        </div>
-      } @else {
-        <div></div>
-      }
+      <div class="d-flex flex-column gap-2 text-start">
+        @if (driver.licenseCategory || driver.licenseExpiry) {
+          <div class="text-secondary small d-flex align-items-center gap-2">
+            <i
+              class="fa-solid fa-id-card-clip opacity-50 text-center"
+              style="width: 16px"
+            ></i>
+            <span class="fw-medium">
+              {{ driver.licenseCategory | uppercase }}
+              @if (driver.licenseExpiry) {
+                — Vence:
+                {{ driver.licenseExpiry | date: "d MMM, yyyy" }}
+              }
+            </span>
+          </div>
+        }
+        @if (salaryInfo) {
+          <div class="text-secondary small d-flex align-items-center gap-2">
+            <i
+              class="fa-solid fa-hand-holding-dollar opacity-50 text-center"
+              style="width: 16px"
+            ></i>
+            <span class="fw-medium">{{ salaryInfo }}</span>
+          </div>
+        }
+      </div>
       <button
         type="button"
         (click)="onEditClick($event)"
