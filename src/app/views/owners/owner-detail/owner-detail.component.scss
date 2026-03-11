@@ -91,11 +91,7 @@
 
 .photo-camera-btn {
   bottom: -4px;
-  right: 5px; // Default to right (mobile)
-
-  @media (min-width: 768px) {
-    right: 42px; // Move next to edit button on desktop
-  }
+  right: 42px;
 }
 
 .photo-remove-btn {

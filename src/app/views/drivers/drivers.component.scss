@@ -140,10 +140,6 @@
   width: 38px;
   height: 38px;
   z-index: 2;
-
-  @media (max-width: 767px) {
-    right: calc(50% - 19px);
-  }
 }
 
 .photo-remove-btn {
