@@ -62,4 +62,38 @@ export class CustomValidators {
     const confirmPassword = g.get('confirmPassword')?.value;
     return password === confirmPassword ? null : { mismatch: true };
   }
+
+  /**
+   * Reads a photo file from an input change event, validates its size (max 2MB),
+   * and returns a Base64 encoded string via a Promise.
+   *
+   * @param event The file input change event.
+   * @param maxSizeMB Maximum file size allowed in megabytes (default: 2).
+   * @returns A Promise that resolves with the base64 string, or rejects with an error message.
+   */
+  static readPhotoFile(event: Event, maxSizeMB: number = 2): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const input = event.target as HTMLInputElement;
+      const file = input?.files?.[0];
+
+      if (!file) {
+        reject('No se seleccionó ningún archivo.');
+        return;
+      }
+
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        reject(`La imagen no debe pesar más de ${maxSizeMB}MB`);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        resolve(e.target?.result as string);
+      };
+      reader.onerror = () => {
+        reject('Error al leer el archivo.');
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 }

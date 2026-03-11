@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -43,6 +44,7 @@ export interface DriverOwnerGroup {
     GVehicleOwnerCardComponent,
     GPasswordCardComponent,
     DocumentNumberPipe,
+    GCameraComponent,
   ],
   templateUrl: './drivers.component.html',
   styleUrls: ['./drivers.component.scss'],
@@ -73,6 +75,8 @@ export class DriversComponent implements OnInit, OnDestroy {
   driverForm!: FormGroup;
   showPassword = false;
   showConfirmPassword = false;
+  showCamera = false;
+  photoBase64: string = '';
   documentTypes: any[] = [];
   genders: any[] = [];
   cities: any[] = [];
@@ -466,6 +470,8 @@ export class DriversComponent implements OnInit, OnDestroy {
 
   toggleOffcanvas(driver?: ModelDriver): void {
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
+    this.editingDriver = driver || null;
+    this.photoBase64 = driver?.photo || '';
     this.showPassword = false;
     this.showConfirmPassword = false;
     if (this.isOffcanvasOpen) {
@@ -616,7 +622,8 @@ export class DriversComponent implements OnInit, OnDestroy {
           licenseExpiry: formValue.licenseExpiry,
           email: formValue.email || undefined,
           password: this.showAccessData ? password || null : null,
-          photo: this.editingDriver?.photo || '',
+          status: this.editingDriver?.status || 'Activo',
+          photo: this.photoBase64,
           ownerId:
             this.userRole === 'ADMINISTRADOR'
               ? formValue.ownerId
@@ -948,5 +955,29 @@ export class DriversComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error in onUpdatePassword:', error);
     }
+  }
+
+  triggerPhotoInput(photoInput: HTMLInputElement): void {
+    photoInput.click();
+  }
+
+  onPhotoSelected(event: Event): void {
+    CustomValidators.readPhotoFile(event).then(
+      (base64) => (this.photoBase64 = base64),
+      (err) => this.toastService.showError('Error', err),
+    );
+  }
+
+  removePhoto(): void {
+    this.photoBase64 = '';
+  }
+
+  onCameraCapture(dataUrl: string): void {
+    this.photoBase64 = dataUrl;
+    this.showCamera = false;
+  }
+
+  onCameraClose(): void {
+    this.showCamera = false;
   }
 }

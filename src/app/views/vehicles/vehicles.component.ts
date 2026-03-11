@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -31,6 +32,7 @@ import { DriverService } from 'src/app/services/driver.service';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { DocumentNumberPipe } from 'src/app/pipes/document-number.pipe';
 import { TripService } from 'src/app/services/trip.service';
+import { CustomValidators } from 'src/app/utils/custom-validators';
 
 export interface VehicleOwnerGroup {
   owner: ModelOwner;
@@ -46,6 +48,7 @@ export interface VehicleOwnerGroup {
     GVehicleCardComponent,
     GVehicleOwnerCardComponent,
     DocumentNumberPipe,
+    GCameraComponent,
   ],
   templateUrl: './vehicles.component.html',
   styleUrls: ['./vehicles.component.scss'],
@@ -68,6 +71,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   vehicleForm: FormGroup;
   isPatching: boolean = false;
   showingVehicleLimitWarning: boolean = false;
+  showCamera = false;
+  photoBase64: string = '';
 
   // Selection Lists
   brands: any[] = [];
@@ -350,6 +355,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     }
     this.showingVehicleLimitWarning = false;
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
+    this.editingVehicle = vehicle || null;
+    this.photoBase64 = vehicle?.photo || '';
     if (this.isOffcanvasOpen) {
       if (vehicle) {
         this.editingVehicle = vehicle;
@@ -884,11 +891,36 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       return isDuplicate ? { duplicate: true } : null;
     };
   }
+
   goToMaintenance(vehicle: ModelVehicle): void {
     if (vehicle.id) {
       this.router.navigate(['/site/maintenance'], {
         queryParams: { vehicleId: vehicle.id },
       });
     }
+  }
+
+  triggerPhotoInput(photoInput: HTMLInputElement): void {
+    photoInput.click();
+  }
+
+  onPhotoSelected(event: Event): void {
+    CustomValidators.readPhotoFile(event).then(
+      (base64) => (this.photoBase64 = base64),
+      (err) => this.toastService.showError('Error', err),
+    );
+  }
+
+  removePhoto(): void {
+    this.photoBase64 = '';
+  }
+
+  onCameraCapture(dataUrl: string): void {
+    this.photoBase64 = dataUrl;
+    this.showCamera = false;
+  }
+
+  onCameraClose(): void {
+    this.showCamera = false;
   }
 }

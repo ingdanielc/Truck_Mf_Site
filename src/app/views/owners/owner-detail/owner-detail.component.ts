@@ -14,6 +14,7 @@ import { DriverService } from 'src/app/services/driver.service';
 import { TripService } from 'src/app/services/trip.service';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
+import { CustomValidators } from 'src/app/utils/custom-validators';
 import {
   Filter,
   ModelFilterTable,
@@ -447,24 +448,11 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     photoInput.click();
   }
 
-  onPhotoSelected(event: any): void {
-    const file = event.target.files[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        this.toastService.showError(
-          'Error',
-          'La imagen no debe pesar más de 2MB',
-        );
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        const photoBase64 = e.target.result;
-        this.updateOwnerPhoto(photoBase64);
-      };
-      reader.readAsDataURL(file);
-    }
+  onPhotoSelected(event: Event): void {
+    CustomValidators.readPhotoFile(event).then(
+      (base64) => this.updateOwnerPhoto(base64),
+      (err) => this.toastService.showError('Error', err),
+    );
   }
 
   removePhoto(): void {

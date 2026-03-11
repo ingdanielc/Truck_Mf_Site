@@ -623,23 +623,11 @@ export class OwnersComponent implements OnInit, OnDestroy {
     photoInput.click();
   }
 
-  onPhotoSelected(event: any): void {
-    const file = event.target.files[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        this.toastService.showError(
-          'Error',
-          'La imagen no debe pesar más de 2MB',
-        );
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.photoBase64 = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
+  onPhotoSelected(event: Event): void {
+    CustomValidators.readPhotoFile(event).then(
+      (base64) => (this.photoBase64 = base64),
+      (err) => this.toastService.showError('Error', err),
+    );
   }
 
   removePhoto(): void {

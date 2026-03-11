@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { DriverService } from 'src/app/services/driver.service';
@@ -10,6 +11,7 @@ import { ToastService } from 'src/app/services/toast.service';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
+import { CustomValidators } from 'src/app/utils/custom-validators';
 import {
   Filter,
   ModelFilterTable,
@@ -20,7 +22,7 @@ import {
 @Component({
   selector: 'app-driver-detail',
   standalone: true,
-  imports: [CommonModule, GVehicleMiniCardComponent],
+  imports: [CommonModule, GVehicleMiniCardComponent, GCameraComponent],
   templateUrl: './driver-detail.component.html',
   styleUrls: ['./driver-detail.component.scss'],
 })
@@ -36,6 +38,8 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   loadingBrands: boolean = true;
   tripCount: number = 0;
   now: Date = new Date();
+  showCamera: boolean = false;
+  photoBase64: string = '';
 
   private routeSub?: Subscription;
 
@@ -78,6 +82,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content?.length > 0) {
           this.driver = response.data.content[0];
+          this.photoBase64 = this.driver?.photo || '';
           this.resolveCityName();
         } else {
           this.toastService.showError('Error', 'No se encontró el conductor');
@@ -212,5 +217,60 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
     return Number.isNaN(n) || value === ''
       ? String(value ?? '')
       : new Intl.NumberFormat('es-CO').format(n);
+  }
+
+  triggerPhotoInput(photoInput: HTMLInputElement): void {
+    photoInput.click();
+  }
+
+  onPhotoSelected(event: Event): void {
+    CustomValidators.readPhotoFile(event).then(
+      (base64) => {
+        this.photoBase64 = base64;
+        this.savePhoto();
+      },
+      (err) => this.toastService.showError('Error', err),
+    );
+  }
+
+  removePhoto(): void {
+    this.photoBase64 = '';
+    this.savePhoto();
+  }
+
+  onCameraCapture(dataUrl: string): void {
+    this.photoBase64 = dataUrl;
+    this.showCamera = false;
+    this.savePhoto();
+  }
+
+  onCameraClose(): void {
+    this.showCamera = false;
+  }
+
+  savePhoto(): void {
+    if (!this.driver) return;
+
+    const driverToSave: ModelDriver = {
+      ...this.driver,
+      photo: this.photoBase64,
+    };
+
+    this.driverService.createDriver(driverToSave).subscribe({
+      next: () => {
+        this.toastService.showSuccess(
+          'Perfil',
+          'Fotografía actualizada exitosamente',
+        );
+        if (this.driver) this.driver.photo = this.photoBase64;
+      },
+      error: (err) => {
+        console.error('Error saving photo:', err);
+        this.toastService.showError(
+          'Error',
+          'No se pudo guardar la fotografía',
+        );
+      },
+    });
   }
 }

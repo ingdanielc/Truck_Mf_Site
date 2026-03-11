@@ -278,28 +278,58 @@
 
     <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
       <form [formGroup]="vehicleForm" (ngSubmit)="onSubmit()">
-        <!-- Photo Upload Section -->
         <div class="text-center mb-4">
+          <input
+            type="file"
+            #photoInput
+            class="d-none"
+            accept="image/*"
+            (change)="onPhotoSelected($event)"
+          />
           <div class="photo-upload-wrapper mx-auto position-relative">
             <div
-              class="photo-circle bg-body-secondary d-flex align-items-center justify-content-center overflow-hidden"
+              class="photo-circle bg-body-secondary d-flex align-items-center justify-content-center overflow-hidden cursor-pointer"
+              (click)="triggerPhotoInput(photoInput)"
+              onkeypress
             >
-              @if (vehicleForm.get("photo")?.value) {
+              @if (photoBase64) {
                 <img
-                  [src]="vehicleForm.get('photo')?.value"
-                  class="img-fluid w-100 h-100 object-fit-cover"
-                  alt="Vehículo"
+                  [src]="photoBase64"
+                  alt="Vista previa"
+                  class="w-100 h-100 object-fit-cover"
                 />
               } @else {
-                <i class="fa-solid fa-truck fs-3 text-body-secondary"></i>
+                <i class="fa-solid fa-camera fs-3 text-body-secondary"></i>
               }
             </div>
-            <span
+            <button
               type="button"
-              class="btn btn-primary btn-sm rounded-circle position-absolute photo-edit-btn"
+              class="btn btn-light btn-sm rounded-circle position-absolute photo-edit-btn shadow-sm d-none d-md-flex align-items-center justify-content-center"
+              aria-label="Editar foto"
+              (click)="triggerPhotoInput(photoInput)"
+              title="Seleccionar desde archivo"
             >
-              <i class="fa-solid fa-pencil"></i>
-            </span>
+              <i class="fa-solid fa-folder-open text-primary"></i>
+            </button>
+            <button
+              type="button"
+              class="btn btn-light btn-sm rounded-circle position-absolute photo-camera-btn shadow-sm"
+              aria-label="Cámara"
+              (click)="showCamera = true"
+              title="Tomar fotografía"
+            >
+              <i class="fa-solid fa-camera text-primary"></i>
+            </button>
+            @if (photoBase64) {
+              <button
+                type="button"
+                class="btn btn-danger btn-sm rounded-circle position-absolute photo-remove-btn"
+                aria-label="Eliminar foto"
+                (click)="removePhoto()"
+              >
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            }
           </div>
         </div>
 
@@ -605,5 +635,12 @@
       (click)="toggleOffcanvas()"
       onkeypress
     ></div>
+  }
+
+  @if (showCamera) {
+    <g-camera
+      (capture)="onCameraCapture($event)"
+      (close)="onCameraClose()"
+    ></g-camera>
   }
 </div>
