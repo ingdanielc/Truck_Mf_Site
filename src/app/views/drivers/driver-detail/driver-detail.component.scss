@@ -34,28 +34,36 @@
   .photo-edit-btn,
   .photo-camera-btn,
   .photo-remove-btn {
-    transition: all 0.2s ease;
-    border: 3px solid var(--bs-primary) !important;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease-in-out;
 
     &:hover {
       transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
     }
+  }
 
-    &:active {
-      transform: scale(0.95);
+  .photo-edit-btn {
+    bottom: -4px;
+    right: 5px;
+  }
+
+  .photo-camera-btn {
+    bottom: -4px;
+    right: 5px; // Default (mobile)
+
+    @media (min-width: 768px) {
+      right: 42px; // Side-by-side with edit on desktop
     }
   }
 
   .photo-remove-btn {
-    border-color: var(--bs-danger) !important;
-    background-color: var(--bs-body-bg) !important;
-    color: var(--bs-danger) !important;
-
-    &:hover {
-      background-color: var(--bs-danger) !important;
-      color: white !important;
-    }
+    top: 5px;
+    right: 5px;
   }
 
   .icon-box {

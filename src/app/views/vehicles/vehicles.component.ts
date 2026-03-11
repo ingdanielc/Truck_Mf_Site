@@ -457,7 +457,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
         const vehicleToSave: ModelVehicle = {
           id: this.editingVehicle?.id || undefined,
-          photo: formValue.photo || '',
+          photo: this.photoBase64,
           plate: formValue.plate,
           vehicleBrandId: Number(formValue.brand),
           model: formValue.model,

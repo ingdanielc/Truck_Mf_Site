@@ -50,8 +50,7 @@
               </div>
               <button
                 type="button"
-                class="btn btn-light btn-sm rounded-circle position-absolute photo-edit-btn shadow-sm d-flex align-items-center justify-content-center"
-                style="bottom: 5px; right: 45px; width: 32px; height: 32px"
+                class="btn btn-light btn-sm rounded-circle position-absolute photo-edit-btn shadow-sm d-none d-md-flex"
                 (click)="triggerPhotoInput(photoInput)"
                 title="Seleccionar foto"
               >
@@ -59,8 +58,7 @@
               </button>
               <button
                 type="button"
-                class="btn btn-light btn-sm rounded-circle position-absolute photo-camera-btn shadow-sm d-flex align-items-center justify-content-center"
-                style="bottom: 5px; right: 5px; width: 32px; height: 32px"
+                class="btn btn-light btn-sm rounded-circle position-absolute photo-camera-btn shadow-sm"
                 (click)="showCamera = true"
                 title="Tomar foto"
               >
@@ -69,8 +67,7 @@
               @if (photoBase64) {
                 <button
                   type="button"
-                  class="btn btn-danger btn-sm rounded-circle position-absolute photo-remove-btn shadow-sm d-flex align-items-center justify-content-center"
-                  style="top: 5px; right: 5px; width: 28px; height: 28px"
+                  class="btn btn-danger btn-sm rounded-circle position-absolute photo-remove-btn shadow-sm"
                   (click)="removePhoto()"
                   title="Eliminar foto"
                 >
