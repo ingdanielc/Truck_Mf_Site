@@ -165,20 +165,25 @@
 }
 
 .add-driver-tile {
-  min-height: 250px;
+  min-height: 180px;
   border-style: dashed !important;
-  border-width: 2px !important;
+  border-color: var(--bs-border-color) !important;
+  background: transparent;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
   cursor: pointer;
-  transition: all 0.2s ease;
 
   &:hover {
-    background-color: rgba(var(--bs-emphasis-color-rgb), 0.05);
     border-color: var(--bs-primary) !important;
     color: var(--bs-primary) !important;
-    transform: translateY(-2px);
+    background: rgba(var(--bs-primary-rgb), 0.05);
   }
+}
 
-  &:active {
-    transform: translateY(0);
-  }
+.add-driver-icon {
+  width: 40px;
+  height: 40px;
+  border-color: currentColor !important;
 }

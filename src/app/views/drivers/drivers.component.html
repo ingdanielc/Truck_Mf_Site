@@ -122,16 +122,20 @@
       }
       @if (userRole === "ADMINISTRADOR") {
         <div class="col">
-          <span
-            class="add-driver-tile border rounded-4 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
+          <div
+            class="add-driver-tile border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
             (click)="openAddDriverForOwner(group.owner)"
             (keypress)="openAddDriverForOwner(group.owner)"
             role="button"
             tabindex="0"
           >
-            <i class="fa-solid fa-user-plus fs-3"></i>
-            <span class="small fw-bold">Agregar Conductor</span>
-          </span>
+            <div
+              class="add-driver-icon rounded-circle border d-flex align-items-center justify-content-center"
+            >
+              <i class="fa-solid fa-plus"></i>
+            </div>
+            <span class="small fw-semibold">Agregar Conductor</span>
+          </div>
         </div>
       }
     </div>
