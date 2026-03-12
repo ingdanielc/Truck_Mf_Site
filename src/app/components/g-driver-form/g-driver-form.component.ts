@@ -251,6 +251,14 @@ export class GDriverFormComponent implements OnInit, OnChanges {
     this.driverForm.get('email')?.updateValueAndValidity();
     this.driverForm.get('password')?.updateValueAndValidity();
     this.driverForm.get('confirmPassword')?.updateValueAndValidity();
+
+    if (this.userRole === 'CONDUCTOR') {
+      this.driverForm.get('salaryTypeId')?.disable({ emitEvent: false });
+      this.driverForm.get('salary')?.disable({ emitEvent: false });
+    } else {
+      this.driverForm.get('salaryTypeId')?.enable({ emitEvent: false });
+      this.driverForm.get('salary')?.enable({ emitEvent: false });
+    }
   }
 
   updateSalaryValidators(salaryTypeId: number | null): void {
