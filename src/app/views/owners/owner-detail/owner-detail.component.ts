@@ -14,6 +14,8 @@ import { DriverService } from 'src/app/services/driver.service';
 import { TripService } from 'src/app/services/trip.service';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
+import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
+import { GOwnerFormComponent } from 'src/app/components/g-owner-form/g-owner-form.component';
 import {
   Filter,
   ModelFilterTable,
@@ -24,7 +26,13 @@ import {
 @Component({
   selector: 'app-owner-detail',
   standalone: true,
-  imports: [CommonModule, GVehicleMiniCardComponent, GCameraComponent],
+  imports: [
+    CommonModule,
+    GVehicleMiniCardComponent,
+    GCameraComponent,
+    GPasswordCardComponent,
+    GOwnerFormComponent,
+  ],
   templateUrl: './owner-detail.component.html',
   styleUrls: ['./owner-detail.component.scss'],
 })
@@ -43,6 +51,12 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   tripCount: number = 0;
   fromTrips: boolean = false;
   showCamera: boolean = false;
+  isAdmin: boolean = false;
+
+  // Offcanvas variables
+  isOffcanvasOpen: boolean = false;
+  isPasswordOffcanvasOpen: boolean = false;
+  isMenuOpen: boolean = false;
 
   private routeSub?: Subscription;
 
@@ -68,8 +82,8 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
       if (id) {
         this.ownerId = Number(id);
         this.owner = null; // Reset to avoid showing previous/incorrect data
-        this.loadCities();
         this.loadBrands();
+        this.loadCities();
         // Wait for user data to be available before validating access
         this.securityService.userData$.subscribe({
           next: (user) => {
@@ -115,8 +129,9 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
 
   validateAccess(ownerId: number, user: any): void {
     const roleName = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+    this.isAdmin = roleName === 'ADMINISTRADOR';
 
-    if (roleName === 'ADMINISTRADOR') {
+    if (this.isAdmin) {
       this.loadAllData(ownerId);
       return;
     }
@@ -528,5 +543,126 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
 
   onCameraClose(): void {
     this.showCamera = false;
+  }
+
+  // --- Offcanvas Methods ---
+
+  toggleOffcanvas(): void {
+    this.isOffcanvasOpen = !this.isOffcanvasOpen;
+    this.isMenuOpen = false;
+  }
+
+  onOwnerSaved(): void {
+    this.toggleOffcanvas();
+    if (this.ownerId) {
+      this.loadOwner(this.ownerId);
+    }
+  }
+
+  togglePasswordOffcanvas(): void {
+    this.isPasswordOffcanvasOpen = !this.isPasswordOffcanvasOpen;
+    this.isMenuOpen = false;
+  }
+
+  toggleMenu(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.isMenuOpen = !this.isMenuOpen;
+  }
+
+  async onUpdatePassword(passwords: any): Promise<void> {
+    if (!this.owner?.user?.id) {
+      this.toastService.showError(
+        'Error',
+        'No se encontró el usuario asociado al propietario',
+      );
+      return;
+    }
+
+    try {
+      const hashedNewPassword = await this.securityService.getHashSHA512(
+        passwords.newPassword,
+      );
+
+      this.securityService
+        .getUserFilter(
+          new ModelFilterTable(
+            [new Filter('id', '=', this.owner.user.id.toString())],
+            new Pagination(1, 0),
+            new Sort('id', true),
+          ),
+        )
+        .subscribe({
+          next: (response: any) => {
+            if (response?.data?.content?.[0]) {
+              const fullUser = response.data.content[0];
+              fullUser.password = hashedNewPassword;
+
+              this.securityService.createUser(fullUser).subscribe({
+                next: () => {
+                  this.toastService.showSuccess(
+                    'Seguridad',
+                    'Contraseña actualizada exitosamente',
+                  );
+                  this.togglePasswordOffcanvas();
+                },
+                error: (err: any) => {
+                  console.error('Error updating password:', err);
+                  this.toastService.showError(
+                    'Error',
+                    'No se pudo actualizar la contraseña',
+                  );
+                },
+              });
+            }
+          },
+          error: (err: any) => {
+            console.error('Error fetching user for password update:', err);
+          },
+        });
+    } catch (error) {
+      console.error('Error in onUpdatePassword:', error);
+    }
+  }
+
+  onToggleStatus(): void {
+    if (!this.owner?.user) {
+      this.toastService.showError(
+        'Error',
+        'No hay un usuario asociado a este propietario',
+      );
+      return;
+    }
+
+    const newStatus =
+      this.owner.user.status === 'Activo' ? 'Inactivo' : 'Activo';
+
+    const userToSave = {
+      ...this.owner.user,
+      status: newStatus,
+    };
+
+    this.isMenuOpen = false;
+
+    this.securityService.createUser(userToSave as any).subscribe({
+      next: () => {
+        this.toastService.showSuccess(
+          'Seguridad',
+          `Usuario ${newStatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente!`,
+        );
+        if (this.owner) {
+          if (this.owner.user) this.owner.user.status = newStatus;
+          this.owner.status = newStatus;
+        }
+      },
+      error: (err) => {
+        console.error('Error toggling user status:', err);
+        this.toastService.showError(
+          'Error',
+          'No se pudo cambiar el estado del usuario.',
+        );
+      },
+    });
   }
 }

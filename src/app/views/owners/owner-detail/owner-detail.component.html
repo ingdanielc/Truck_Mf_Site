@@ -19,6 +19,75 @@
     <div
       class="card border-0 rounded-4 shadow-sm bg-primary mb-4 overflow-hidden position-relative"
     >
+      <!-- Top Right Context Menu -->
+      <div class="position-absolute top-0 end-0 p-3 z-2">
+        <div class="dropdown">
+          <button
+            class="btn btn-link text-white p-2 shadow-none dropdown-toggle-hide-arrow"
+            type="button"
+            (click)="toggleMenu($event)"
+            aria-expanded="false"
+            aria-label="Menu"
+          >
+            <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
+          </button>
+          @if (isMenuOpen) {
+            <ul
+              class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
+            >
+              <li>
+                <button
+                  class="dropdown-item d-flex align-items-center gap-2 py-2"
+                  (click)="toggleMenu($event); togglePasswordOffcanvas()"
+                >
+                  <i class="fa-solid fa-key text-secondary"></i>
+                  <span>Cambiar contraseña</span>
+                </button>
+              </li>
+              @if (isAdmin) {
+                <li>
+                  <button
+                    class="dropdown-item d-flex align-items-center gap-2 py-2"
+                    [ngClass]="
+                      owner.user?.status === 'Activo'
+                        ? 'text-warning'
+                        : 'text-success'
+                    "
+                    (click)="toggleMenu($event); onToggleStatus()"
+                  >
+                    <i
+                      class="fa-solid"
+                      [ngClass]="
+                        owner.user?.status === 'Activo' ? 'fa-ban' : 'fa-check'
+                      "
+                    ></i>
+                    <span>{{
+                      owner.user?.status === "Activo"
+                        ? "Desactivar propietario"
+                        : "Activar propietario"
+                    }}</span>
+                  </button>
+                </li>
+              }
+              <li>
+                <button
+                  class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
+                  (click)="toggleMenu($event); toggleOffcanvas()"
+                >
+                  <i class="fa-solid fa-pencil"></i>
+                  <span>Editar propietario</span>
+                </button>
+              </li>
+            </ul>
+            <!-- Backdrop to close dropdown -->
+            <div
+              class="dropdown-backdrop"
+              (click)="toggleMenu($event)"
+              onkeypress
+            ></div>
+          }
+        </div>
+      </div>
       <div class="card-body p-4 p-md-5 position-relative z-1">
         <div class="row align-items-center gy-3">
           <div
@@ -128,7 +197,16 @@
                 >
                   Estado
                 </p>
-                <h5 class="fw-bold mb-0 text-success">Activo</h5>
+                <h5
+                  class="fw-bold mb-0"
+                  [ngClass]="
+                    owner.user?.status === 'Activo'
+                      ? 'text-success'
+                      : 'text-warning'
+                  "
+                >
+                  {{ owner.user?.status || "Inactivo" }}
+                </h5>
               </div>
               <div
                 class="card bg-dark bg-opacity-50 border-0 rounded-4 py-3 px-2 px-md-3 text-center"
@@ -225,6 +303,7 @@
         </h5>
         <button
           class="btn btn-link text-primary p-0 text-decoration-none small fw-bold"
+          (click)="toggleOffcanvas()"
         >
           Actualizar
         </button>
@@ -316,4 +395,51 @@
     (capture)="onCameraCapture($event)"
     (close)="onCameraClose()"
   ></g-camera>
+}
+
+<!-- Edit Owner Offcanvas -->
+<g-owner-form
+  [isOpen]="isOffcanvasOpen"
+  [owner]="owner"
+  (closed)="toggleOffcanvas()"
+  (saved)="onOwnerSaved()"
+>
+</g-owner-form>
+
+<!-- Change Password Offcanvas -->
+<div
+  class="custom-offcanvas shadow-lg border-start transition-all"
+  [class.open]="isPasswordOffcanvasOpen"
+>
+  <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
+    <div class="d-flex justify-content-between align-items-start w-100">
+      <h2 class="h4 fw-bold mb-0 text-body">Cambiar Contraseña</h2>
+      <button
+        type="button"
+        class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
+        (click)="togglePasswordOffcanvas()"
+        aria-label="Cerrar"
+      >
+        <i class="fa-solid fa-xmark fs-3"></i>
+      </button>
+    </div>
+    <p class="text-secondary small mb-0 mt-1">
+      {{ owner?.name }}
+    </p>
+  </div>
+  <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
+    <g-password-card
+      (update)="onUpdatePassword($event)"
+      (cancel)="togglePasswordOffcanvas()"
+    ></g-password-card>
+  </div>
+</div>
+
+<!-- Backdrop -->
+@if (isOffcanvasOpen || isPasswordOffcanvasOpen) {
+  <div
+    class="offcanvas-backdrop transition-all d-none d-md-block"
+    (click)="isOffcanvasOpen ? toggleOffcanvas() : togglePasswordOffcanvas()"
+    onkeypress
+  ></div>
 }

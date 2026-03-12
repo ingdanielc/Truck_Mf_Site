@@ -16,30 +16,31 @@ export class GOwnerCardComponent {
   @Output() changePassword = new EventEmitter<ModelOwner>();
   @Output() toggleStatus = new EventEmitter<ModelOwner>();
 
-  isMenuOpen = false;
+  @Input() isMenuOpen = false;
+  @Output() menuToggle = new EventEmitter<number | null>();
 
   constructor(private readonly router: Router) {}
 
   toggleMenu(event: Event): void {
     event.stopPropagation();
-    this.isMenuOpen = !this.isMenuOpen;
+    this.menuToggle.emit(this.isMenuOpen ? null : this.owner.id);
   }
 
   onChangePasswordClick(event?: Event): void {
     event?.stopPropagation();
-    this.isMenuOpen = false;
+    this.menuToggle.emit(null);
     this.changePassword.emit(this.owner);
   }
 
   onToggleStatusClick(event?: Event): void {
     event?.stopPropagation();
-    this.isMenuOpen = false;
+    this.menuToggle.emit(null);
     this.toggleStatus.emit(this.owner);
   }
 
   onEditClick(event?: Event): void {
     event?.stopPropagation();
-    this.isMenuOpen = false;
+    this.menuToggle.emit(null);
     this.edit.emit(this.owner);
   }
 
