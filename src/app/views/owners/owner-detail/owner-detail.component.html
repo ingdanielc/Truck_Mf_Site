@@ -23,18 +23,27 @@
       <div class="position-absolute top-0 end-0 p-3 z-2">
         <div class="dropdown">
           <button
-            class="btn btn-link text-white p-2 shadow-none dropdown-toggle-hide-arrow"
+            class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center"
+            style="width: 36px; height: 36px"
             type="button"
             (click)="toggleMenu($event)"
-            aria-expanded="false"
-            aria-label="Menu"
+            aria-label="Opciones"
           >
-            <i class="fa-solid fa-ellipsis-vertical fs-4"></i>
+            <i class="fa-solid fa-ellipsis-vertical"></i>
           </button>
           @if (isMenuOpen) {
             <ul
               class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
             >
+              <li>
+                <button
+                  class="dropdown-item d-flex align-items-center gap-2 py-2"
+                  (click)="toggleMenu($event); toggleOffcanvas()"
+                >
+                  <i class="fa-solid fa-pencil text-secondary"></i>
+                  <span>Editar propietario</span>
+                </button>
+              </li>
               <li>
                 <button
                   class="dropdown-item d-flex align-items-center gap-2 py-2"
@@ -69,15 +78,6 @@
                   </button>
                 </li>
               }
-              <li>
-                <button
-                  class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
-                  (click)="toggleMenu($event); toggleOffcanvas()"
-                >
-                  <i class="fa-solid fa-pencil"></i>
-                  <span>Editar propietario</span>
-                </button>
-              </li>
             </ul>
             <!-- Backdrop to close dropdown -->
             <div

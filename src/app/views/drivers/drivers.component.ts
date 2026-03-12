@@ -1,14 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
-
 import { ActivatedRoute, Router } from '@angular/router';
-import {
-  FormBuilder,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { GDriverCardComponent } from '../../components/g-driver-card/g-driver-card.component';
 import {
@@ -19,15 +11,14 @@ import {
 } from 'src/app/models/model-filter-table';
 import { GVehicleOwnerCardComponent } from '../../components/g-vehicle-owner-card/g-vehicle-owner-card.component';
 import { GPasswordCardComponent } from '../../components/g-password-card/g-password-card.component';
+import { GDriverFormComponent } from '../../components/g-driver-form/g-driver-form.component';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { CommonService } from '../../services/common.service';
-import { Subscription, firstValueFrom } from 'rxjs';
-import { CustomValidators } from 'src/app/utils/custom-validators';
+import { Subscription } from 'rxjs';
 import { OwnerService } from 'src/app/services/owner.service';
 import { ModelOwner } from 'src/app/models/owner-model';
-import { DocumentNumberPipe } from 'src/app/pipes/document-number.pipe';
 
 export interface DriverOwnerGroup {
   owner: ModelOwner;
@@ -39,12 +30,10 @@ export interface DriverOwnerGroup {
   standalone: true,
   imports: [
     FormsModule,
-    ReactiveFormsModule,
     GDriverCardComponent,
     GVehicleOwnerCardComponent,
     GPasswordCardComponent,
-    DocumentNumberPipe,
-    GCameraComponent,
+    GDriverFormComponent,
   ],
   templateUrl: './drivers.component.html',
   styleUrls: ['./drivers.component.scss'],
@@ -70,42 +59,22 @@ export class DriversComponent implements OnInit, OnDestroy {
   ownerIdFilter: number | null = null;
   filteredOwner: ModelOwner | null = null;
 
-  // Offcanvas and Form
+  // Offcanvas flags
   isOffcanvasOpen: boolean = false;
   editingDriver: ModelDriver | null = null;
-  driverForm!: FormGroup;
-  showPassword = false;
-  showConfirmPassword = false;
-  showCamera = false;
-  photoFile: File | Blob | null = null;
-  photoPreview: string = '';
+
+  // Data for lists and forms (passed to g-driver-form)
   documentTypes: any[] = [];
   genders: any[] = [];
   cities: any[] = [];
   groupedCities: { state: string; cities: any[] }[] = [];
-  licenseCategories: any[] = [
-    { id: 'a1', name: 'A1' },
-    { id: 'a2', name: 'A2' },
-    { id: 'b1', name: 'B1' },
-    { id: 'b2', name: 'B2' },
-    { id: 'b3', name: 'B3' },
-    { id: 'c1', name: 'C1' },
-    { id: 'c2', name: 'C2' },
-    { id: 'c3', name: 'C3' },
-  ];
   owners: ModelOwner[] = [];
-  showAccessData: boolean = false;
   salaryTypes: any[] = [];
-  salaryLabel: string = 'Valor Salario';
 
   isPasswordOffcanvasOpen: boolean = false;
   driverChangingPassword: ModelDriver | null = null;
 
-  maxDate: string = '';
-  defaultBirthdate: string = '';
-
   constructor(
-    private readonly fb: FormBuilder,
     private readonly driverService: DriverService,
     private readonly commonService: CommonService,
     private readonly securityService: SecurityService,
@@ -113,65 +82,7 @@ export class DriversComponent implements OnInit, OnDestroy {
     private readonly ownerService: OwnerService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-  ) {
-    this.driverForm = this.fb.group(
-      {
-        name: ['', [Validators.required, Validators.maxLength(150)]],
-        documentType: [null, [Validators.required]],
-        documentNumber: [
-          '',
-          [
-            Validators.required,
-            Validators.maxLength(13),
-            CustomValidators.duplicateValueValidator(
-              this.allDrivers,
-              'documentNumber',
-              this.editingDriver?.id,
-            ),
-          ],
-        ],
-        cellPhone: [
-          '',
-          [Validators.required, CustomValidators.phoneValidator()],
-        ],
-        birthdate: ['', [Validators.required]],
-        city: [null, [Validators.required]],
-        gender: [null, [Validators.required]],
-        licenseCategory: [null, [Validators.required]],
-        licenseExpiry: ['', [Validators.required]],
-        email: [
-          '',
-          [
-            Validators.required,
-            Validators.email,
-            CustomValidators.duplicateValueValidator(
-              this.allDrivers,
-              'email',
-              this.editingDriver?.id,
-            ),
-          ],
-        ],
-        password: [''],
-        confirmPassword: [''],
-        ownerId: [null, [Validators.required]],
-        salaryTypeId: [null, [Validators.required]],
-        salary: [null],
-      },
-      {
-        validators: [CustomValidators.passwordMatchValidator],
-      },
-    );
-    this.calculateDates();
-  }
-
-  private calculateDates(): void {
-    const today = new Date();
-    this.maxDate = today.toISOString().split('T')[0];
-
-    const eighteenYearsAgo = new Date();
-    eighteenYearsAgo.setFullYear(today.getFullYear() - 18);
-    this.defaultBirthdate = eighteenYearsAgo.toISOString().split('T')[0];
-  }
+  ) {}
 
   ngOnInit(): void {
     const rawOwnerId = this.route.snapshot.queryParamMap.get('ownerId');
@@ -182,6 +93,10 @@ export class DriversComponent implements OnInit, OnDestroy {
 
     this.subscribeToUserContext();
     this.loadReferenceData();
+  }
+
+  ngOnDestroy(): void {
+    this.userSub?.unsubscribe();
   }
 
   loadFilteredOwner(ownerId: number): void {
@@ -199,10 +114,6 @@ export class DriversComponent implements OnInit, OnDestroy {
       },
       error: (err: any) => console.error('Error loading filtered owner:', err),
     });
-  }
-
-  ngOnDestroy(): void {
-    this.userSub?.unsubscribe();
   }
 
   subscribeToUserContext(): void {
@@ -261,85 +172,15 @@ export class DriversComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data) {
           this.salaryTypes = response.data;
-          // After loading types, if editing, update label
-          if (this.editingDriver) {
-            this.updateSalaryValidators(
-              this.driverForm.get('salaryTypeId')?.value,
-            );
-          }
         }
       },
       error: (err: any) => console.error('Error loading salary types:', err),
     });
-
-    // Listener for salary type changes
-    this.driverForm.get('salaryTypeId')?.valueChanges.subscribe((value) => {
-      this.updateSalaryValidators(value);
-    });
-  }
-
-  updateSalaryValidators(salaryTypeId: number | null): void {
-    const salaryControl = this.driverForm.get('salary');
-
-    if (!salaryTypeId || salaryTypeId === null) {
-      this.salaryLabel = 'Valor Salario';
-      salaryControl?.clearValidators();
-      salaryControl?.updateValueAndValidity();
-      return;
-    }
-
-    const selectedType = this.salaryTypes.find(
-      (t) => t.id === Number(salaryTypeId),
-    );
-
-    if (selectedType?.name.toUpperCase().includes('PORCENTAJE')) {
-      this.salaryLabel = 'Porcentaje';
-      salaryControl?.setValidators([
-        Validators.required,
-        Validators.min(1),
-        Validators.max(100),
-      ]);
-    } else {
-      this.salaryLabel = 'Valor Salario';
-      salaryControl?.setValidators([
-        Validators.required,
-        Validators.min(1),
-        Validators.max(99999999),
-      ]);
-    }
-    salaryControl?.updateValueAndValidity();
-    // After updating validators, if there's a value, format it
-    if (salaryControl?.value) {
-      const masked = this.applyNumberMask(salaryControl.value.toString());
-      salaryControl.setValue(masked, { emitEvent: false });
-    }
-  }
-
-  onSalaryInput(event: any): void {
-    const input = event.target.value.replaceAll(/\D/g, ''); // Remove non-digits
-    const formatted = this.applyNumberMask(input);
-    this.driverForm.get('salary')?.setValue(formatted, { emitEvent: false });
-  }
-
-  private applyNumberMask(value: string): string {
-    if (!value) return '';
-    const numericValue = Number(value.replaceAll(/\D/g, ''));
-    if (Number.isNaN(numericValue)) return '';
-    return new Intl.NumberFormat('es-CO').format(numericValue);
-  }
-
-  onDocumentNumberInput(event: any): void {
-    const input = event.target.value.replaceAll(/\D/g, ''); // Remove non-digits
-    const formatted = this.applyNumberMask(input);
-    this.driverForm
-      .get('documentNumber')
-      ?.setValue(formatted, { emitEvent: false });
   }
 
   loadOwners(): void {
     let filtros: Filter[] = [];
     if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId != null) {
-      // Use user.Id to filter the owner record based on the logged-in user's ID
       filtros.push(new Filter('user.Id', '=', this.loggedInOwnerId.toString()));
     }
 
@@ -352,13 +193,10 @@ export class DriversComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content) {
           this.owners = response.data.content;
-          // If proprietor, ensure we have the correct owner.id from the response
           if (this.userRole === 'PROPIETARIO' && this.owners.length > 0) {
             this.loggedInOwnerId = this.owners[0].id ?? this.loggedInOwnerId;
-            // Now that we have the TRUE owner.id, load drivers
             this.loadDrivers();
           }
-          // After loading owners, if we already have drivers, build groups
           if (this.drivers.length > 0) {
             this.buildGroups();
           }
@@ -369,8 +207,7 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   fetchOwnerDetails(ownerId: number): void {
-    // Avoid duplicate requests if we are already fetching or have it
-    if (this.owners.some((o) => o.id === ownerId)) return;
+    if (this.owners.some((o: ModelOwner) => o.id === ownerId)) return;
 
     const filter = new ModelFilterTable(
       [new Filter('id', '=', ownerId.toString())],
@@ -382,7 +219,7 @@ export class DriversComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content?.[0]) {
           const owner = response.data.content[0];
-          if (!this.owners.some((o) => o.id === owner.id)) {
+          if (!this.owners.some((o: ModelOwner) => o.id === owner.id)) {
             this.owners.push(owner);
             this.buildGroups();
           }
@@ -405,378 +242,45 @@ export class DriversComponent implements OnInit, OnDestroy {
       .map(([state, cities]) => ({ state, cities }));
   }
 
-  get strength(): number {
-    const pwd = this.driverForm.get('password')?.value || '';
-    if (!pwd) return 0;
-    let s = 0;
-    if (pwd.length >= 6) s++;
-    if (/[A-Z]/.test(pwd)) s++;
-    if (/[0-9]/.test(pwd)) s++;
-    if (/[^A-Za-z0-9]/.test(pwd)) s++;
-    return s;
-  }
-
-  get strengthLabel(): string {
-    const s = this.strength;
-    if (s === 0) return '';
-    if (s <= 1) return 'Débil';
-    if (s === 2) return 'Media';
-    if (s === 3) return 'Buena';
-    return 'Fuerte';
-  }
-
-  onToggleAccessData(event: any): void {
-    this.showAccessData = event.target.checked;
-    const emailControl = this.driverForm.get('email');
-    const passwordControl = this.driverForm.get('password');
-    const confirmPasswordControl = this.driverForm.get('confirmPassword');
-
-    if (this.showAccessData) {
-      emailControl?.setValidators([
-        Validators.required,
-        Validators.email,
-        CustomValidators.duplicateValueValidator(
-          this.allDrivers,
-          'email',
-          this.editingDriver?.id,
-        ),
-      ]);
-      if (!this.editingDriver) {
-        passwordControl?.setValidators([
-          Validators.required,
-          Validators.minLength(4),
-        ]);
-        confirmPasswordControl?.setValidators([Validators.required]);
-      }
-    } else {
-      // Even if access data is hidden, we might still want the email in personal info (creation)
-      // The HTML will handle showing it in one place or another.
-      // For now, let's keep it required if specified by user request.
-      emailControl?.setValidators([
-        Validators.required,
-        Validators.email,
-        CustomValidators.duplicateValueValidator(
-          this.allDrivers,
-          'email',
-          this.editingDriver?.id,
-        ),
-      ]);
-      passwordControl?.clearValidators();
-      confirmPasswordControl?.clearValidators();
-    }
-
-    emailControl?.updateValueAndValidity();
-    passwordControl?.updateValueAndValidity();
-    confirmPasswordControl?.updateValueAndValidity();
-  }
-
   toggleOffcanvas(driver?: ModelDriver): void {
-    this.isOffcanvasOpen = !this.isOffcanvasOpen;
     this.editingDriver = driver || null;
-    this.photoFile = null;
-    this.photoPreview = driver?.photo || '';
-    this.showPassword = false;
-    this.showConfirmPassword = false;
-    if (this.isOffcanvasOpen) {
-      if (driver) {
-        this.editingDriver = driver;
-        this.driverForm.patchValue({
-          name: driver.name,
-          documentType: driver.documentTypeId,
-          documentNumber: this.applyNumberMask(
-            String(driver.documentNumber || ''),
-          ),
-          cellPhone: driver.cellPhone,
-          birthdate: driver.birthdate ? driver.birthdate.split('T')[0] : '',
-          city: driver.cityId,
-          gender: driver.genderId,
-          licenseCategory: driver.licenseCategory,
-          licenseExpiry: driver.licenseExpiry
-            ? driver.licenseExpiry.split('T')[0]
-            : '',
-          email: driver.email,
-          password: '',
-          confirmPassword: '',
-          ownerId: driver.ownerId,
-          salaryTypeId: driver.salaryTypeId,
-          salary: this.applyNumberMask(String(driver.salary || '')),
-        });
-
-        this.showAccessData = !!driver.email;
-        this.driverForm.get('documentType')?.disable();
-        this.driverForm.get('password')?.clearValidators();
-        this.driverForm.get('confirmPassword')?.clearValidators();
-        this.driverForm.get('password')?.updateValueAndValidity();
-        this.driverForm.get('confirmPassword')?.updateValueAndValidity();
-
-        // Update validators for edit mode
-        this.driverForm
-          .get('documentNumber')
-          ?.setValidators([
-            Validators.required,
-            Validators.maxLength(13),
-            CustomValidators.duplicateValueValidator(
-              this.allDrivers,
-              'documentNumber',
-              this.editingDriver.id,
-            ),
-          ]);
-        this.driverForm
-          .get('email')
-          ?.setValidators([
-            Validators.email,
-            CustomValidators.duplicateValueValidator(
-              this.allDrivers,
-              'email',
-              this.editingDriver.id,
-            ),
-          ]);
-        this.driverForm.get('documentNumber')?.updateValueAndValidity();
-        this.driverForm.get('email')?.updateValueAndValidity();
-        this.updateSalaryValidators(driver.salaryTypeId || null);
-      } else {
-        this.editingDriver = null;
-        this.driverForm.reset({
-          name: '',
-          documentNumber: '',
-          cellPhone: '',
-          birthdate: this.defaultBirthdate,
-          licenseExpiry: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-          ownerId:
-            this.userRole === 'ADMINISTRADOR' ? null : this.loggedInOwnerId,
-          salaryTypeId: null,
-          salary: null,
-        });
-
-        this.showAccessData = false;
-        this.onToggleAccessData({ target: { checked: false } });
-
-        // Default values: Cédula (usually name 'Cédula de Ciudadanía') and Masculino (usually name 'MASCULINO')
-        const cedulaType = this.documentTypes.find((t) =>
-          t.name.toUpperCase().includes('CÉDULA'),
-        );
-        const maleGender = this.genders.find((g) =>
-          g.name.toUpperCase().includes('MASCULINO'),
-        );
-
-        if (cedulaType)
-          this.driverForm.get('documentType')?.setValue(cedulaType.id);
-        if (maleGender) this.driverForm.get('gender')?.setValue(maleGender.id);
-
-        this.updateSalaryValidators(null);
-        this.driverForm.get('documentType')?.enable();
-
-        // Reset validators for create mode
-        this.driverForm
-          .get('documentNumber')
-          ?.setValidators([
-            Validators.required,
-            Validators.maxLength(13),
-            CustomValidators.duplicateValueValidator(
-              this.allDrivers,
-              'documentNumber',
-              null,
-            ),
-          ]);
-        this.driverForm
-          .get('email')
-          ?.setValidators([
-            Validators.email,
-            CustomValidators.duplicateValueValidator(
-              this.allDrivers,
-              'email',
-              null,
-            ),
-          ]);
-        this.driverForm.get('documentNumber')?.updateValueAndValidity();
-        this.driverForm.get('email')?.updateValueAndValidity();
-        this.updateSalaryValidators(null);
-      }
-    } else {
-      this.editingDriver = null;
-      this.driverForm.reset();
-    }
+    this.isOffcanvasOpen = !this.isOffcanvasOpen;
   }
 
-  async onSubmit(): Promise<void> {
-    if (this.driverForm.valid) {
-      try {
-        const formValue = this.driverForm.getRawValue();
-        let password = formValue.password;
+  onDriverSaved(): void {
+    this.isOffcanvasOpen = false;
+    this.loadDrivers();
+  }
 
-        if (password) {
-          password = await this.securityService.getHashSHA512(password);
-        }
+  onToggleDriverStatus(driver: ModelDriver): void {
+    if (!driver.user) return;
 
-        if (this.editingDriver) {
-          let photoUrl = this.editingDriver.photo || '';
+    const newStatus = driver.user.status === 'Activo' ? 'Inactivo' : 'Activo';
+    const userToSave = { ...driver.user, status: newStatus };
 
-          if (this.photoFile) {
-            try {
-              const uploadRes = await firstValueFrom(
-                this.commonService.uploadPhoto(
-                  'driver',
-                  this.editingDriver.id!,
-                  this.photoFile,
-                ),
-              );
-              photoUrl = uploadRes?.data || photoUrl;
-            } catch (uploadErr) {
-              console.error('Error uploading photo:', uploadErr);
-            }
-          }
-
-          const driverToSave: ModelDriver = {
-            id: this.editingDriver.id,
-            name: formValue.name,
-            documentTypeId: formValue.documentType,
-            documentNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
-            cellPhone: formValue.cellPhone,
-            birthdate: formValue.birthdate,
-            cityId: formValue.city,
-            genderId: formValue.gender,
-            licenseCategory: formValue.licenseCategory,
-            licenseNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
-            licenseExpiry: formValue.licenseExpiry,
-            email: formValue.email || undefined,
-            password: this.showAccessData ? password || null : null,
-            status: this.editingDriver.status || 'Activo',
-            photo: photoUrl,
-            ownerId:
-              this.userRole === 'ADMINISTRADOR'
-                ? formValue.ownerId
-                : this.loggedInOwnerId || undefined,
-            salaryTypeId: formValue.salaryTypeId,
-            salary: formValue.salary
-              ? Number(formValue.salary.toString().replaceAll(/\D/g, ''))
-              : undefined,
-          };
-
-          this.driverService.createDriver(driverToSave).subscribe({
-            next: (response: any) => {
-              this.toastService.showSuccess(
-                'Gestión de Conductores',
-                'Conductor actualizado exitosamente!',
-              );
-
-              const updatedDriver = response?.data || driverToSave;
-              const index = this.allDrivers.findIndex(
-                (d) => d.id === this.editingDriver?.id,
-              );
-              if (index !== -1) {
-                this.allDrivers[index] = {
-                  ...this.allDrivers[index],
-                  ...updatedDriver,
-                };
-              }
-
-              this.applyFilter();
-              this.toggleOffcanvas();
-              this.loadDrivers();
-            },
-            error: (err: any) => {
-              console.error('Error saving driver:', err);
-              this.toastService.showError(
-                'Error',
-                'No se pudo procesar la solicitud.',
-              );
-            },
-          });
-        } else {
-          // CREATE
-          const driverToSave: ModelDriver = {
-            id: null,
-            name: formValue.name,
-            documentTypeId: formValue.documentType,
-            documentNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
-            cellPhone: formValue.cellPhone,
-            birthdate: formValue.birthdate,
-            cityId: formValue.city,
-            genderId: formValue.gender,
-            licenseCategory: formValue.licenseCategory,
-            licenseNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
-            licenseExpiry: formValue.licenseExpiry,
-            email: formValue.email || undefined,
-            password: this.showAccessData ? password || null : null,
-            status: 'Activo',
-            photo: '',
-            ownerId:
-              this.userRole === 'ADMINISTRADOR'
-                ? formValue.ownerId
-                : this.loggedInOwnerId || undefined,
-            salaryTypeId: formValue.salaryTypeId,
-            salary: formValue.salary
-              ? Number(formValue.salary.toString().replaceAll(/\D/g, ''))
-              : undefined,
-          };
-
-          this.driverService.createDriver(driverToSave).subscribe({
-            next: async (response: any) => {
-              const savedDriver = response?.data;
-              const newId: number | null = savedDriver?.id ?? null;
-
-              if (this.photoFile && newId) {
-                try {
-                  const uploadRes = await firstValueFrom(
-                    this.commonService.uploadPhoto(
-                      'driver',
-                      newId,
-                      this.photoFile,
-                    ),
-                  );
-                  const photoUrl = uploadRes?.data || '';
-
-                  if (photoUrl) {
-                    const driverWithPhoto: ModelDriver = {
-                      ...savedDriver,
-                      photo: photoUrl,
-                    };
-                    this.driverService.createDriver(driverWithPhoto).subscribe({
-                      error: (err) =>
-                        console.error('Error updating photo URL:', err),
-                    });
-                  }
-                } catch (uploadErr) {
-                  console.error(
-                    'Error uploading photo after create:',
-                    uploadErr,
-                  );
-                }
-              }
-
-              this.toastService.showSuccess(
-                'Gestión de Conductores',
-                'Conductor creado exitosamente!',
-              );
-
-              this.applyFilter();
-              this.toggleOffcanvas();
-              this.loadDrivers();
-            },
-            error: (err: any) => {
-              console.error('Error saving driver:', err);
-              this.toastService.showError(
-                'Error',
-                'No se pudo procesar la solicitud.',
-              );
-            },
-          });
-        }
-      } catch (error) {
-        console.error('Error in onSubmit:', error);
-      }
-    } else {
-      this.driverForm.markAllAsTouched();
-    }
+    this.securityService.createUser(userToSave as any).subscribe({
+      next: () => {
+        // Update local model without reloading
+        driver.user!.status = newStatus;
+        this.calculateStats();
+        this.toastService.showSuccess(
+          'Conductor',
+          `Conductor ${newStatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente`,
+        );
+      },
+      error: (err: any) => {
+        console.error('Error toggling driver status:', err);
+        this.toastService.showError(
+          'Error',
+          'No se pudo cambiar el estado del conductor',
+        );
+      },
+    });
   }
 
   loadDrivers(): void {
     let filtros: Filter[] = [];
 
-    // Filter by owner if user is PROPIETARIO
     if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId != null) {
       filtros.push(new Filter('ownerId', '=', this.loggedInOwnerId.toString()));
     } else if (
@@ -800,14 +304,14 @@ export class DriversComponent implements OnInit, OnDestroy {
           this.calculateStats();
           this.applyFilter();
 
-          // Identify unique missing owners and fetch their details
           const missingOwnerIds = [
             ...new Set(
               this.allDrivers
                 .map((d) => d.ownerId)
                 .filter(
                   (id): id is number =>
-                    id != null && !this.owners.some((o) => o.id === id),
+                    id != null &&
+                    !this.owners.some((o: ModelOwner) => o.id === id),
                 ),
             ),
           ];
@@ -854,7 +358,6 @@ export class DriversComponent implements OnInit, OnDestroy {
     const groups = new Map<string, DriverOwnerGroup>();
     const noOwnerKey = '__sin_propietario__';
 
-    // Always include the filtered owner if present and no search term is active
     if (this.filteredOwner && !this.searchTerm) {
       const key = String(this.filteredOwner.id);
       groups.set(key, { owner: this.filteredOwner, drivers: [] });
@@ -898,7 +401,6 @@ export class DriversComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Convert map to array and sort: named owners alphabetically, "Sin socio" last
     const result = Array.from(groups.values()).sort((a, b) => {
       const aName = a.owner.name ?? '';
       const bName = b.owner.name ?? '';
@@ -926,12 +428,10 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   openAddDriverForOwner(owner: ModelOwner): void {
-    this.toggleOffcanvas();
+    this.editingDriver = null;
+    this.isOffcanvasOpen = true;
     if (owner.id) {
-      this.driverForm.get('ownerId')?.setValue(owner.id);
-      if (this.userRole === 'PROPIETARIO') {
-        this.driverForm.get('ownerId')?.disable();
-      }
+      this.editingDriver = { ownerId: owner.id } as ModelDriver;
     }
   }
 
@@ -941,40 +441,6 @@ export class DriversComponent implements OnInit, OnDestroy {
 
   onViewDriver(driver: ModelDriver): void {
     this.router.navigate(['/site/drivers', driver.id]);
-  }
-
-  allowOnlyNumbers(event: any): void {
-    if (!/[0-9]/.test(String.fromCharCode(event.charCode)))
-      event.preventDefault();
-  }
-
-  formatCellPhone(event: any): void {
-    const input = event.target.value.replaceAll(/\D/g, ''); // Remove non-digits
-    const formatted = this.applyPhoneMask(input);
-    this.driverForm.get('cellPhone')?.setValue(formatted, { emitEvent: true });
-  }
-
-  private applyPhoneMask(input: string): string {
-    let unmasked = input.replaceAll(/\D/g, '');
-    if (unmasked.length > 10) {
-      unmasked = unmasked.substring(0, 10);
-    }
-
-    let formatted = '';
-    if (unmasked.length > 0) {
-      formatted = unmasked.substring(0, 3);
-    }
-    if (unmasked.length > 3) {
-      formatted += ' ' + unmasked.substring(3, 6);
-    }
-    if (unmasked.length > 6) {
-      formatted += ' ' + unmasked.substring(6, 8);
-    }
-    if (unmasked.length > 8) {
-      formatted += ' ' + unmasked.substring(8, 10);
-    }
-
-    return formatted;
   }
 
   togglePasswordOffcanvas(driver?: ModelDriver): void {
@@ -996,7 +462,6 @@ export class DriversComponent implements OnInit, OnDestroy {
         passwords.newPassword,
       );
 
-      // Fetch full user to update
       this.securityService
         .getUserFilter(
           new ModelFilterTable(
@@ -1046,45 +511,5 @@ export class DriversComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error in onUpdatePassword:', error);
     }
-  }
-
-  triggerPhotoInput(photoInput: HTMLInputElement): void {
-    photoInput.click();
-  }
-
-  onPhotoSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    CustomValidators.readPhotoFile(event).then(
-      (base64) => {
-        this.photoFile = file;
-        this.photoPreview = base64;
-      },
-      (err) => this.toastService.showError('Error', err),
-    );
-  }
-
-  removePhoto(): void {
-    this.photoFile = null;
-    this.photoPreview = '';
-  }
-
-  onCameraCapture(dataUrl: string): void {
-    const byteString = atob(dataUrl.split(',')[1]);
-    const mimeType = dataUrl.split(',')[0].split(':')[1].split(';')[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-    this.photoFile = new Blob([ab], { type: mimeType });
-    this.photoPreview = dataUrl;
-    this.showCamera = false;
-  }
-
-  onCameraClose(): void {
-    this.showCamera = false;
   }
 }

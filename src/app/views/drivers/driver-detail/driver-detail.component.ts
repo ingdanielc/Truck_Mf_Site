@@ -8,9 +8,12 @@ import { TripService } from 'src/app/services/trip.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { CommonService } from 'src/app/services/common.service';
 import { ToastService } from 'src/app/services/toast.service';
+import { SecurityService } from 'src/app/services/security/security.service';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
+import { GDriverFormComponent } from 'src/app/components/g-driver-form/g-driver-form.component';
+import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
 import {
   Filter,
   ModelFilterTable,
@@ -21,7 +24,13 @@ import {
 @Component({
   selector: 'app-driver-detail',
   standalone: true,
-  imports: [CommonModule, GVehicleMiniCardComponent, GCameraComponent],
+  imports: [
+    CommonModule,
+    GVehicleMiniCardComponent,
+    GCameraComponent,
+    GDriverFormComponent,
+    GPasswordCardComponent,
+  ],
   templateUrl: './driver-detail.component.html',
   styleUrls: ['./driver-detail.component.scss'],
 })
@@ -40,6 +49,21 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   showCamera: boolean = false;
   photoPreview: string = '';
 
+  // Context menu
+  isMenuOpen: boolean = false;
+  userRole: string = '';
+  private userSub?: Subscription;
+
+  // Offcanvas states
+  isEditOffcanvasOpen: boolean = false;
+  isPasswordOffcanvasOpen: boolean = false;
+
+  // Reference data for g-driver-form
+  documentTypes: any[] = [];
+  genders: any[] = [];
+  salaryTypes: any[] = [];
+  owners: any[] = [];
+
   private routeSub?: Subscription;
 
   constructor(
@@ -50,9 +74,17 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
     private readonly vehicleService: VehicleService,
     private readonly commonService: CommonService,
     private readonly toastService: ToastService,
+    private readonly securityService: SecurityService,
   ) {}
 
   ngOnInit(): void {
+    this.userSub = this.securityService.userData$.subscribe({
+      next: (user: any) => {
+        if (user) {
+          this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+        }
+      },
+    });
     this.routeSub = this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
       if (id) {
@@ -62,12 +94,14 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
         this.loadDriver(this.driverId);
         this.loadVehicles(this.driverId);
         this.loadTripCount(this.driverId);
+        this.loadReferenceData();
       }
     });
   }
 
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
+    this.userSub?.unsubscribe();
   }
 
   loadDriver(id: number): void {
@@ -94,6 +128,24 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
         this.toastService.showError('Error', 'Error al cargar el conductor');
         this.loading = false;
         this.goBack();
+      },
+    });
+  }
+
+  loadReferenceData(): void {
+    this.commonService.getListTypeDocument().subscribe({
+      next: (response: any) => {
+        if (response?.data) this.documentTypes = response.data;
+      },
+    });
+    this.commonService.getGenders().subscribe({
+      next: (response: any) => {
+        if (response?.data) this.genders = response.data;
+      },
+    });
+    this.commonService.getSalaryTypes().subscribe({
+      next: (response: any) => {
+        if (response?.data) this.salaryTypes = response.data;
       },
     });
   }
@@ -195,6 +247,10 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
     };
   }
 
+  get isActive(): boolean {
+    return !this.driver?.user || this.driver.user.status === 'Activo';
+  }
+
   goBack(): void {
     this.router.navigate(['/site/drivers']);
   }
@@ -217,6 +273,136 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
       ? String(value ?? '')
       : new Intl.NumberFormat('es-CO').format(n);
   }
+
+  // ─── Context Menu ────────────────────────────────────────────────────────────
+
+  toggleMenu(event?: Event): void {
+    event?.stopPropagation();
+    this.isMenuOpen = !this.isMenuOpen;
+  }
+
+  // ─── Edit Offcanvas ──────────────────────────────────────────────────────────
+
+  openEditOffcanvas(): void {
+    this.isMenuOpen = false;
+    this.isEditOffcanvasOpen = true;
+  }
+
+  closeEditOffcanvas(): void {
+    this.isEditOffcanvasOpen = false;
+  }
+
+  onDriverSaved(): void {
+    this.isEditOffcanvasOpen = false;
+    if (this.driverId) this.loadDriver(this.driverId);
+  }
+
+  // ─── Password Offcanvas ──────────────────────────────────────────────────────
+
+  openPasswordOffcanvas(): void {
+    this.isMenuOpen = false;
+    this.isPasswordOffcanvasOpen = true;
+  }
+
+  closePasswordOffcanvas(): void {
+    this.isPasswordOffcanvasOpen = false;
+  }
+
+  async onUpdatePassword(passwords: any): Promise<void> {
+    if (!this.driver?.user?.id) {
+      this.toastService.showError(
+        'Error',
+        'No se encontró el usuario asociado al conductor',
+      );
+      return;
+    }
+
+    try {
+      const hashedNewPassword = await this.securityService.getHashSHA512(
+        passwords.newPassword,
+      );
+
+      this.securityService
+        .getUserFilter(
+          new ModelFilterTable(
+            [new Filter('id', '=', this.driver.user.id.toString())],
+            new Pagination(1, 0),
+            new Sort('id', true),
+          ),
+        )
+        .subscribe({
+          next: (response: any) => {
+            if (response?.data?.content?.[0]) {
+              const fullUser = response.data.content[0];
+              fullUser.password = hashedNewPassword;
+
+              this.securityService.createUser(fullUser).subscribe({
+                next: () => {
+                  this.toastService.showSuccess(
+                    'Seguridad',
+                    'Contraseña actualizada exitosamente',
+                  );
+                  this.closePasswordOffcanvas();
+                },
+                error: (err: any) => {
+                  console.error('Error updating password:', err);
+                  this.toastService.showError(
+                    'Error',
+                    'No se pudo actualizar la contraseña',
+                  );
+                },
+              });
+            }
+          },
+          error: (err: any) => {
+            console.error('Error fetching user:', err);
+            this.toastService.showError(
+              'Error',
+              'No se pudo obtener la información del usuario',
+            );
+          },
+        });
+    } catch (error) {
+      console.error('Error in onUpdatePassword:', error);
+    }
+  }
+
+  // ─── Toggle Status ───────────────────────────────────────────────────────────
+
+  onToggleStatus(): void {
+    if (!this.driver?.user) {
+      this.toastService.showError(
+        'Error',
+        'No hay un usuario asociado a este conductor',
+      );
+      return;
+    }
+
+    const newStatus =
+      this.driver.user.status === 'Activo' ? 'Inactivo' : 'Activo';
+    const userToSave = { ...this.driver.user, status: newStatus };
+
+    this.isMenuOpen = false;
+
+    this.securityService.createUser(userToSave as any).subscribe({
+      next: () => {
+        this.driver!.user!.status = newStatus;
+        this.toastService.showSuccess(
+          'Conductor',
+          `Conductor ${newStatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente`,
+        );
+      },
+      error: (err: any) => {
+        console.error('Error toggling status:', err);
+        this.toastService.showError(
+          'Error',
+          'No se pudo cambiar el estado del conductor',
+        );
+      },
+    });
+  }
+
+  // ─── Photo from hero card ─────────────────────────────────────────────────
 
   triggerPhotoInput(photoInput: HTMLInputElement): void {
     photoInput.click();
@@ -253,7 +439,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
     const ab = new ArrayBuffer(byteString.length);
     const ia = new Uint8Array(ab);
     for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
+      ia[i] = byteString.charCodeAt(i);
     }
     const file = new Blob([ab], { type: mimeType });
 

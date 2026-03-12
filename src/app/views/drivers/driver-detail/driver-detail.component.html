@@ -15,11 +15,81 @@
         </div>
       </div>
     </div>
+
     <!-- Hero Section -->
     <div
       class="card border-0 rounded-4 shadow-sm bg-primary mb-4 overflow-hidden position-relative"
     >
       <div class="card-body p-4 p-md-5 position-relative z-1">
+        <!-- Context menu (top-right inside hero) -->
+        <div
+          class="dropdown position-absolute top-0 end-0 m-3"
+          style="z-index: 10"
+        >
+          <button
+            class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center"
+            style="width: 36px; height: 36px"
+            type="button"
+            (click)="toggleMenu($event)"
+            aria-label="Opciones"
+          >
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+          </button>
+          @if (isMenuOpen) {
+            <ul
+              class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 d-block"
+              style="
+                min-width: 220px;
+                top: calc(100% + 4px);
+                right: 0;
+                left: auto;
+              "
+            >
+              <li>
+                <button
+                  class="dropdown-item d-flex align-items-center gap-2 py-2"
+                  (click)="toggleMenu(); openEditOffcanvas()"
+                >
+                  <i class="fa-solid fa-pencil text-secondary"></i>
+                  <span>Editar conductor</span>
+                </button>
+              </li>
+              @if (driver.user) {
+                <li>
+                  <button
+                    class="dropdown-item d-flex align-items-center gap-2 py-2"
+                    (click)="toggleMenu(); openPasswordOffcanvas()"
+                  >
+                    <i class="fa-solid fa-key text-secondary"></i>
+                    <span>Cambiar contraseña</span>
+                  </button>
+                </li>
+                @if (userRole === "ADMINISTRADOR") {
+                  <li>
+                    <button
+                      class="dropdown-item d-flex align-items-center gap-2 py-2"
+                      [ngClass]="isActive ? 'text-warning' : 'text-success'"
+                      (click)="toggleMenu(); onToggleStatus()"
+                    >
+                      <i
+                        class="fa-solid"
+                        [ngClass]="isActive ? 'fa-ban' : 'fa-check'"
+                      ></i>
+                      <span>{{
+                        isActive ? "Desactivar conductor" : "Activar conductor"
+                      }}</span>
+                    </button>
+                  </li>
+                }
+              }
+            </ul>
+            <div
+              class="dropdown-backdrop"
+              (click)="toggleMenu($event)"
+              onkeypress
+            ></div>
+          }
+        </div>
         <div class="row align-items-center gy-3">
           <div
             class="col-12 col-md-auto d-flex justify-content-center justify-content-md-start"
@@ -124,7 +194,12 @@
                 >
                   Estado
                 </p>
-                <h5 class="fw-bold mb-0 text-success">Activo</h5>
+                <h5
+                  class="fw-bold mb-0"
+                  [ngClass]="isActive ? 'text-success' : 'text-secondary'"
+                >
+                  {{ isActive ? "Activo" : "Inactivo" }}
+                </h5>
               </div>
               <div
                 class="card bg-dark bg-opacity-50 border-0 rounded-4 p-3 text-center"
@@ -209,6 +284,12 @@
             >
               <i class="fa-solid fa-user"></i> Información Personal
             </h5>
+            <button
+              class="btn btn-link text-primary p-0 text-decoration-none small fw-bold"
+              (click)="openEditOffcanvas()"
+            >
+              Actualizar
+            </button>
           </div>
           <div class="card-body p-4">
             <div class="row g-4">
@@ -335,4 +416,61 @@
     (capture)="onCameraCapture($event)"
     (close)="onCameraClose()"
   ></g-camera>
+}
+
+<!-- Edit Driver Offcanvas -->
+<g-driver-form
+  [isOpen]="isEditOffcanvasOpen"
+  [driver]="driver"
+  [documentTypes]="documentTypes"
+  [genders]="genders"
+  [cities]="cities"
+  [salaryTypes]="salaryTypes"
+  [owners]="owners"
+  [allDrivers]="[]"
+  [userRole]="''"
+  [loggedInOwnerId]="null"
+  (closed)="closeEditOffcanvas()"
+  (saved)="onDriverSaved()"
+></g-driver-form>
+
+<!-- Change Password Offcanvas -->
+@if (driver?.user) {
+  <div
+    class="custom-offcanvas shadow-lg border-start transition-all"
+    [class.open]="isPasswordOffcanvasOpen"
+  >
+    <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-start w-100">
+        <h2 class="h4 fw-bold mb-0 text-body">Cambiar Contraseña</h2>
+        <button
+          type="button"
+          class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
+          (click)="closePasswordOffcanvas()"
+          onkeypress
+          aria-label="Cerrar"
+        >
+          <i class="fa-solid fa-xmark fs-3"></i>
+        </button>
+      </div>
+      <p class="text-secondary small mb-0 mt-1">{{ driver?.name }}</p>
+    </div>
+    <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
+      <g-password-card
+        (update)="onUpdatePassword($event)"
+        (cancel)="closePasswordOffcanvas()"
+      ></g-password-card>
+    </div>
+  </div>
+}
+
+<!-- Backdrop -->
+@if (isEditOffcanvasOpen || isPasswordOffcanvasOpen) {
+  <div
+    class="offcanvas-backdrop transition-all d-none d-md-block"
+    (click)="
+      isEditOffcanvasOpen ? closeEditOffcanvas() : closePasswordOffcanvas()
+    "
+    onkeypress
+  ></div>
 }

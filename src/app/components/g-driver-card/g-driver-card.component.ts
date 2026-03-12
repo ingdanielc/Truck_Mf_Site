@@ -14,6 +14,7 @@ export class GDriverCardComponent {
   @Input() salaryTypes: any[] = [];
   @Output() edit = new EventEmitter<ModelDriver>();
   @Output() changePassword = new EventEmitter<ModelDriver>();
+  @Output() toggleStatus = new EventEmitter<ModelDriver>();
   @Output() viewDetail = new EventEmitter<ModelDriver>();
 
   isMenuOpen = false;
@@ -42,6 +43,10 @@ export class GDriverCardComponent {
     this.isMenuOpen = !this.isMenuOpen;
   }
 
+  closeMenu(): void {
+    this.isMenuOpen = false;
+  }
+
   onEditClick(event?: Event): void {
     event?.stopPropagation();
     this.isMenuOpen = false;
@@ -54,21 +59,28 @@ export class GDriverCardComponent {
     this.changePassword.emit(this.driver);
   }
 
+  onToggleStatusClick(event?: Event): void {
+    event?.stopPropagation();
+    this.isMenuOpen = false;
+    this.toggleStatus.emit(this.driver);
+  }
+
   onViewProfile(): void {
     if (this.isMenuOpen) return;
     this.viewDetail.emit(this.driver);
   }
 
-  get statusClass(): string {
+  get isActive(): boolean {
     const status = this.driver.user?.status;
-    const isActive = !this.driver.user || status === 'Activo';
-    return isActive ? 'bg-success' : 'bg-secondary';
+    return !this.driver.user || status === 'Activo';
+  }
+
+  get statusClass(): string {
+    return this.isActive ? 'bg-success' : 'bg-secondary';
   }
 
   get statusName(): string {
-    const status = this.driver.user?.status;
-    const isActive = !this.driver.user || status === 'Activo';
-    return isActive ? 'Activo' : 'Inactivo';
+    return this.isActive ? 'Activo' : 'Inactivo';
   }
 
   get formattedCellPhone(): string {
