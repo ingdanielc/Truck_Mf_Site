@@ -110,7 +110,7 @@ export const CATEGORY_UI_CONFIG: Record<string, CategoryConfig> = {
     icon: 'fa-solid fa-plug',
     colorClass: 'text-warning bg-warning',
   },
-  'alimentacion conductor': {
+  'alimentación conductor': {
     name: 'ALIMENTACION CONDUCTOR',
     icon: 'fa-solid fa-utensils',
     colorClass: 'text-success bg-success',
@@ -155,8 +155,8 @@ export const CATEGORY_UI_CONFIG: Record<string, CategoryConfig> = {
     icon: 'fa-solid fa-dolly',
     colorClass: 'text-secondary bg-secondary',
   },
-  '4x1000 banco': {
-    name: '4X1000 BANCO',
+  'impuesto 4x1000': {
+    name: 'Impuesto 4x1000',
     icon: 'fa-solid fa-bank',
     colorClass: 'text-info bg-info',
   },

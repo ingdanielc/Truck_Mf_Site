@@ -52,7 +52,30 @@
               </li>
               <li>
                 <button
-                  class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
+                  class="dropdown-item d-flex align-items-center gap-2 py-2"
+                  [ngClass]="
+                    owner.user!.status === 'Activo'
+                      ? 'text-warning'
+                      : 'text-success'
+                  "
+                  (click)="onToggleStatusClick($event)"
+                >
+                  <i
+                    class="fa-solid"
+                    [ngClass]="
+                      owner.user!.status === 'Activo' ? 'fa-ban' : 'fa-check'
+                    "
+                  ></i>
+                  <span>{{
+                    owner.user!.status === "Activo"
+                      ? "Desactivar propietario"
+                      : "Activar propietario"
+                  }}</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item d-flex align-items-center gap-2 py-2 text-dark-emphasis"
                   (click)="onEditClick($event)"
                 >
                   <i class="fa-solid fa-pencil"></i>

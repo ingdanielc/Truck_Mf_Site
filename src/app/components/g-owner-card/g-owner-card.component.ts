@@ -14,6 +14,7 @@ export class GOwnerCardComponent {
   @Input() owner!: ModelOwner;
   @Output() edit = new EventEmitter<ModelOwner>();
   @Output() changePassword = new EventEmitter<ModelOwner>();
+  @Output() toggleStatus = new EventEmitter<ModelOwner>();
 
   isMenuOpen = false;
 
@@ -28,6 +29,12 @@ export class GOwnerCardComponent {
     event?.stopPropagation();
     this.isMenuOpen = false;
     this.changePassword.emit(this.owner);
+  }
+
+  onToggleStatusClick(event?: Event): void {
+    event?.stopPropagation();
+    this.isMenuOpen = false;
+    this.toggleStatus.emit(this.owner);
   }
 
   onEditClick(event?: Event): void {
