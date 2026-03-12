@@ -457,6 +457,8 @@
     </div>
     <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
       <g-password-card
+        [userEmail]="driver?.email || ''"
+        [requiresCurrentPasswordValidation]="userRole !== 'ADMINISTRADOR'"
         (update)="onUpdatePassword($event)"
         (cancel)="closePasswordOffcanvas()"
       ></g-password-card>

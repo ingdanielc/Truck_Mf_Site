@@ -125,6 +125,7 @@
             [user]="user"
             (edit)="toggleOffcanvas($event)"
             (changePassword)="togglePasswordOffcanvas($event)"
+            (toggleStatus)="onToggleStatus($event)"
           ></g-user-card>
         </div>
       }
@@ -457,6 +458,8 @@
 
     <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
       <g-password-card
+        [userEmail]="userChangingPassword?.email || ''"
+        [requiresCurrentPasswordValidation]="userRole !== 'ADMINISTRADOR'"
         (update)="onUpdatePassword($event)"
         (cancel)="togglePasswordOffcanvas()"
       ></g-password-card>

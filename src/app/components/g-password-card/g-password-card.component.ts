@@ -1,4 +1,11 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+} from '@angular/core';
 
 import {
   FormsModule,
@@ -7,6 +14,7 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
+import { SecurityService } from '../../services/security/security.service';
 
 @Component({
   selector: 'g-password-card',
@@ -15,7 +23,10 @@ import {
   templateUrl: './g-password-card.component.html',
   styleUrls: ['./g-password-card.component.scss'],
 })
-export class GPasswordCardComponent {
+export class GPasswordCardComponent implements OnChanges {
+  @Input() userEmail: string = '';
+  @Input() requiresCurrentPasswordValidation: boolean = false;
+
   @Output() update = new EventEmitter<any>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -23,11 +34,15 @@ export class GPasswordCardComponent {
   showCurrentPassword = false;
   showNewPassword = false;
   showConfirmPassword = false;
+  isValidating = false;
 
-  constructor(private readonly fb: FormBuilder) {
+  constructor(
+    private readonly fb: FormBuilder,
+    private readonly securityService: SecurityService,
+  ) {
     this.passwordForm = this.fb.group(
       {
-        currentPassword: ['', [Validators.required]],
+        currentPassword: [''],
         newPassword: ['', [Validators.required, Validators.minLength(8)]],
         confirmPassword: ['', [Validators.required]],
       },
@@ -35,6 +50,25 @@ export class GPasswordCardComponent {
         validators: this.passwordMatchValidator,
       },
     );
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['requiresCurrentPasswordValidation'] || changes['userEmail']) {
+      // Reset form to clean state when switching between users
+      this.passwordForm.reset();
+      this.showCurrentPassword = false;
+      this.showNewPassword = false;
+      this.showConfirmPassword = false;
+
+      if (this.requiresCurrentPasswordValidation) {
+        this.passwordForm
+          .get('currentPassword')
+          ?.setValidators([Validators.required]);
+      } else {
+        this.passwordForm.get('currentPassword')?.clearValidators();
+      }
+      this.passwordForm.get('currentPassword')?.updateValueAndValidity();
+    }
   }
 
   private passwordMatchValidator(g: FormGroup) {
@@ -71,11 +105,45 @@ export class GPasswordCardComponent {
       this.showConfirmPassword = !this.showConfirmPassword;
   }
 
-  onSubmit(): void {
-    if (this.passwordForm.valid) {
-      this.update.emit(this.passwordForm.value);
-    } else {
+  async onSubmit(): Promise<void> {
+    if (this.passwordForm.invalid) {
       this.passwordForm.markAllAsTouched();
+      return;
+    }
+
+    if (this.requiresCurrentPasswordValidation) {
+      const currentPassword = this.passwordForm.get('currentPassword')?.value;
+      this.isValidating = true;
+
+      try {
+        const hashedCurrentPassword =
+          await this.securityService.getHashSHA512(currentPassword);
+
+        this.securityService
+          .authenticate(this.userEmail, hashedCurrentPassword)
+          .subscribe({
+            next: (response) => {
+              this.isValidating = false;
+              if (response.status === 200) {
+                this.update.emit(this.passwordForm.value);
+              } else {
+                this.passwordForm
+                  .get('currentPassword')
+                  ?.setErrors({ invalidPassword: true });
+              }
+            },
+            error: () => {
+              this.isValidating = false;
+              this.passwordForm
+                .get('currentPassword')
+                ?.setErrors({ invalidPassword: true });
+            },
+          });
+      } catch {
+        this.isValidating = false;
+      }
+    } else {
+      this.update.emit(this.passwordForm.value);
     }
   }
 

@@ -13,6 +13,7 @@ export class GUserCardComponent {
   @Input() user!: User;
   @Output() edit = new EventEmitter<User>();
   @Output() changePassword = new EventEmitter<User>();
+  @Output() toggleStatus = new EventEmitter<User>();
 
   isMenuOpen = false;
 
@@ -29,5 +30,10 @@ export class GUserCardComponent {
   onChangePasswordClick(): void {
     this.isMenuOpen = false;
     this.changePassword.emit(this.user);
+  }
+
+  onToggleStatusClick(): void {
+    this.isMenuOpen = false;
+    this.toggleStatus.emit(this.user);
   }
 }

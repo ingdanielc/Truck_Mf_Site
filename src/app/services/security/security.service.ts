@@ -43,6 +43,15 @@ export class SecurityService {
     });
   }
 
+  authenticate(email: string, password: string) {
+    const headers = { 'content-type': 'application/json' };
+    const body = JSON.stringify({ email, password });
+    return this.http.post<any>(`${this.basePath}/authentication`, body, {
+      headers: headers,
+      observe: 'response',
+    });
+  }
+
   getAllRoles() {
     return this.http.get<any>(`${this.basePath}/getAllRoles`);
   }

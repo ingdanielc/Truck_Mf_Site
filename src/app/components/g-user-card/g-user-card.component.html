@@ -19,8 +19,9 @@
         ></span>
       </div>
       <div class="dropdown position-relative">
-        <span
-          class="btn btn-link text-body p-0 border-0 shadow-none op-50 hover-op-100"
+        <button
+          class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center"
+          style="width: 36px; height: 36px"
           type="button"
           (click)="toggleMenu($event)"
           aria-expanded="false"
@@ -28,11 +29,20 @@
           onkeypress
         >
           <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
-        </span>
+        </button>
         @if (isMenuOpen) {
           <ul
             class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
           >
+            <li>
+              <button
+                class="dropdown-item d-flex align-items-center gap-2 py-2"
+                (click)="onEditClick()"
+              >
+                <i class="fa-solid fa-pencil text-secondary"></i>
+                <span>Editar usuario</span>
+              </button>
+            </li>
             <li>
               <button
                 class="dropdown-item d-flex align-items-center gap-2 py-2"
@@ -42,15 +52,27 @@
                 <span>Cambiar contraseña</span>
               </button>
             </li>
-            <li>
-              <button
-                class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
-                (click)="onEditClick()"
-              >
-                <i class="fa-solid fa-pencil"></i>
-                <span>Editar usuario</span>
-              </button>
-            </li>
+            @if (user.roleType !== "administrador") {
+              <li>
+                <button
+                  class="dropdown-item d-flex align-items-center gap-2 py-2"
+                  [class.text-success]="user.status !== 'online'"
+                  [class.text-warning]="user.status === 'online'"
+                  (click)="onToggleStatusClick()"
+                >
+                  <i
+                    class="fa-solid"
+                    [class.fa-circle-check]="user.status !== 'online'"
+                    [class.fa-circle-xmark]="user.status === 'online'"
+                  ></i>
+                  <span>{{
+                    user.status === "online"
+                      ? "Desactivar usuario"
+                      : "Activar usuario"
+                  }}</span>
+                </button>
+              </li>
+            }
           </ul>
         }
         <!-- Backdrop to close dropdown -->
@@ -78,14 +100,14 @@
       >
         {{ user.role }}
       </span>
-      <span
+      <button
         class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
         (click)="onEditClick()"
         onkeypress
         aria-label="Editar usuario"
       >
         <i class="fa-solid fa-pencil"></i>
-      </span>
+      </button>
     </div>
   </div>
 </div>

@@ -429,6 +429,8 @@
   </div>
   <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
     <g-password-card
+      [userEmail]="owner?.user?.email || ''"
+      [requiresCurrentPasswordValidation]="!isAdmin"
       (update)="onUpdatePassword($event)"
       (cancel)="togglePasswordOffcanvas()"
     ></g-password-card>

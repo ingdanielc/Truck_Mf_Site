@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { forkJoin, Subscription } from 'rxjs';
 
 import {
   AbstractControl,
@@ -36,7 +36,7 @@ import { ToastService } from '../../services/toast.service';
   templateUrl: './security.component.html',
   styleUrls: ['./security.component.scss'],
 })
-export class SecurityComponent implements OnInit {
+export class SecurityComponent implements OnInit, OnDestroy {
   users: User[] = [];
   allUsers: User[] = [];
   totalUsers: number = 0;
@@ -60,6 +60,9 @@ export class SecurityComponent implements OnInit {
 
   showUserFormPassword = false;
   showUserFormConfirmPassword = false;
+
+  userRole: string = '';
+  private userSub?: Subscription;
 
   constructor(
     private readonly securityService: SecurityService,
@@ -103,9 +106,20 @@ export class SecurityComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.userSub = this.securityService.userData$.subscribe({
+      next: (user: any) => {
+        if (user) {
+          this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+        }
+      },
+    });
     this.loadRoles();
     this.updateUserCounts();
     this.loadUsers();
+  }
+
+  ngOnDestroy(): void {
+    this.userSub?.unsubscribe();
   }
 
   loadRoles(): void {
@@ -436,5 +450,64 @@ export class SecurityComponent implements OnInit {
     } catch (error) {
       console.error('Error in onUpdatePassword:', error);
     }
+  }
+
+  onToggleStatus(user: User): void {
+    this.securityService
+      .getUserFilter(
+        new ModelFilterTable(
+          [new Filter('id', '=', user.id.toString())],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        ),
+      )
+      .subscribe({
+        next: (response: any) => {
+          if (response?.data?.content?.[0]) {
+            const fullUser = response.data.content[0];
+            const newStatus =
+              fullUser.status === 'Activo' ? 'Inactivo' : 'Activo';
+            const updatedUser = new ModelUser(
+              fullUser.id,
+              fullUser.name,
+              fullUser.email,
+              undefined,
+              fullUser.userRoles,
+              newStatus,
+            );
+
+            this.securityService.createUser(updatedUser).subscribe({
+              next: () => {
+                this.toastService.showSuccess(
+                  'Gestión de Usuarios',
+                  `Usuario ${newStatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente`,
+                );
+                const newCardStatus =
+                  newStatus === 'Activo' ? 'online' : 'offline';
+                const updateInArray = (arr: User[]) => {
+                  const found = arr.find((u) => u.id === user.id);
+                  if (found) found.status = newCardStatus;
+                };
+                updateInArray(this.users);
+                updateInArray(this.allUsers);
+              },
+              error: (err) => {
+                console.error('Error toggling user status:', err);
+                this.toastService.showError(
+                  'Error',
+                  'No se pudo cambiar el estado del usuario. Por favor, intente de nuevo.',
+                );
+              },
+            });
+          }
+        },
+        error: (err) => {
+          console.error('Error fetching user for status toggle:', err);
+          this.toastService.showError(
+            'Error',
+            'No se pudo obtener la información del usuario.',
+          );
+        },
+      });
   }
 }
