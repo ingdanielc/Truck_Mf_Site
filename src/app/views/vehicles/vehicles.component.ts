@@ -12,7 +12,7 @@ import {
   ValidationErrors,
   ValidatorFn,
 } from '@angular/forms';
-import { Subscription, firstValueFrom, forkJoin } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import {
   Filter,
@@ -339,12 +339,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           ) {
             this.applyFilter();
           }
-        } else {
-          if (this.userRole === 'ADMINISTRADOR') {
-            this.owners = [];
-            this.totalOwners = 0;
-            this.loading = false;
-          }
+        } else if (this.userRole === 'ADMINISTRADOR') {
+          this.owners = [];
+          this.totalOwners = 0;
+          this.loading = false;
         }
       },
       error: () => {
@@ -436,9 +434,13 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
         // Ensure properties needed for display mapped correctly if applicable, or just map brand names
         if (this.ownerVehicles.length > 0) {
+          this.ownerVehicles.forEach((v: any) => {
+            if (v.driver?.name) {
+              v.currentDriverName = v.driver.name;
+            }
+          });
           this.allVehicles = this.ownerVehicles;
           this.mapBrandNames();
-          this.mapDriverNames();
           this.mapLastTripStatuses();
         }
 
@@ -750,9 +752,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           if (response?.data?.content) {
             this.totalVehicles = response.data.totalElements || 0;
-            this.allVehicles = response.data.content;
+            const content = response.data.content;
+            content.forEach((v: any) => {
+              if (v.driver?.name) {
+                v.currentDriverName = v.driver.name;
+              }
+            });
+            this.allVehicles = content;
             this.mapBrandNames();
-            this.mapDriverNames();
             this.mapLastTripStatuses();
             this.calculateStats();
             this.applyFilter();
@@ -786,9 +793,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           if (response?.data?.content) {
             this.totalVehicles = response.data.totalElements || 0;
-            this.allVehicles = response.data.content;
+            const content = response.data.content;
+            content.forEach((v: any) => {
+              if (v.driver?.name) {
+                v.currentDriverName = v.driver.name;
+              }
+            });
+            this.allVehicles = content;
             this.mapBrandNames();
-            this.mapDriverNames();
             this.mapLastTripStatuses();
             this.calculateStats();
             this.applyFilter();
@@ -824,9 +836,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           if (response?.data?.content) {
             this.totalVehicles = response.data.totalElements || 0;
-            this.allVehicles = response.data.content;
+            const content = response.data.content;
+            content.forEach((v: any) => {
+              if (v.driver?.name) {
+                v.currentDriverName = v.driver.name;
+              }
+            });
+            this.allVehicles = content;
             this.mapBrandNames();
-            this.mapDriverNames();
             this.mapLastTripStatuses();
             this.calculateStats();
             this.applyFilter();
@@ -862,9 +879,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           if (response?.data?.content) {
             this.totalVehicles = response.data.totalElements || 0;
-            this.allVehicles = response.data.content;
+            const content = response.data.content;
+            content.forEach((v: any) => {
+              if (v.driver?.name) {
+                v.currentDriverName = v.driver.name;
+              }
+            });
+            this.allVehicles = content;
             this.mapBrandNames();
-            this.mapDriverNames();
             this.mapLastTripStatuses();
             this.calculateStats();
             this.applyFilter();
@@ -897,9 +919,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           if (response?.data?.content) {
             this.totalVehicles = response.data.totalElements || 0;
-            this.allVehicles = response.data.content;
+            const content = response.data.content;
+            content.forEach((v: any) => {
+              if (v.driver?.name) {
+                v.currentDriverName = v.driver.name;
+              }
+            });
+            this.allVehicles = content;
             this.mapBrandNames();
-            this.mapDriverNames();
             this.mapLastTripStatuses();
             this.calculateStats();
             this.applyFilter();
@@ -1078,52 +1105,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         }
       });
     }
-  }
-
-  mapDriverNames(): void {
-    if (this.allVehicles.length === 0) return;
-
-    // 1. Try to match with drivers already loaded (usually for the current owner)
-    if (this.drivers.length > 0) {
-      this.allVehicles.forEach((v) => {
-        if (v.currentDriverId != null && !v.currentDriverName) {
-          const match = this.drivers.find((d) => d.id === v.currentDriverId);
-          if (match) v.currentDriverName = match.name;
-        }
-      });
-    }
-
-    // 2. Identify missing driver IDs
-    const missingIds = [
-      ...new Set(
-        this.allVehicles
-          .filter((v) => v.currentDriverId != null && !v.currentDriverName)
-          .map((v) => v.currentDriverId as number),
-      ),
-    ];
-
-    // 3. Fetch each missing driver's detail individually
-    missingIds.forEach((id) => this.fetchDriverDetail(id));
-  }
-
-  fetchDriverDetail(driverId: number): void {
-    const filter = new ModelFilterTable(
-      [new Filter('id', '=', driverId.toString())],
-      new Pagination(1, 0),
-      new Sort('id', true),
-    );
-
-    this.driverService.getDriverFilter(filter).subscribe({
-      next: (response: any) => {
-        const driver = response?.data?.content?.[0];
-        if (driver) {
-          this.allVehicles.forEach((v) => {
-            if (v.currentDriverId === driver.id)
-              v.currentDriverName = driver.name;
-          });
-        }
-      },
-    });
   }
 
   mapLastTripStatuses(): void {
