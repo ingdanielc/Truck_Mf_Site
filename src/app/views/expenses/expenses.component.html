@@ -239,7 +239,7 @@
 <!-- Offcanvas backdrop -->
 @if (showAddExpense) {
   <div
-    class="offcanvas-backdrop fade show"
+    class="offcanvas-backdrop transition-all d-none d-md-block"
     (click)="showAddExpense = false; editingExpense = null"
     onkeypress
   ></div>
@@ -247,12 +247,8 @@
 
 <!-- Custom Offcanvas Container -->
 <div
-  class="offcanvas offcanvas-end custom-offcanvas shadow-lg"
-  [class.show]="showAddExpense"
-  [style.visibility]="showAddExpense ? 'visible' : 'hidden'"
-  [style.transform]="showAddExpense ? 'none' : 'translateX(100%)'"
-  style="transition: transform 0.3s ease-in-out"
-  tabindex="-1"
+  class="custom-offcanvas shadow-lg border-start transition-all"
+  [class.open]="showAddExpense"
 >
   @if (showAddExpense) {
     <g-add-expense
