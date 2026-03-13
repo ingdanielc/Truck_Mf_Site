@@ -12,7 +12,7 @@ import {
   ValidationErrors,
   ValidatorFn,
 } from '@angular/forms';
-import { Subscription, firstValueFrom } from 'rxjs';
+import { Subscription, firstValueFrom, forkJoin } from 'rxjs';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import {
   Filter,
@@ -62,6 +62,18 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   page: number = 0;
   rows: number = 9;
   loading: boolean = true;
+
+  // Global cache for Admin role
+  globalStats = {
+    total: 0,
+    available: 0,
+    occupied: 0,
+  };
+
+  expandedOwnerId: number | null = null;
+  ownerVehicles: ModelVehicle[] = [];
+  totalOwners: number = 0;
+  isLoadingExpandedVehicles: boolean = false;
 
   // Grouped display
   groupedVehicles: VehicleOwnerGroup[] = [];
@@ -166,7 +178,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     const rawDriverId = this.route.snapshot.queryParamMap.get('driverId');
     if (rawDriverId != null) {
       this.driverIdFilter = Number(rawDriverId);
-      this.loadFilteredDriver(this.driverIdFilter);
     }
 
     this.subscribeToUserContext();
@@ -182,22 +193,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content?.length > 0) {
           this.filteredOwner = response.data.content[0];
-          this.applyFilter();
-        }
-      },
-    });
-  }
-
-  loadFilteredDriver(driverId: number): void {
-    const filter = new ModelFilterTable(
-      [new Filter('id', '=', driverId.toString())],
-      new Pagination(1, 0),
-      new Sort('id', true),
-    );
-    this.driverService.getDriverFilter(filter).subscribe({
-      next: (response: any) => {
-        if (response?.data?.content?.length > 0) {
-          this.filteredDriver = response.data.content[0];
           this.applyFilter();
         }
       },
@@ -221,7 +216,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               .get('ownerId')
               ?.setValidators([Validators.required]);
             this.loadOwners();
-            this.loadVehicles();
           } else if (this.userRole === 'PROPIETARIO') {
             this.loggedInOwnerId = user.id ?? null;
             this.loadOwners(); // This will trigger loadVehicles upon success
@@ -300,11 +294,21 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       filtros.push(new Filter('user.Id', '=', this.loggedInOwnerId.toString()));
     }
 
+    if (this.userRole === 'ADMINISTRADOR' && this.searchTerm && !this.expandedOwnerId) {
+      filtros.push(new Filter('name', 'like', this.searchTerm));
+    }
+
+    const paginationRows = this.userRole === 'ADMINISTRADOR' ? this.rows : 100;
+    const paginationPage = this.userRole === 'ADMINISTRADOR' ? this.page : 0;
+
     let filter = new ModelFilterTable(
       filtros,
-      new Pagination(100, 0),
+      new Pagination(paginationRows, paginationPage),
       new Sort('name', true),
     );
+
+    if (this.userRole === 'ADMINISTRADOR') this.loading = true;
+
     this.ownerService.getOwnerFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
@@ -316,10 +320,135 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               this.loggedInOwner?.id ?? this.loggedInOwnerId;
             // Now that we have the TRUE owner.id, load the vehicles
             this.loadVehicles();
+          } else if (this.userRole === 'ADMINISTRADOR') {
+            this.totalOwners = response.data.totalElements ?? 0;
+
+            // Initial global stats calculation for admin
+            if (!this.expandedOwnerId && this.page === 0 && !this.searchTerm) {
+               this.updateStatusCounts();
+            }
+            this.loading = false;
           }
-          this.applyFilter();
+          if (this.allVehicles.length > 0 && this.userRole !== 'ADMINISTRADOR') {
+            this.applyFilter();
+          }
+        } else {
+          if (this.userRole === 'ADMINISTRADOR') {
+            this.owners = [];
+            this.totalOwners = 0;
+            this.loading = false;
+          }
         }
       },
+      error: () => {
+        if (this.userRole === 'ADMINISTRADOR') {
+          this.owners = [];
+          this.totalOwners = 0;
+          this.loading = false;
+        }
+      }
+    });
+  }
+
+  private updateStatusCounts(): void {
+    let filtros: Filter[] = [];
+    if (this.ownerIdFilter) {
+      filtros.push(new Filter('ownerId', '=', this.ownerIdFilter.toString()));
+    }
+
+    forkJoin({
+      total: this.vehicleService.getVehicleOwnerFilter(
+        new ModelFilterTable(filtros, new Pagination(1, 0), new Sort('id', true))
+      ),
+      allVehiclesForStatus: this.vehicleService.getVehicleOwnerFilter(
+        new ModelFilterTable(filtros, new Pagination(20000, 0), new Sort('id', true))
+      )
+    }).subscribe({
+      next: (resps: any) => {
+        const total = resps.total?.data?.totalElements ?? 0;
+        const allVehicles = resps.allVehiclesForStatus?.data?.content ?? [];
+
+        const available = allVehicles.filter(
+          (v: ModelVehicle) => v.status?.toLowerCase() === 'activo'
+        ).length;
+
+        const occupied = total - available;
+
+        this.totalVehicles = total;
+        this.availableVehicles = available;
+        this.occupiedVehicles = occupied;
+
+        if (this.userRole === 'ADMINISTRADOR') {
+          this.globalStats = {
+            total: this.totalVehicles,
+            available: this.availableVehicles,
+            occupied: this.occupiedVehicles,
+          };
+        }
+      }
+    });
+  }
+
+  toggleOwnerExpansion(owner: ModelOwner): void {
+    if (this.userRole !== 'ADMINISTRADOR') return;
+
+    if (this.expandedOwnerId === owner.id) {
+      this.expandedOwnerId = null;
+      this.ownerVehicles = [];
+      // Restore global stats
+      this.totalVehicles = this.globalStats.total;
+      this.availableVehicles = this.globalStats.available;
+      this.occupiedVehicles = this.globalStats.occupied;
+    } else {
+      this.expandedOwnerId = owner.id ?? null;
+      if (this.expandedOwnerId) {
+        this.isLoadingExpandedVehicles = true;
+        this.ownerVehicles = [];
+        this.loadVehiclesForAdmin(this.expandedOwnerId);
+      }
+    }
+  }
+
+  private loadVehiclesForAdmin(ownerId: number): void {
+    const filtros = [new Filter('ownerId', '=', ownerId.toString())];
+
+    if (this.searchTerm) {
+      filtros.push(new Filter('plate', 'like', this.searchTerm)); // Basic search for expanded view
+    }
+
+    const filter = new ModelFilterTable(
+      filtros,
+      new Pagination(20000, 0),
+      new Sort('id', true)
+    );
+
+    this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
+      next: (respVehicles: any) => {
+        this.ownerVehicles = respVehicles?.data?.content ?? [];
+        
+        // Ensure properties needed for display mapped correctly if applicable, or just map brand names
+        if (this.ownerVehicles.length > 0) {
+           this.allVehicles = this.ownerVehicles;
+           this.mapBrandNames();
+           this.mapDriverNames();
+           this.mapLastTripStatuses();
+        }
+
+        this.totalVehicles = this.ownerVehicles.length;
+        this.availableVehicles = this.ownerVehicles.filter(
+          (v) => v.status?.toLowerCase() === 'activo'
+        ).length;
+        this.occupiedVehicles = this.totalVehicles - this.availableVehicles;
+
+        this.isLoadingExpandedVehicles = false;
+      },
+      error: () => {
+        this.ownerVehicles = [];
+        this.totalVehicles = 0;
+        this.availableVehicles = 0;
+        this.occupiedVehicles = 0;
+        this.isLoadingExpandedVehicles = false;
+      }
     });
   }
 
@@ -619,8 +748,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.mapLastTripStatuses();
             this.calculateStats();
             this.applyFilter();
-            this.calculateStats();
-            this.applyFilter();
           }
           this.loading = false;
         },
@@ -791,6 +918,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   applyFilter(): void {
+    if (this.userRole === 'ADMINISTRADOR' && this.expandedOwnerId) {
+      this.loadVehiclesForAdmin(this.expandedOwnerId);
+      return;
+    }
+
     let filtered = this.allVehicles;
 
     // For PROPIETARIO: only show vehicles where they appear in the owners array
@@ -810,11 +942,24 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       );
     }
 
-    this.buildGroups(filtered);
+    if (this.userRole !== 'ADMINISTRADOR') {
+      this.buildGroups(filtered);
+    } else {
+      this.page = 0;
+      this.loadOwners();
+    }
+  }
+
+  get dataTotal(): number {
+    return this.userRole === 'ADMINISTRADOR' ? this.totalOwners : this.totalVehicles;
+  }
+
+  get itemsShownCount(): number {
+    return this.userRole === 'ADMINISTRADOR' ? this.owners.length : this.allVehicles.length;
   }
 
   get totalPages(): number {
-    return Math.ceil(this.totalVehicles / this.rows);
+    return Math.ceil(this.dataTotal / this.rows);
   }
 
   get pages(): number[] {
@@ -824,7 +969,13 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   changePage(newPage: number): void {
     if (newPage >= 0 && newPage < this.totalPages && newPage !== this.page) {
       this.page = newPage;
-      this.loadVehicles();
+      this.expandedOwnerId = null;
+      this.ownerVehicles = [];
+      if (this.userRole === 'ADMINISTRADOR') {
+        this.loadOwners();
+      } else {
+        this.loadVehicles();
+      }
     }
   }
 

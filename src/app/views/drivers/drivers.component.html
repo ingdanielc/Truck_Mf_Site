@@ -108,45 +108,112 @@
       </p>
     </div>
   } @else {
-    @for (group of groupedDrivers; track group.owner.id) {
-      <!-- Owner Header Card -->
-      <g-vehicle-owner-card
-        [owner]="group.owner"
-        [itemCount]="group.drivers.length"
-        itemLabel="Conductores"
-        (viewProfile)="onViewProfile($event)"
-      ></g-vehicle-owner-card>
+    @if (userRole !== "ADMINISTRADOR") {
+      @for (group of groupedDrivers; track group.owner.id) {
+        <!-- Owner Header Card -->
+        <g-vehicle-owner-card
+          [owner]="group.owner"
+          [itemCount]="group.drivers.length"
+          itemLabel="Conductores"
+          (viewProfile)="onViewProfile($event)"
+        ></g-vehicle-owner-card>
 
-      <!-- Drivers Grid -->
-      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4">
-        @for (driver of group.drivers; track driver.id) {
-          <div class="col">
-            <app-g-driver-card
-              [driver]="driver"
-              [salaryTypes]="salaryTypes"
-              (edit)="toggleOffcanvas($event)"
-              (changePassword)="togglePasswordOffcanvas($event)"
-              (toggleStatus)="onToggleDriverStatus($event)"
-              (viewDetail)="onViewDriver($event)"
-            ></app-g-driver-card>
-          </div>
-        }
-        @if (userRole === "ADMINISTRADOR") {
-          <div class="col">
-            <div
-              class="add-driver-tile border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100"
-              (click)="openAddDriverForOwner(group.owner)"
-              (keypress)="openAddDriverForOwner(group.owner)"
-              role="button"
-              tabindex="0"
-            >
-              <div
-                class="add-driver-icon rounded-circle border d-flex align-items-center justify-content-center"
-              >
-                <i class="fa-solid fa-plus"></i>
-              </div>
-              <span class="small fw-semibold">Agregar Conductor</span>
+        <!-- Drivers Grid -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4">
+          @for (driver of group.drivers; track driver.id) {
+            <div class="col">
+              <app-g-driver-card
+                [driver]="driver"
+                [salaryTypes]="salaryTypes"
+                (edit)="toggleOffcanvas($event)"
+                (changePassword)="togglePasswordOffcanvas($event)"
+                (toggleStatus)="onToggleDriverStatus($event)"
+                (viewDetail)="onViewDriver($event)"
+              ></app-g-driver-card>
             </div>
+          }
+        </div>
+      }
+    } @else {
+      <!-- Admin View: Owners List with expansion (Full Width) -->
+      <div class="owners-list animate__animated animate__fadeIn">
+        <div class="row g-2 mb-4">
+          @for (owner of owners; track owner.id) {
+            <div class="col-12">
+              <div class="owner-item mb-2">
+                <g-vehicle-owner-card
+                  [owner]="owner"
+                  [itemCount]="owner.driverCount || 0"
+                  [itemLabel]="'Conductores'"
+                  [disableClick]="true"
+                  (click)="toggleOwnerExpansion(owner)"
+                  [class.expanded]="expandedOwnerId === owner.id"
+                  onkeypress
+                ></g-vehicle-owner-card>
+
+                <!-- Expanded Drivers List -->
+                @if (expandedOwnerId === owner.id) {
+                  <div class="expanded-drivers mt-4 mb-5 ps-3 animate__animated animate__fadeIn">
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                      <div class="h-divider flex-grow-1 bg-primary opacity-10" style="height: 1px"></div>
+                      <h6 class="text-primary small fw-black mb-0 text-uppercase tracking-wider">
+                        Conductores de {{ owner.name }}
+                      </h6>
+                      <div class="h-divider flex-grow-1 bg-primary opacity-10" style="height: 1px"></div>
+                    </div>
+
+                    @if (isLoadingExpandedDrivers) {
+                      <div class="section-loader">
+                        <output class="spinner-border text-primary">
+                          <span class="visually-hidden">Cargando...</span>
+                        </output>
+                        <p class="mt-3 text-body-secondary small fw-semibold">Cargando conductores...</p>
+                      </div>
+                    } @else {
+                      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                        @for (driver of ownerDrivers; track driver.id) {
+                          <div class="col">
+                            <app-g-driver-card
+                              [driver]="driver"
+                              [salaryTypes]="salaryTypes"
+                              (edit)="toggleOffcanvas($event)"
+                              (changePassword)="togglePasswordOffcanvas($event)"
+                              (toggleStatus)="onToggleDriverStatus($event)"
+                              (viewDetail)="onViewDriver($event)"
+                            ></app-g-driver-card>
+                          </div>
+                        }
+
+                        <!-- Add Driver Card (Admin Only) -->
+                        <div class="col">
+                          <div
+                            class="add-driver-tile border rounded-3 d-flex flex-column align-items-center justify-content-center gap-2 text-body-secondary h-100 p-4"
+                            (click)="openAddDriverForOwner(owner)"
+                            (keypress)="openAddDriverForOwner(owner)"
+                            role="button"
+                            tabindex="0"
+                            style="min-height: 200px; cursor: pointer;"
+                          >
+                            <div class="add-driver-icon rounded-circle border d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                              <i class="fa-solid fa-plus"></i>
+                            </div>
+                            <span class="small fw-semibold">Agregar Conductor</span>
+                            <small class="opacity-75 text-center">Para {{ owner.name }}</small>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (owners.length === 0) {
+          <div class="text-center py-5 text-body-secondary">
+            <i class="fa-solid fa-users fs-1 mb-3 opacity-25"></i>
+            <p class="fw-bold">No se encontraron propietarios</p>
           </div>
         }
       </div>
@@ -157,7 +224,7 @@
   <div class="row align-items-center g-3 mb-4">
     <div class="col-12 col-md-6 text-center text-md-start">
       <p class="text-secondary small mb-0">
-        Mostrando {{ drivers.length }} de {{ totalDrivers }} conductores
+        Mostrando {{ itemsShownCount }} de {{ dataTotal }} {{ userRole === 'ADMINISTRADOR' ? 'propietarios' : 'conductores' }}
       </p>
     </div>
     @if (userRole === "ADMINISTRADOR") {
