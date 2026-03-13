@@ -261,46 +261,39 @@ export class DriversComponent implements OnInit, OnDestroy {
       filtros.push(new Filter('ownerId', '=', this.ownerIdFilter.toString()));
     }
 
-    forkJoin({
-      total: this.driverService.getDriverFilter(
-        new ModelFilterTable(
-          filtros,
-          new Pagination(1, 0),
-          new Sort('id', true),
-        ),
-      ),
-      allDriversForStatus: this.driverService.getDriverFilter(
+    this.driverService
+      .getDriverFilter(
         new ModelFilterTable(
           filtros,
           new Pagination(20000, 0),
           new Sort('id', true),
         ),
-      ),
-    }).subscribe({
-      next: (resps: any) => {
-        const total = resps.total?.data?.totalElements ?? 0;
-        const allDrivers = resps.allDriversForStatus?.data?.content ?? [];
+      )
+      .subscribe({
+        next: (response: any) => {
+          const allDrivers = response?.data?.content ?? [];
+          const total = response?.data?.totalElements ?? allDrivers.length;
 
-        const active = allDrivers.filter((d: ModelDriver) => {
-          const status = d.user?.status;
-          return !d.user || status === 'Activo';
-        }).length;
+          const active = allDrivers.filter((d: ModelDriver) => {
+            const status = d.user?.status;
+            return !d.user || status === 'Activo';
+          }).length;
 
-        const inactive = total - active;
+          const inactive = total - active;
 
-        this.totalDrivers = total;
-        this.activeDrivers = active;
-        this.inactiveDrivers = inactive;
+          this.totalDrivers = total;
+          this.activeDrivers = active;
+          this.inactiveDrivers = inactive;
 
-        if (this.userRole === 'ADMINISTRADOR') {
-          this.globalStats = {
-            total: this.totalDrivers,
-            active: this.activeDrivers,
-            inactive: this.inactiveDrivers,
-          };
-        }
-      },
-    });
+          if (this.userRole === 'ADMINISTRADOR') {
+            this.globalStats = {
+              total: this.totalDrivers,
+              active: this.activeDrivers,
+              inactive: this.inactiveDrivers,
+            };
+          }
+        },
+      });
   }
 
   toggleOwnerExpansion(owner: ModelOwner): void {

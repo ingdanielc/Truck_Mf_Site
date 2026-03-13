@@ -294,7 +294,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       filtros.push(new Filter('user.Id', '=', this.loggedInOwnerId.toString()));
     }
 
-    if (this.userRole === 'ADMINISTRADOR' && this.searchTerm && !this.expandedOwnerId) {
+    if (
+      this.userRole === 'ADMINISTRADOR' &&
+      this.searchTerm &&
+      !this.expandedOwnerId
+    ) {
       filtros.push(new Filter('name', 'like', this.searchTerm));
     }
 
@@ -325,11 +329,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
             // Initial global stats calculation for admin
             if (!this.expandedOwnerId && this.page === 0 && !this.searchTerm) {
-               this.updateStatusCounts();
+              this.updateStatusCounts();
             }
             this.loading = false;
           }
-          if (this.allVehicles.length > 0 && this.userRole !== 'ADMINISTRADOR') {
+          if (
+            this.allVehicles.length > 0 &&
+            this.userRole !== 'ADMINISTRADOR'
+          ) {
             this.applyFilter();
           }
         } else {
@@ -346,7 +353,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           this.totalOwners = 0;
           this.loading = false;
         }
-      }
+      },
     });
   }
 
@@ -356,37 +363,38 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       filtros.push(new Filter('ownerId', '=', this.ownerIdFilter.toString()));
     }
 
-    forkJoin({
-      total: this.vehicleService.getVehicleOwnerFilter(
-        new ModelFilterTable(filtros, new Pagination(1, 0), new Sort('id', true))
-      ),
-      allVehiclesForStatus: this.vehicleService.getVehicleOwnerFilter(
-        new ModelFilterTable(filtros, new Pagination(20000, 0), new Sort('id', true))
+    this.vehicleService
+      .getVehicleOwnerFilter(
+        new ModelFilterTable(
+          filtros,
+          new Pagination(20000, 0),
+          new Sort('id', true),
+        ),
       )
-    }).subscribe({
-      next: (resps: any) => {
-        const total = resps.total?.data?.totalElements ?? 0;
-        const allVehicles = resps.allVehiclesForStatus?.data?.content ?? [];
+      .subscribe({
+        next: (response: any) => {
+          const allVehicles = response?.data?.content ?? [];
+          const total = response?.data?.totalElements ?? allVehicles.length;
 
-        const available = allVehicles.filter(
-          (v: ModelVehicle) => v.status?.toLowerCase() === 'activo'
-        ).length;
+          const available = allVehicles.filter(
+            (v: ModelVehicle) => v.status?.toLowerCase() === 'activo',
+          ).length;
 
-        const occupied = total - available;
+          const occupied = total - available;
 
-        this.totalVehicles = total;
-        this.availableVehicles = available;
-        this.occupiedVehicles = occupied;
+          this.totalVehicles = total;
+          this.availableVehicles = available;
+          this.occupiedVehicles = occupied;
 
-        if (this.userRole === 'ADMINISTRADOR') {
-          this.globalStats = {
-            total: this.totalVehicles,
-            available: this.availableVehicles,
-            occupied: this.occupiedVehicles,
-          };
-        }
-      }
-    });
+          if (this.userRole === 'ADMINISTRADOR') {
+            this.globalStats = {
+              total: this.totalVehicles,
+              available: this.availableVehicles,
+              occupied: this.occupiedVehicles,
+            };
+          }
+        },
+      });
   }
 
   toggleOwnerExpansion(owner: ModelOwner): void {
@@ -419,24 +427,24 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     const filter = new ModelFilterTable(
       filtros,
       new Pagination(20000, 0),
-      new Sort('id', true)
+      new Sort('id', true),
     );
 
     this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
       next: (respVehicles: any) => {
         this.ownerVehicles = respVehicles?.data?.content ?? [];
-        
+
         // Ensure properties needed for display mapped correctly if applicable, or just map brand names
         if (this.ownerVehicles.length > 0) {
-           this.allVehicles = this.ownerVehicles;
-           this.mapBrandNames();
-           this.mapDriverNames();
-           this.mapLastTripStatuses();
+          this.allVehicles = this.ownerVehicles;
+          this.mapBrandNames();
+          this.mapDriverNames();
+          this.mapLastTripStatuses();
         }
 
         this.totalVehicles = this.ownerVehicles.length;
         this.availableVehicles = this.ownerVehicles.filter(
-          (v) => v.status?.toLowerCase() === 'activo'
+          (v) => v.status?.toLowerCase() === 'activo',
         ).length;
         this.occupiedVehicles = this.totalVehicles - this.availableVehicles;
 
@@ -448,7 +456,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         this.availableVehicles = 0;
         this.occupiedVehicles = 0;
         this.isLoadingExpandedVehicles = false;
-      }
+      },
     });
   }
 
@@ -951,11 +959,15 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   get dataTotal(): number {
-    return this.userRole === 'ADMINISTRADOR' ? this.totalOwners : this.totalVehicles;
+    return this.userRole === 'ADMINISTRADOR'
+      ? this.totalOwners
+      : this.totalVehicles;
   }
 
   get itemsShownCount(): number {
-    return this.userRole === 'ADMINISTRADOR' ? this.owners.length : this.allVehicles.length;
+    return this.userRole === 'ADMINISTRADOR'
+      ? this.owners.length
+      : this.allVehicles.length;
   }
 
   get totalPages(): number {
