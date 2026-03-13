@@ -16,6 +16,7 @@ export class GVehicleOwnerCardComponent {
   @Input() itemCount: number = 0;
   @Input() itemLabel: string = 'Vehículos';
   @Input() disableClick: boolean = false;
+  @Input() from: string = 'trips';
 
   @Output() viewProfile = new EventEmitter<ModelOwner>();
 
@@ -31,13 +32,17 @@ export class GVehicleOwnerCardComponent {
 
     // Administrador can see any owner
     if (role === 'ADMINISTRADOR' && this.owner.id) {
-      this.router.navigate(['/site/owners', this.owner.id]);
+      this.router.navigate(['/site/owners', this.owner.id], {
+        queryParams: { from: this.from },
+      });
       return;
     }
 
     // Propietario or Conductor can see the owner profile (redirected/filtered)
     if ((role === 'PROPIETARIO' || role === 'CONDUCTOR') && this.owner.id) {
-      this.router.navigate(['/site/owners', this.owner.id]);
+      this.router.navigate(['/site/owners', this.owner.id], {
+        queryParams: { from: this.from },
+      });
     }
   }
 
@@ -49,7 +54,7 @@ export class GVehicleOwnerCardComponent {
     if (role === 'ADMINISTRADOR' && this.owner.id) {
       event.stopPropagation();
       this.router.navigate(['/site/owners', this.owner.id], {
-        queryParams: { from: 'trips' },
+        queryParams: { from: this.from },
       });
     }
   }

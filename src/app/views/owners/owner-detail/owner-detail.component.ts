@@ -49,7 +49,8 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   loadingCities: boolean = true;
   loadingBrands: boolean = true;
   tripCount: number = 0;
-  fromTrips: boolean = false;
+  fromSource: string | null = null;
+  fromTrips: boolean = false; // Kept for backward compatibility if needed elsewhere but updated logic
   showCamera: boolean = false;
   isAdmin: boolean = false;
 
@@ -74,8 +75,8 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    const fromParam = this.route.snapshot.queryParamMap.get('from');
-    this.fromTrips = fromParam === 'trips';
+    this.fromSource = this.route.snapshot.queryParamMap.get('from');
+    this.fromTrips = this.fromSource === 'trips';
 
     this.routeSub = this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
@@ -409,10 +410,19 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     const role = (user?.userRoles?.[0]?.role?.name ?? '').toUpperCase();
 
     if (role === 'ADMINISTRADOR') {
-      if (this.fromTrips) {
-        this.router.navigate(['/site/trips']);
-      } else {
-        this.router.navigate(['/site/owners']);
+      switch (this.fromSource) {
+        case 'trips':
+          this.router.navigate(['/site/trips']);
+          break;
+        case 'vehicles':
+          this.router.navigate(['/site/vehicles']);
+          break;
+        case 'drivers':
+          this.router.navigate(['/site/drivers']);
+          break;
+        default:
+          this.router.navigate(['/site/owners']);
+          break;
       }
     } else {
       this.location.back();

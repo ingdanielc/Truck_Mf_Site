@@ -4,7 +4,7 @@
   <div class="row g-0 flex-grow-1 h-100">
     <!-- Vehicle Image Container (Left Side) -->
     <div
-      class="col-4 position-relative bg-secondary-subtle d-flex flex-column align-items-center justify-content-center"
+      class="col-5 position-relative bg-secondary-subtle d-flex flex-column align-items-center justify-content-center"
     >
       @if (vehicle.photo) {
         <img
@@ -28,7 +28,7 @@
     </div>
 
     <!-- Vehicle Info (Right Side) -->
-    <div class="col-8 d-flex flex-column">
+    <div class="col-7 d-flex flex-column">
       <div class="card-body p-3 d-flex flex-column flex-grow-1">
         <!-- Vehicle Info -->
         <div class="mb-2">
@@ -43,7 +43,16 @@
               [ngClass]="statusClass"
               style="font-size: 0.65rem"
             >
-              {{ displayTripStatus }}
+              <span class="d-none d-md-inline">{{ displayTripStatus }}</span>
+              <i
+                class="fa-solid d-md-none"
+                [ngClass]="{
+                  'fa-truck-fast': displayTripStatus === 'En Curso',
+                  'fa-check': displayTripStatus === 'Disponible',
+                  'fa-xmark': displayTripStatus === 'Cancelado',
+                  'fa-circle-question': displayTripStatus === 'Sin Viajes',
+                }"
+              ></i>
             </span>
           </div>
           <p

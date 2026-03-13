@@ -139,6 +139,7 @@
           [owner]="group.owner"
           [itemCount]="group.vehicles.length"
           itemLabel="Vehículos"
+          [from]="'vehicles'"
           (viewProfile)="onViewProfile($event)"
         ></g-vehicle-owner-card>
 
@@ -181,6 +182,7 @@
                   [itemCount]="owner.vehicleCount || 0"
                   [itemLabel]="'Vehículos'"
                   [disableClick]="true"
+                  [from]="'vehicles'"
                   (click)="toggleOwnerExpansion(owner)"
                   [class.expanded]="expandedOwnerId === owner.id"
                   onkeypress

@@ -171,6 +171,7 @@
                 [owner]="group.owner"
                 [itemCount]="group.trips.length"
                 [itemLabel]="'Viajes'"
+                [from]="'trips'"
               >
               </g-vehicle-owner-card>
             </div>
@@ -211,6 +212,7 @@
                   [itemCount]="owner.vehicleCount || 0"
                   [itemLabel]="'Vehículos'"
                   [disableClick]="true"
+                  [from]="'trips'"
                   (click)="toggleOwnerExpansion(owner)"
                   [class.expanded]="expandedOwnerId === owner.id"
                   onkeypress
