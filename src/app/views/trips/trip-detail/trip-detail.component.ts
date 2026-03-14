@@ -614,6 +614,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         queryParams: {
           tripId: this.tripId,
           vehicleId: this.trip.vehicleId,
+          origin: 'detail',
         },
       });
     }

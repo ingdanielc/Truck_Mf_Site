@@ -2,7 +2,18 @@
   <!-- Header Section -->
   <header class="row align-items-center g-3 mb-4 mb-md-5 gx-0">
     <div class="col-12 col-md">
-      <h1 class="h3 fw-bold mb-1">Categorías de Gastos</h1>
+      <div class="d-flex align-items-center gap-3">
+        @if (hasBackContext) {
+          <button
+            (click)="goBack()"
+            class="btn btn-link text-body p-0 shadow-none"
+            aria-label="Regresar"
+          >
+            <i class="fa-solid fa-arrow-left fs-4"></i>
+          </button>
+        }
+        <h1 class="h3 fw-bold mb-1">Categorías de Gastos</h1>
+      </div>
       <p class="text-secondary mb-0">
         Gestión de categorías de gastos (Viaje, Vehículo, Conductor,
         Mantenimiento)

@@ -2,13 +2,24 @@
   <!-- Page Header -->
   <div class="row mb-4 align-items-center">
     <div class="col">
-      <h1 class="h3 fw-bold mb-0 text-body">
-        <i
-          class="fa-solid me-2 text-primary"
-          [ngClass]="isMaintenance ? 'fa-wrench' : 'fa-money-bill-wave'"
-        ></i>
-        {{ isMaintenance ? "Mantenimiento" : "Gastos" }}
-      </h1>
+      <div class="d-flex align-items-center gap-3">
+        @if (hasBackContext) {
+          <button
+            (click)="goBack()"
+            class="btn btn-link text-body p-0 shadow-none"
+            aria-label="Regresar"
+          >
+            <i class="fa-solid fa-arrow-left fs-4"></i>
+          </button>
+        }
+        <h1 class="h3 fw-bold mb-0 text-body">
+          <i
+            class="fa-solid me-2 text-primary"
+            [ngClass]="isMaintenance ? 'fa-wrench' : 'fa-money-bill-wave'"
+          ></i>
+          {{ isMaintenance ? "Mantenimiento" : "Gastos" }}
+        </h1>
+      </div>
       <p class="text-secondary mb-0 small">
         {{
           isMaintenance

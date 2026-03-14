@@ -36,6 +36,7 @@ export class GTripCardComponent {
         queryParams: {
           tripId: this.trip.id,
           vehicleId: vehicleId,
+          origin: 'list',
         },
       });
     }

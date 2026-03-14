@@ -188,7 +188,12 @@ export class GAddExpenseComponent implements OnInit {
   selectCategory(id: number): void {
     if (id === -1) {
       this.router.navigate(['/site/configuration'], {
-        queryParams: { typeId: this.selectedType },
+        queryParams: {
+          typeId: this.selectedType,
+          origin: 'expenses',
+          vehicleId: this.vehicleId,
+          tripId: this.tripId,
+        },
       });
       this.dismiss();
       return;

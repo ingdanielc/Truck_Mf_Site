@@ -3,10 +3,19 @@
     <!-- Vehicle Section -->
     <div class="col-12 col-md-5 border-end-md">
       <div class="d-flex align-items-center gap-3">
+        <!-- Vehicle Photo -->
         <div
-          class="icon-box bg-primary bg-opacity-10 text-primary rounded-3 p-3"
+          class="vehicle-photo flex-shrink-0 rounded-3 overflow-hidden bg-body-secondary d-flex align-items-center justify-content-center"
         >
-          <i class="fa-solid fa-truck-front fs-4"></i>
+          @if (vehicle.photo) {
+            <img
+              [src]="vehicle.photo"
+              [alt]="vehicle.plate"
+              class="w-100 h-100 object-fit-cover"
+            />
+          } @else {
+            <i class="fa-solid fa-truck fs-2 text-secondary opacity-50"></i>
+          }
         </div>
         <div class="overflow-hidden">
           <span class="badge plate-badge mb-1 text-uppercase">{{

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   FormBuilder,
   FormGroup,
@@ -76,11 +76,17 @@ export class ConfigurationComponent implements OnInit {
   searchTerm: string = '';
   loading: boolean = true;
 
+  hasBackContext = false;
+  originParam: string | null = null;
+  vehicleIdParam: string | null = null;
+  tripIdParam: string | null = null;
+
   constructor(
     private readonly expenseService: VehicleService,
     private readonly fb: FormBuilder,
     private readonly toastService: ToastService,
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
   ) {
     this.categoryForm = this.fb.group({
       name: ['', [Validators.required], [this.duplicateNameValidator()]],
@@ -98,6 +104,11 @@ export class ConfigurationComponent implements OnInit {
         this.activeFilter = typeId;
         this.toggleOffcanvas();
       }
+
+      this.originParam = params.get('origin');
+      this.vehicleIdParam = params.get('vehicleId');
+      this.tripIdParam = params.get('tripId');
+      this.hasBackContext = this.originParam === 'expenses';
     });
   }
 
@@ -300,6 +311,17 @@ export class ConfigurationComponent implements OnInit {
       });
     } else {
       this.categoryForm.markAllAsTouched();
+    }
+  }
+
+  goBack(): void {
+    if (this.originParam === 'expenses') {
+      this.router.navigate(['/site/expenses'], {
+        queryParams: {
+          vehicleId: this.vehicleIdParam,
+          tripId: this.tripIdParam,
+        },
+      });
     }
   }
 }

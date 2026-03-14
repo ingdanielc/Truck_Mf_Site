@@ -6,7 +6,6 @@ import {
   ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-
 import { CommonModule } from '@angular/common';
 import { Observable, Subscription, map, of, switchMap, take } from 'rxjs';
 import { SecurityService } from 'src/app/services/security/security.service';
@@ -63,6 +62,10 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   hideSelectionSections = false;
   isMaintenance = false;
   userRole = '';
+  hasBackContext = false;
+  tripIdParam: string | null = null;
+  vehicleIdParam: string | null = null;
+  originParam: string | null = null;
 
   brands: any[] = [];
   loadingBrands = false;
@@ -105,6 +108,10 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.subscribe((params) => {
       const tripId = params.get('tripId');
       const vehicleIdInput = params.get('vehicleId');
+      this.tripIdParam = tripId;
+      this.vehicleIdParam = vehicleIdInput;
+      this.originParam = params.get('origin');
+      this.hasBackContext = !!tripId || !!vehicleIdInput;
       const vehicleId = vehicleIdInput ? Number(vehicleIdInput) : null;
 
       // Reset state for new params
@@ -761,5 +768,17 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  goBack(): void {
+    if (this.originParam === 'detail' && this.tripIdParam) {
+      this.router.navigate(['/site/trips', this.tripIdParam], {
+        queryParams: { from: 'vehicles' },
+      });
+    } else if (this.originParam === 'list') {
+      this.router.navigate(['/site/trips']);
+    } else if (this.vehicleIdParam) {
+      this.router.navigate(['/site/vehicles']);
+    }
   }
 }
