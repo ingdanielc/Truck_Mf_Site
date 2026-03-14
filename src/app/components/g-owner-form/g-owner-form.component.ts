@@ -261,7 +261,9 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
   }
 
   resetForm(): void {
-    this.ownerForm.reset();
+    this.ownerForm.reset({
+      birthdate: this.defaultBirthdate,
+    });
     this.ownerForm.get('documentType')?.enable();
     this.ownerForm
       .get('documentNumber')

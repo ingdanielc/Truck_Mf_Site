@@ -17,10 +17,19 @@ export class CustomValidators {
       if (!control.value || !list) return null;
 
       const isDuplicate = list.some((item) => {
-        const itemValue = property
+        let itemValue = property
           .split('.')
           .reduce((obj, key) => obj?.[key], item);
-        const controlValue = control.value;
+        let controlValue = control.value;
+
+        // Clean values if property is a document or license number
+        if (
+          property.toLowerCase().includes('documentnumber') ||
+          property.toLowerCase().includes('licensenumber')
+        ) {
+          itemValue = String(itemValue || '').replaceAll(/\D/g, '');
+          controlValue = String(controlValue || '').replaceAll(/\D/g, '');
+        }
 
         // Case-insensitive comparison for strings
         if (typeof itemValue === 'string' && typeof controlValue === 'string') {

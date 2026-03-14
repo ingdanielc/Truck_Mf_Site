@@ -9,6 +9,7 @@ import { VehicleService } from 'src/app/services/vehicle.service';
 import { CommonService } from 'src/app/services/common.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { SecurityService } from 'src/app/services/security/security.service';
+import { OwnerService } from 'src/app/services/owner.service';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
@@ -75,6 +76,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
     private readonly commonService: CommonService,
     private readonly toastService: ToastService,
     private readonly securityService: SecurityService,
+    private readonly ownerService: OwnerService,
   ) {}
 
   ngOnInit(): void {
@@ -133,6 +135,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   }
 
   loadReferenceData(): void {
+    this.loadOwners();
     this.commonService.getListTypeDocument().subscribe({
       next: (response: any) => {
         if (response?.data) this.documentTypes = response.data;
@@ -147,6 +150,22 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data) this.salaryTypes = response.data;
       },
+    });
+  }
+
+  loadOwners(): void {
+    const filter = new ModelFilterTable(
+      [],
+      new Pagination(500, 0),
+      new Sort('name', true),
+    );
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content) {
+          this.owners = response.data.content;
+        }
+      },
+      error: (err: any) => console.error('Error loading owners:', err),
     });
   }
 
