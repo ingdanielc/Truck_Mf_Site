@@ -67,9 +67,7 @@ export class GTripCardComponent {
     const city = this.cities.find(
       (c) => String(c.id) === String(this.trip.originId),
     );
-    return city
-      ? (city.state ? city.state + ' - ' : '') + city.name
-      : this.trip.originId;
+    return city ? city.name + ' (' + city.state + ')' : this.trip.originId;
   }
 
   get destinationName(): string {
@@ -77,9 +75,7 @@ export class GTripCardComponent {
     const city = this.cities.find(
       (c) => String(c.id) === String(this.trip.destinationId),
     );
-    return city
-      ? (city.state ? city.state + ' - ' : '') + city.name
-      : this.trip.destinationId;
+    return city ? city.name + ' (' + city.state + ')' : this.trip.destinationId;
   }
   getStatusClass(status: string): string {
     switch ((status || '').toUpperCase()) {

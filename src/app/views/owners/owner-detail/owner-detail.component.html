@@ -152,7 +152,8 @@
                 }
               }
               <div
-                class="status-indicator position-absolute bg-success border border-3 border-dark rounded-circle"
+                class="status-indicator position-absolute border border-3 border-dark rounded-circle"
+                [ngClass]="statusClass"
                 style="
                   width: 24px;
                   height: 24px;
@@ -407,7 +408,7 @@
 <g-owner-form
   [isOpen]="isOffcanvasOpen"
   [owner]="owner"
-  (closed)="toggleOffcanvas()"
+  (closed)="closeOffcanvas()"
   (saved)="onOwnerSaved()"
 >
 </g-owner-form>
@@ -447,7 +448,7 @@
 @if (isOffcanvasOpen || isPasswordOffcanvasOpen) {
   <div
     class="offcanvas-backdrop transition-all d-none d-md-block"
-    (click)="isOffcanvasOpen ? toggleOffcanvas() : togglePasswordOffcanvas()"
+    (click)="isOffcanvasOpen ? closeOffcanvas() : togglePasswordOffcanvas()"
     onkeypress
   ></div>
 }

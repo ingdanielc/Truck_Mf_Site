@@ -406,6 +406,11 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
         .length,
     };
   }
+  get statusClass(): string {
+    return this.owner?.user?.status === 'Activo'
+      ? 'bg-success'
+      : 'bg-secondary';
+  }
 
   goBack(): void {
     const user = this.securityService.getUserData();
@@ -564,8 +569,13 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     this.isMenuOpen = false;
   }
 
+  closeOffcanvas(): void {
+    this.isOffcanvasOpen = false;
+    this.isMenuOpen = false;
+  }
+
   onOwnerSaved(): void {
-    this.toggleOffcanvas();
+    this.closeOffcanvas();
     if (this.ownerId) {
       this.loadOwner(this.ownerId);
     }
