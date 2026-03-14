@@ -53,6 +53,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   fromTrips: boolean = false; // Kept for backward compatibility if needed elsewhere but updated logic
   showCamera: boolean = false;
   isAdmin: boolean = false;
+  isConductor: boolean = false;
 
   // Offcanvas variables
   isOffcanvasOpen: boolean = false;
@@ -131,6 +132,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   validateAccess(ownerId: number, user: any): void {
     const roleName = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
     this.isAdmin = roleName === 'ADMINISTRADOR';
+    this.isConductor = roleName === 'CONDUCTOR';
 
     if (this.isAdmin) {
       this.loadAllData(ownerId);

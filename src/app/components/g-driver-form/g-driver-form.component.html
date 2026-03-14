@@ -5,7 +5,7 @@
   <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
     <div class="d-flex justify-content-between align-items-start w-100">
       <h2 class="h4 fw-bold mb-0 text-body">
-        {{ driver ? "Editar Conductor" : "Crear Conductor" }}
+        {{ driver?.id ? "Editar Conductor" : "Crear Conductor" }}
       </h2>
       <button
         type="button"
@@ -19,7 +19,7 @@
     </div>
     <p class="text-secondary small mb-0 mt-1 align-items-start">
       {{
-        driver
+        driver?.id
           ? "Actualice la información del conductor"
           : "Complete los datos para dar de alta un nuevo conductor"
       }}
@@ -253,7 +253,7 @@
           </div>
         </div>
 
-        @if (driver || !showAccessData) {
+        @if (driver?.id || !showAccessData) {
           <div class="mb-3">
             <label for="email" class="form-label small fw-bold mb-2"
               >Correo electrónico*</label
@@ -461,7 +461,7 @@
       }
 
       <!-- Access Data Section -->
-      @if (!driver) {
+      @if (!driver?.id) {
         <div class="mb-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="text-primary fw-bold mb-0 d-flex align-items-center">
@@ -632,7 +632,7 @@
           class="btn btn-primary flex-fill py-3 rounded-3 fw-bold shadow-primary"
           [disabled]="driverForm.invalid"
         >
-          {{ driver ? "Guardar cambios" : "Crear conductor" }}
+          {{ driver?.id ? "Guardar cambios" : "Crear conductor" }}
         </button>
       </div>
     </form>

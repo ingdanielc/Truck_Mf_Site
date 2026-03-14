@@ -155,7 +155,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
     let filter = new ModelFilterTable(
       filtros,
       new Pagination(this.rows, this.page),
-      new Sort('id', true),
+      new Sort('name', true),
     );
     this.loading = true;
     this.securityService.getUserFilter(filter).subscribe({

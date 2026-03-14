@@ -136,7 +136,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
     this.showPassword = false;
     this.showConfirmPassword = false;
 
-    if (this.driver) {
+    if (this.driver?.id) {
       this.photoPreview = this.driver.photo || '';
       this.driverForm.patchValue({
         name: this.driver.name,
@@ -203,7 +203,8 @@ export class GDriverFormComponent implements OnInit, OnChanges {
         password: '',
         confirmPassword: '',
         ownerId:
-          this.userRole === 'ADMINISTRADOR' ? null : this.loggedInOwnerId,
+          this.driver?.ownerId ||
+          (this.userRole === 'ADMINISTRADOR' ? null : this.loggedInOwnerId),
         salaryTypeId: null,
         salary: null,
       });
@@ -377,7 +378,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
           this.driver?.id,
         ),
       ]);
-      if (!this.driver) {
+      if (!this.driver?.id) {
         passwordControl?.setValidators([
           Validators.required,
           Validators.minLength(4),
@@ -411,7 +412,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
           password = await this.securityService.getHashSHA512(password);
         }
 
-        if (this.driver) {
+        if (this.driver?.id) {
           // EDIT
           let photoUrl = this.driver.photo || '';
           if (this.photoFile) {
