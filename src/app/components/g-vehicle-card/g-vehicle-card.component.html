@@ -24,6 +24,11 @@
       <span
         class="status-indicator position-absolute bottom-0 end-0 m-2 border border-2 border-white rounded-circle shadow-sm"
         [ngClass]="statusDotClass"
+        [style.cursor]="
+          vehicle.lastTripStatus === 'En Curso' ? 'pointer' : 'default'
+        "
+        (click)="onStatusClick()"
+        [title]="vehicle.lastTripStatus === 'En Curso' ? 'Ver viaje' : ''"
       ></span>
     </div>
 
@@ -42,6 +47,11 @@
               class="badge status-badge px-3 py-2 rounded-pill small fw-bold text-wrap text-center flex-shrink-0"
               [ngClass]="statusClass"
               style="font-size: 0.65rem"
+              [style.cursor]="
+                vehicle.lastTripStatus === 'En Curso' ? 'pointer' : 'default'
+              "
+              (click)="onStatusClick()"
+              [title]="vehicle.lastTripStatus === 'En Curso' ? 'Ver viaje' : ''"
             >
               <span class="d-none d-md-inline">{{ displayTripStatus }}</span>
               <i

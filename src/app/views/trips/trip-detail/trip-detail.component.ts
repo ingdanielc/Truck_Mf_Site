@@ -51,6 +51,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   // User context
   userRole: string = 'ROL';
   loggedInOwnerId: number | null = null;
+  originView: string | null = null;
 
   // Expenses
   totalExpenses: number = 0;
@@ -83,6 +84,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       const id = params.get('id');
       if (id) {
         this.tripId = Number(id);
+        this.originView = this.route.snapshot.queryParamMap.get('from');
         this.loadCities();
         this.loadVehicleBrands();
         // Wait for user data to be available before validating access
@@ -599,7 +601,11 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['/site/trips']);
+    if (this.originView === 'vehicles') {
+      this.router.navigate(['/site/vehicles']);
+    } else {
+      this.router.navigate(['/site/trips']);
+    }
   }
 
   onExpensesClick(): void {

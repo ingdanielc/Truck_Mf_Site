@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 
@@ -16,6 +17,8 @@ export class GVehicleCardComponent {
   @Output() viewDetails = new EventEmitter<ModelVehicle>();
   @Output() maintenance = new EventEmitter<ModelVehicle>();
 
+  constructor(private readonly router: Router) {}
+
   onEditClick(): void {
     this.edit.emit(this.vehicle);
   }
@@ -25,6 +28,17 @@ export class GVehicleCardComponent {
   }
   onMaintenanceClick(): void {
     this.maintenance.emit(this.vehicle);
+  }
+
+  onStatusClick(): void {
+    if (
+      this.vehicle.lastTripStatus?.toUpperCase() === 'EN CURSO' &&
+      this.vehicle.lastTripId
+    ) {
+      this.router.navigate(['/site/trips', this.vehicle.lastTripId], {
+        queryParams: { from: 'vehicles' },
+      });
+    }
   }
 
   get statusClass(): string {

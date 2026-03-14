@@ -1122,6 +1122,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         next: (resp: any) => {
           const lastTrip = resp?.data?.content?.[0];
           v.lastTripStatus = lastTrip?.status ?? '';
+          v.lastTripId = lastTrip?.id ?? null;
         },
       });
     });

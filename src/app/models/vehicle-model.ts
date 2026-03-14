@@ -29,4 +29,5 @@ export interface ModelVehicle {
   currentDriverId: number | null;
   currentDriverName?: string;
   lastTripStatus?: string;
+  lastTripId?: number | null;
 }
