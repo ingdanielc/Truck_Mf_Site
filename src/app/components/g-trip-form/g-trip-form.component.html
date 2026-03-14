@@ -330,16 +330,12 @@
 
         <div class="col-6 mb-3">
           <label for="loadType" class="form-label small fw-bold mb-2"
-            >Tipo de Carga*</label
+            >Tipo de Carga</label
           >
           <select
             id="loadType"
             class="form-select rounded-3 py-2 px-3"
             formControlName="loadType"
-            [class.is-invalid]="
-              tripForm.get('loadType')?.touched &&
-              tripForm.get('loadType')?.invalid
-            "
           >
             <option value="">Selecciona</option>
             @for (type of loadTypes; track type) {
@@ -348,23 +344,16 @@
               </option>
             }
           </select>
-          <div class="invalid-feedback small">
-            Este campo es obligatorio para continuar
-          </div>
         </div>
 
         <div class="col-6 mb-3">
           <label for="company" class="form-label small fw-bold mb-2"
-            >Empresa*</label
+            >Empresa</label
           >
           <select
             id="company"
             class="form-select rounded-3 py-2 px-3"
             formControlName="company"
-            [class.is-invalid]="
-              tripForm.get('company')?.touched &&
-              tripForm.get('company')?.invalid
-            "
           >
             <option value="">Selecciona</option>
             @for (corp of companies; track corp) {
@@ -373,11 +362,8 @@
               </option>
             }
           </select>
-          <div class="invalid-feedback small">
-            Este campo es obligatorio para continuar
-          </div>
         </div>
-        <div class="col-6 mb-3">
+        <div class="col-6 mb-3 d-none">
           <label for="status" class="form-label small fw-bold mb-2"
             >Estado*</label
           >

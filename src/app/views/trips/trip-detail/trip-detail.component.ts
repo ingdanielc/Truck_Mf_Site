@@ -38,6 +38,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   cities: any[] = [];
   vehicleBrands: any[] = [];
   loading: boolean = true;
+  readonly CARGO_DURATION_FACTOR = 1.35;
 
   // State tracking for logistics
   originalStatus: string = '';
@@ -95,7 +96,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
                 user.userRoles?.[0]?.role?.name || ''
               ).toUpperCase();
               if (this.userRole === 'PROPIETARIO') {
-                this.loggedInOwnerId = user.id ?? null;
+                // We will set loggedInOwnerId inside validateAccess after fetching the actual ID
               }
               this.validateAccess(this.tripId, user);
             }
@@ -213,6 +214,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
               switchMap((ownerResp: any) => {
                 const ownerId = ownerResp?.data?.content?.[0]?.id;
                 if (!ownerId) return of({ hasAccess: false });
+                this.loggedInOwnerId = ownerId; // Correctly store the fetched ownerId
 
                 const vehicleFilter = new ModelFilterTable(
                   [
@@ -687,13 +689,17 @@ export class TripDetailComponent implements OnInit, OnDestroy {
               route.staticDuration.replace('s', ''),
               10,
             );
-            duration = this.formatDuration(sDurationSec);
+            duration = this.formatDuration(
+              Math.floor(sDurationSec * this.CARGO_DURATION_FACTOR),
+            );
           } else if (route.duration) {
             const durationSec = Number.parseInt(
               route.duration.replace('s', ''),
               10,
             );
-            duration = this.formatDuration(durationSec);
+            duration = this.formatDuration(
+              Math.floor(durationSec * this.CARGO_DURATION_FACTOR),
+            );
           }
           this.estimatedArrivalTime = duration || '--:--';
         }
@@ -740,8 +746,11 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       (response: any, status: any) => {
         if (status === 'OK' && response.routes && response.routes.length > 0) {
           const leg = response.routes[0].legs[0];
-          this.estimatedArrivalTime =
-            leg.duration_in_traffic?.text || leg.duration?.text || '--:--';
+          const durationSec =
+            leg.duration_in_traffic?.value || leg.duration?.value || 0;
+          this.estimatedArrivalTime = this.formatDuration(
+            Math.floor(durationSec * this.CARGO_DURATION_FACTOR),
+          );
         }
       },
     );

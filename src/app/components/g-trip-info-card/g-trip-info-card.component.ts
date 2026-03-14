@@ -314,6 +314,10 @@ export class GTripInfoCardComponent implements OnChanges {
       globalThis.google !== 'undefined' &&
       globalThis.google?.maps?.Map
     ) {
+      // Force reset to handle Angular re-render of tripMap div
+      this.mapInstance = null;
+      this.directionsRenderer = null;
+
       if (!this.mapInstance) {
         this.mapInstance = new globalThis.google.maps.Map(mapElement, {
           mapTypeControl: false,
