@@ -1,0 +1,136 @@
+.map-view-container {
+  height: calc(100vh - 80px);
+  position: relative;
+  overflow: hidden;
+  background-color: var(--bs-body-bg);
+
+  .badges-overlay {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    right: 1rem;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    background: rgba(var(--bs-body-bg-rgb), 0.7);
+    backdrop-filter: blur(8px);
+    padding: 0.75rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    .mobile-header {
+      cursor: default;
+      @media (max-width: 768px) {
+        cursor: pointer;
+        margin-bottom: 0 !important;
+      }
+    }
+
+    .badges-content-wrapper {
+      overflow: hidden;
+      transition:
+        max-height 0.3s ease-out,
+        opacity 0.2s ease;
+      max-height: 500px;
+      opacity: 1;
+
+      .badges-list {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        padding-top: 0.5rem;
+      }
+    }
+
+    &.is-collapsed {
+      @media (max-width: 768px) {
+        padding-bottom: 0.75rem;
+        .badges-content-wrapper {
+          max-height: 0;
+          opacity: 0;
+          pointer-events: none;
+        }
+      }
+    }
+
+    .vehicle-badge {
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      border-radius: 2rem;
+      font-weight: 700;
+      font-size: 0.85rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      &.active {
+        background-color: var(--bs-primary);
+        color: white;
+        box-shadow: 0 4px 15px rgba(var(--bs-primary-rgb), 0.35);
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #28a745; // Default active/green
+      }
+    }
+  }
+
+  #google-map {
+    width: 100%;
+    height: 100%;
+  }
+
+  .map-legend {
+    position: absolute;
+    bottom: 2rem;
+    right: 1rem;
+    background: rgba(var(--bs-body-bg-rgb), 0.9);
+    padding: 1rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05);
+    z-index: 5;
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .legend-icon {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+    }
+  }
+}
+
+// Custom Map Marker labels
+.marker-label {
+  color: white;
+  font-weight: bold;
+  font-size: 0.75rem;
+  background: var(--bs-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid white;
+}

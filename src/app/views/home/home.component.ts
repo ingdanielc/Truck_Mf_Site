@@ -71,7 +71,14 @@ export class HomeComponent implements OnInit, OnDestroy {
       title: 'Mantenimiento',
       icon: 'fa-solid fa-screwdriver-wrench',
       descriptions:
-        'Programa, gestiona y haz seguimiento a los mantenimientos de tu flota vehicular.',
+        'Programas, gestionas y haz seguimiento a los mantenimientos de tu flota vehicular.',
+    },
+    {
+      routing: '/site/map',
+      title: 'Mapa',
+      icon: 'fa-solid fa-map-location-dot',
+      descriptions:
+        'Visualiza en tiempo real la ubicación de los conductores y las rutas de los viajes en curso.',
     },
     {
       routing: '/site/configuration',

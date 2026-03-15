@@ -99,4 +99,9 @@ export const routes: Routes = [
         (m) => m.ConfigurationComponent,
       ),
   },
+  {
+    path: 'map',
+    loadComponent: () =>
+      import('./map/map.component').then((m) => m.MapComponent),
+  },
 ];

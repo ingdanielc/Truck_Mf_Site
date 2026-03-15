@@ -1,0 +1,74 @@
+<div class="map-view-container">
+  <!-- Top Badges Overlay -->
+  <div
+    class="badges-overlay custom-scrollbar"
+    [class.is-collapsed]="isPanelCollapsed"
+  >
+    <div
+      class="d-flex align-items-center justify-content-between w-100 mb-2 mobile-header"
+      (click)="togglePanel()"
+    >
+      <div class="d-flex align-items-center">
+        <h6 class="mb-0 fw-bold op-70 text-nowrap">
+          <i class="fa-solid fa-truck-moving me-2"></i>Viajes en Curso
+        </h6>
+      </div>
+      <button
+        class="btn btn-link btn-sm p-0 text-white d-md-none collapse-toggle"
+        type="button"
+        aria-label="Exp"
+      >
+        <i
+          class="fa-solid"
+          [class.fa-chevron-down]="isPanelCollapsed"
+          [class.fa-chevron-up]="!isPanelCollapsed"
+        ></i>
+      </button>
+    </div>
+
+    <div class="badges-content-wrapper">
+      <div class="badges-list">
+        @for (vehicle of activeVehicles; track vehicle.id) {
+          <div
+            class="vehicle-badge"
+            [class.active]="selectedVehicleId === vehicle.id"
+            [style.border-color]="getVehicleColor(vehicle)"
+            (click)="focusVehicle(vehicle)"
+          >
+            <span
+              class="status-dot"
+              [style.background-color]="getVehicleColor(vehicle)"
+            ></span>
+            {{ vehicle.plate }}
+          </div>
+        } @empty {
+          <div class="text-secondary small py-1">
+            No hay viajes en curso en este momento.
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Map Container -->
+  <div id="google-map"></div>
+
+  <!-- Legend -->
+  <div class="map-legend">
+    <div class="legend-item">
+      <div class="legend-icon" style="background-color: #28a745"></div>
+      <span>Origen</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-icon" style="background-color: #dc3545"></div>
+      <span>Destino</span>
+    </div>
+    <div class="legend-item">
+      <div
+        class="legend-icon"
+        style="background-color: var(--bs-primary)"
+      ></div>
+      <span>Ubicación Actual</span>
+    </div>
+  </div>
+</div>

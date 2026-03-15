@@ -51,6 +51,11 @@ export class GMenuComponent implements OnInit, OnDestroy {
       route: '/site/maintenance',
     },
     {
+      label: 'Mapa',
+      icon: 'fa-solid fa-map-location-dot',
+      route: '/site/map',
+    },
+    {
       label: 'Configuración',
       icon: 'fa-solid fa-gear',
       route: '/site/configuration',
