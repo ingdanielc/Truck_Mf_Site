@@ -702,12 +702,10 @@ export class TripsComponent implements OnInit, OnDestroy {
   }
 
   onTripSaved(savedTrip?: ModelTrip): void {
-    const wasEditing = !!this.editingTrip;
     this.toggleOffcanvas();
     this.loadTrips();
 
     if (
-      !wasEditing &&
       savedTrip &&
       (this.userRole === 'PROPIETARIO' || this.userRole === 'ADMINISTRADOR')
     ) {

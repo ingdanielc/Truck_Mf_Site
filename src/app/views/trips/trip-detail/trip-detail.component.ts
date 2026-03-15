@@ -630,10 +630,17 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     this.toggleOffcanvas();
   }
 
-  onTripSaved(): void {
+  onTripSaved(savedTrip?: ModelTrip): void {
     this.toggleOffcanvas();
     if (this.tripId) {
       this.loadTrip(this.tripId);
+    }
+    if (
+      (this.userRole === 'PROPIETARIO' || this.userRole === 'ADMINISTRADOR') &&
+      this.originName !== 'N/A' &&
+      this.destinationName !== 'N/A'
+    ) {
+      this.isTripInfoOpen = true;
     }
   }
 

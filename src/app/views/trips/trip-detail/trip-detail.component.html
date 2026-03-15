@@ -454,7 +454,7 @@
         [trip]="trip"
         [userRole]="userRole"
         [loggedInOwnerId]="loggedInOwnerId"
-        (saved)="onTripSaved()"
+        (saved)="onTripSaved($event)"
         (cancel)="toggleOffcanvas()"
       ></g-trip-form>
     }
