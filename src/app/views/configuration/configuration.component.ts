@@ -75,6 +75,7 @@ export class ConfigurationComponent implements OnInit {
   categoryForm: FormGroup;
   searchTerm: string = '';
   loading: boolean = true;
+  private initialFormValue: string = '';
 
   hasBackContext = false;
   originParam: string | null = null;
@@ -277,6 +278,7 @@ export class ConfigurationComponent implements OnInit {
           this.categoryForm.patchValue({ typeId: this.activeFilter });
         }
       }
+      this.captureInitialState();
     }
   }
 
@@ -323,5 +325,31 @@ export class ConfigurationComponent implements OnInit {
         },
       });
     }
+  }
+
+  get canSave(): boolean {
+    return this.categoryForm.valid && this.isModified;
+  }
+
+  private captureInitialState(): void {
+    this.initialFormValue = JSON.stringify(this.getNormalizedFormValue());
+  }
+
+  get isModified(): boolean {
+    return (
+      JSON.stringify(this.getNormalizedFormValue()) !== this.initialFormValue
+    );
+  }
+
+  private getNormalizedFormValue(): any {
+    const raw = this.categoryForm.getRawValue();
+    const normalized: any = {};
+    Object.keys(raw).forEach((key) => {
+      let val = raw[key];
+      if (val === undefined || val === null) val = null;
+      if (typeof val === 'number') val = String(val);
+      normalized[key] = val;
+    });
+    return normalized;
   }
 }

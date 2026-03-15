@@ -234,8 +234,7 @@
                   (tripForm.get('freight')?.touched ||
                     tripForm.get('freight')?.dirty)) ||
                 (tripForm.hasError('advanceLimitExceeded') &&
-                  (tripForm.touched || tripForm.dirty)) ||
-                (trip && tripForm.invalid && !tripForm.pristine)
+                  (tripForm.touched || tripForm.dirty))
               "
             />
             @if (tripForm.hasError("advanceLimitExceeded")) {
@@ -272,8 +271,7 @@
                   (tripForm.get('advancePayment')?.touched ||
                     tripForm.get('advancePayment')?.dirty)) ||
                 (tripForm.hasError('advanceLimitExceeded') &&
-                  (tripForm.touched || tripForm.dirty)) ||
-                (trip && tripForm.invalid && !tripForm.pristine)
+                  (tripForm.touched || tripForm.dirty))
               "
             />
             @if (tripForm.hasError("advanceLimitExceeded")) {
@@ -387,7 +385,7 @@
         <button
           type="submit"
           class="btn btn-primary flex-fill py-3 rounded-3 fw-bold shadow-primary"
-          [disabled]="tripForm.invalid"
+          [disabled]="!canSave"
         >
           {{ trip ? "Guardar cambios" : "Crear viaje" }}
         </button>

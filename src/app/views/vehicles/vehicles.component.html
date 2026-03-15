@@ -710,7 +710,7 @@
           <button
             type="submit"
             class="btn btn-primary flex-fill py-3 rounded-3 fw-bold shadow-primary"
-            [disabled]="vehicleForm.invalid"
+            [disabled]="!canSave"
           >
             {{ editingVehicle ? "Guardar cambios" : "Crear vehículo" }}
           </button>

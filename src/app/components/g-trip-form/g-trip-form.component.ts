@@ -72,6 +72,8 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   private readonly userSub?: Subscription;
   private ownerChangeSub?: Subscription;
   private vehicleChangeSub?: Subscription;
+  private initialFormValue: string = '';
+  private isPatching: boolean = false;
 
   loadTypes: string[] = [
     'General',
@@ -159,6 +161,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     this.ownerChangeSub = this.tripForm
       .get('ownerId')!
       .valueChanges.subscribe((ownerId) => {
+        if (this.isPatching) return;
         this.tripForm.get('vehicleId')?.setValue(null);
         this.tripForm.get('driverId')?.setValue(null);
         this.vehicles = [];
@@ -172,6 +175,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     this.vehicleChangeSub = this.tripForm
       .get('vehicleId')!
       .valueChanges.subscribe((vehicleId) => {
+        if (this.isPatching) return;
         if (vehicleId) {
           const selectedVehicle = this.vehicles.find(
             (v) => String(v.id) === String(vehicleId),
@@ -226,19 +230,27 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       }
     }
 
+    this.isPatching = true;
     this.tripForm.patchValue({
       ownerId: tripOwnerId,
       numberTrip: trip.numberTrip ?? '',
       manifestNumber: trip.manifestNumber ?? '',
-      originId: trip.originId ? String(trip.originId) : '',
-      destinationId: trip.destinationId ? String(trip.destinationId) : '',
+      originId: trip.originId ? Number(trip.originId) : '',
+      destinationId: trip.destinationId ? Number(trip.destinationId) : '',
       freight: Number(trip.freight) || 0,
       advancePayment: Number(trip.advancePayment) || 0,
+      balance:
+        Number(trip.balance) ||
+        Number(trip.freight) - Number(trip.advancePayment) ||
+        0,
       startDate: startDateStr,
       loadType: trip.loadType ?? '',
       company: trip.company ?? '',
       status: trip.status || 'En Curso',
+      vehicleId: trip.vehicleId ?? null,
+      driverId: trip.driverId ?? null,
     });
+    this.isPatching = false;
 
     if (this.userRole === 'PROPIETARIO') {
       this.tripForm.get('ownerId')?.disable({ emitEvent: false });
@@ -248,9 +260,12 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     } else {
       this.tripForm.get('ownerId')?.enable({ emitEvent: false });
     }
+
+    setTimeout(() => this.captureInitialState(), 0);
   }
 
   private resetForm(): void {
+    this.isPatching = true;
     this.tripForm.reset({
       freight: 0,
       advancePayment: 0,
@@ -260,6 +275,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       loadType: '',
       company: '',
     });
+    this.isPatching = false;
 
     if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId) {
       this.tripForm.get('ownerId')?.setValue(this.loggedInOwnerId);
@@ -274,6 +290,8 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       this.tripForm.get('driverId')?.setValue(this.loggedInDriverId);
       this.tripForm.get('driverId')?.disable();
     }
+
+    setTimeout(() => this.captureInitialState(), 0);
   }
 
   loadCities(): void {
@@ -399,6 +417,9 @@ export class GTripFormComponent implements OnInit, OnDestroy {
               ?.setValue(this._pendingVehicleId, { emitEvent: true });
             this._pendingVehicleId = null;
           }
+          if (this.trip) {
+            setTimeout(() => this.captureInitialState(), 0);
+          }
         },
         error: () => (this.loadingVehicles = false),
       });
@@ -436,6 +457,9 @@ export class GTripFormComponent implements OnInit, OnDestroy {
         if (this._pendingDriverId != null) {
           this.tripForm.get('driverId')?.setValue(this._pendingDriverId);
           this._pendingDriverId = null;
+        }
+        if (this.trip) {
+          setTimeout(() => this.captureInitialState(), 0);
         }
       },
       error: () => (this.loadingDrivers = false),
@@ -514,6 +538,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       return;
     }
     this.tripForm.get(controlName)?.setValue(numericValue, { emitEvent: true });
+    this.tripForm.get(controlName)?.markAsDirty();
   }
 
   getFormattedValue(controlName: string): string {
@@ -533,5 +558,31 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     if (!pattern.test(inputChar)) {
       event.preventDefault();
     }
+  }
+
+  get canSave(): boolean {
+    return this.tripForm.valid && this.isModified;
+  }
+
+  private captureInitialState(): void {
+    this.initialFormValue = JSON.stringify(this.getNormalizedFormValue());
+  }
+
+  get isModified(): boolean {
+    return (
+      JSON.stringify(this.getNormalizedFormValue()) !== this.initialFormValue
+    );
+  }
+
+  private getNormalizedFormValue(): any {
+    const raw = this.tripForm.getRawValue();
+    const normalized: any = {};
+    Object.keys(raw).forEach((key) => {
+      let val = raw[key];
+      if (val === undefined || val === null) val = null;
+      if (typeof val === 'number') val = String(val);
+      normalized[key] = val;
+    });
+    return normalized;
   }
 }

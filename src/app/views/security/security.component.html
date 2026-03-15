@@ -424,7 +424,7 @@
           <button
             type="submit"
             class="btn btn-primary flex-fill py-3 rounded-3 fw-bold shadow-primary"
-            [disabled]="userForm.invalid"
+            [disabled]="!canSave"
           >
             {{ editingUser ? "Guardar cambios" : "Crear usuario" }}
           </button>

@@ -41,6 +41,7 @@ export class GAddExpenseComponent implements OnInit {
   @Input() isMaintenance = false;
   @Input() userRole = '';
   @Output() close = new EventEmitter<any>();
+  private initialFormValue: string = '';
 
   expenseForm!: FormGroup;
   expenseTypes = [
@@ -95,6 +96,7 @@ export class GAddExpenseComponent implements OnInit {
       amount: this.applyAmountMask(this.editingExpense.amount.toString()),
       description: this.editingExpense.description,
     });
+    this.captureInitialState();
   }
 
   loadCategories(): void {
@@ -148,12 +150,14 @@ export class GAddExpenseComponent implements OnInit {
       ],
       description: ['', [Validators.maxLength(200)]],
     });
+    this.captureInitialState();
   }
 
   onAmountInput(event: any): void {
     const input = event.target.value.replaceAll(/\D/g, ''); // Remove non-digits
     const formatted = this.applyAmountMask(input);
     this.expenseForm.get('amount')?.setValue(formatted, { emitEvent: false });
+    this.expenseForm.get('amount')?.markAsDirty();
   }
 
   private applyAmountMask(value: string): string {
@@ -200,6 +204,7 @@ export class GAddExpenseComponent implements OnInit {
     }
     this.selectedCategoryId = id;
     this.expenseForm.patchValue({ categoryId: id });
+    this.expenseForm.markAsDirty();
   }
 
   onSave(): void {
@@ -232,5 +237,31 @@ export class GAddExpenseComponent implements OnInit {
 
   dismiss(): void {
     this.close.emit(null);
+  }
+
+  get canSave(): boolean {
+    return this.expenseForm.valid && this.isModified;
+  }
+
+  private captureInitialState(): void {
+    this.initialFormValue = JSON.stringify(this.getNormalizedFormValue());
+  }
+
+  get isModified(): boolean {
+    return (
+      JSON.stringify(this.getNormalizedFormValue()) !== this.initialFormValue
+    );
+  }
+
+  private getNormalizedFormValue(): any {
+    const raw = this.expenseForm.getRawValue();
+    const normalized: any = {};
+    Object.keys(raw).forEach((key) => {
+      let val = raw[key];
+      if (val === undefined || val === null) val = null;
+      if (typeof val === 'number') val = String(val);
+      normalized[key] = val;
+    });
+    return normalized;
   }
 }

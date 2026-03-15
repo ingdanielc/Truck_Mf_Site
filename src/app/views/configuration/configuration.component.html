@@ -357,7 +357,7 @@
           <button
             type="submit"
             class="btn btn-primary flex-fill py-3 rounded-3 fw-bold shadow-primary"
-            [disabled]="categoryForm.invalid"
+            [disabled]="!canSave"
           >
             {{ editingCategory ? "Guardar cambios" : "Crear categoría" }}
           </button>

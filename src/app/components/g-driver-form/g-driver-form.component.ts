@@ -53,6 +53,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
   showCamera = false;
   photoFile: File | Blob | null = null;
   photoPreview: string = '';
+  private initialFormValue: string = '';
   groupedCities: { state: string; cities: any[] }[] = [];
   licenseCategories: any[] = [
     { id: 'a1', name: 'A1' },
@@ -191,6 +192,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
         ]);
 
       this.updateSalaryValidators(this.driver.salaryTypeId || null);
+      this.captureInitialState();
     } else {
       this.photoPreview = '';
       this.driverForm.reset({
@@ -260,6 +262,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
       this.driverForm.get('salaryTypeId')?.enable({ emitEvent: false });
       this.driverForm.get('salary')?.enable({ emitEvent: false });
     }
+    this.captureInitialState();
   }
 
   updateSalaryValidators(salaryTypeId: number | null): void {
@@ -299,6 +302,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
     const input = event.target.value.replaceAll(/\D/g, '');
     const formatted = this.applyNumberMask(input);
     this.driverForm.get('salary')?.setValue(formatted, { emitEvent: false });
+    this.driverForm.get('salary')?.markAsDirty();
   }
 
   onDocumentNumberInput(event: any): void {
@@ -307,6 +311,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
     this.driverForm
       .get('documentNumber')
       ?.setValue(formatted, { emitEvent: false });
+    this.driverForm.get('documentNumber')?.markAsDirty();
   }
 
   private applyNumberMask(value: string): string {
@@ -325,6 +330,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
     if (input.length > 6) formatted += ' ' + input.substring(6, 8);
     if (input.length > 8) formatted += ' ' + input.substring(8, 10);
     this.driverForm.get('cellPhone')?.setValue(formatted, { emitEvent: false });
+    this.driverForm.get('cellPhone')?.markAsDirty();
   }
 
   triggerPhotoInput(photoInput: HTMLInputElement): void {
@@ -584,5 +590,31 @@ export class GDriverFormComponent implements OnInit, OnChanges {
 
   close(): void {
     this.closed.emit();
+  }
+
+  get canSave(): boolean {
+    return this.driverForm.valid && (this.isModified || !!this.photoFile);
+  }
+
+  private captureInitialState(): void {
+    this.initialFormValue = JSON.stringify(this.getNormalizedFormValue());
+  }
+
+  get isModified(): boolean {
+    return (
+      JSON.stringify(this.getNormalizedFormValue()) !== this.initialFormValue
+    );
+  }
+
+  private getNormalizedFormValue(): any {
+    const raw = this.driverForm.getRawValue();
+    const normalized: any = {};
+    Object.keys(raw).forEach((key) => {
+      let val = raw[key];
+      if (val === undefined || val === null) val = null;
+      if (typeof val === 'number') val = String(val);
+      normalized[key] = val;
+    });
+    return normalized;
   }
 }

@@ -531,9 +531,9 @@
         <button
           type="submit"
           class="btn btn-primary flex-fill py-3 rounded-3 fw-bold shadow-primary"
-          [disabled]="ownerForm.invalid"
+          [disabled]="!canSave"
         >
-          Guardar cambios
+          {{ owner?.id ? "Guardar cambios" : "Crear propietario" }}
         </button>
       </div>
     </form>

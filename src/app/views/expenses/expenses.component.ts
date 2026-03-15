@@ -722,11 +722,12 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   onExpenseAdded(event: any): void {
     if (event) {
+      const isUpdating = !!this.editingExpense;
       this.expenseService.createExpense(event).subscribe({
         next: () => {
           this.toastService.showSuccess(
             'Éxito',
-            this.editingExpense
+            isUpdating
               ? 'Gasto actualizado exitosamente!'
               : 'Gasto registrado exitosamente!',
           );
@@ -735,6 +736,9 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           this.expensesTripComponent?.loadExpenses();
           this.notificationsService.refreshNotifications();
           this.reportLocationIfDriver();
+          // Reset states AFTER potential usage
+          this.editingExpense = null;
+          this.preselectedExpenseTypeId = null;
         },
         error: (err) => {
           console.error('Error saving expense:', err);
@@ -743,9 +747,9 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       });
     } else {
       this.showAddExpense = false;
+      this.editingExpense = null;
+      this.preselectedExpenseTypeId = null;
     }
-    this.editingExpense = null;
-    this.preselectedExpenseTypeId = null;
   }
 
   private reportLocationIfDriver(): void {

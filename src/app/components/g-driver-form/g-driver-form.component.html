@@ -630,7 +630,7 @@
         <button
           type="submit"
           class="btn btn-primary flex-fill py-3 rounded-3 fw-bold shadow-primary"
-          [disabled]="driverForm.invalid"
+          [disabled]="!canSave"
         >
           {{ driver?.id ? "Guardar cambios" : "Crear conductor" }}
         </button>

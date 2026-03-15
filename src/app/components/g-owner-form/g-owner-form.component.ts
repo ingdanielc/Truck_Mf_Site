@@ -58,6 +58,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
   showCamera = false;
   photoPreview: string = '';
   photoFile: File | Blob | null = null;
+  private initialFormValue: string = '';
 
   constructor(
     private readonly fb: FormBuilder,
@@ -258,6 +259,8 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     this.ownerForm.get('confirmPassword')?.clearValidators();
     this.ownerForm.get('password')?.updateValueAndValidity();
     this.ownerForm.get('confirmPassword')?.updateValueAndValidity();
+
+    this.captureInitialState();
   }
 
   resetForm(): void {
@@ -311,6 +314,8 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     this.showConfirmPassword = false;
     this.photoPreview = '';
     this.photoFile = null;
+
+    this.captureInitialState();
   }
 
   closeOffcanvas(): void {
@@ -513,6 +518,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     this.ownerForm
       .get('documentNumber')
       ?.setValue(formatted, { emitEvent: false });
+    this.ownerForm.get('documentNumber')?.markAsDirty();
   }
 
   private applyDocumentNumberMask(value: string): string {
@@ -526,6 +532,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     const input = event.target.value.replaceAll(/\D/g, '');
     const formatted = this.applyPhoneMask(input);
     this.ownerForm.get('cellPhone')?.setValue(formatted, { emitEvent: true });
+    this.ownerForm.get('cellPhone')?.markAsDirty();
   }
 
   private applyPhoneMask(input: string): string {
@@ -537,5 +544,31 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     if (unmasked.length > 6) formatted += ' ' + unmasked.substring(6, 8);
     if (unmasked.length > 8) formatted += ' ' + unmasked.substring(8, 10);
     return formatted;
+  }
+
+  get canSave(): boolean {
+    return this.ownerForm.valid && (this.isModified || !!this.photoFile);
+  }
+
+  private captureInitialState(): void {
+    this.initialFormValue = JSON.stringify(this.getNormalizedFormValue());
+  }
+
+  get isModified(): boolean {
+    return (
+      JSON.stringify(this.getNormalizedFormValue()) !== this.initialFormValue
+    );
+  }
+
+  private getNormalizedFormValue(): any {
+    const raw = this.ownerForm.getRawValue();
+    const normalized: any = {};
+    Object.keys(raw).forEach((key) => {
+      let val = raw[key];
+      if (val === undefined || val === null) val = null;
+      if (typeof val === 'number') val = String(val);
+      normalized[key] = val;
+    });
+    return normalized;
   }
 }

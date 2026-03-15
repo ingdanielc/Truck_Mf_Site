@@ -62,6 +62,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
   showUserFormConfirmPassword = false;
 
   userRole: string = '';
+  private initialFormValue: string = '';
   private userSub?: Subscription;
 
   constructor(
@@ -326,6 +327,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
       this.userForm.get('password')?.updateValueAndValidity();
       this.userForm.get('confirmPassword')?.updateValueAndValidity();
       this.userForm.get('role')?.disable();
+      this.captureInitialState();
     }
   }
 
@@ -509,5 +511,31 @@ export class SecurityComponent implements OnInit, OnDestroy {
           );
         },
       });
+  }
+
+  get canSave(): boolean {
+    return this.userForm.valid && this.isModified;
+  }
+
+  private captureInitialState(): void {
+    this.initialFormValue = JSON.stringify(this.getNormalizedFormValue());
+  }
+
+  get isModified(): boolean {
+    return (
+      JSON.stringify(this.getNormalizedFormValue()) !== this.initialFormValue
+    );
+  }
+
+  private getNormalizedFormValue(): any {
+    const raw = this.userForm.getRawValue();
+    const normalized: any = {};
+    Object.keys(raw).forEach((key) => {
+      let val = raw[key];
+      if (val === undefined || val === null) val = null;
+      if (typeof val === 'number') val = String(val);
+      normalized[key] = val;
+    });
+    return normalized;
   }
 }

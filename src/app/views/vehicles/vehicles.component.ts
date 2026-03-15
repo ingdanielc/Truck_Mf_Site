@@ -87,6 +87,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   showCamera = false;
   photoFile: File | Blob | null = null;
   photoPreview: string = '';
+  private initialFormValue: string = '';
 
   // Selection Lists
   brands: any[] = [];
@@ -279,6 +280,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
                 emitEvent: false,
               });
           }
+        }
+        if (this.editingVehicle) {
+          setTimeout(() => this.captureInitialState(), 0);
         }
       },
       error: () => {
@@ -544,6 +548,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           this.vehicleForm.get('ownerId')?.enable();
         }
       }
+      setTimeout(() => this.captureInitialState(), 0);
     } else {
       this.editingVehicle = null;
       this.vehicleForm.reset();
@@ -590,6 +595,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
     // Seteamos el ownerId — esto dispara ownerChangeSub que carga los conductores
     this.vehicleForm.get('ownerId')?.setValue(owner.id ?? null);
+    setTimeout(() => this.captureInitialState(), 0);
   }
 
   async onSubmit(): Promise<void> {
@@ -1192,5 +1198,31 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   onCameraClose(): void {
     this.showCamera = false;
+  }
+
+  get canSave(): boolean {
+    return this.vehicleForm.valid && (this.isModified || !!this.photoFile);
+  }
+
+  private captureInitialState(): void {
+    this.initialFormValue = JSON.stringify(this.getNormalizedFormValue());
+  }
+
+  get isModified(): boolean {
+    return (
+      JSON.stringify(this.getNormalizedFormValue()) !== this.initialFormValue
+    );
+  }
+
+  private getNormalizedFormValue(): any {
+    const raw = this.vehicleForm.getRawValue();
+    const normalized: any = {};
+    Object.keys(raw).forEach((key) => {
+      let val = raw[key];
+      if (val === undefined || val === null) val = null;
+      if (typeof val === 'number') val = String(val);
+      normalized[key] = val;
+    });
+    return normalized;
   }
 }
