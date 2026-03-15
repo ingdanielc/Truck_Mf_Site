@@ -607,15 +607,7 @@
                   <span class="text-secondary smaller"
                     >Seguridad de la contraseña</span
                   >
-                  <span
-                    class="fw-bold smaller"
-                    [ngClass]="{
-                      'text-danger': strength <= 1,
-                      'text-warning': strength === 2,
-                      'text-info': strength === 3,
-                      'text-success': strength === 4,
-                    }"
-                  >
+                  <span class="fw-bold smaller text-primary">
                     {{ strengthLabel }}
                   </span>
                 </div>
