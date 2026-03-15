@@ -22,6 +22,7 @@
 
     .mobile-header {
       cursor: default;
+
       @media (max-width: 768px) {
         cursor: pointer;
         margin-bottom: 0 !important;
@@ -47,6 +48,7 @@
     &.is-collapsed {
       @media (max-width: 768px) {
         padding-bottom: 0.75rem;
+
         .badges-content-wrapper {
           max-height: 0;
           opacity: 0;
@@ -65,7 +67,14 @@
       border: 2px solid transparent;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 0.5rem;
+      min-width: 100px;
+
+      @media (max-width: 768px) {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.8rem;
+      }
 
       &:hover {
         transform: translateY(-2px);
@@ -76,6 +85,10 @@
         background-color: var(--bs-primary);
         color: white;
         box-shadow: 0 4px 15px rgba(var(--bs-primary-rgb), 0.35);
+
+        .status-dot {
+          background-color: white !important;
+        }
       }
 
       .status-dot {

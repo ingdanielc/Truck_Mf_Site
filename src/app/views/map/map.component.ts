@@ -5,6 +5,8 @@ import { VehicleService } from 'src/app/services/vehicle.service';
 import { TripService } from 'src/app/services/trip.service';
 import { LocationService } from 'src/app/services/location.service';
 import { CommonService } from 'src/app/services/common.service';
+import { OwnerService } from 'src/app/services/owner.service';
+import { DriverService } from 'src/app/services/driver.service';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { ModelTrip } from 'src/app/models/trip-model';
 import {
@@ -35,7 +37,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   private markers: any[] = [];
   private polylines: any[] = [];
   private geocoder: any;
+  private readonly directionsService = new google.maps.DirectionsService();
   private userSub?: Subscription;
+  private readonly coordCache: Map<string, any> = new Map();
 
   constructor(
     private readonly securityService: SecurityService,
@@ -43,18 +47,51 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly tripService: TripService,
     private readonly locationService: LocationService,
     private readonly commonService: CommonService,
+    private readonly ownerService: OwnerService,
+    private readonly driverService: DriverService,
   ) {}
 
   ngOnInit(): void {
     this.geocoder = new google.maps.Geocoder();
-    this.userSub = this.securityService.userData$.subscribe((user) => {
+    this.userSub = this.securityService.userData$.subscribe((user: any) => {
       if (user) {
-        this.userRole = (user as any).role?.name || '';
-        this.loggedInUserId = user.id || null;
-        if (this.map) {
-          this.loadActiveData();
+        this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+        const userId = user.id;
+
+        if (this.userRole === 'PROPIETARIO') {
+          this.resolveOwnerIdAndLoad(userId);
+        } else if (this.userRole === 'CONDUCTOR') {
+          this.resolveDriverIdAndLoad(userId);
+        } else {
+          // Admin or others (resolve as is)
+          this.loggedInUserId = userId;
+          if (this.map) this.loadActiveData();
         }
       }
+    });
+  }
+
+  private resolveOwnerIdAndLoad(userId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('user.id', '=', userId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.ownerService.getOwnerFilter(filter).subscribe((res) => {
+      this.loggedInUserId = res?.data?.content?.[0]?.id || null;
+      if (this.map) this.loadActiveData();
+    });
+  }
+
+  private resolveDriverIdAndLoad(userId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('user.id', '=', userId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.driverService.getDriverFilter(filter).subscribe((res) => {
+      this.loggedInUserId = res?.data?.content?.[0]?.id || null;
+      if (this.map) this.loadActiveData();
     });
   }
 
@@ -75,23 +112,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.map = new google.maps.Map(document.getElementById('google-map'), {
       zoom: 6,
       center: defaultCenter,
-      styles: [
-        {
-          featureType: 'all',
-          elementType: 'labels.text.fill',
-          stylers: [{ color: '#ffffff' }],
-        },
-        {
-          featureType: 'water',
-          elementType: 'geometry',
-          stylers: [{ color: '#193341' }],
-        },
-        {
-          featureType: 'landscape',
-          elementType: 'geometry',
-          stylers: [{ color: '#2c3e50' }],
-        },
-      ],
+      mapId: 'light_map', // Optional: if they have a map ID, otherwise it defaults to standard
     });
   }
 
@@ -109,12 +130,14 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
           let vehiclesFilter: Filter[] = [];
 
           const roleUpper = this.userRole.toUpperCase();
-          if (roleUpper.includes('PROPIETARIO') && this.loggedInUserId) {
-            // Based on VehiclesComponent, Propietario uses 'owner.id' with the user ID
+          if (roleUpper === 'PROPIETARIO' && this.loggedInUserId) {
             vehiclesFilter.push(
               new Filter('owner.id', '=', this.loggedInUserId.toString()),
             );
-          } else if (roleUpper.includes('CONDUCTOR') && this.loggedInUserId) {
+          } else if (roleUpper === 'CONDUCTOR' && this.loggedInUserId) {
+            // For conductor, we filter trips directly by driver.id later,
+            // but we still need the vehicle he's associated with.
+            // In trips view, conductor sees only his assigned vehicle trips.
             vehiclesFilter.push(
               new Filter(
                 'currentDriverId',
@@ -130,7 +153,13 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
             new Sort('id', true),
           );
 
-          return this.vehicleService.getVehicleOwnerFilter(vehicleFilterTable);
+          if (roleUpper === 'PROPIETARIO') {
+            return this.vehicleService.getVehicleOwnerFilter(
+              vehicleFilterTable,
+            );
+          } else {
+            return this.vehicleService.getVehicleFilter(vehicleFilterTable);
+          }
         }),
         switchMap((vehiclesResp: any) => {
           const vehicles: ModelVehicle[] = vehiclesResp?.data?.content || [];
@@ -141,15 +170,27 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
           }
 
           // 3. Extract IDs and filter trips
-          const vehicleIds = vehicles
-            .map((v) => v.id)
-            .filter((id) => !!id)
-            .join(',');
+          const roleUpper = this.userRole.toUpperCase();
+          let tripFilters: Filter[] = [new Filter('status', '=', 'En Curso')];
 
-          let tripFilters: Filter[] = [
-            new Filter('status', '=', 'En Curso'),
-            new Filter('vehicle.id', 'in', vehicleIds),
-          ];
+          if (roleUpper === 'CONDUCTOR' && this.loggedInUserId) {
+            tripFilters.push(
+              new Filter('driver.id', '=', this.loggedInUserId.toString()),
+            );
+          } else {
+            // Admin/Owner: filter by the loaded vehicles
+            const vehicleIds = vehicles
+              .map((v) => v.id)
+              .filter((id) => !!id)
+              .join(',');
+            if (vehicleIds) {
+              tripFilters.push(new Filter('vehicle.id', 'in', vehicleIds));
+            } else {
+              // No vehicles found for this owner/admin context
+              this.activeVehicles = [];
+              return of({ vehicles: [], trips: [] });
+            }
+          }
 
           const tripFilterTable = new ModelFilterTable(
             tripFilters,
@@ -228,67 +269,103 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       ? `${destCity.name}, ${destCity.state}, Colombia`
       : 'Colombia';
 
-    Promise.all([
-      this.getCoordinates(originName),
-      this.getCoordinates(destName),
-    ]).then(([originPos, destPos]) => {
-      // Markers
-      this.addMarker(
-        originPos,
-        'O',
-        `Origen: ${originCity?.name || trip.originId}`,
-        '#28a745',
-      );
-      this.addMarker(
-        destPos,
-        'D',
-        `Destino: ${destCity?.name || trip.destinationId}`,
-        '#dc3545',
-      );
+    const request = {
+      origin: originName,
+      destination: destName,
+      travelMode: google.maps.TravelMode.DRIVING,
+    };
 
-      const pathPoints = [originPos];
+    this.directionsService.route(request, (result: any, status: any) => {
+      if (status === 'OK' && result.routes.length > 0) {
+        const route = result.routes[0];
+        const pathPoints = route.overview_path;
 
-      if (lastLocation?.latitude && lastLocation.longitude) {
-        const currentPos = {
-          lat: Number(lastLocation.latitude),
-          lng: Number(lastLocation.longitude),
-        };
+        // Origin and Destination markers (extracting directly from directions result for precision)
+        const originPos = route.legs[0].start_location;
+        const destPos = route.legs[0].end_location;
+
         this.addMarker(
-          currentPos,
-          vehicle.plate.toUpperCase(),
-          'Ubicación Actual',
-          vehicleColor,
+          originPos,
+          'O',
+          `Origen: ${originCity?.name || trip.originId}`,
+          '#28a745',
         );
-        pathPoints.push(currentPos);
-      }
+        this.addMarker(
+          destPos,
+          'D',
+          `Destino: ${destCity?.name || trip.destinationId}`,
+          '#dc3545',
+        );
 
-      pathPoints.push(destPos);
+        // Path Polyline
+        const polyline = new google.maps.Polyline({
+          path: pathPoints,
+          geodesic: true,
+          strokeColor: vehicleColor,
+          strokeOpacity: 0.8,
+          strokeWeight: 5,
+          map: this.map,
+        });
+        this.polylines.push(polyline);
 
-      const polyline = new google.maps.Polyline({
-        path: pathPoints,
-        geodesic: true,
-        strokeColor: vehicleColor,
-        strokeOpacity: 0.8,
-        strokeWeight: 4,
-        map: this.map,
-      });
-      this.polylines.push(polyline);
+        // Current Location marker (if available)
+        if (lastLocation?.latitude && lastLocation.longitude) {
+          const currentPos = {
+            lat: Number(lastLocation.latitude),
+            lng: Number(lastLocation.longitude),
+          };
+          this.addMarker(
+            currentPos,
+            vehicle.plate.toUpperCase(),
+            'Ubicación Actual',
+            vehicleColor,
+          );
+        }
 
-      // Adjust map bounds if this is the only or first vehicle
-      if (this.activeVehicles.length === 1) {
-        const bounds = new google.maps.LatLngBounds();
-        pathPoints.forEach((p) => bounds.extend(p));
-        this.map.fitBounds(bounds);
+        // Adjust map bounds
+        if (
+          this.activeVehicles.length === 1 ||
+          this.selectedVehicleId === vehicle.id
+        ) {
+          const bounds = new google.maps.LatLngBounds();
+          pathPoints.forEach((p: any) => bounds.extend(p));
+          this.map.fitBounds(bounds);
+        }
+      } else {
+        console.warn(
+          `Directions request failed for ${vehicle.plate}: ${status}`,
+        );
+        // Fallback to straight line if directions fail
+        Promise.all([
+          this.getCoordinates(originName),
+          this.getCoordinates(destName),
+        ]).then(([originPos, destPos]) => {
+          this.addMarker(originPos, 'O', `Origen`, '#28a745');
+          this.addMarker(destPos, 'D', `Destino`, '#dc3545');
+          const polyline = new google.maps.Polyline({
+            path: [originPos, destPos],
+            strokeColor: vehicleColor,
+            strokeWeight: 4,
+            map: this.map,
+          });
+          this.polylines.push(polyline);
+        });
       }
     });
   }
 
   private getCoordinates(address: string): Promise<any> {
+    if (this.coordCache.has(address)) {
+      return Promise.resolve(this.coordCache.get(address));
+    }
+
     return new Promise((resolve) => {
       this.geocoder.geocode({ address }, (results: any, status: any) => {
         if (status === 'OK' && results[0]) {
           const loc = results[0].geometry.location;
-          resolve({ lat: loc.lat(), lng: loc.lng() });
+          const coords = { lat: loc.lat(), lng: loc.lng() };
+          this.coordCache.set(address, coords);
+          resolve(coords);
         } else {
           console.warn(`Geocoding failed for ${address}: ${status}`);
           resolve({ lat: 4.5709, lng: -74.2973 }); // Fallback to Colombia center
@@ -325,6 +402,11 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.markers.push(marker);
   }
 
+  showAll(): void {
+    this.selectedVehicleId = null;
+    this.renderAllVehiclesOnMap();
+  }
+
   getVehicleColor(vehicle: ModelVehicle): string {
     // Generate a consistent color based on plate
     let hash = 0;
@@ -336,11 +418,18 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   focusVehicle(vehicle: ModelVehicle): void {
+    if (this.selectedVehicleId === vehicle.id) {
+      // Toggle off: Show all vehicles again
+      this.selectedVehicleId = null;
+      this.renderAllVehiclesOnMap();
+      return;
+    }
+
     this.selectedVehicleId = vehicle.id || null;
     const trip = (vehicle as any).currentTrip;
     if (!trip) return;
 
-    // Clear and redraw specifically for this vehicle to show current location
+    // Clear and draw ONLY for this vehicle
     this.clearMap();
 
     // 1. Fetch current location only on click
@@ -353,15 +442,8 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.locationService.getLocationService(filter).subscribe((res) => {
       const loc = res?.data?.content?.[0];
 
-      // 2. Redraw all routes but this one with location
-      this.activeVehicles.forEach((v) => {
-        const vTrip = (v as any).currentTrip;
-        if (v.id === vehicle.id) {
-          this.drawVehicleRoute(v, vTrip, loc);
-        } else {
-          this.drawVehicleRoute(v, vTrip, null);
-        }
-      });
+      // 2. Draw only this vehicle route with location
+      this.drawVehicleRoute(vehicle, trip, loc);
 
       // 3. Pan to location if available, otherwise origin
       if (loc) {
@@ -370,8 +452,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
           lng: Number(loc.longitude),
         });
         this.map.setZoom(12);
-      } else {
-        // Fallback pan logic could go here
       }
     });
   }
