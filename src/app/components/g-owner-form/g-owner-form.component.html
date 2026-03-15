@@ -499,28 +499,33 @@
             <div class="d-flex gap-2 mb-2">
               <div
                 class="strength-segment flex-fill"
-                [class.active]="strength >= 1"
+                [class.active-weak]="strength >= 1"
               ></div>
               <div
                 class="strength-segment flex-fill"
-                [class.active]="strength >= 2"
+                [class.active-medium]="strength >= 2"
               ></div>
               <div
                 class="strength-segment flex-fill"
-                [class.active]="strength >= 3"
+                [class.active-good]="strength >= 3"
               ></div>
               <div
                 class="strength-segment flex-fill"
-                [class.active]="strength >= 4"
+                [class.active-strong]="strength >= 4"
               ></div>
             </div>
             <div class="d-flex justify-content-between align-items-center">
               <span class="small text-secondary fw-bold op-70"
                 >Seguridad de contraseña</span
               >
-              <span class="small fw-bold text-primary">{{
-                strengthLabel
-              }}</span>
+              <span
+                class="small fw-bold"
+                [class.text-danger]="strength === 1"
+                [class.text-warning]="strength === 2"
+                [class.text-info]="strength === 3"
+                [class.text-primary]="strength >= 4"
+                >{{ strengthLabel }}</span
+              >
             </div>
           </div>
         </div>

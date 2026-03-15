@@ -329,7 +329,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
         let password = formValue.password;
 
         if (password) {
-          password = await this.securityService.getHashSHA512(password);
+          password = await this.securityService.getHashSHA512(password.trim());
         }
 
         if (this.owner) {

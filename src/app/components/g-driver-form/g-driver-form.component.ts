@@ -415,7 +415,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
         const formValue = this.driverForm.getRawValue();
         let password = formValue.password;
         if (password) {
-          password = await this.securityService.getHashSHA512(password);
+          password = await this.securityService.getHashSHA512(password.trim());
         }
 
         if (this.driver?.id) {
@@ -426,7 +426,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
               const uploadRes = await firstValueFrom(
                 this.commonService.uploadPhoto(
                   'driver',
-                  this.driver.id!,
+                  this.driver.id,
                   this.photoFile,
                 ),
               );

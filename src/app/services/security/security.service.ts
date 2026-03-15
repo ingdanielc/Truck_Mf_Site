@@ -84,11 +84,16 @@ export class SecurityService {
   }
 
   async getHashSHA512(text: string): Promise<string> {
+    // Limpiamos espacios y normalizamos para asegurar consistencia
+    const cleanText = text.trim().normalize('NFC');
     const encoder = new TextEncoder();
-    const data = encoder.encode(text);
+    const data = encoder.encode(cleanText);
+
     const hashBuffer = await crypto.subtle.digest('SHA-512', data);
+
+    // Forma más robusta de convertir a Hex en cualquier entorno
     return Array.from(new Uint8Array(hashBuffer))
-      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
   }
 }

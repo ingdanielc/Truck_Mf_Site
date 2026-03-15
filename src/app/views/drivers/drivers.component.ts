@@ -633,7 +633,7 @@ export class DriversComponent implements OnInit, OnDestroy {
 
     try {
       const hashedNewPassword = await this.securityService.getHashSHA512(
-        passwords.newPassword,
+        passwords.newPassword.trim(),
       );
 
       this.securityService

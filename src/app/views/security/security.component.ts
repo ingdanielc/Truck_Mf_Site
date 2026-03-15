@@ -338,7 +338,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
         let password = formValue.password;
 
         if (password) {
-          password = await this.securityService.getHashSHA512(password);
+          password = await this.securityService.getHashSHA512(password.trim());
         }
 
         const selectedRole = this.availableRoles.find(
