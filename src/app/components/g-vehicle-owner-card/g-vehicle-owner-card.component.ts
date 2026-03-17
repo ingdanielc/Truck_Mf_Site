@@ -1,4 +1,11 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  HostListener,
+  OnInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ModelOwner } from 'src/app/models/owner-model';
@@ -11,7 +18,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
   templateUrl: './g-vehicle-owner-card.component.html',
   styleUrls: ['./g-vehicle-owner-card.component.scss'],
 })
-export class GVehicleOwnerCardComponent {
+export class GVehicleOwnerCardComponent implements OnInit {
   @Input() owner!: ModelOwner;
   @Input() itemCount: number = 0;
   @Input() itemLabel: string = 'Vehículos';
@@ -19,6 +26,28 @@ export class GVehicleOwnerCardComponent {
   @Input() from: string = 'trips';
 
   @Output() viewProfile = new EventEmitter<ModelOwner>();
+  isMobile: boolean = false;
+
+  @HostListener('window:resize', ['$event'])
+  onResize(): void {
+    this.checkIsMobile();
+  }
+
+  ngOnInit(): void {
+    this.checkIsMobile();
+  }
+
+  private checkIsMobile(): void {
+    this.isMobile = window.innerWidth < 768; // Standard Bootstrap md breakpoint
+  }
+
+  get displayName(): string {
+    const name = this.owner?.name ?? '';
+    if (this.isMobile && name.length > 19) {
+      return name.substring(0, 16) + '...';
+    }
+    return name;
+  }
 
   constructor(
     private readonly router: Router,

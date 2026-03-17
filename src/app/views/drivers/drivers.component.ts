@@ -16,7 +16,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { CommonService } from '../../services/common.service';
-import { Subscription, forkJoin } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { OwnerService } from 'src/app/services/owner.service';
 import { ModelOwner } from 'src/app/models/owner-model';
 
@@ -115,7 +115,7 @@ export class DriversComponent implements OnInit, OnDestroy {
     const filter = new ModelFilterTable(
       [new Filter('id', '=', ownerId.toString())],
       new Pagination(1, 0),
-      new Sort('id', true),
+      new Sort('name', true),
     );
     this.ownerService.getOwnerFilter(filter).subscribe({
       next: (response: any) => {
@@ -212,7 +212,7 @@ export class DriversComponent implements OnInit, OnDestroy {
     const filter = new ModelFilterTable(
       filtros,
       new Pagination(paginationRows, paginationPage),
-      new Sort('id', true),
+      new Sort('name', true),
     );
 
     if (this.userRole === 'ADMINISTRADOR') this.loading = true;
@@ -358,7 +358,7 @@ export class DriversComponent implements OnInit, OnDestroy {
     const filter = new ModelFilterTable(
       [new Filter('id', '=', ownerId.toString())],
       new Pagination(1, 0),
-      new Sort('id', true),
+      new Sort('name', true),
     );
 
     this.ownerService.getOwnerFilter(filter).subscribe({
