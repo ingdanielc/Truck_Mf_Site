@@ -67,9 +67,15 @@
 
         <!-- Empty -->
         @if (!loadingVehicles && vehicles.length === 0) {
-          <div class="text-center py-5 text-secondary">
-            <i class="fa-solid fa-truck-front fs-1 mb-3 opacity-25"></i>
-            <p class="mb-0">No se encontraron vehículos.</p>
+          <div
+            class="text-center p-4 bg-body-tertiary rounded-4 mb-4 border border-dashed"
+          >
+            <i
+              class="fa-solid fa-truck-moving fs-3 mb-2 opacity-50 text-body-secondary"
+            ></i>
+            <p class="small text-body-secondary mb-0">
+              No se encontraron vehículos
+            </p>
           </div>
         }
 
