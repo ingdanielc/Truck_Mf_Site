@@ -538,8 +538,7 @@ export class DriversComponent implements OnInit, OnDestroy {
             undefined,
             'Activo',
           ));
-      const ownerDrivers = this.drivers.filter((d) => d.ownerId === ownerId);
-      groups.set(String(ownerId), { owner, drivers: ownerDrivers });
+      groups.set(String(ownerId), { owner, drivers: [] });
     } else if (this.filteredOwner && !this.searchTerm) {
       const key = String(this.filteredOwner.id);
       groups.set(key, { owner: this.filteredOwner, drivers: [] });
