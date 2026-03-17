@@ -31,6 +31,11 @@
     transform: translateX(-100%);
     box-shadow: none;
     width: 240px;
+    z-index: 1100; // Above g-sidebar (1030)
+
+    .sidebar-header {
+      max-height: 57px; // Requested for mobile
+    }
 
     &.collapsed {
       width: 70px;
@@ -93,6 +98,7 @@
 }
 
 .sidebar-header {
+  min-height: 59px; // Consistent height
   .fs-5 {
     font-size: 1.1rem !important; // Smaller logo text
   }

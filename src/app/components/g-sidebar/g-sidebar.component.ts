@@ -1,6 +1,8 @@
 import {
   Component,
+  ElementRef,
   EventEmitter,
+  HostListener,
   Input,
   OnDestroy,
   OnInit,
@@ -43,6 +45,7 @@ export class GSidebarComponent implements OnInit, OnDestroy {
   private userSub?: Subscription;
 
   constructor(
+    private readonly elementRef: ElementRef,
     private readonly tokenService: TokenService,
     private readonly router: Router,
     private readonly securityService: SecurityService,
@@ -102,6 +105,13 @@ export class GSidebarComponent implements OnInit, OnDestroy {
 
   toggleUserMenu() {
     this.isUserMenuOpen = !this.isUserMenuOpen;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (!this.elementRef.nativeElement.contains(event.target)) {
+      this.isUserMenuOpen = false;
+    }
   }
 
   goToProfile() {
@@ -170,6 +180,7 @@ export class GSidebarComponent implements OnInit, OnDestroy {
   }
 
   toggleNotifications() {
+    this.isUserMenuOpen = false;
     this.isNotificationsOpen = !this.isNotificationsOpen;
   }
 }
