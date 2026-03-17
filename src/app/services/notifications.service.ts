@@ -114,7 +114,7 @@ export class NotificationsService {
 
   private fetchNotifications(filters: Filter[]): void {
     const filter = new ModelFilterTable(
-      filters,
+      [...filters, new Filter('isDeleted', '=', 'false')],
       new Pagination(50, 0),
       new Sort('creationDate', false),
     );
