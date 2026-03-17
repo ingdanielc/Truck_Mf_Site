@@ -84,6 +84,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   userRole: string = 'ROL';
   loggedInOwnerId: number | null = null;
   loggedInDriverId: number | null = null;
+  loggedInOwner: ModelOwner | null = null;
   private userSub?: Subscription;
   expandedOwnerId: number | null = null;
   ownerTrips: ModelTrip[] = [];
@@ -203,7 +204,26 @@ export class TripsComponent implements OnInit, OnDestroy {
           const driver = response.data.content[0];
           this.loggedInDriverId = driver.id;
           this.loggedInOwnerId = driver.ownerId; // Crucial for form context
+          if (this.loggedInOwnerId) {
+            this.loadOwnerById(this.loggedInOwnerId);
+          }
           this.loadTrips();
+        }
+      },
+    });
+  }
+
+  loadOwnerById(ownerId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('id', '=', ownerId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content?.length > 0) {
+          this.loggedInOwner = response.data.content[0];
+          this.applyFilter();
         }
       },
     });
@@ -286,6 +306,10 @@ export class TripsComponent implements OnInit, OnDestroy {
 
       if (vehicleIds) {
         filtros.push(new Filter('vehicle.id', 'in', vehicleIds));
+      } else {
+        // If we are scoped to an owner but they have no vehicles,
+        // add a dummy filter to avoid returning ALL trips globally.
+        filtros.push(new Filter('vehicle.id', '=', '-1'));
       }
     }
     return filtros;
@@ -491,6 +515,34 @@ export class TripsComponent implements OnInit, OnDestroy {
       }
       return undefined;
     };
+
+    if (this.userRole === 'PROPIETARIO' || this.userRole === 'CONDUCTOR') {
+      const ownerId = this.loggedInOwnerId;
+      const owner =
+        this.loggedInOwner ??
+        this.owners.find((o) => o.id === ownerId) ??
+        new ModelOwner(
+          ownerId ?? undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          'Mi Propietario',
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          'Activo',
+        );
+      const ownerTrips = trips.filter((t) => getOwnerId(t) === ownerId);
+      groups.push({ owner, trips: ownerTrips });
+      this.groupedTrips = groups;
+      return;
+    }
 
     if (this.ownerIdFilter != null && this.filteredOwner) {
       const ownerTrips = trips.filter(

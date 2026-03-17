@@ -189,6 +189,19 @@
                 </div>
               }
             </div>
+
+            @if (group.trips.length === 0) {
+              <div
+                class="text-center py-4 bg-body-tertiary rounded-4 my-4 border border-dashed"
+              >
+                <i
+                  class="fa-solid fa-route fs-3 mb-2 opacity-50 text-body-secondary"
+                ></i>
+                <p class="small text-body-secondary mb-0">
+                  No se encontraron viajes para este propietario
+                </p>
+              </div>
+            }
           </div>
         }
 

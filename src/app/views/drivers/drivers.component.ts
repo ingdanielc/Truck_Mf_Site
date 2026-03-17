@@ -81,6 +81,7 @@ export class DriversComponent implements OnInit, OnDestroy {
   cities: any[] = [];
   groupedCities: { state: string; cities: any[] }[] = [];
   owners: ModelOwner[] = [];
+  loggedInOwner: ModelOwner | null = null;
   salaryTypes: any[] = [];
 
   isPasswordOffcanvasOpen: boolean = false;
@@ -222,6 +223,7 @@ export class DriversComponent implements OnInit, OnDestroy {
         if (response?.data?.content) {
           this.owners = response.data.content;
           if (this.userRole === 'PROPIETARIO' && this.owners.length > 0) {
+            this.loggedInOwner = this.owners[0];
             this.loggedInOwnerId = this.owners[0].id ?? this.loggedInOwnerId;
             this.loadDrivers();
           } else if (this.userRole === 'ADMINISTRADOR') {
@@ -514,7 +516,31 @@ export class DriversComponent implements OnInit, OnDestroy {
     const groups = new Map<string, DriverOwnerGroup>();
     const noOwnerKey = '__sin_propietario__';
 
-    if (this.filteredOwner && !this.searchTerm) {
+    if (this.userRole === 'PROPIETARIO') {
+      const ownerId = this.loggedInOwnerId;
+      const owner =
+        this.loggedInOwner ??
+        (this.owners.find((o) => o.id === ownerId) ||
+          new ModelOwner(
+            ownerId ?? undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            'Mi Socio',
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            'Activo',
+          ));
+      const ownerDrivers = this.drivers.filter((d) => d.ownerId === ownerId);
+      groups.set(String(ownerId), { owner, drivers: ownerDrivers });
+    } else if (this.filteredOwner && !this.searchTerm) {
       const key = String(this.filteredOwner.id);
       groups.set(key, { owner: this.filteredOwner, drivers: [] });
     }

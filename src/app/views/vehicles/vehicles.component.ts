@@ -239,8 +239,29 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.driverService.getDriverFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content?.length > 0) {
-          this.loggedInDriverId = response.data.content[0].id;
+          const driver = response.data.content[0];
+          this.loggedInDriverId = driver.id;
+          if (driver.ownerId) {
+            this.loggedInOwnerId = driver.ownerId;
+            this.loadOwnerById(driver.ownerId);
+          }
           this.loadVehicles();
+        }
+      },
+    });
+  }
+
+  loadOwnerById(ownerId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('id', '=', ownerId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content?.length > 0) {
+          this.loggedInOwner = response.data.content[0];
+          this.applyFilter();
         }
       },
     });
@@ -1027,6 +1048,28 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   buildGroups(vehicles: ModelVehicle[]): void {
     if (this.userRole === 'PROPIETARIO') {
       // Single card for the logged-in owner
+      const owner: ModelOwner =
+        this.loggedInOwner ??
+        new ModelOwner(
+          this.loggedInOwnerId ?? undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          'Mi Propietario',
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          'Activo',
+        );
+      this.groupedVehicles = [{ owner, vehicles }];
+    } else if (this.userRole === 'CONDUCTOR') {
+      // For CONDUCTOR, also ensure a fixed group for their owner
       const owner: ModelOwner =
         this.loggedInOwner ??
         new ModelOwner(
