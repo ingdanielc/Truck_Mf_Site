@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -36,6 +36,7 @@ import {
   styleUrls: ['./driver-detail.component.scss'],
 })
 export class DriverDetailComponent implements OnInit, OnDestroy {
+  @ViewChild(GPasswordCardComponent) passwordCard?: GPasswordCardComponent;
   driverId: number | null = null;
   driver: ModelDriver | null = null;
   vehicles: ModelVehicle[] = [];
@@ -320,6 +321,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
 
   openPasswordOffcanvas(): void {
     this.isMenuOpen = false;
+    this.passwordCard?.reset();
     this.isPasswordOffcanvasOpen = true;
   }
 

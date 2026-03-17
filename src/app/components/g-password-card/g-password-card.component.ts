@@ -71,6 +71,24 @@ export class GPasswordCardComponent implements OnChanges {
     }
   }
 
+  public reset(): void {
+    this.passwordForm.reset();
+    this.showCurrentPassword = false;
+    this.showNewPassword = false;
+    this.showConfirmPassword = false;
+    this.isValidating = false;
+
+    // Re-apply validators if needed
+    if (this.requiresCurrentPasswordValidation) {
+      this.passwordForm
+        .get('currentPassword')
+        ?.setValidators([Validators.required]);
+    } else {
+      this.passwordForm.get('currentPassword')?.clearValidators();
+    }
+    this.passwordForm.get('currentPassword')?.updateValueAndValidity();
+  }
+
   private passwordMatchValidator(g: FormGroup) {
     const newPwd = g.get('newPassword')?.value;
     const confirmPwd = g.get('confirmPassword')?.value;
