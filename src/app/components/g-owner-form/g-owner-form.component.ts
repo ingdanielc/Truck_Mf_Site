@@ -25,7 +25,6 @@ import {
 } from 'src/app/models/model-filter-table';
 import { CommonService } from 'src/app/services/common.service';
 import { OwnerService } from 'src/app/services/owner.service';
-import { SecurityService } from 'src/app/services/security/security.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 
@@ -63,7 +62,6 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
   constructor(
     private readonly fb: FormBuilder,
     private readonly ownerService: OwnerService,
-    private readonly securityService: SecurityService,
     private readonly commonService: CommonService,
     private readonly toastService: ToastService,
   ) {

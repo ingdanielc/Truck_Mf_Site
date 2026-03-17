@@ -21,7 +21,6 @@ import { ModelDriver } from 'src/app/models/driver-model';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { DriverService } from 'src/app/services/driver.service';
 import { CommonService } from 'src/app/services/common.service';
-import { SecurityService } from 'src/app/services/security/security.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 
@@ -74,7 +73,6 @@ export class GDriverFormComponent implements OnInit, OnChanges {
     private readonly fb: FormBuilder,
     private readonly driverService: DriverService,
     private readonly commonService: CommonService,
-    private readonly securityService: SecurityService,
     private readonly toastService: ToastService,
   ) {
     this.initForm();
