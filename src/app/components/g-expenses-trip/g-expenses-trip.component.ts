@@ -237,13 +237,17 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
   }
 
   get lastUpdateText(): string {
-    if (this.expenses.length === 0) return 'Sin registros';
+    const relevantExpenses = this.isMaintenance
+      ? this.maintenanceExpenses
+      : this.expenses.filter((e) => e.category?.expenseTypeId !== 4);
 
-    const lastExpense = this.expenses.reduce((latest, current) => {
+    if (relevantExpenses.length === 0) return 'Sin registros';
+
+    const lastExpense = relevantExpenses.reduce((latest, current) => {
       const latestDate = new Date(latest.creationDate || 0).getTime();
       const currentDate = new Date(current.creationDate || 0).getTime();
       return currentDate > latestDate ? current : latest;
-    }, this.expenses[0]);
+    }, relevantExpenses[0]);
 
     if (!lastExpense.creationDate) return 'Sin registros';
 
