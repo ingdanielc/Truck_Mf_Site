@@ -117,7 +117,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
         if (response?.data?.content) {
           this.totalOwners = response.data.totalElements || 0;
           this.allOwners = response.data.content;
-          this.calculateStats();
+          this.updateStats();
           this.applyFilter();
         }
         this.loading = false;
@@ -129,11 +129,45 @@ export class OwnersComponent implements OnInit, OnDestroy {
     });
   }
 
-  calculateStats(): void {
-    this.activeOwners = this.allOwners.filter(
-      (p) => p.user?.status === 'Activo',
-    ).length;
-    this.inactiveOwners = this.totalOwners - this.activeOwners;
+  updateStats(): void {
+    // Query for total owners (no status filter)
+    const totalFilter = new ModelFilterTable(
+      [],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+
+    this.ownerService.getOwnerFilter(totalFilter).subscribe({
+      next: (response: any) => {
+        this.totalOwners = response?.data?.totalElements || 0;
+      },
+    });
+
+    // Query for active owners
+    const activeFilter = new ModelFilterTable(
+      [new Filter('user.status', '=', 'Activo')],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+
+    this.ownerService.getOwnerFilter(activeFilter).subscribe({
+      next: (response: any) => {
+        this.activeOwners = response?.data?.totalElements || 0;
+      },
+    });
+
+    // Query for inactive owners
+    const inactiveFilter = new ModelFilterTable(
+      [new Filter('user.status', '!=', 'Activo')],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+
+    this.ownerService.getOwnerFilter(inactiveFilter).subscribe({
+      next: (response: any) => {
+        this.inactiveOwners = response?.data?.totalElements || 0;
+      },
+    });
   }
 
   setFilter(filter: string): void {
@@ -284,7 +318,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
         );
         if (owner.user) owner.user.status = newStatus;
         owner.status = newStatus;
-        this.calculateStats();
+        this.updateStats();
         this.applyFilter();
       },
       error: (err) => {
