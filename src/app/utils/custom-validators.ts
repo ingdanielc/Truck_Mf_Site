@@ -80,7 +80,7 @@ export class CustomValidators {
    * @param maxSizeMB Maximum file size allowed in megabytes (default: 2).
    * @returns A Promise that resolves with the base64 string, or rejects with an error message.
    */
-  static readPhotoFile(event: Event, maxSizeMB: number = 2): Promise<string> {
+  static readPhotoFile(event: Event, maxSizeMB: number = 5): Promise<string> {
     return new Promise((resolve, reject) => {
       const input = event.target as HTMLInputElement;
       const file = input?.files?.[0];
