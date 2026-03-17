@@ -326,11 +326,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     if (this.ownerForm.valid) {
       try {
         const formValue = this.ownerForm.getRawValue();
-        let password = formValue.password;
-
-        if (password) {
-          password = await this.securityService.getHashSHA512(password.trim());
-        }
+        const password = formValue.password;
 
         if (this.owner) {
           // EDICIÓN: subir foto primero (si hay nueva), luego guardar
@@ -420,15 +416,17 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
                   const photoUrl = uploadRes?.data || '';
 
                   if (photoUrl) {
-                    // Actualizar owner con la URL de la foto
-                    const ownerWithPhoto: ModelOwner = {
+                    // Actualizar owner con la URL de la foto (sin enviar password de nuevo)
+                    const { password, ...ownerWithPhoto } = {
                       ...savedOwner,
                       photo: photoUrl,
                     };
-                    this.ownerService.createOwner(ownerWithPhoto).subscribe({
-                      error: (err) =>
-                        console.error('Error updating photo URL:', err),
-                    });
+                    this.ownerService
+                      .createOwner(ownerWithPhoto as ModelOwner)
+                      .subscribe({
+                        error: (err) =>
+                          console.error('Error updating photo URL:', err),
+                      });
                   }
                 } catch (uploadErr) {
                   console.error(

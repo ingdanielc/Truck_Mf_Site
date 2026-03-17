@@ -413,10 +413,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
     if (this.driverForm.valid) {
       try {
         const formValue = this.driverForm.getRawValue();
-        let password = formValue.password;
-        if (password) {
-          password = await this.securityService.getHashSHA512(password.trim());
-        }
+        const password = formValue.password;
 
         if (this.driver?.id) {
           // EDIT
@@ -521,9 +518,13 @@ export class GDriverFormComponent implements OnInit, OnChanges {
                   );
                   const photoUrl = uploadRes?.data || '';
                   if (photoUrl) {
-                    const driverWithPhoto = { ...savedDriver, photo: photoUrl };
+                    // Remove password before re-saving to avoid double hashing on backend
+                    const { password, ...driverWithPhoto } = {
+                      ...savedDriver,
+                      photo: photoUrl,
+                    };
                     this.driverService
-                      .createDriver(driverWithPhoto)
+                      .createDriver(driverWithPhoto as ModelDriver)
                       .subscribe();
                   }
                 } catch (uploadErr) {
