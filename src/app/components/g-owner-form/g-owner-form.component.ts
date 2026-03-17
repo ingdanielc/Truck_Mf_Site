@@ -27,6 +27,7 @@ import { CommonService } from 'src/app/services/common.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
+import { SecurityService } from 'src/app/services/security/security.service';
 
 @Component({
   selector: 'g-owner-form',
@@ -64,6 +65,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     private readonly ownerService: OwnerService,
     private readonly commonService: CommonService,
     private readonly toastService: ToastService,
+    private readonly securityService: SecurityService,
   ) {
     this.ownerForm = this.fb.group(
       {
@@ -81,7 +83,10 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
           0,
           [Validators.required, Validators.min(0), Validators.max(99)],
         ],
-        email: ['', [Validators.required, Validators.email]],
+        email: ['', {
+          validators: [Validators.required, Validators.email],
+          updateOn: 'blur'
+        }],
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', [Validators.required]],
       },
@@ -248,6 +253,14 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
           owner.id,
         ),
       ]);
+    this.ownerForm
+      .get('email')
+      ?.setAsyncValidators([
+        CustomValidators.emailUniquenessValidator(
+          this.securityService,
+          owner.id,
+        ),
+      ]);
 
     this.ownerForm.get('documentNumber')?.updateValueAndValidity();
     this.ownerForm.get('email')?.updateValueAndValidity();
@@ -283,6 +296,11 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
         Validators.required,
         Validators.email,
         CustomValidators.duplicateValueValidator(this.allOwners, 'email', null),
+      ]);
+    this.ownerForm
+      .get('email')
+      ?.setAsyncValidators([
+        CustomValidators.emailUniquenessValidator(this.securityService, null),
       ]);
     this.ownerForm.get('documentNumber')?.updateValueAndValidity();
     this.ownerForm.get('email')?.updateValueAndValidity();

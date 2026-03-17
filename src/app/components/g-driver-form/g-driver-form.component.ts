@@ -23,6 +23,7 @@ import { DriverService } from 'src/app/services/driver.service';
 import { CommonService } from 'src/app/services/common.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
+import { SecurityService } from 'src/app/services/security/security.service';
 
 @Component({
   selector: 'g-driver-form',
@@ -74,6 +75,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
     private readonly driverService: DriverService,
     private readonly commonService: CommonService,
     private readonly toastService: ToastService,
+    private readonly securityService: SecurityService,
   ) {
     this.initForm();
     this.calculateDates();
@@ -109,7 +111,13 @@ export class GDriverFormComponent implements OnInit, OnChanges {
         gender: [null, [Validators.required]],
         licenseCategory: [null, [Validators.required]],
         licenseExpiry: ['', [Validators.required]],
-        email: ['', [Validators.required, Validators.email]],
+        email: [
+          '',
+          {
+            validators: [Validators.required, Validators.email],
+            updateOn: 'blur',
+          },
+        ],
         password: [''],
         confirmPassword: [''],
         ownerId: [null, [Validators.required]],
@@ -188,6 +196,14 @@ export class GDriverFormComponent implements OnInit, OnChanges {
             this.driver.id,
           ),
         ]);
+      this.driverForm
+        .get('email')
+        ?.setAsyncValidators([
+          CustomValidators.emailUniquenessValidator(
+            this.securityService,
+            this.driver.id,
+          ),
+        ]);
 
       this.updateSalaryValidators(this.driver.salaryTypeId || null);
       this.captureInitialState();
@@ -244,6 +260,11 @@ export class GDriverFormComponent implements OnInit, OnChanges {
             'email',
             null,
           ),
+        ]);
+      this.driverForm
+        .get('email')
+        ?.setAsyncValidators([
+          CustomValidators.emailUniquenessValidator(this.securityService, null),
         ]);
       this.updateSalaryValidators(null);
     }
@@ -379,6 +400,12 @@ export class GDriverFormComponent implements OnInit, OnChanges {
         CustomValidators.duplicateValueValidator(
           this.allDrivers,
           'email',
+          this.driver?.id,
+        ),
+      ]);
+      emailControl?.setAsyncValidators([
+        CustomValidators.emailUniquenessValidator(
+          this.securityService,
           this.driver?.id,
         ),
       ]);

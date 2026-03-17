@@ -1,4 +1,17 @@
-import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import {
+  AbstractControl,
+  AsyncValidatorFn,
+  ValidationErrors,
+  ValidatorFn,
+} from '@angular/forms';
+import { map, catchError, of } from 'rxjs';
+import {
+  ModelFilterTable,
+  Filter,
+  Pagination,
+  Sort,
+} from '../models/model-filter-table';
+import { SecurityService } from '../services/security/security.service';
 
 export class CustomValidators {
   /**
@@ -70,6 +83,40 @@ export class CustomValidators {
     const password = g.get('password')?.value;
     const confirmPassword = g.get('confirmPassword')?.value;
     return password === confirmPassword ? null : { mismatch: true };
+  }
+
+  /**
+   * Validates if an email is already registered in the system.
+   * @param securityService The SecurityService to perform the check.
+   * @param currentId The ID of the item being edited.
+   * @returns An AsyncValidatorFn
+   */
+  static emailUniquenessValidator(
+    securityService: SecurityService,
+    currentId: number | null | undefined,
+  ): AsyncValidatorFn {
+    return (control: AbstractControl) => {
+      if (!control.value) return of(null);
+
+      const filter = new ModelFilterTable(
+        [new Filter('email', '=', control.value)],
+        new Pagination(1, 0),
+        new Sort('id', true),
+      );
+
+      return securityService.getUserFilter(filter).pipe(
+        map((response: any) => {
+          const users = response?.data?.content || [];
+          const isDuplicate = users.some(
+            (user: any) =>
+              user.id !== currentId &&
+              user.email.toLowerCase() === control.value.toLowerCase(),
+          );
+          return isDuplicate ? { duplicate: true } : null;
+        }),
+        catchError(() => of(null)),
+      );
+    };
   }
 
   /**
