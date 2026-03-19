@@ -66,3 +66,23 @@
   height: 40px;
   border-color: currentColor !important;
 }
+
+.owner-item {
+  transition: all 0.3s ease;
+
+  g-vehicle-owner-card {
+    &.expanded {
+      border-color: var(--bs-primary) !important;
+      background-color: rgba(var(--bs-primary-rgb), 0.02);
+    }
+  }
+}
+
+.expanded-drivers {
+  border-left: 2px solid rgba(var(--bs-primary-rgb), 0.1);
+  padding-left: 1.5rem;
+
+  @media (max-width: 576px) {
+    padding-left: 0.4rem;
+  }
+}
