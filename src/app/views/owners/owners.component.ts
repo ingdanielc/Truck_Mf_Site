@@ -30,7 +30,8 @@ import { ToastService } from 'src/app/services/toast.service';
 export class OwnersComponent implements OnInit, OnDestroy {
   owners: ModelOwner[] = [];
   allOwners: ModelOwner[] = [];
-  totalOwners: number = 0;
+  totalOwners: number = 0; // Filtered total for pagination
+  globalTotalOwners: number = 0; // Absolute total for stats
   activeOwners: number = 0;
   inactiveOwners: number = 0;
   searchTerm: string = '';
@@ -106,25 +107,49 @@ export class OwnersComponent implements OnInit, OnDestroy {
 
   loadOwners(): void {
     this.openMenuOwnerId = null;
+
+    const filters: Filter[] = [];
+
+    // Add status filter if not "Todos"
+    if (this.activeFilter !== 'Todos') {
+      if (this.activeFilter === 'Activo') {
+        filters.push(new Filter('user.status', '=', 'Activo'));
+      } else {
+        filters.push(new Filter('user.status', '!=', 'Activo'));
+      }
+    }
+
+    // Add search term filters
+    if (this.searchTerm) {
+      const term = this.searchTerm.trim();
+      filters.push(new Filter('name', 'like', term));
+    }
+
     const filter = new ModelFilterTable(
-      [],
+      filters,
       new Pagination(this.rows, this.page),
       new Sort('name', true),
     );
+
     this.loading = true;
     this.ownerService.getOwnerFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
           this.totalOwners = response.data.totalElements || 0;
-          this.allOwners = response.data.content;
+          this.owners = response.data.content;
+          this.allOwners = response.data.content; // Maintain for compatibility if needed
           this.updateStats();
-          this.applyFilter();
+        } else {
+          this.owners = [];
+          this.totalOwners = 0;
         }
         this.loading = false;
       },
       error: (err) => {
         console.error('Error loading owners:', err);
         this.loading = false;
+        this.owners = [];
+        this.totalOwners = 0;
       },
     });
   }
@@ -139,7 +164,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
 
     this.ownerService.getOwnerFilter(totalFilter).subscribe({
       next: (response: any) => {
-        this.totalOwners = response?.data?.totalElements || 0;
+        this.globalTotalOwners = response?.data?.totalElements || 0;
       },
     });
 
@@ -172,34 +197,18 @@ export class OwnersComponent implements OnInit, OnDestroy {
 
   setFilter(filter: string): void {
     this.activeFilter = filter;
-    this.page = 0;
-    this.applyFilter();
+    this.page = 0; // Reset to first page
+    this.loadOwners();
+  }
+
+  onSearch(): void {
+    this.page = 0; // Reset to first page when searching
+    this.loadOwners();
   }
 
   applyFilter(): void {
-    let filtered = this.allOwners;
-
-    if (this.activeFilter !== 'Todos') {
-      filtered = filtered.filter((p) => {
-        if (this.activeFilter === 'Activo') {
-          return p.user?.status === 'Activo';
-        } else {
-          return p.user?.status !== 'Activo';
-        }
-      });
-    }
-
-    if (this.searchTerm) {
-      const term = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (p) =>
-          p.name?.toLowerCase().includes(term) ||
-          p.email?.toLowerCase().includes(term) ||
-          p.documentNumber?.includes(term),
-      );
-    }
-
-    this.owners = filtered;
+    // Keeping for compatibility with HTML until updated, but redirects to onSearch
+    this.onSearch();
   }
 
   get totalPages(): number {
