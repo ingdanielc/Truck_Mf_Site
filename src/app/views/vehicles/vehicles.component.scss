@@ -84,12 +84,36 @@
   height: 340px;
   flex-shrink: 0;
   overflow: hidden;
+  transition: height 0.3s ease;
+
+  &.no-photo {
+    height: 180px;
+  }
+
+  @media (max-width: 576px) {
+    height: 280px;
+    &.no-photo {
+      height: 160px;
+    }
+  }
 }
 
 .vehicle-photo-banner-container {
   height: 340px;
   background-color: var(--bs-body-secondary);
   z-index: 1;
+  transition: height 0.3s ease;
+
+  &.no-photo {
+    height: 180px;
+  }
+
+  @media (max-width: 576px) {
+    height: 280px;
+    &.no-photo {
+      height: 160px;
+    }
+  }
 
   .banner-img {
     transition: transform 0.3s ease;

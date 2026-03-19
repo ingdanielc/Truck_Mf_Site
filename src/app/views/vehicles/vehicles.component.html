@@ -346,7 +346,7 @@
     [class.open]="isOffcanvasOpen"
   >
     <!-- Sticky Header & Photo Banner Container -->
-    <div class="sticky-header-container">
+    <div class="sticky-header-container" [class.no-photo]="!photoPreview">
       <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
         <div
           class="header-blur-overlay position-absolute top-0 start-0 w-100 h-100"
@@ -379,6 +379,7 @@
       <!-- Vehicle Photo Banner (Full Width) -->
       <div
         class="vehicle-photo-banner-container position-relative overflow-hidden"
+        [class.no-photo]="!photoPreview"
       >
         @if (photoPreview) {
           <img
