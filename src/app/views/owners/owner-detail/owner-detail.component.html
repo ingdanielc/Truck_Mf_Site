@@ -308,10 +308,11 @@
         </h5>
         @if (!isConductor) {
           <button
-            class="btn btn-link text-primary p-0 text-decoration-none small fw-bold"
+            class="btn btn-link text-primary p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
             (click)="toggleOffcanvas()"
           >
-            Actualizar
+            <i class="fa-solid fa-pen-to-square d-inline d-md-none fs-5"></i>
+            <span class="d-none d-md-inline">Actualizar</span>
           </button>
         }
       </div>
@@ -363,10 +364,11 @@
           <i class="fa-solid fa-truck-front"></i> Listado de Vehículos
         </h5>
         <button
-          class="btn btn-link text-primary p-0 text-decoration-none small fw-bold"
+          class="btn btn-link text-primary p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
           (click)="manageFleet()"
         >
-          Ver Vehículos
+          <i class="fa-solid fa-truck-front d-inline d-md-none fs-5"></i>
+          <span class="d-none d-md-inline">Ver Vehículos</span>
         </button>
       </div>
       <div class="card-body p-4">
