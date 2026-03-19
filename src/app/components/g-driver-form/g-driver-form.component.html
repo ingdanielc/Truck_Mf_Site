@@ -627,9 +627,10 @@
       <div class="d-grid gap-2 mt-4 pt-2">
         <button
           type="submit"
-          class="btn btn-primary flex-fill py-3 rounded-3 fw-bold shadow-primary"
+          class="btn btn-primary btn-lg flex-fill py-3 rounded-3 fw-bold shadow-primary"
           [disabled]="!canSave"
         >
+          <i class="fa-solid fa-check-circle me-2"></i>
           {{ driver?.id ? "Guardar cambios" : "Crear conductor" }}
         </button>
       </div>

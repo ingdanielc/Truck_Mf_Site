@@ -3,7 +3,7 @@
     <div class="col-12 col-md">
       <h1 class="h3 fw-bold mb-1 text-body">Gestión de Vehículos</h1>
       <p class="text-body-secondary mb-0">
-        Control y administración de los vehículos CashTruck
+        Control y administración de tus vehículos
       </p>
     </div>
     <div class="col-12 col-md-auto">
@@ -709,9 +709,10 @@
         >
           <button
             type="submit"
-            class="btn btn-primary flex-fill py-3 rounded-3 fw-bold shadow-primary"
+            class="btn btn-primary btn-lg flex-fill py-3 rounded-3 fw-bold shadow-primary"
             [disabled]="!canSave"
           >
+            <i class="fa-solid fa-check-circle me-2"></i>
             {{ editingVehicle ? "Guardar cambios" : "Crear vehículo" }}
           </button>
         </div>

@@ -384,9 +384,10 @@
       >
         <button
           type="submit"
-          class="btn btn-primary flex-fill py-3 rounded-3 fw-bold shadow-primary"
+          class="btn btn-primary btn-lg flex-fill py-3 rounded-3 fw-bold shadow-primary"
           [disabled]="!canSave"
         >
+          <i class="fa-solid fa-check-circle me-2"></i>
           {{ trip ? "Guardar cambios" : "Crear viaje" }}
         </button>
       </div>

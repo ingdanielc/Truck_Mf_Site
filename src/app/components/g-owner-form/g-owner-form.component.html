@@ -535,9 +535,10 @@
       <div class="offcanvas-footer border-top pt-4 mt-auto d-flex gap-3">
         <button
           type="submit"
-          class="btn btn-primary flex-fill py-3 rounded-3 fw-bold shadow-primary"
+          class="btn btn-primary btn-lg flex-fill py-3 rounded-3 fw-bold shadow-primary"
           [disabled]="!canSave"
         >
+          <i class="fa-solid fa-check-circle me-2"></i>
           {{ owner?.id ? "Guardar cambios" : "Crear propietario" }}
         </button>
       </div>
