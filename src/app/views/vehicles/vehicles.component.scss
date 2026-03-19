@@ -75,36 +75,129 @@
   border-color: currentColor !important;
 }
 
-.photo-circle {
-  width: 140px;
-  height: 140px;
-  border-radius: 50% !important;
-  margin: 0 auto;
-  border: 4px solid var(--bs-body-bg);
-  box-shadow: 0 0 0 1px rgba(var(--bs-emphasis-color-rgb), 0.1);
-  transition: all 0.3s ease;
-}
-
-.photo-edit-btn {
-  bottom: -6px;
-  right: calc(50% + 2px);
-  width: 38px;
-  height: 38px;
-  z-index: 2;
-}
-
-.photo-camera-btn {
-  bottom: -6px;
-  right: calc(50% - 40px);
-  width: 38px;
-  height: 38px;
-  z-index: 2;
-}
-
-.photo-remove-btn {
+.sticky-header-container {
+  position: sticky;
   top: 0;
-  right: calc(50% - 70px);
-  width: 32px;
-  height: 32px;
+  z-index: 1050;
+  background-color: var(--bs-body-bg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  height: 340px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.vehicle-photo-banner-container {
+  height: 340px;
+  background-color: var(--bs-body-secondary);
+  z-index: 1;
+
+  .banner-img {
+    transition: transform 0.3s ease;
+  }
+
+  .banner-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 70%;
+    background: linear-gradient(
+      to top,
+      rgba(var(--bs-body-bg-rgb), 0.2) 0%,
+      transparent 100%
+    );
+    z-index: 2;
+  }
+}
+
+.photo-actions-overlay {
+  z-index: 100 !important;
+}
+
+.header-blur-overlay {
+  background: rgba(var(--bs-body-bg-rgb), 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+  z-index: -1;
+}
+
+.offcanvas-header {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0;
+  width: 100%;
+  height: 87px; // User-defined height
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+  z-index: 10 !important;
+  background: transparent !important;
+  border: none !important;
+
+  .h4,
+  h2,
+  p,
+  .btn-link i {
+    color: inherit;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); // Light gray shadow for visibility
+  }
+
+  .h4,
+  h2 {
+    color: black !important;
+  }
+}
+
+.offcanvas-body {
+  position: relative;
   z-index: 2;
+}
+
+.btn-icon-only {
+  width: 42px;
+  height: 42px;
+  padding: 0 !important;
+}
+
+.btn-blur-light {
+  background: rgba(var(--bs-light-rgb), 0.7) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  color: var(--bs-primary) !important;
+
+  &:hover {
+    background: rgba(var(--bs-light-rgb), 0.9) !important;
+  }
+}
+
+.btn-blur-danger {
+  background: rgba(var(--bs-danger-rgb), 0.15) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  border: 1px solid rgba(var(--bs-danger-rgb), 0.3) !important;
+  color: #dc3545 !important;
+
+  &:hover {
+    background: rgba(var(--bs-danger-rgb), 0.25) !important;
+  }
+}
+
+[data-bs-theme="dark"] {
+  .offcanvas-header .h4,
+  .offcanvas-header h2 {
+    color: white !important;
+  }
+
+  .btn-blur-light {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--bs-white) !important;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1) !important;
+    }
+  }
 }

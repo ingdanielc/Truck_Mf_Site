@@ -345,88 +345,102 @@
     class="custom-offcanvas shadow-lg border-start transition-all"
     [class.open]="isOffcanvasOpen"
   >
-    <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
-      <div class="d-flex justify-content-between align-items-start w-100">
-        <h2 class="h4 fw-bold mb-0 text-body">
-          {{ editingVehicle ? "Editar Vehículo" : "Crear Vehículo" }}
-        </h2>
+    <!-- Sticky Header & Photo Banner Container -->
+    <div class="sticky-header-container">
+      <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
+        <div
+          class="header-blur-overlay position-absolute top-0 start-0 w-100 h-100"
+        ></div>
+        <div class="header-content position-relative w-100">
+          <div class="d-flex justify-content-between align-items-start w-100">
+            <h2 class="h4 fw-bold mb-0 text-body">
+              {{ editingVehicle ? "Editar Vehículo" : "Crear Vehículo" }}
+            </h2>
+            <button
+              type="button"
+              class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
+              (click)="toggleOffcanvas()"
+              onkeypress
+              aria-label="Cerrar"
+            >
+              <i class="fa-solid fa-xmark fs-3"></i>
+            </button>
+          </div>
+          <p class="text-black small mb-0 mt-1">
+            {{
+              editingVehicle
+                ? "Actualice la información técnica del vehículo"
+                : "Complete los datos para registrar un nuevo vehículo"
+            }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Vehicle Photo Banner (Full Width) -->
+      <div
+        class="vehicle-photo-banner-container position-relative overflow-hidden"
+      >
+        @if (photoPreview) {
+          <img
+            [src]="photoPreview"
+            alt="Vehículo"
+            class="banner-img w-100 h-100 object-fit-cover"
+          />
+        } @else {
+          <div
+            class="banner-placeholder d-flex align-items-center justify-content-center w-100 h-100 bg-secondary-subtle"
+          >
+            <i class="fa-solid fa-truck fs-1 text-secondary opacity-25"></i>
+          </div>
+        }
+        <div class="banner-overlay"></div>
+      </div>
+
+      <!-- Action Buttons (Floating) - Moved outer to ensure visibility -->
+      <div
+        class="photo-actions-overlay position-absolute bottom-0 end-0 m-3 d-flex gap-2"
+        style="z-index: 100"
+      >
+        <input
+          type="file"
+          #photoInput
+          class="d-none"
+          accept="image/*"
+          (change)="onPhotoSelected($event)"
+        />
         <button
           type="button"
-          class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
-          (click)="toggleOffcanvas()"
-          onkeypress
-          aria-label="Cerrar"
+          class="btn btn-blur-light btn-icon-only rounded-circle shadow-sm d-flex align-items-center justify-content-center"
+          (click)="triggerPhotoInput(photoInput)"
+          title="Seleccionar desde archivo"
         >
-          <i class="fa-solid fa-xmark fs-3"></i>
+          <i class="fa-solid fa-folder-open"></i>
         </button>
+        <button
+          type="button"
+          class="btn btn-blur-light btn-icon-only rounded-circle shadow-sm d-flex align-items-center justify-content-center"
+          (click)="showCamera = true"
+          title="Tomar fotografía"
+        >
+          <i class="fa-solid fa-camera"></i>
+        </button>
+        @if (photoPreview) {
+          <button
+            type="button"
+            class="btn btn-blur-danger btn-icon-only rounded-circle shadow-sm d-flex align-items-center justify-content-center"
+            aria-label="Eliminar foto"
+            (click)="removePhoto()"
+            title="Eliminar"
+          >
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        }
       </div>
-      <p class="text-secondary small mb-0 mt-1">
-        {{
-          editingVehicle
-            ? "Actualice la información técnica del vehículo"
-            : "Complete los datos para registrar un nuevo vehículo"
-        }}
-      </p>
     </div>
 
     <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
       <form [formGroup]="vehicleForm" (ngSubmit)="onSubmit()">
-        <div class="text-center mb-4">
-          <input
-            type="file"
-            #photoInput
-            class="d-none"
-            accept="image/*"
-            (change)="onPhotoSelected($event)"
-          />
-          <div class="photo-upload-wrapper mx-auto position-relative">
-            <div
-              class="photo-circle bg-body-secondary d-flex align-items-center justify-content-center overflow-hidden cursor-pointer"
-              (click)="triggerPhotoInput(photoInput)"
-              onkeypress
-            >
-              @if (photoPreview) {
-                <img
-                  [src]="photoPreview"
-                  alt="Vista previa"
-                  class="w-100 h-100 object-fit-cover"
-                />
-              } @else {
-                <i class="fa-solid fa-camera fs-3 text-body-secondary"></i>
-              }
-            </div>
-            <button
-              type="button"
-              class="btn btn-light btn-sm rounded-circle position-absolute photo-edit-btn shadow-sm d-flex align-items-center justify-content-center"
-              aria-label="Editar foto"
-              (click)="triggerPhotoInput(photoInput)"
-              title="Seleccionar desde archivo"
-            >
-              <i class="fa-solid fa-folder-open text-primary"></i>
-            </button>
-            <button
-              type="button"
-              class="btn btn-light btn-sm rounded-circle position-absolute photo-camera-btn shadow-sm"
-              aria-label="Cámara"
-              (click)="showCamera = true"
-              title="Tomar fotografía"
-            >
-              <i class="fa-solid fa-camera text-primary"></i>
-            </button>
-            @if (photoPreview) {
-              <button
-                type="button"
-                class="btn btn-danger btn-sm rounded-circle position-absolute photo-remove-btn"
-                aria-label="Eliminar foto"
-                (click)="removePhoto()"
-              >
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            }
-          </div>
-        </div>
-
-        <div class="mb-4">
+        <div class="mb-4 pt-2">
           <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
             <i class="fa-solid fa-info-circle me-2"></i>Información General
           </h6>
