@@ -30,6 +30,10 @@
       color: rgba(255, 255, 255, 0.8);
     }
 
+    .trip-number {
+      color: rgba(255, 255, 255, 0.8) !important;
+    }
+
     .bg-graphic {
       position: absolute;
       top: -20%;
@@ -83,6 +87,11 @@
   font-weight: 700;
 }
 
+.trip-number {
+  color: var(--bs-secondary-color);
+  font-size: 0.75rem;
+}
+
 .arrow-icon {
   color: var(--bs-primary);
   font-size: 0.8rem;
@@ -90,7 +99,6 @@
 }
 
 .status-badge {
-  font-size: 0.6rem;
   letter-spacing: 0.5px;
   min-width: 80px;
   font-size: 0.7rem;
