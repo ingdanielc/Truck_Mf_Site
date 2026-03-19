@@ -15,6 +15,12 @@
 .carousel-slide {
   transition: opacity 0.2s ease;
   cursor: pointer;
+  width: 100%; // Mobile full width
+
+  @media (min-width: 768px) {
+    width: calc(33.33% - 0.7rem); // Fits 3 cards with gaps
+    flex: 0 0 calc(33.33% - 0.7rem);
+  }
 
   &.ring-selected ::ng-deep .vehicle-good-card {
     outline: 2px solid var(--bs-primary);
