@@ -6,24 +6,22 @@
         <div class="d-flex align-items-center gap-3">
           <button
             (click)="goBack()"
-            class="btn btn-link text-body p-0 shadow-none"
-            aria-label="Editar"
+            class="btn btn-link text-body p-0 shadow-none mt-1"
+            aria-label="atras"
           >
             <i class="fa-solid fa-arrow-left fs-4"></i>
           </button>
-          <div>
-            <h1 class="h3 fw-bold mb-1 text-body">
-              Viaje {{ trip.numberTrip || "N/A" }} -
-              <span class="text-uppercase">{{
-                trip.vehicle?.plate || trip.vehiclePlate || ""
-              }}</span>
-              <span class="d-none d-md-inline"> {{ vehicleBrandName }} </span>
-            </h1>
-            <p class="text-body-secondary mb-0">
-              {{ originName }} - {{ destinationName }}
-            </p>
-          </div>
+          <h1 class="h3 fw-bold mb-0 text-body">
+            Viaje {{ trip.numberTrip || "N/A" }} -
+            <span class="text-uppercase">{{
+              trip.vehicle?.plate || trip.vehiclePlate || ""
+            }}</span>
+            <span class="d-none d-md-inline"> {{ vehicleBrandName }} </span>
+          </h1>
         </div>
+        <p class="text-secondary mb-0 small">
+          {{ originName }} - {{ destinationName }}
+        </p>
       </div>
       <div class="col-12 col-md-auto">
         <div class="d-flex gap-2 align-items-center">

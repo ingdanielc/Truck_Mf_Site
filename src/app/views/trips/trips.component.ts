@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription, forkJoin } from 'rxjs';
 import { ModelTrip } from 'src/app/models/trip-model';
@@ -100,6 +100,10 @@ export class TripsComponent implements OnInit, OnDestroy {
   driverIdFilter: number | null = null;
   filteredDriver: any | null = null;
 
+  /** vehicleId filter when navigated from vehicle card (query param) */
+  vehicleIdFilter: number | null = null;
+  filteredVehicle: any | null = null;
+
   constructor(
     private readonly tripService: TripService,
     private readonly commonService: CommonService,
@@ -109,6 +113,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     private readonly vehicleService: VehicleService,
     private readonly driverService: DriverService,
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -122,6 +127,12 @@ export class TripsComponent implements OnInit, OnDestroy {
     if (rawDriverId != null) {
       this.driverIdFilter = Number(rawDriverId);
       this.loadFilteredDriver(this.driverIdFilter);
+    }
+
+    const rawVehicleId = this.route.snapshot.queryParamMap.get('vehicleId');
+    if (rawVehicleId != null) {
+      this.vehicleIdFilter = Number(rawVehicleId);
+      this.loadFilteredVehicle(this.vehicleIdFilter);
     }
 
     this.subscribeToUserContext();
@@ -165,6 +176,22 @@ export class TripsComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content?.length > 0) {
           this.filteredDriver = response.data.content[0];
+          this.loadTrips();
+        }
+      },
+    });
+  }
+
+  loadFilteredVehicle(vehicleId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('id', '=', vehicleId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
+      next: (response: any) => {
+        if (response?.data?.content?.length > 0) {
+          this.filteredVehicle = response.data.content[0];
           this.loadTrips();
         }
       },
@@ -233,6 +260,10 @@ export class TripsComponent implements OnInit, OnDestroy {
     this.userSub?.unsubscribe();
   }
 
+  goBackToVehicles(): void {
+    this.router.navigate(['/site/vehicles']);
+  }
+
   loadVehiclesByOwner(ownerId: number, isInitialLoad: boolean = false): void {
     const filter = new ModelFilterTable(
       [new Filter('owner.id', '=', ownerId.toString())],
@@ -290,6 +321,13 @@ export class TripsComponent implements OnInit, OnDestroy {
     if (this.driverIdFilter) {
       filtros.push(
         new Filter('driver.id', '=', this.driverIdFilter.toString()),
+      );
+    } else if (
+      this.vehicleIdFilter &&
+      (this.userRole === 'PROPIETARIO' || this.userRole === 'CONDUCTOR')
+    ) {
+      filtros.push(
+        new Filter('vehicle.id', '=', this.vehicleIdFilter.toString()),
       );
     } else if (this.userRole === 'CONDUCTOR' && this.loggedInDriverId != null) {
       filtros.push(

@@ -2,8 +2,19 @@
   <!-- Header & Stats -->
   <div class="row mb-4 gy-3 align-items-center">
     <div class="col-12 col-md">
-      <h1 class="h3 fw-bold mb-1 text-body">Gestión de Viajes</h1>
-      <p class="text-body-secondary mb-0">
+      <div class="d-flex align-items-center gap-3">
+        @if (vehicleIdFilter || driverIdFilter || ownerIdFilter) {
+          <button
+            (click)="goBackToVehicles()"
+            class="btn btn-link text-body p-0 shadow-none mt-1"
+            aria-label="atras"
+          >
+            <i class="fa-solid fa-arrow-left fs-4"></i>
+          </button>
+        }
+        <h1 class="h3 fw-bold mb-0 text-body">Gestión de Viajes</h1>
+      </div>
+      <p class="text-secondary mb-0 small">
         Administra y monitorea los viajes de tus vehículos
       </p>
     </div>
@@ -165,7 +176,7 @@
     @if (userRole !== "ADMINISTRADOR") {
       <div class="trips-grid animate__animated animate__fadeIn">
         @for (group of groupedTrips; track group) {
-          <div class="owner-section mb-5">
+          <div class="owner-section mb-2">
             <div class="owner-header mb-4">
               <g-vehicle-owner-card
                 [owner]="group.owner"

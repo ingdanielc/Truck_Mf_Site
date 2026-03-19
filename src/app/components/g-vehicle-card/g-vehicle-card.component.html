@@ -1,201 +1,249 @@
 <div
   class="vehicle-card card h-100 border-0 rounded-4 shadow-sm position-relative overflow-hidden d-flex flex-column"
 >
-  <div class="row g-0 flex-grow-1 h-100">
-    <!-- Vehicle Image Container (Left Side) -->
+  @if (loadingLocation) {
     <div
-      class="col-5 position-relative bg-secondary-subtle d-flex flex-column align-items-center justify-content-center"
+      class="d-flex flex-column align-items-center justify-content-center flex-grow-1 p-4 text-primary opacity-50"
+      style="min-height: 200px"
     >
-      @if (vehicle.photo) {
-        <img
-          [src]="vehicle.photo"
-          [alt]="vehicle.plate"
-          class="position-absolute w-100 h-100 object-fit-cover"
-        />
-      } @else {
-        <div
-          class="placeholder-img d-flex align-items-center justify-content-center w-100 h-100"
-        >
-          <i class="fa-solid fa-truck fs-1 text-secondary opacity-50"></i>
-        </div>
-      }
-
-      <!-- Status Indicator -->
-      <span
-        class="status-indicator position-absolute bottom-0 end-0 m-2 border border-2 border-white rounded-circle shadow-sm"
-        [ngClass]="statusDotClass"
-        [style.cursor]="
-          vehicle.lastTripStatus === 'En Curso' ? 'pointer' : 'default'
-        "
-        (click)="onStatusClick()"
-        [title]="vehicle.lastTripStatus === 'En Curso' ? 'Ver viaje' : ''"
-        onkeypress
-      ></span>
+      <output class="spinner-border spinner-border-sm mb-2"></output>
+      <span class="small fw-medium">Cargando...</span>
     </div>
-
-    <!-- Vehicle Info (Right Side) -->
-    <div class="col-7 d-flex flex-column">
-      <div class="card-body p-3 d-flex flex-column flex-grow-1">
-        <!-- Vehicle Info -->
-        <div class="mb-2">
+  } @else {
+    <div class="row g-0 flex-grow-1 h-100">
+      <!-- Vehicle Image Container (Left Side) -->
+      <div
+        class="col-5 position-relative bg-secondary-subtle d-flex flex-column align-items-center justify-content-center"
+      >
+        @if (vehicle.photo) {
+          <img
+            [src]="vehicle.photo"
+            [alt]="vehicle.plate"
+            class="position-absolute w-100 h-100 object-fit-cover"
+          />
+        } @else {
           <div
-            class="d-flex justify-content-between align-items-start mb-1 gap-2"
+            class="placeholder-img d-flex align-items-center justify-content-center w-100 h-100"
           >
-            <h5 class="fw-bold mb-0 text-truncate text-uppercase fs-6">
-              {{ vehicle.plate }}
-            </h5>
-            <span
-              class="badge status-badge px-3 py-2 rounded-pill small fw-bold text-wrap text-center flex-shrink-0"
-              [ngClass]="statusClass"
-              style="font-size: 0.65rem"
-              [style.cursor]="
-                vehicle.lastTripStatus === 'En Curso' ? 'pointer' : 'default'
-              "
-              (click)="onStatusClick()"
-              [title]="vehicle.lastTripStatus === 'En Curso' ? 'Ver viaje' : ''"
-              onkeypress
-            >
-              <span class="d-none d-md-inline">{{ displayTripStatus }}</span>
-              <i
-                class="fa-solid d-md-none"
-                [ngClass]="{
-                  'fa-truck-fast': displayTripStatus === 'En Curso',
-                  'fa-check': displayTripStatus === 'Disponible',
-                  'fa-xmark': displayTripStatus === 'Cancelado',
-                  'fa-circle-question': displayTripStatus === 'Sin Viajes',
-                }"
-              ></i>
-            </span>
+            <i class="fa-solid fa-truck fs-1 text-secondary opacity-50"></i>
           </div>
-          <p
-            class="small text-secondary mb-0 text-truncate"
-            style="font-size: 0.8rem"
-          >
-            {{ vehicle.vehicleBrandName || vehicle.vehicleBrandId }}
-            {{ vehicle.model }} - {{ vehicle.color }}
-          </p>
-          <p class="year text-body-secondary mb-0" style="font-size: 0.75rem">
-            Año: {{ vehicle.year }}
-          </p>
-        </div>
+        }
 
-        <!-- Assigned Driver & Last Location -->
-        <div class="mb-auto">
-          <div class="rounded-3 d-flex flex-column gap-1">
-            <div class="flex-grow-1 overflow-hidden">
-              <p class="fw-bold mb-0 text-truncate" style="font-size: 0.85rem">
-                {{ vehicle.currentDriverName || "Sin conductor asignado" }}
-              </p>
-              <p class="text-secondary mb-0" style="font-size: 0.7rem">
-                Conductor asignado
-              </p>
-            </div>
+        <!-- Status Indicator -->
+        <span
+          class="status-indicator position-absolute bottom-0 end-0 m-2 border border-2 border-white rounded-circle shadow-sm"
+          [ngClass]="statusDotClass"
+          [style.cursor]="
+            vehicle.lastTripStatus === 'En Curso' ? 'pointer' : 'default'
+          "
+          (click)="onStatusClick()"
+          [title]="vehicle.lastTripStatus === 'En Curso' ? 'Ver viaje' : ''"
+          onkeypress
+        ></span>
+      </div>
 
-            @if (lastLocation) {
-              <div
-                class="d-flex align-items-center gap-1 text-primary opacity-75 mt-1 cursor-pointer hover-opacity-100 transition-all"
-                [title]="lastLocation.addressText"
-                (click)="onLocationClick($event)"
+      <!-- Vehicle Info (Right Side) -->
+      <div class="col-7 d-flex flex-column">
+        <div class="card-body p-3 d-flex flex-column flex-grow-1">
+          <!-- Vehicle Info -->
+          <div class="mb-2">
+            <div
+              class="d-flex justify-content-between align-items-start mb-1 gap-2"
+            >
+              <h5 class="fw-bold mb-0 text-truncate text-uppercase fs-6">
+                {{ vehicle.plate }}
+              </h5>
+              <span
+                class="badge status-badge px-3 py-2 rounded-pill small fw-bold text-wrap text-center flex-shrink-0"
+                [ngClass]="statusClass"
+                style="font-size: 0.65rem"
+                [style.cursor]="
+                  vehicle.lastTripStatus === 'En Curso' ? 'pointer' : 'default'
+                "
+                (click)="onStatusClick()"
+                [title]="
+                  vehicle.lastTripStatus === 'En Curso' ? 'Ver viaje' : ''
+                "
                 onkeypress
               >
+                <span class="d-none d-md-inline">{{ displayTripStatus }}</span>
                 <i
-                  class="fa-solid fa-location-dot"
-                  style="font-size: 0.75rem"
+                  class="fa-solid d-md-none"
+                  [ngClass]="{
+                    'fa-truck-fast': displayTripStatus === 'En Curso',
+                    'fa-check': displayTripStatus === 'Disponible',
+                    'fa-xmark': displayTripStatus === 'Cancelado',
+                    'fa-circle-question': displayTripStatus === 'Sin Viajes',
+                  }"
                 ></i>
-                <span class="text-truncate" style="font-size: 0.72rem">
-                  {{ lastLocation.addressText }}
-                </span>
-              </div>
-            }
-          </div>
-        </div>
-
-        <!-- Footer Stats (Desktop Only) -->
-        <div
-          class="d-none d-md-flex justify-content-between align-items-end mt-2 pt-2 border-top border-secondary-subtle"
-        >
-          <div
-            class="stats-group d-flex gap-3 text-body-secondary"
-            style="font-size: 0.75rem"
-          >
-            <div class="stat-item d-flex align-items-center">
-              <i class="fa-solid fa-gauge-high me-2 op-60"></i>
-              <span>1000 km</span>
+              </span>
             </div>
-            <div class="stat-item d-flex align-items-center">
-              <i class="fa-solid fa-gas-pump me-2 op-60"></i>
-              <span>50%</span>
-            </div>
-          </div>
-          <div class="d-flex gap-2">
-            <button
-              type="button"
-              class="btn btn-outline-warning btn-sm rounded-3 p-1 shadow-none action-btn"
-              (click)="onMaintenanceClick()"
-              style="width: 32px; height: 32px"
-              onkeypress
-              title="Mantenimiento"
+            <p
+              class="small text-secondary mb-0 text-truncate"
+              style="font-size: 0.8rem"
             >
-              <i class="fa-solid fa-wrench" style="font-size: 0.8rem"></i>
-            </button>
-            @if (canEdit) {
+              {{ vehicle.vehicleBrandName || vehicle.vehicleBrandId }}
+              {{ vehicle.model }} - {{ vehicle.color }}
+            </p>
+            <p class="year text-body-secondary mb-0" style="font-size: 0.75rem">
+              Año: {{ vehicle.year }}
+            </p>
+          </div>
+
+          <!-- Assigned Driver & Last Location -->
+          <div class="mb-auto">
+            <div class="rounded-3 d-flex flex-column gap-1">
+              <div class="flex-grow-1 overflow-hidden">
+                <p
+                  class="fw-bold mb-0 text-truncate"
+                  style="font-size: 0.85rem"
+                >
+                  {{ vehicle.currentDriverName || "Sin conductor asignado" }}
+                </p>
+                <p class="text-secondary mb-0" style="font-size: 0.7rem">
+                  Conductor asignado
+                </p>
+              </div>
+
+              @if (lastLocation) {
+                <div
+                  class="d-flex align-items-center gap-1 text-primary opacity-75 mt-1 cursor-pointer hover-opacity-100 transition-all"
+                  [title]="lastLocation.addressText"
+                  (click)="onLocationClick($event)"
+                  onkeypress
+                >
+                  <i
+                    class="fa-solid fa-location-dot"
+                    style="font-size: 0.75rem"
+                  ></i>
+                  <span class="text-truncate" style="font-size: 0.72rem">
+                    {{ lastLocation.addressText }}
+                  </span>
+                </div>
+              } @else {
+                <div
+                  class="d-flex align-items-center gap-1 text-secondary opacity-75 mt-1"
+                  title="Ubicación no conocida"
+                >
+                  <i
+                    class="fa-solid fa-location-dot"
+                    style="font-size: 0.75rem"
+                  ></i>
+                  <span class="text-truncate" style="font-size: 0.72rem">
+                    No conocida
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Footer Stats (Desktop Only) -->
+          <div
+            class="d-none d-md-flex justify-content-between align-items-end mt-2 pt-2 border-top border-secondary-subtle"
+          >
+            <div
+              class="stats-group d-flex gap-3 text-body-secondary"
+              style="font-size: 0.75rem"
+            >
+              <div class="stat-item d-flex align-items-center">
+                <i class="fa-solid fa-gauge-high me-2 op-60"></i>
+                <span>1000 km</span>
+              </div>
+              <div class="stat-item d-flex align-items-center">
+                <i class="fa-solid fa-gas-pump me-2 op-60"></i>
+                <span>50%</span>
+              </div>
+            </div>
+            <div class="d-flex gap-2">
               <button
                 type="button"
-                class="btn btn-outline-info btn-sm rounded-3 p-1 shadow-none action-btn"
-                (click)="onEditClick()"
+                class="btn btn-outline-success btn-sm rounded-3 p-1 shadow-none action-btn"
+                (click)="onTripsClick()"
                 style="width: 32px; height: 32px"
                 onkeypress
-                title="Editar"
+                title="Ver Viajes"
               >
-                <i class="fa-solid fa-pencil" style="font-size: 0.8rem"></i>
+                <i class="fa-solid fa-route" style="font-size: 0.8rem"></i>
               </button>
-            }
+              <button
+                type="button"
+                class="btn btn-outline-warning btn-sm rounded-3 p-1 shadow-none action-btn"
+                (click)="onMaintenanceClick()"
+                style="width: 32px; height: 32px"
+                onkeypress
+                title="Mantenimiento"
+              >
+                <i class="fa-solid fa-wrench" style="font-size: 0.8rem"></i>
+              </button>
+              @if (canEdit) {
+                <button
+                  type="button"
+                  class="btn btn-outline-info btn-sm rounded-3 p-1 shadow-none action-btn"
+                  (click)="onEditClick()"
+                  style="width: 32px; height: 32px"
+                  onkeypress
+                  title="Editar"
+                >
+                  <i class="fa-solid fa-pencil" style="font-size: 0.8rem"></i>
+                </button>
+              }
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Footer Stats (Mobile Only - Full Width) -->
-  <div
-    class="card-footer d-md-none bg-transparent d-flex justify-content-between align-items-center py-2 px-3 border-top border-secondary-subtle mt-auto"
-  >
+    <!-- Footer Stats (Mobile Only - Full Width) -->
     <div
-      class="stats-group d-flex gap-3 text-body-secondary"
-      style="font-size: 0.75rem"
+      class="card-footer d-md-none bg-transparent d-flex justify-content-between align-items-center py-2 px-3 border-top border-secondary-subtle mt-auto"
     >
-      <div class="stat-item d-flex align-items-center">
-        <i class="fa-solid fa-gauge-high me-2 op-60"></i>
-        <span>1000 km</span>
-      </div>
-      <div class="stat-item d-flex align-items-center">
-        <i class="fa-solid fa-gas-pump me-2 op-60"></i>
-        <span>50%</span>
-      </div>
-    </div>
-    <div class="d-flex gap-2">
-      <button
-        type="button"
-        class="btn btn-outline-warning btn-sm rounded-3 p-1 shadow-none action-btn"
-        (click)="onMaintenanceClick()"
-        style="width: 32px; height: 32px"
-        onkeypress
-        title="Mantenimiento"
+      <div
+        class="stats-group d-flex gap-3 text-body-secondary"
+        style="font-size: 0.75rem"
       >
-        <i class="fa-solid fa-wrench" style="font-size: 0.8rem"></i>
-      </button>
-      @if (canEdit) {
+        <div class="stat-item d-flex align-items-center">
+          <i class="fa-solid fa-gauge-high me-2 op-60"></i>
+          <span>1000 km</span>
+        </div>
+        <div class="stat-item d-flex align-items-center">
+          <i class="fa-solid fa-gas-pump me-2 op-60"></i>
+          <span>50%</span>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
         <button
           type="button"
-          class="btn btn-outline-info btn-sm rounded-3 p-1 shadow-none action-btn"
-          (click)="onEditClick()"
+          class="btn btn-outline-success btn-sm rounded-3 p-1 shadow-none action-btn"
+          (click)="onTripsClick()"
           style="width: 32px; height: 32px"
           onkeypress
-          title="Editar"
+          title="Ver Viajes"
         >
-          <i class="fa-solid fa-pencil" style="font-size: 0.8rem"></i>
+          <i class="fa-solid fa-route" style="font-size: 0.8rem"></i>
         </button>
-      }
+        <button
+          type="button"
+          class="btn btn-outline-warning btn-sm rounded-3 p-1 shadow-none action-btn"
+          (click)="onMaintenanceClick()"
+          style="width: 32px; height: 32px"
+          onkeypress
+          title="Mantenimiento"
+        >
+          <i class="fa-solid fa-wrench" style="font-size: 0.8rem"></i>
+        </button>
+        @if (canEdit) {
+          <button
+            type="button"
+            class="btn btn-outline-info btn-sm rounded-3 p-1 shadow-none action-btn"
+            (click)="onEditClick()"
+            style="width: 32px; height: 32px"
+            onkeypress
+            title="Editar"
+          >
+            <i class="fa-solid fa-pencil" style="font-size: 0.8rem"></i>
+          </button>
+        }
+      </div>
     </div>
-  </div>
+  }
 </div>
