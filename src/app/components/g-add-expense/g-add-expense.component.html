@@ -64,13 +64,17 @@
       >
 
       <!-- Search Input -->
-      <div class="input-group mb-3 custom-search">
-        <span class="input-group-text border-end-0 text-secondary ps-3 pe-2">
+      <div
+        class="input-group mb-3 no-border-input-group rounded-3 overflow-hidden shadow-sm border transition-all"
+      >
+        <span
+          class="input-group-text bg-transparent border-0 text-secondary ps-3 pe-2"
+        >
           <i class="fa-solid fa-magnifying-glass"></i>
         </span>
         <input
           type="text"
-          class="form-control border-start-0 ps-2 shadow-none"
+          class="form-control border-0 shadow-none ps-2"
           placeholder="Buscar categoría..."
           (input)="onSearchChange($event)"
           [value]="searchQuery"
@@ -182,7 +186,7 @@
       >
       <textarea
         id="desc"
-        class="form-control border-0 shadow-sm rounded-3 p-3 text-secondary"
+        class="form-control border shadow-sm rounded-3 p-3 text-secondary transition-all"
         rows="3"
         placeholder="{{
           isMaintenance
