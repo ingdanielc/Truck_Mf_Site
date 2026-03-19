@@ -191,15 +191,17 @@
                 <!-- Expanded Vehicles List -->
                 @if (expandedOwnerId === owner.id) {
                   <div
-                    class="expanded-vehicles mt-4 mb-5 ps-3 animate__animated animate__fadeIn"
+                    class="expanded-vehicles admin-section-container ps-3 animate__animated animate__fadeIn"
                   >
-                    <div class="d-flex align-items-center gap-3 mb-4">
+                    <div
+                      class="d-flex align-items-center gap-3 admin-section-header"
+                    >
                       <div
                         class="h-divider flex-grow-1 bg-primary opacity-10"
                         style="height: 1px"
                       ></div>
                       <h6
-                        class="text-primary small fw-black mb-0 text-uppercase tracking-wider"
+                        class="text-primary admin-section-title fw-black mb-0 text-uppercase tracking-wider"
                       >
                         Vehículos de {{ owner.name }}
                       </h6>
