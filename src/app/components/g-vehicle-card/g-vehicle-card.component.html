@@ -29,6 +29,7 @@
         "
         (click)="onStatusClick()"
         [title]="vehicle.lastTripStatus === 'En Curso' ? 'Ver viaje' : ''"
+        onkeypress
       ></span>
     </div>
 
@@ -52,6 +53,7 @@
               "
               (click)="onStatusClick()"
               [title]="vehicle.lastTripStatus === 'En Curso' ? 'Ver viaje' : ''"
+              onkeypress
             >
               <span class="d-none d-md-inline">{{ displayTripStatus }}</span>
               <i
@@ -77,9 +79,9 @@
           </p>
         </div>
 
-        <!-- Assigned Driver -->
+        <!-- Assigned Driver & Last Location -->
         <div class="mb-auto">
-          <div class="rounded-3 d-flex align-items-center gap-1">
+          <div class="rounded-3 d-flex flex-column gap-1">
             <div class="flex-grow-1 overflow-hidden">
               <p class="fw-bold mb-0 text-truncate" style="font-size: 0.85rem">
                 {{ vehicle.currentDriverName || "Sin conductor asignado" }}
@@ -88,12 +90,29 @@
                 Conductor asignado
               </p>
             </div>
+
+            @if (lastLocation) {
+              <div
+                class="d-flex align-items-center gap-1 text-primary opacity-75 mt-1 cursor-pointer hover-opacity-100 transition-all"
+                [title]="lastLocation.addressText"
+                (click)="onLocationClick($event)"
+                onkeypress
+              >
+                <i
+                  class="fa-solid fa-location-dot"
+                  style="font-size: 0.75rem"
+                ></i>
+                <span class="text-truncate" style="font-size: 0.72rem">
+                  {{ lastLocation.addressText }}
+                </span>
+              </div>
+            }
           </div>
         </div>
 
         <!-- Footer Stats (Desktop Only) -->
         <div
-          class="d-none d-md-flex justify-content-between align-items-end mt-3 pt-2 border-top border-secondary-subtle"
+          class="d-none d-md-flex justify-content-between align-items-end mt-2 pt-2 border-top border-secondary-subtle"
         >
           <div
             class="stats-group d-flex gap-3 text-body-secondary"

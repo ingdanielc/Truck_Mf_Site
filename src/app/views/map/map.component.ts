@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { TripService } from 'src/app/services/trip.service';
@@ -33,6 +34,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   userRole: string = '';
   loggedInUserId: number | null = null;
   isPanelCollapsed: boolean = false;
+  fromParam: string | null = null;
 
   private markers: any[] = [];
   private polylines: any[] = [];
@@ -49,10 +51,20 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly commonService: CommonService,
     private readonly ownerService: OwnerService,
     private readonly driverService: DriverService,
+    private readonly route: ActivatedRoute,
+    private readonly location: Location,
   ) {}
 
   ngOnInit(): void {
     this.geocoder = new google.maps.Geocoder();
+
+    this.route.queryParams.subscribe((params) => {
+      if (params['vehicleId']) {
+        this.selectedVehicleId = Number(params['vehicleId']);
+      }
+      this.fromParam = params['from'] || null;
+    });
+
     this.userSub = this.securityService.userData$.subscribe((user: any) => {
       if (user) {
         this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
@@ -225,10 +237,26 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
             return false;
           });
 
-          this.renderAllVehiclesOnMap();
+          if (this.selectedVehicleId) {
+            const vehicleToFocus = this.activeVehicles.find(
+              (v) => v.id === this.selectedVehicleId,
+            );
+            if (vehicleToFocus) {
+              this.selectedVehicleId = null; // Clear to avoid toggle-off in focusVehicle
+              this.focusVehicle(vehicleToFocus);
+            } else {
+              this.renderAllVehiclesOnMap();
+            }
+          } else {
+            this.renderAllVehiclesOnMap();
+          }
         },
         error: (err) => console.error('Map: Error loading data:', err),
       });
+  }
+
+  goBack(): void {
+    this.location.back();
   }
 
   private renderAllVehiclesOnMap(): void {

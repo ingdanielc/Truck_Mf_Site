@@ -1,7 +1,15 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
+import { LocationService } from 'src/app/services/location.service';
+import { ModelDriverLocation } from 'src/app/models/location-model';
+import {
+  Filter,
+  ModelFilterTable,
+  Pagination,
+  Sort,
+} from 'src/app/models/model-filter-table';
 
 @Component({
   selector: 'app-g-vehicle-card',
@@ -10,14 +18,52 @@ import { ModelVehicle } from 'src/app/models/vehicle-model';
   templateUrl: './g-vehicle-card.component.html',
   styleUrls: ['./g-vehicle-card.component.scss'],
 })
-export class GVehicleCardComponent {
+export class GVehicleCardComponent implements OnInit {
   @Input() vehicle!: ModelVehicle;
   @Input() canEdit: boolean = true;
   @Output() edit = new EventEmitter<ModelVehicle>();
   @Output() viewDetails = new EventEmitter<ModelVehicle>();
   @Output() maintenance = new EventEmitter<ModelVehicle>();
 
-  constructor(private readonly router: Router) {}
+  lastLocation: ModelDriverLocation | null = null;
+
+  constructor(
+    private readonly router: Router,
+    private readonly locationService: LocationService,
+  ) {}
+
+  ngOnInit(): void {
+    if (this.vehicle.id && this.vehicle.currentDriverId) {
+      this.loadLastLocation();
+    }
+  }
+
+  private loadLastLocation(): void {
+    const filter = new ModelFilterTable(
+      [
+        new Filter('vehicleId', '=', this.vehicle.id!.toString()),
+        new Filter('driverId', '=', this.vehicle.currentDriverId!.toString()),
+      ],
+      new Pagination(1, 0),
+      new Sort('id', false),
+    );
+
+    this.locationService.getLocationService(filter).subscribe({
+      next: (resp: any) => {
+        this.lastLocation = resp?.data?.content?.[0] || null;
+      },
+      error: (err) => console.error('Error loading last location:', err),
+    });
+  }
+
+  onLocationClick(event: Event): void {
+    event.stopPropagation();
+    if (this.vehicle.id) {
+      this.router.navigate(['/site/map'], {
+        queryParams: { vehicleId: this.vehicle.id, from: 'vehicles' },
+      });
+    }
+  }
 
   onEditClick(): void {
     this.edit.emit(this.vehicle);

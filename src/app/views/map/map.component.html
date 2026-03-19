@@ -10,6 +10,15 @@
       onkeypress
     >
       <div class="d-flex align-items-center">
+        @if (fromParam) {
+          <button
+            class="btn btn-link p-0 me-2 text-black"
+            (click)="goBack()"
+            aria-label="Volver"
+          >
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+        }
         <h6 class="mb-0 fw-bold op-70 text-nowrap">
           <i class="fa-solid fa-truck-moving me-2"></i>Viajes en Curso
         </h6>
