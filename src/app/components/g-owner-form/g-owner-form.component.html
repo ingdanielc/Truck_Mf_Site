@@ -91,32 +91,32 @@
           <i class="fa-solid fa-user me-2"></i>Información Personal
         </h6>
 
-        <div class="mb-3">
-          <label for="name" class="form-label small fw-bold mb-2"
-            >Nombre completo*</label
-          >
-          <input
-            id="name"
-            type="text"
-            class="form-control rounded-3 py-2 px-3"
-            formControlName="name"
-            maxlength="150"
-            placeholder="Ej: Juan Pérez"
-            [class.is-invalid]="
-              ownerForm.get('name')?.invalid && ownerForm.get('name')?.touched
-            "
-          />
-          @if (
-            ownerForm.get("name")?.invalid && ownerForm.get("name")?.touched
-          ) {
-            <div class="text-danger small mt-1">
-              Este campo es obligatorio para continuar
-            </div>
-          }
-        </div>
+        <div class="row g-3">
+          <div class="col-12 mb-3">
+            <label for="name" class="form-label small fw-bold mb-2"
+              >Nombre completo*</label
+            >
+            <input
+              id="name"
+              type="text"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="name"
+              maxlength="150"
+              placeholder="Ej: Juan Pérez"
+              [class.is-invalid]="
+                ownerForm.get('name')?.invalid && ownerForm.get('name')?.touched
+              "
+            />
+            @if (
+              ownerForm.get("name")?.invalid && ownerForm.get("name")?.touched
+            ) {
+              <div class="text-danger small mt-1">
+                Este campo es obligatorio para continuar
+              </div>
+            }
+          </div>
 
-        <div class="row g-3 mb-3">
-          <div class="col-6">
+          <div class="col-6 mb-3">
             <label for="documentType" class="form-label small fw-bold mb-2"
               >Tipo de Documento*</label
             >
@@ -143,7 +143,7 @@
               </div>
             }
           </div>
-          <div class="col-6">
+          <div class="col-6 mb-3">
             <label for="documentNumber" class="form-label small fw-bold mb-2"
               >Nro. de Documento*</label
             >
@@ -181,10 +181,8 @@
               </div>
             }
           </div>
-        </div>
 
-        <div class="row g-3 mb-3">
-          <div class="col-6">
+          <div class="col-6 mb-3">
             <label for="cellPhone" class="form-label small fw-bold mb-2"
               >Celular*</label
             >
@@ -221,7 +219,7 @@
               </div>
             }
           </div>
-          <div class="col-6">
+          <div class="col-6 mb-3">
             <label for="birthdate" class="form-label small fw-bold mb-2"
               >Fecha de nacimiento*</label
             >
@@ -245,10 +243,8 @@
               </div>
             }
           </div>
-        </div>
 
-        <div class="row g-3 mb-3">
-          <div class="col-6">
+          <div class="col-6 mb-3">
             <label for="city" class="form-label small fw-bold mb-2"
               >Ciudad*</label
             >
@@ -277,7 +273,7 @@
               </div>
             }
           </div>
-          <div class="col-6">
+          <div class="col-6 mb-3">
             <label for="gender" class="form-label small fw-bold mb-2"
               >Genero*</label
             >
@@ -304,39 +300,39 @@
               </div>
             }
           </div>
-        </div>
 
-        <div class="mb-3">
-          <label for="maxVehicles" class="form-label small fw-bold mb-2"
-            >Máximo de Vehículos*</label
-          >
-          <input
-            id="maxVehicles"
-            type="number"
-            class="form-control rounded-3 py-2 px-3"
-            formControlName="maxVehicles"
-            placeholder="3"
-            max="99"
-            oninput="
-              if (this.value.length > 2) this.value = this.value.slice(0, 2);
-            "
-            [class.is-invalid]="
-              ownerForm.get('maxVehicles')?.invalid &&
-              ownerForm.get('maxVehicles')?.touched
-            "
-          />
-          @if (
-            ownerForm.get("maxVehicles")?.invalid &&
-            ownerForm.get("maxVehicles")?.touched
-          ) {
-            <div class="text-danger small mt-1">
-              @if (ownerForm.get("maxVehicles")?.hasError("max")) {
-                El valor máximo permitido es 99
-              } @else {
-                Este campo es obligatorio para continuar
-              }
-            </div>
-          }
+          <div class="col-12 mb-3">
+            <label for="maxVehicles" class="form-label small fw-bold mb-2"
+              >Máximo de Vehículos*</label
+            >
+            <input
+              id="maxVehicles"
+              type="number"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="maxVehicles"
+              placeholder="3"
+              max="99"
+              oninput="
+                if (this.value.length > 2) this.value = this.value.slice(0, 2);
+              "
+              [class.is-invalid]="
+                ownerForm.get('maxVehicles')?.invalid &&
+                ownerForm.get('maxVehicles')?.touched
+              "
+            />
+            @if (
+              ownerForm.get("maxVehicles")?.invalid &&
+              ownerForm.get("maxVehicles")?.touched
+            ) {
+              <div class="text-danger small mt-1">
+                @if (ownerForm.get("maxVehicles")?.hasError("max")) {
+                  El valor máximo permitido es 99
+                } @else {
+                  Este campo es obligatorio para continuar
+                }
+              </div>
+            }
+          </div>
         </div>
 
         @if (owner) {
@@ -379,12 +375,12 @@
             <i class="fa-solid fa-lock me-2"></i>Datos de Acceso
           </h6>
 
-          <div class="mb-3">
+          <div class="mb-4">
             <label for="email" class="form-label small fw-bold mb-2"
               >Correo electrónico*</label
             >
             <input
-              id="email"
+              id="email1"
               type="email"
               class="form-control rounded-3 py-2 px-3"
               formControlName="email"
@@ -409,8 +405,8 @@
             }
           </div>
 
-          <div class="row g-3 mb-3">
-            <div class="col-12 col-md-6">
+          <div class="row g-3">
+            <div class="col-12 mb-3">
               <label for="password" class="form-label small fw-bold mb-2"
                 >Contraseña*</label
               >
@@ -450,7 +446,7 @@
                 </div>
               }
             </div>
-            <div class="col-12 col-md-6">
+            <div class="col-12 mb-3">
               <label for="confirmPassword" class="form-label small fw-bold mb-2"
                 >Confirmar contraseña*</label
               >
