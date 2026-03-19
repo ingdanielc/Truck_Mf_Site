@@ -166,9 +166,12 @@
             </div>
           } @else if (recentTrips.length === 0) {
             <div
-              class="text-center py-4 bg-light rounded-4 border border-dashed"
+              class="text-center p-4 bg-body-tertiary rounded-4 mb-4 border border-dashed"
             >
-              <p class="text-secondary mb-0 small">
+              <i
+                class="fa-solid fa-truck-moving fs-3 mb-2 opacity-50 text-body-secondary"
+              ></i>
+              <p class="small text-body-secondary mb-0">
                 No hay viajes recientes registrados para este vehículo.
               </p>
             </div>
@@ -223,15 +226,6 @@
             (editExpense)="onEditExpense($event)"
             (addExpenseType)="openAddExpense($event)"
           ></g-expenses-trip>
-        </div>
-      } @else {
-        <div
-          class="text-center py-5 bg-light rounded-4 border border-dashed animate__animated animate__fadeIn"
-        >
-          <i class="fa-solid fa-route fs-2 text-secondary mb-3 opacity-25"></i>
-          <p class="text-secondary mb-0">
-            Selecciona un viaje para ver y gestionar sus gastos.
-          </p>
         </div>
       }
     </div>
