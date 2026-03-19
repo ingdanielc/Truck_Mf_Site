@@ -26,10 +26,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   private readonly allCards: any = [
     {
       routing: '/site/dashboard',
-      title: 'Dashboard',
+      title: 'Reportes',
       icon: 'fa-solid fa-gauge-high',
       descriptions:
-        'Visualiza el rendimiento y métricas clave de tu flota con gráficos interactivos.',
+        'Visualiza el rendimiento y métricas de tus vehículos con gráficos interactivos.',
     },
     {
       routing: '/site/owners',
@@ -43,14 +43,14 @@ export class HomeComponent implements OnInit, OnDestroy {
       title: 'Conductores',
       icon: 'fa-solid fa-id-card',
       descriptions:
-        'Controla la información y documentación de tus conductores asociados.',
+        'Controla la información y documentación de tus conductores.',
     },
     {
       routing: '/site/vehicles',
       title: 'Vehículos',
       icon: 'fa-solid fa-truck-moving',
       descriptions:
-        'Administra tu flota de vehículos, documentos y mantenimientos.',
+        'Administra tus vehículos, ubicación, documentos y mantenimientos.',
     },
     {
       routing: '/site/trips',
@@ -71,21 +71,21 @@ export class HomeComponent implements OnInit, OnDestroy {
       title: 'Mantenimiento',
       icon: 'fa-solid fa-screwdriver-wrench',
       descriptions:
-        'Programas, gestionas y haz seguimiento a los mantenimientos de tu flota vehicular.',
+        'Programas, gestionas y haz seguimiento a los mantenimientos de tus vehículos.',
     },
     {
       routing: '/site/map',
       title: 'Mapa',
       icon: 'fa-solid fa-map-location-dot',
       descriptions:
-        'Visualiza en tiempo real la ubicación de los conductores y las rutas de los viajes en curso.',
+        'Visualiza en tiempo real la ubicación de tus vehículos y las rutas de los viajes en curso.',
     },
     {
       routing: '/site/configuration',
       title: 'Configuración',
       icon: 'fa-solid fa-gear',
       descriptions:
-        'Edita catálogos, preferencias y ajusta el comportamiento general del ecosistema.',
+        'Edita catálogos, preferencias y ajusta el comportamiento general de la aplicación.',
     },
     {
       routing: '/site/security',

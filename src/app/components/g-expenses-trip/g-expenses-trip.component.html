@@ -1,10 +1,10 @@
 <div class="g-expenses-trip animate__animated animate__fadeIn">
   <!-- Summary Row (Matching Image 1) -->
-  <div class="row g-4 mb-5">
+  <div class="row g-4 mb-4">
     <!-- Total General Block -->
     <div class="col-12 col-lg-7">
       <div
-        class="card overflow-hidden border-0 rounded-4 shadow-sm text-white h-100 total-card p-4 p-md-5 position-relative d-flex flex-column justify-content-between"
+        class="card overflow-hidden border-0 rounded-4 shadow-sm text-white h-100 total-card p-3 p-md-5 position-relative d-flex flex-column justify-content-between"
       >
         <div class="position-relative z-1">
           <p
@@ -58,7 +58,7 @@
     <div class="col-12 col-lg-5">
       @if (!isMaintenance) {
         <div
-          class="card border-0 rounded-4 shadow-sm bg-body-tertiary h-100 p-4"
+          class="card border-0 rounded-4 shadow-sm bg-body-tertiary h-100 p-3 p-md-4"
         >
           <p class="small fw-bold tracking-wider text-secondary mb-4">
             ESTADO DEL PRESUPUESTO
@@ -109,7 +109,7 @@
         </div>
       } @else {
         <div
-          class="card border-0 rounded-4 shadow-sm bg-body-tertiary h-100 p-4"
+          class="card border-0 rounded-4 shadow-sm bg-body-tertiary h-100 p-3 p-md-4"
         >
           <p class="small fw-bold tracking-wider text-secondary mb-4">
             RESUMEN MANTENIMIENTO
@@ -162,7 +162,7 @@
     <div class="row g-4">
       <!-- Column 1: Gastos del Viaje -->
       <div class="col-12 col-xl-4">
-        <div class="d-flex align-items-center gap-2 mb-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
           <div
             class="icon-shape rounded-3 bg-primary bg-opacity-10 text-primary p-2"
           >
@@ -171,7 +171,7 @@
           <h5 class="fw-bold mb-0">Gastos del Viaje</h5>
         </div>
 
-        <div class="d-flex flex-column gap-2 mb-4">
+        <div class="d-flex flex-column gap-2 mb-0">
           @for (expense of tripExpenses; track expense.id) {
             <g-expense-card
               [expense]="expense"
@@ -215,7 +215,7 @@
 
       <!-- Column 2: Gastos del Vehículo -->
       <div class="col-12 col-xl-4">
-        <div class="d-flex align-items-center gap-2 mb-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
           <div
             class="icon-shape rounded-3 bg-primary bg-opacity-10 text-primary p-2"
           >
@@ -224,7 +224,7 @@
           <h5 class="fw-bold mb-0">Gastos del Vehículo</h5>
         </div>
 
-        <div class="d-flex flex-column gap-2 mb-4">
+        <div class="d-flex flex-column gap-2 mb-0">
           @for (expense of vehicleExpenses; track expense.id) {
             <g-expense-card
               [expense]="expense"
@@ -268,7 +268,7 @@
 
       <!-- Column 3: Gastos del Conductor -->
       <div class="col-12 col-xl-4">
-        <div class="d-flex align-items-center gap-2 mb-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
           <div
             class="icon-shape rounded-3 bg-primary bg-opacity-10 text-primary p-2"
           >
@@ -277,7 +277,7 @@
           <h5 class="fw-bold mb-0">Gastos del Conductor</h5>
         </div>
 
-        <div class="d-flex flex-column gap-2 mb-4">
+        <div class="d-flex flex-column gap-2 mb-2">
           @for (expense of driverExpenses; track expense.id) {
             <g-expense-card
               [expense]="expense"
@@ -323,7 +323,7 @@
     <!-- Single Column Layout for Maintenance Breakdown -->
     <div class="row g-4">
       <div class="col-12">
-        <div class="d-flex align-items-center gap-2 mb-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
           <div
             class="icon-shape rounded-3 bg-primary bg-opacity-10 text-primary p-2"
           >

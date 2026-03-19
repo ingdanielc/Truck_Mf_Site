@@ -12,6 +12,7 @@ export class GTripMiniCardComponent {
   @Input() origin: string = 'Bogotá';
   @Input() destination: string = 'Medellín';
   @Input() status: string = 'En ruta';
+  @Input() numberTrip: string | number = '';
   @Input() isSelected: boolean = false;
 
   get statusClass(): string {

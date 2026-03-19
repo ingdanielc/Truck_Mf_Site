@@ -36,7 +36,7 @@
 
   @if (!hideSelectionSections) {
     <!-- ── Vehicle Carousel ─────────────────────────────────────────── -->
-    <div class="mb-5">
+    <div class="mb-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fw-bold mb-0 text-body">
           <i class="fa-solid fa-truck-front me-2 text-secondary"></i>Vehículos
@@ -151,7 +151,7 @@
   @if (selectedVehicle) {
     <div class="mb-0">
       @if (!hideSelectionSections && !isMaintenance) {
-        <div class="mt-4 mb-5">
+        <div class="mt-4 mb-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="fw-bold mb-0 text-body">
               <i class="fa-solid fa-route me-2 text-secondary"></i>Viajes
@@ -180,6 +180,7 @@
                     [origin]="getCityName(trip.originId)"
                     [destination]="getCityName(trip.destinationId)"
                     [status]="trip.status"
+                    [numberTrip]="trip.numberTrip || trip.manifestNumber"
                     [isSelected]="selectedTrip?.id === trip.id"
                     (click)="selectTrip(trip)"
                     class="cursor-pointer d-block"
