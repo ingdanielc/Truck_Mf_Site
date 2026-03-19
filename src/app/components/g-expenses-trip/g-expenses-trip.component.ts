@@ -264,4 +264,22 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
       return `Hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
     return `Hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
   }
+
+  get currentMonthName(): string {
+    const months = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ];
+    return months[new Date().getMonth()];
+  }
 }

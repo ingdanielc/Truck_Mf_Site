@@ -13,12 +13,19 @@
             Monto Acumulado
           </p>
           <h2 class="h3 fw-bold mb-3 d-inline-block text-truncate w-100">
-            {{ isMaintenance ? "Total Mantenimiento" : "Total General" }}
+            {{
+              isMaintenance
+                ? "Total Mantenimiento " + currentMonthName
+                : "Total General"
+            }}
           </h2>
 
           <div class="d-flex align-items-baseline gap-2 flex-wrap">
             <h1 class="display-5 fw-bold mb-0 lh-1 text-break">
-              {{ totalAmount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+              {{
+                (isMaintenance ? totalCurrentMonth : totalAmount)
+                  | currency: "COP" : "symbol-narrow" : "1.0-0"
+              }}
             </h1>
             <span class="fs-5 text-white-50">COP</span>
           </div>
