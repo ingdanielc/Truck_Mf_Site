@@ -339,15 +339,26 @@
       <i class="fa-solid fa-plus fs-4"></i>
     </button>
   }
+</div>
 
-  <!-- Create/Edit Vehicle Offcanvas -->
-  <div
-    class="custom-offcanvas shadow-lg border-start transition-all"
-    [class.open]="isOffcanvasOpen"
-  >
-    <!-- Sticky Header & Photo Banner Container -->
-    <div class="sticky-header-container" [class.no-photo]="!photoPreview">
-      <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
+<!-- Create/Edit Vehicle Offcanvas -->
+<div
+  class="custom-offcanvas vehicle-offcanvas shadow-lg border-start transition-all"
+  [class.open]="isOffcanvasOpen"
+>
+  <div class="safe-area-filler"></div>
+  <!-- Sticky Header & Photo Banner Container -->
+  <div class="sticky-header-container" [class.no-photo]="!photoPreview">
+    <!-- Vehicle Photo Banner (Full Width) -->
+    <div
+      class="vehicle-photo-banner-container position-relative overflow-hidden"
+      [class.no-photo]="!photoPreview"
+    >
+      <!-- Header Overlay - Positioned over the Banner -->
+      <div
+        class="vehicle-header-overlay position-absolute top-0 start-0 w-100 p-4 pb-2 d-flex flex-column"
+        style="z-index: 1100"
+      >
         <div
           class="header-blur-overlay position-absolute top-0 start-0 w-100 h-100"
         ></div>
@@ -376,380 +387,372 @@
         </div>
       </div>
 
-      <!-- Vehicle Photo Banner (Full Width) -->
-      <div
-        class="vehicle-photo-banner-container position-relative overflow-hidden"
-        [class.no-photo]="!photoPreview"
-      >
-        @if (photoPreview) {
-          <img
-            [src]="photoPreview"
-            alt="Vehículo"
-            class="banner-img w-100 h-100 object-fit-cover"
-          />
-        } @else {
-          <div
-            class="banner-placeholder d-flex align-items-center justify-content-center w-100 h-100 bg-secondary-subtle"
-          >
-            <i class="fa-solid fa-truck fs-1 text-secondary opacity-25"></i>
-          </div>
-        }
-        <div class="banner-overlay"></div>
-      </div>
-
-      <!-- Action Buttons (Floating) - Moved outer to ensure visibility -->
-      <div
-        class="photo-actions-overlay position-absolute bottom-0 end-0 m-3 d-flex gap-2"
-        style="z-index: 100"
-      >
-        <input
-          type="file"
-          #photoInput
-          class="d-none"
-          accept="image/*"
-          (change)="onPhotoSelected($event)"
+      @if (photoPreview) {
+        <img
+          [src]="photoPreview"
+          alt="Vehículo"
+          class="banner-img w-100 h-100 object-fit-cover"
         />
-        <button
-          type="button"
-          class="btn btn-blur-light btn-icon-only rounded-circle shadow-sm d-flex align-items-center justify-content-center"
-          (click)="triggerPhotoInput(photoInput)"
-          title="Seleccionar desde archivo"
+      } @else {
+        <div
+          class="banner-placeholder d-flex align-items-center justify-content-center w-100 h-100 bg-secondary-subtle"
         >
-          <i class="fa-solid fa-folder-open"></i>
-        </button>
-        <button
-          type="button"
-          class="btn btn-blur-light btn-icon-only rounded-circle shadow-sm d-flex align-items-center justify-content-center"
-          (click)="showCamera = true"
-          title="Tomar fotografía"
-        >
-          <i class="fa-solid fa-camera"></i>
-        </button>
-        @if (photoPreview) {
-          <button
-            type="button"
-            class="btn btn-blur-danger btn-icon-only rounded-circle shadow-sm d-flex align-items-center justify-content-center"
-            aria-label="Eliminar foto"
-            (click)="removePhoto()"
-            title="Eliminar"
-          >
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        }
-      </div>
+          <i class="fa-solid fa-truck fs-1 text-secondary opacity-25"></i>
+        </div>
+      }
+      <div class="banner-overlay"></div>
     </div>
 
-    <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
-      <form [formGroup]="vehicleForm" (ngSubmit)="onSubmit()">
-        <div class="mb-4 pt-2">
-          <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
-            <i class="fa-solid fa-info-circle me-2"></i>Información General
-          </h6>
+    <!-- Action Buttons (Floating) - Moved outer to ensure visibility -->
+    <div
+      class="photo-actions-overlay position-absolute bottom-0 end-0 m-3 d-flex gap-2"
+      style="z-index: 100"
+    >
+      <input
+        type="file"
+        #photoInput
+        class="d-none"
+        accept="image/*"
+        (change)="onPhotoSelected($event)"
+      />
+      <button
+        type="button"
+        class="btn btn-blur-light btn-icon-only rounded-circle shadow-sm d-flex align-items-center justify-content-center"
+        (click)="triggerPhotoInput(photoInput)"
+        title="Seleccionar desde archivo"
+      >
+        <i class="fa-solid fa-folder-open"></i>
+      </button>
+      <button
+        type="button"
+        class="btn btn-blur-light btn-icon-only rounded-circle shadow-sm d-flex align-items-center justify-content-center"
+        (click)="showCamera = true"
+        title="Tomar fotografía"
+      >
+        <i class="fa-solid fa-camera"></i>
+      </button>
+      @if (photoPreview) {
+        <button
+          type="button"
+          class="btn btn-blur-danger btn-icon-only rounded-circle shadow-sm d-flex align-items-center justify-content-center"
+          aria-label="Eliminar foto"
+          (click)="removePhoto()"
+          title="Eliminar"
+        >
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      }
+    </div>
+  </div>
 
-          <div class="row g-3">
-            <div class="col-6 mb-3">
-              <label for="brand" class="form-label small fw-bold mb-2"
-                >Marca*</label
-              >
-              <select
-                id="brand"
-                class="form-select rounded-3 py-2 px-3"
-                formControlName="brand"
-                [class.is-invalid]="
-                  vehicleForm.get('brand')?.invalid &&
-                  vehicleForm.get('brand')?.touched
-                "
-              >
-                <option value="null" disabled selected>Selecciona</option>
-                @for (brand of brands; track brand.selectId) {
-                  <option [value]="brand.id">
-                    {{ brand.name }}
-                  </option>
-                }
-              </select>
-              @if (
-                vehicleForm.get("brand")?.invalid &&
-                vehicleForm.get("brand")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  Este campo es obligatorio para continuar
-                </div>
-              }
-            </div>
+  <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
+    <form [formGroup]="vehicleForm" (ngSubmit)="onSubmit()">
+      <div class="mb-4 pt-2">
+        <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+          <i class="fa-solid fa-info-circle me-2"></i>Información General
+        </h6>
 
-            <div class="col-6 mb-3">
-              <label for="model" class="form-label small fw-bold mb-2"
-                >Modelo*</label
-              >
-              <input
-                id="model"
-                type="text"
-                class="form-control rounded-3 py-2 px-3"
-                formControlName="model"
-                placeholder="Ej: Actros 2645"
-                [class.is-invalid]="
-                  vehicleForm.get('model')?.invalid &&
-                  vehicleForm.get('model')?.touched
-                "
-              />
-              @if (
-                vehicleForm.get("model")?.invalid &&
-                vehicleForm.get("model")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  Este campo es obligatorio para continuar
-                </div>
-              }
-            </div>
-
-            <div class="col-6 mb-3">
-              <label for="year" class="form-label small fw-bold mb-2"
-                >Año*</label
-              >
-              <select
-                id="year"
-                class="form-select rounded-3 py-2 px-3"
-                formControlName="year"
-                [class.is-invalid]="
-                  vehicleForm.get('year')?.invalid &&
-                  vehicleForm.get('year')?.touched
-                "
-              >
-                <option value="null" disabled>Selecciona</option>
-                @for (year of years; track year) {
-                  <option [value]="year">{{ year }}</option>
-                }
-              </select>
-              @if (
-                vehicleForm.get("year")?.invalid &&
-                vehicleForm.get("year")?.touched
-              ) {
-                <div class="text-danger small mt-1">Año inválido</div>
-              }
-            </div>
-
-            <div class="col-6 mb-3">
-              <label for="color" class="form-label small fw-bold mb-2"
-                >Color*</label
-              >
-              <input
-                id="color"
-                type="text"
-                class="form-control rounded-3 py-2 px-3"
-                formControlName="color"
-                placeholder="Ej: Blanco"
-                [class.is-invalid]="
-                  vehicleForm.get('color')?.invalid &&
-                  vehicleForm.get('color')?.touched
-                "
-              />
-              @if (
-                vehicleForm.get("color")?.invalid &&
-                vehicleForm.get("color")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  Este campo es obligatorio para continuar
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-
-        <!-- Technical Specs Section -->
-        <div class="mb-4">
-          <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
-            <i class="fa-solid fa-gear me-2"></i>Especificaciones Técnicas
-          </h6>
-
-          <div class="row g-3">
-            <div class="col-6 mb-3">
-              <label for="plate" class="form-label small fw-bold mb-2"
-                >Placa*</label
-              >
-              <input
-                id="plate"
-                type="text"
-                class="form-control rounded-3 py-2 px-3 text-uppercase"
-                formControlName="plate"
-                placeholder="XXX-999"
-                [class.is-invalid]="
-                  vehicleForm.get('plate')?.invalid &&
-                  vehicleForm.get('plate')?.touched
-                "
-              />
-              @if (
-                vehicleForm.get("plate")?.invalid &&
-                vehicleForm.get("plate")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  @if (vehicleForm.get("plate")?.hasError("required")) {
-                    Este campo es obligatorio para continuar
-                  } @else if (vehicleForm.get("plate")?.hasError("pattern")) {
-                    Formato inválido (Ej: ABC-123)
-                  } @else if (vehicleForm.get("plate")?.hasError("duplicate")) {
-                    Esta placa ya se encuentra registrada
-                  }
-                </div>
-              }
-            </div>
-
-            <div class="col-6 mb-3">
-              <label for="motorNumber" class="form-label small fw-bold mb-2"
-                >Nro. de Motor</label
-              >
-              <input
-                id="motorNumber"
-                type="text"
-                class="form-control rounded-3 py-2 px-3"
-                formControlName="motorNumber"
-                placeholder="MOT-998877"
-              />
-            </div>
-
-            <div class="col-6 mb-3">
-              <label for="chassisNumber" class="form-label small fw-bold mb-2"
-                >Nro. de Chasis</label
-              >
-              <input
-                id="chassisNumber"
-                type="text"
-                class="form-control rounded-3 py-2 px-3"
-                formControlName="chassisNumber"
-                placeholder="CHS-112233"
-              />
-            </div>
-
-            <div class="col-6 mb-3">
-              <label for="axleCount" class="form-label small fw-bold mb-2"
-                >Nro. de Ejes</label
-              >
-              <select
-                id="axleCount"
-                class="form-select rounded-3 py-2 px-3"
-                formControlName="axleCount"
-                [class.is-invalid]="
-                  vehicleForm.get('axleCount')?.invalid &&
-                  vehicleForm.get('axleCount')?.touched
-                "
-              >
-                @for (option of axleOptions; track option) {
-                  <option [value]="option">{{ option }}</option>
-                }
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Owner Selection Section (Admin only) -->
-        @if (userRole === "ADMINISTRADOR") {
-          <div class="mb-4">
-            <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
-              <i class="fa-solid fa-user-tie me-2"></i>Propietario
-            </h6>
-            <div class="mb-3">
-              <label for="ownerId" class="form-label small fw-bold mb-2"
-                >Seleccionar Socio*</label
-              >
-              <select
-                id="ownerId"
-                class="form-select rounded-3 py-2 px-3"
-                formControlName="ownerId"
-                [class.is-invalid]="
-                  vehicleForm.get('ownerId')?.invalid &&
-                  vehicleForm.get('ownerId')?.touched
-                "
-              >
-                <option value="null" disabled selected>Selecciona</option>
-                @for (owner of owners; track owner.id) {
-                  <option [value]="owner.id">
-                    {{ owner.name }} -
-                    {{ owner.documentNumber | documentNumber }}
-                  </option>
-                }
-              </select>
-              @if (
-                vehicleForm.get("ownerId")?.invalid &&
-                vehicleForm.get("ownerId")?.touched
-              ) {
-                <div class="text-danger small mt-1">
-                  Debe seleccionar un propietario para el vehículo
-                </div>
-              }
-            </div>
-          </div>
-        }
-
-        <!-- Driver Selection Section (depends on owner) -->
-        <div class="mb-4">
-          <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
-            <i class="fa-solid fa-id-card-clip me-2"></i>Conductor
-          </h6>
-          <div class="mb-3">
-            <label for="driverId" class="form-label small fw-bold mb-2"
-              >Seleccionar Conductor*</label
+        <div class="row g-3">
+          <div class="col-6 mb-3">
+            <label for="brand" class="form-label small fw-bold mb-2"
+              >Marca*</label
             >
             <select
-              id="driverId"
+              id="brand"
               class="form-select rounded-3 py-2 px-3"
-              formControlName="driverId"
-              [disabled]="!vehicleForm.get('ownerId')?.value || loadingDrivers"
+              formControlName="brand"
+              [class.is-invalid]="
+                vehicleForm.get('brand')?.invalid &&
+                vehicleForm.get('brand')?.touched
+              "
             >
-              <option [value]="null">
-                @if (loadingDrivers) {
-                  Cargando conductores…
-                } @else if (!vehicleForm.get("ownerId")?.value) {
-                  Selecciona primero un propietario
-                } @else if (drivers.length === 0) {
-                  Sin conductores disponibles
-                } @else {
-                  Selecciona
-                }
-              </option>
-              @for (driver of drivers; track driver.id) {
-                <option [value]="driver.id">
-                  {{ driver.name }} —
-                  {{ driver.documentNumber | documentNumber }}
+              <option value="null" disabled selected>Selecciona</option>
+              @for (brand of brands; track brand.selectId) {
+                <option [value]="brand.id">
+                  {{ brand.name }}
                 </option>
               }
             </select>
-            @if (!vehicleForm.get("ownerId")?.value) {
-              <div class="text-body-secondary small mt-1">
-                <i class="fa-solid fa-circle-info me-1"></i>
-                Selecciona un propietario para ver los conductores disponibles
+            @if (
+              vehicleForm.get("brand")?.invalid &&
+              vehicleForm.get("brand")?.touched
+            ) {
+              <div class="text-danger small mt-1">
+                Este campo es obligatorio para continuar
+              </div>
+            }
+          </div>
+
+          <div class="col-6 mb-3">
+            <label for="model" class="form-label small fw-bold mb-2"
+              >Modelo*</label
+            >
+            <input
+              id="model"
+              type="text"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="model"
+              placeholder="Ej: Actros 2645"
+              [class.is-invalid]="
+                vehicleForm.get('model')?.invalid &&
+                vehicleForm.get('model')?.touched
+              "
+            />
+            @if (
+              vehicleForm.get("model")?.invalid &&
+              vehicleForm.get("model")?.touched
+            ) {
+              <div class="text-danger small mt-1">
+                Este campo es obligatorio para continuar
+              </div>
+            }
+          </div>
+
+          <div class="col-6 mb-3">
+            <label for="year" class="form-label small fw-bold mb-2">Año*</label>
+            <select
+              id="year"
+              class="form-select rounded-3 py-2 px-3"
+              formControlName="year"
+              [class.is-invalid]="
+                vehicleForm.get('year')?.invalid &&
+                vehicleForm.get('year')?.touched
+              "
+            >
+              <option value="null" disabled>Selecciona</option>
+              @for (year of years; track year) {
+                <option [value]="year">{{ year }}</option>
+              }
+            </select>
+            @if (
+              vehicleForm.get("year")?.invalid &&
+              vehicleForm.get("year")?.touched
+            ) {
+              <div class="text-danger small mt-1">Año inválido</div>
+            }
+          </div>
+
+          <div class="col-6 mb-3">
+            <label for="color" class="form-label small fw-bold mb-2"
+              >Color*</label
+            >
+            <input
+              id="color"
+              type="text"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="color"
+              placeholder="Ej: Blanco"
+              [class.is-invalid]="
+                vehicleForm.get('color')?.invalid &&
+                vehicleForm.get('color')?.touched
+              "
+            />
+            @if (
+              vehicleForm.get("color")?.invalid &&
+              vehicleForm.get("color")?.touched
+            ) {
+              <div class="text-danger small mt-1">
+                Este campo es obligatorio para continuar
               </div>
             }
           </div>
         </div>
+      </div>
 
-        <div
-          class="offcanvas-footer border-top pt-4 mt-auto d-flex gap-3 align-items-center"
-        >
-          <button
-            type="submit"
-            class="btn btn-primary btn-lg flex-fill py-3 rounded-3 fw-bold shadow-primary"
-            [disabled]="!canSave"
-          >
-            <i class="fa-solid fa-check-circle me-2"></i>
-            {{ editingVehicle ? "Guardar cambios" : "Crear vehículo" }}
-          </button>
+      <!-- Technical Specs Section -->
+      <div class="mb-4">
+        <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+          <i class="fa-solid fa-gear me-2"></i>Especificaciones Técnicas
+        </h6>
+
+        <div class="row g-3">
+          <div class="col-6 mb-3">
+            <label for="plate" class="form-label small fw-bold mb-2"
+              >Placa*</label
+            >
+            <input
+              id="plate"
+              type="text"
+              class="form-control rounded-3 py-2 px-3 text-uppercase"
+              formControlName="plate"
+              placeholder="XXX-999"
+              [class.is-invalid]="
+                vehicleForm.get('plate')?.invalid &&
+                vehicleForm.get('plate')?.touched
+              "
+            />
+            @if (
+              vehicleForm.get("plate")?.invalid &&
+              vehicleForm.get("plate")?.touched
+            ) {
+              <div class="text-danger small mt-1">
+                @if (vehicleForm.get("plate")?.hasError("required")) {
+                  Este campo es obligatorio para continuar
+                } @else if (vehicleForm.get("plate")?.hasError("pattern")) {
+                  Formato inválido (Ej: ABC-123)
+                } @else if (vehicleForm.get("plate")?.hasError("duplicate")) {
+                  Esta placa ya se encuentra registrada
+                }
+              </div>
+            }
+          </div>
+
+          <div class="col-6 mb-3">
+            <label for="motorNumber" class="form-label small fw-bold mb-2"
+              >Nro. de Motor</label
+            >
+            <input
+              id="motorNumber"
+              type="text"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="motorNumber"
+              placeholder="MOT-998877"
+            />
+          </div>
+
+          <div class="col-6 mb-3">
+            <label for="chassisNumber" class="form-label small fw-bold mb-2"
+              >Nro. de Chasis</label
+            >
+            <input
+              id="chassisNumber"
+              type="text"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="chassisNumber"
+              placeholder="CHS-112233"
+            />
+          </div>
+
+          <div class="col-6 mb-3">
+            <label for="axleCount" class="form-label small fw-bold mb-2"
+              >Nro. de Ejes</label
+            >
+            <select
+              id="axleCount"
+              class="form-select rounded-3 py-2 px-3"
+              formControlName="axleCount"
+              [class.is-invalid]="
+                vehicleForm.get('axleCount')?.invalid &&
+                vehicleForm.get('axleCount')?.touched
+              "
+            >
+              @for (option of axleOptions; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          </div>
         </div>
-      </form>
-    </div>
+      </div>
+
+      <!-- Owner Selection Section (Admin only) -->
+      @if (userRole === "ADMINISTRADOR") {
+        <div class="mb-4">
+          <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+            <i class="fa-solid fa-user-tie me-2"></i>Propietario
+          </h6>
+          <div class="mb-3">
+            <label for="ownerId" class="form-label small fw-bold mb-2"
+              >Seleccionar Socio*</label
+            >
+            <select
+              id="ownerId"
+              class="form-select rounded-3 py-2 px-3"
+              formControlName="ownerId"
+              [class.is-invalid]="
+                vehicleForm.get('ownerId')?.invalid &&
+                vehicleForm.get('ownerId')?.touched
+              "
+            >
+              <option value="null" disabled selected>Selecciona</option>
+              @for (owner of owners; track owner.id) {
+                <option [value]="owner.id">
+                  {{ owner.name }} -
+                  {{ owner.documentNumber | documentNumber }}
+                </option>
+              }
+            </select>
+            @if (
+              vehicleForm.get("ownerId")?.invalid &&
+              vehicleForm.get("ownerId")?.touched
+            ) {
+              <div class="text-danger small mt-1">
+                Debe seleccionar un propietario para el vehículo
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Driver Selection Section (depends on owner) -->
+      <div class="mb-4">
+        <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+          <i class="fa-solid fa-id-card-clip me-2"></i>Conductor
+        </h6>
+        <div class="mb-3">
+          <label for="driverId" class="form-label small fw-bold mb-2"
+            >Seleccionar Conductor*</label
+          >
+          <select
+            id="driverId"
+            class="form-select rounded-3 py-2 px-3"
+            formControlName="driverId"
+            [disabled]="!vehicleForm.get('ownerId')?.value || loadingDrivers"
+          >
+            <option [value]="null">
+              @if (loadingDrivers) {
+                Cargando conductores…
+              } @else if (!vehicleForm.get("ownerId")?.value) {
+                Selecciona primero un propietario
+              } @else if (drivers.length === 0) {
+                Sin conductores disponibles
+              } @else {
+                Selecciona
+              }
+            </option>
+            @for (driver of drivers; track driver.id) {
+              <option [value]="driver.id">
+                {{ driver.name }} —
+                {{ driver.documentNumber | documentNumber }}
+              </option>
+            }
+          </select>
+          @if (!vehicleForm.get("ownerId")?.value) {
+            <div class="text-body-secondary small mt-1">
+              <i class="fa-solid fa-circle-info me-1"></i>
+              Selecciona un propietario para ver los conductores disponibles
+            </div>
+          }
+        </div>
+      </div>
+
+      <div
+        class="offcanvas-footer border-top pt-4 mt-auto d-flex gap-3 align-items-center"
+      >
+        <button
+          type="submit"
+          class="btn btn-primary btn-lg flex-fill py-3 rounded-3 fw-bold shadow-primary"
+          [disabled]="!canSave"
+        >
+          <i class="fa-solid fa-check-circle me-2"></i>
+          {{ editingVehicle ? "Guardar cambios" : "Crear vehículo" }}
+        </button>
+      </div>
+    </form>
   </div>
-
-  <!-- Backdrop -->
-  @if (isOffcanvasOpen) {
-    <div
-      class="offcanvas-backdrop transition-all d-none d-md-block"
-      (click)="toggleOffcanvas()"
-      onkeypress
-    ></div>
-  }
-
-  @if (showCamera) {
-    <g-camera
-      (capture)="onCameraCapture($event)"
-      (close)="onCameraClose()"
-    ></g-camera>
-  }
 </div>
+
+<!-- Backdrop -->
+@if (isOffcanvasOpen) {
+  <div
+    class="offcanvas-backdrop transition-all d-none d-md-block"
+    (click)="toggleOffcanvas()"
+    onkeypress
+  ></div>
+}
+
+@if (showCamera) {
+  <g-camera
+    (capture)="onCameraCapture($event)"
+    (close)="onCameraClose()"
+  ></g-camera>
+}
