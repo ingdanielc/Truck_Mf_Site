@@ -81,37 +81,37 @@
   z-index: 1050;
   background-color: var(--bs-body-bg);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  height: 340px;
+  height: calc(340px + env(safe-area-inset-top, 0));
   flex-shrink: 0;
   overflow: hidden;
   transition: height 0.3s ease;
 
   &.no-photo {
-    height: 180px;
+    height: calc(180px + env(safe-area-inset-top, 0));
   }
 
   @media (max-width: 576px) {
-    height: 280px;
+    height: calc(280px + env(safe-area-inset-top, 0));
     &.no-photo {
-      height: 160px;
+      height: calc(160px + env(safe-area-inset-top, 0));
     }
   }
 }
 
 .vehicle-photo-banner-container {
-  height: 340px;
+  height: calc(340px + env(safe-area-inset-top, 0));
   background-color: var(--bs-body-secondary);
   z-index: 1;
   transition: height 0.3s ease;
 
   &.no-photo {
-    height: 180px;
+    height: calc(180px + env(safe-area-inset-top, 0));
   }
 
   @media (max-width: 576px) {
-    height: 280px;
+    height: calc(280px + env(safe-area-inset-top, 0));
     &.no-photo {
-      height: 160px;
+      height: calc(160px + env(safe-area-inset-top, 0));
     }
   }
 
@@ -152,7 +152,9 @@
   top: 0 !important;
   left: 0;
   width: 100%;
-  height: 87px; // User-defined height
+  height: calc(
+    87px + env(safe-area-inset-top, 0)
+  ); // Dynamic height with safe area
   display: flex !important;
   flex-direction: column;
   justify-content: center;

@@ -36,6 +36,11 @@
 
 .offcanvas-header {
   align-items: start !important;
+  padding-top: calc(1.5rem + env(safe-area-inset-top, 0)) !important; // Add extra padding for the notch
+
+  @media (min-width: 576px) {
+    padding-top: 1.5rem !important; // Reset on larger screens where there's no notch issue
+  }
 }
 
 // Custom padding for main content (between p-2 and p-3)
