@@ -42,6 +42,7 @@ export class GSidebarComponent implements OnInit, OnDestroy {
 
   currentTheme: 'light' | 'dark' = 'dark';
   isUserMenuOpen: boolean = false;
+  userPhoto: string | null = null;
   private userSub?: Subscription;
 
   constructor(
@@ -69,6 +70,12 @@ export class GSidebarComponent implements OnInit, OnDestroy {
       next: (user) => {
         if (user) {
           this.userRole = user.userRoles?.[0]?.role?.name || 'Sin Rol';
+          const roleName = this.userRole.toUpperCase();
+          if (roleName === 'PROPIETARIO' || roleName === 'CONDUCTOR') {
+            this.loadUserPhoto(roleName, user.id!.toString());
+          } else {
+            this.userPhoto = null;
+          }
         }
       },
     });
@@ -87,6 +94,32 @@ export class GSidebarComponent implements OnInit, OnDestroy {
 
   private loadUserRole(userId: string): void {
     this.securityService.fetchUserData(userId);
+  }
+
+  private loadUserPhoto(roleName: string, userId: string): void {
+    const filter = new ModelFilterTable(
+      [new Filter('user.id', '=', userId)],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+
+    if (roleName === 'PROPIETARIO') {
+      this.ownerService.getOwnerFilter(filter).subscribe({
+        next: (response: any) => {
+          if (response?.data?.content?.length > 0) {
+            this.userPhoto = response.data.content[0].photo;
+          }
+        },
+      });
+    } else if (roleName === 'CONDUCTOR') {
+      this.driverService.getDriverFilter(filter).subscribe({
+        next: (response: any) => {
+          if (response?.data?.content?.length > 0) {
+            this.userPhoto = response.data.content[0].photo;
+          }
+        },
+      });
+    }
   }
 
   ngOnDestroy(): void {

@@ -66,9 +66,17 @@
         onkeypress
       >
         <div
-          class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+          class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center overflow-hidden"
         >
-          <i class="fa-solid fa-user"></i>
+          @if (userPhoto) {
+            <img
+              [src]="userPhoto"
+              alt="User"
+              class="w-100 h-100 object-fit-cover"
+            />
+          } @else {
+            <i class="fa-solid fa-user"></i>
+          }
         </div>
         <div class="ms-2 d-none d-md-block">
           <div class="fw-bold small line-height-1">{{ userName }}</div>
