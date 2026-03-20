@@ -31,7 +31,7 @@
     transform: translateX(-100%);
     box-shadow: none;
     width: 240px;
-    z-index: 1100; // Above g-sidebar (1030)
+    z-index: 1200; // Above FAB (1050)
 
     .sidebar-header {
       max-height: 57px; // Requested for mobile
@@ -55,7 +55,7 @@
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 999;
+  z-index: 1190;
   animation: fadeIn 0.2s;
 }
 

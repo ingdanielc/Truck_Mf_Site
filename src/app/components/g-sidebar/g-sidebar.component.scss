@@ -3,7 +3,7 @@
   background-color: var(--bs-body-bg);
   transition: height 0.3s ease;
   position: relative;
-  z-index: 1030;
+  z-index: 1100; // Above FAB (1050)
 
   @media (max-width: 768px) {
     height: 60px;
@@ -42,7 +42,7 @@
 .user-dropdown-menu {
   min-width: 160px;
   animation: slideDown 0.2s ease-out;
-  z-index: 1050;
+  z-index: 1300; // Above all
 
   @media (max-width: 768px) {
     position: fixed !important;
@@ -65,11 +65,11 @@
     ul {
       flex: 1;
       padding: 1rem !important;
-      
+
       li button {
         padding: 1rem !important;
         font-size: 1.1rem !important;
-        
+
         i {
           font-size: 1.2rem !important;
         }
