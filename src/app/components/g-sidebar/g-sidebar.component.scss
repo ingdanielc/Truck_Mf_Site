@@ -3,7 +3,7 @@
   background-color: var(--bs-body-bg);
   transition: height 0.3s ease;
   position: relative;
-  z-index: 1100; // Above FAB (1050)
+  z-index: 1100;
 
   @media (max-width: 768px) {
     height: 60px;
@@ -42,7 +42,7 @@
 .user-dropdown-menu {
   min-width: 160px;
   animation: slideDown 0.2s ease-out;
-  z-index: 1300; // Above all
+  z-index: 1300;
 
   @media (max-width: 768px) {
     position: fixed !important;

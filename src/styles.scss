@@ -89,7 +89,7 @@
   width: 100%;
   max-width: 600px;
   background-color: var(--bs-body-bg);
-  z-index: 1050;
+  z-index: 1300;
   transform: translateX(100%);
   display: flex;
   flex-direction: column;
@@ -184,7 +184,7 @@
   }
 
   &.offcanvas-above {
-    z-index: 1060;
+    z-index: 1310;
   }
 }
 
@@ -246,7 +246,7 @@
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1040;
+  z-index: 1290;
   animation: fadeIn 0.3s ease;
 }
 
