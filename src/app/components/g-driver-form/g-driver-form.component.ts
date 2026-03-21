@@ -169,7 +169,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
         salary: this.applyNumberMask(String(this.driver.salary || '')),
       });
 
-      this.showAccessData = !!this.driver.email;
+      this.showAccessData = !!this.driver.user;
       this.driverForm.get('documentType')?.disable();
       this.driverForm.get('password')?.clearValidators();
       this.driverForm.get('confirmPassword')?.clearValidators();

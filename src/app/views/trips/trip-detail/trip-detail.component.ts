@@ -526,10 +526,16 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   loadVehicleLocation(vehicleId: number): void {
     const filters = [new Filter('vehicleId', '=', vehicleId.toString())];
+
+    // If the trip has a driver assigned, filter by both for consistency with vehicle-card
+    if (this.trip?.driverId) {
+      filters.push(new Filter('driverId', '=', this.trip.driverId.toString()));
+    }
+
     const filterPayload = new ModelFilterTable(
       filters,
       new Pagination(1, 0),
-      new Sort('creationDate', true), // Get the latest one
+      new Sort('id', false), // Get the latest one (Descending)
     );
 
     this.locationService.getLocationService(filterPayload).subscribe({

@@ -455,7 +455,7 @@
       }
 
       <!-- Access Data Section -->
-      @if (!driver?.id) {
+      @if (!driver?.id || !driver?.user) {
         <div class="mb-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="text-primary fw-bold mb-0 d-flex align-items-center">
@@ -471,6 +471,19 @@
               />
             </div>
           </div>
+
+          @if (!showAccessData) {
+            <div
+              class="alert alert-warning border-0 rounded-3 d-flex align-items-start gap-3 shadow-sm mb-4"
+              role="alert"
+            >
+              <i class="fa-solid fa-circle-exclamation fs-4 mt-1"></i>
+              <div class="small">
+                Sin datos de acceso, el conductor no podrá usar la aplicación
+                móvil y no se podrá realizar el rastreo de su ubicación.
+              </div>
+            </div>
+          }
 
           @if (showAccessData) {
             <div class="row g-3 mb-3">
@@ -616,7 +629,6 @@
           }
         </div>
       }
-
       <!-- Submit Button -->
       <div class="offcanvas-footer border-top pt-4 mt-auto d-flex gap-3">
         <button
