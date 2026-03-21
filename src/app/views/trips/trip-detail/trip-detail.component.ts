@@ -47,6 +47,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   // UI State
   isOffcanvasOpen: boolean = false;
   isTripInfoOpen: boolean = false;
+  showConfirmModal: boolean = false;
   estimatedArrivalTime: string = '--:--';
 
   // User context
@@ -151,7 +152,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
               this.loadExpenses(this.trip.id, this.trip.vehicleId);
               if (
                 this.userRole === 'PROPIETARIO' ||
-                this.userRole === 'ADMINISTRADOR'
+                this.userRole === 'ADMINISTRADOR' ||
+                this.userRole === 'CONDUCTOR'
               ) {
                 this.loadVehicleLocation(this.trip.vehicleId);
               } else {
@@ -319,6 +321,35 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   }
 
   updateLogistics(): void {
+    if (!this.trip) return;
+
+    // If status is being changed to "Completado", show confirmation
+    if (
+      this.trip.status === 'Completado' &&
+      this.originalStatus !== 'Completado'
+    ) {
+      this.showConfirmModal = true;
+      return;
+    }
+
+    this.saveLogistics();
+  }
+
+  confirmLogisticsUpdate(): void {
+    this.showConfirmModal = false;
+    this.saveLogistics();
+  }
+
+  cancelLogisticsUpdate(): void {
+    this.showConfirmModal = false;
+    // Rollback status if possible or just let the user change it back
+    // Since it's bound via (change), we might need to reset it to originalStatus if we want to be strict
+    if (this.trip) {
+      this.trip.status = this.originalStatus;
+    }
+  }
+
+  private saveLogistics(): void {
     if (!this.trip) return;
 
     if (['Completado', 'Cancelado', 'Pendiente'].includes(this.trip.status)) {
@@ -527,8 +558,12 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   loadVehicleLocation(vehicleId: number): void {
     const filters = [new Filter('vehicleId', '=', vehicleId.toString())];
 
-    // If the trip has a driver assigned, filter by both for consistency with vehicle-card
-    if (this.trip?.driverId) {
+    if (this.tripId) {
+      filters.push(new Filter('tripId', '=', this.tripId.toString()));
+    }
+
+    // fallback if tripId not set but driverId is available
+    if (!this.tripId && this.trip?.driverId) {
       filters.push(new Filter('driverId', '=', this.trip.driverId.toString()));
     }
 

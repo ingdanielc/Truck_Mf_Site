@@ -170,12 +170,14 @@
       >
         Gastos <i class="fa-solid fa-wallet"></i>
       </button>
-      <button
-        class="btn btn-link text-primary p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2"
-        (click)="onEditClick($event)"
-      >
-        Editar <i class="fa-solid fa-pen-to-square"></i>
-      </button>
+      @if (trip.status !== "Completado" || userRole === "ADMINISTRADOR") {
+        <button
+          class="btn btn-link text-primary p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2"
+          (click)="onEditClick($event)"
+        >
+          Editar <i class="fa-solid fa-pen-to-square"></i>
+        </button>
+      }
     </div>
   </div>
 </div>

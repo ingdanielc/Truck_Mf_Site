@@ -93,7 +93,6 @@
   }
 }
 
-
 // Custom Colors
 .text-indigo {
   color: #6610f2 !important;
@@ -119,4 +118,31 @@
     background-color: #31d2f2 !important;
     transform: scale(1.05);
   }
+}
+
+/* Confirmation Content inside Offcanvas */
+.confirm-card {
+  background-color: var(--bs-body-bg);
+  border-radius: 20px;
+  width: 90%;
+  max-width: 400px;
+  padding: 2rem !important;
+  transform: translateY(20px);
+  transition: transform 0.3s ease;
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+}
+
+.custom-offcanvas.open .confirm-card {
+  transform: translateY(0);
+}
+
+.confirm-icon-box {
+  width: 60px;
+  height: 60px;
+  background-color: rgba(var(--bs-warning-rgb), 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
 }

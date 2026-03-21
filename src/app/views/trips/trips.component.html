@@ -192,6 +192,7 @@
                   <g-trip-card
                     [trip]="trip"
                     [cities]="cities"
+                    [userRole]="userRole"
                     (edit)="toggleOffcanvas(trip)"
                     class="hover-scale cursor-pointer"
                     onkeypress
@@ -286,6 +287,7 @@
                             <g-trip-card
                               [trip]="trip"
                               [cities]="cities"
+                              [userRole]="userRole"
                               (edit)="toggleOffcanvas(trip)"
                               class="hover-scale cursor-pointer"
                               onkeypress

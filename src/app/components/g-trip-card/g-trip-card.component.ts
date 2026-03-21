@@ -13,6 +13,7 @@ import { Router } from '@angular/router';
 export class GTripCardComponent {
   @Input({ required: true }) trip!: ModelTrip;
   @Input() cities: any[] = [];
+  @Input() userRole: string = 'ROL';
   @Output() edit = new EventEmitter<ModelTrip>();
 
   constructor(private readonly router: Router) {}

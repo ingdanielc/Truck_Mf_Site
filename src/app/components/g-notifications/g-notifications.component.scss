@@ -16,6 +16,34 @@
   transform: translateX(0);
 }
 
+.offcanvas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64.5px !important; // Match sidebar desktop height
+  padding: 1rem 1.5rem !important;
+
+  @media (max-width: 768px) {
+    height: 60px !important; // Match sidebar mobile height
+    padding: 0.8rem 1rem !important;
+  }
+
+  .offcanvas-title {
+    margin-top: 0;
+    margin-bottom: 0;
+    color: var(--bs-emphasis-color); // Ensure black/bold
+  }
+
+  .btn-close {
+    opacity: 1;
+    filter: brightness(0); // Force black
+
+    @media (max-width: 768px) {
+      margin-top: 0.25rem; // mt-1 equivalent if needed via SCSS
+    }
+  }
+}
+
 .offcanvas-overlay {
   position: fixed;
   top: 0;
@@ -89,8 +117,9 @@
 .confirm-card {
   background-color: var(--bs-body-bg);
   border-radius: 20px;
-  width: 85%;
-  max-width: 320px;
+  width: 90%;
+  max-width: 400px;
+  padding: 2rem !important;
   transform: translateY(20px);
   transition: transform 0.3s ease;
   border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
