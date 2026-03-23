@@ -320,6 +320,17 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return (this.trip.freight || 0) - (this.trip.balance || 0);
   }
 
+  onStatusChange(newStatus: string): void {
+    if (!this.trip) return;
+    this.trip.status = newStatus;
+
+    if (newStatus === 'Completado') {
+      this.trip.paidBalance = true;
+    } else if (newStatus === 'Pendiente') {
+      this.trip.paidBalance = false;
+    }
+  }
+
   updateLogistics(): void {
     if (!this.trip) return;
 

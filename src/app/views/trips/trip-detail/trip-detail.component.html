@@ -25,7 +25,9 @@
       </div>
       <div class="col-12 col-md-auto">
         <div class="d-flex gap-2 align-items-center">
-          @if (trip.status !== "Completado" || userRole === "ADMINISTRADOR") {
+          @if (
+            originalStatus !== "Completado" || userRole === "ADMINISTRADOR"
+          ) {
             <button
               class="btn btn-primary rounded-3 px-4 shadow-primary d-none d-md-flex align-items-center"
               (click)="editTrip()"
@@ -221,10 +223,11 @@
                 <select
                   class="form-select bg-transparent border-0 p-0 shadow-none fw-bold text-body"
                   [value]="trip.status"
-                  (change)="trip.status = $any($event.target).value"
+                  (change)="onStatusChange($any($event.target).value)"
                   style="font-size: 1rem; margin-top: -2px"
                   [disabled]="
-                    trip.status === 'Completado' && userRole !== 'ADMINISTRADOR'
+                    originalStatus === 'Completado' &&
+                    userRole !== 'ADMINISTRADOR'
                   "
                 >
                   <option value="En Curso">En Curso</option>
@@ -256,7 +259,8 @@
                   (change)="trip.paidBalance = !trip.paidBalance"
                   aria-checked="true"
                   [disabled]="
-                    trip.status === 'Completado' && userRole !== 'ADMINISTRADOR'
+                    originalStatus === 'Completado' &&
+                    userRole !== 'ADMINISTRADOR'
                   "
                 />
               </div>
@@ -459,7 +463,7 @@
     </div>
 
     <!-- Floating Edit Button -->
-    @if (trip.status !== "Completado" || userRole === "ADMINISTRADOR") {
+    @if (originalStatus !== "Completado" || userRole === "ADMINISTRADOR") {
       <button
         class="btn btn-fab btn-edit-fab d-flex d-md-none shadow-lg align-items-center justify-content-center"
         aria-label="Editar Viaje"
