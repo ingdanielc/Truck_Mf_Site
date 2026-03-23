@@ -58,7 +58,10 @@
   <div class="row g-4 mb-4">
     <div class="col-12 col-md-4">
       <div
-        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
+        [class.border-primary]="activeFilter === 'Todos'"
+        (click)="setFilter('Todos')"
+        onkeypress
       >
         <div
           class="card-body p-4 d-flex justify-content-between align-items-center"
@@ -79,7 +82,10 @@
     </div>
     <div class="col-12 col-md-4">
       <div
-        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
+        [class.border-success]="activeFilter === 'Disponible'"
+        (click)="setFilter('Disponible')"
+        onkeypress
       >
         <div
           class="card-body p-4 d-flex justify-content-between align-items-center"
@@ -102,7 +108,10 @@
     </div>
     <div class="col-12 col-md-4">
       <div
-        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary"
+        class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer"
+        [class.border-warning]="activeFilter === 'En Curso'"
+        (click)="setFilter('En Curso')"
+        onkeypress
       >
         <div
           class="card-body p-4 d-flex justify-content-between align-items-center"

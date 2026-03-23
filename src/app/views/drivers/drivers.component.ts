@@ -46,6 +46,7 @@ export class DriversComponent implements OnInit, OnDestroy {
   inactiveDrivers: number = 0;
   groupedDrivers: DriverOwnerGroup[] = [];
   searchTerm: string = '';
+  activeFilter: string = 'Todos';
   page: number = 0;
   rows: number = 9;
   loading: boolean = true;
@@ -333,14 +334,28 @@ export class DriversComponent implements OnInit, OnDestroy {
 
     this.driverService.getDriverFilter(filter).subscribe({
       next: (respTrips: any) => {
-        this.ownerDrivers = respTrips?.data?.content ?? [];
+        const fetched: ModelDriver[] = respTrips?.data?.content ?? [];
 
-        this.totalDrivers = this.ownerDrivers.length;
-        this.activeDrivers = this.ownerDrivers.filter((d) => {
-          const status = d.user?.status;
-          return !d.user || status === 'Activo';
-        }).length;
-        this.inactiveDrivers = this.totalDrivers - this.activeDrivers;
+        if (this.activeFilter === 'Activo') {
+          this.ownerDrivers = fetched.filter(
+            (d: ModelDriver) => !d.user || d.user.status === 'Activo',
+          );
+        } else if (this.activeFilter === 'Inactivo') {
+          this.ownerDrivers = fetched.filter(
+            (d: ModelDriver) => d.user && d.user.status !== 'Activo',
+          );
+        } else {
+          this.ownerDrivers = fetched;
+        }
+
+        if (this.activeFilter === 'Todos') {
+          this.totalDrivers = fetched.length;
+          this.activeDrivers = fetched.filter((d: ModelDriver) => {
+            const status = d.user?.status;
+            return !d.user || status === 'Activo';
+          }).length;
+          this.inactiveDrivers = this.totalDrivers - this.activeDrivers;
+        }
 
         this.isLoadingExpandedDrivers = false;
       },
@@ -438,6 +453,10 @@ export class DriversComponent implements OnInit, OnDestroy {
       filtros.push(new Filter('ownerId', '=', this.ownerIdFilter.toString()));
     }
 
+    if (this.searchTerm) {
+      filtros.push(new Filter('name', 'like', this.searchTerm));
+    }
+
     const filter = new ModelFilterTable(
       filtros,
       new Pagination(this.rows, this.page),
@@ -447,10 +466,26 @@ export class DriversComponent implements OnInit, OnDestroy {
     this.driverService.getDriverFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
-          this.totalDrivers = response.data.totalElements || 0;
-          this.allDrivers = response.data.content;
-          this.calculateStats();
-          this.applyFilter();
+          const fetched: ModelDriver[] = response.data.content;
+
+          if (this.activeFilter === 'Activo') {
+            this.drivers = fetched.filter(
+              (d: ModelDriver) => !d.user || d.user.status === 'Activo',
+            );
+          } else if (this.activeFilter === 'Inactivo') {
+            this.drivers = fetched.filter(
+              (d: ModelDriver) => d.user && d.user.status !== 'Activo',
+            );
+          } else {
+            this.drivers = fetched;
+            this.allDrivers = fetched;
+            this.totalDrivers = response.data.totalElements || 0;
+            this.calculateStats();
+          }
+
+          if (this.userRole !== 'ADMINISTRADOR') {
+            this.buildGroups();
+          }
 
           const missingOwnerIds = [
             ...new Set(
@@ -480,11 +515,16 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   calculateStats(): void {
-    this.activeDrivers = this.allDrivers.filter((d) => {
+    this.activeDrivers = this.allDrivers.filter((d: ModelDriver) => {
       const status = d.user?.status;
       return !d.user || status === 'Activo';
     }).length;
     this.inactiveDrivers = this.totalDrivers - this.activeDrivers;
+  }
+
+  setFilter(filter: string): void {
+    this.activeFilter = filter;
+    this.applyFilter();
   }
 
   applyFilter(): void {
@@ -493,19 +533,8 @@ export class DriversComponent implements OnInit, OnDestroy {
       return;
     }
 
-    let filtered = this.allDrivers;
-    if (this.searchTerm) {
-      const term = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (d) =>
-          d.name?.toLowerCase().includes(term) ||
-          d.email?.toLowerCase().includes(term) ||
-          d.documentNumber?.includes(term),
-      );
-    }
-    this.drivers = filtered;
     if (this.userRole !== 'ADMINISTRADOR') {
-      this.buildGroups();
+      this.loadDrivers();
     } else {
       this.page = 0;
       this.loadOwners();

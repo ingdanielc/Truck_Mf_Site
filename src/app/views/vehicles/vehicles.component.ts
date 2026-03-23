@@ -59,6 +59,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   availableVehicles: number = 0;
   occupiedVehicles: number = 0;
   searchTerm: string = '';
+  activeFilter: string = 'Todos';
   page: number = 0;
   rows: number = 9;
   loading: boolean = true;
@@ -398,24 +399,41 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           const allVehicles = response?.data?.content ?? [];
           const total = response?.data?.totalElements ?? allVehicles.length;
+          const vehicleIds = allVehicles.map((v: any) => v.id);
 
-          const available = allVehicles.filter(
-            (v: ModelVehicle) => v.status?.toLowerCase() === 'activo',
-          ).length;
+          // Get all 'En curso' trips to determine occupied vehicles
+          const tripFilter = new ModelFilterTable(
+            [new Filter('status', '=', 'En Curso')],
+            new Pagination(20000, 0),
+            new Sort('id', true),
+          );
 
-          const occupied = total - available;
+          this.tripService.getTripFilter(tripFilter).subscribe({
+            next: (tripResp: any) => {
+              const activeTrips = tripResp?.data?.content ?? [];
+              // A vehicle is occupied if it has an 'En Curso' trip
+              const occupiedIds = new Set(
+                activeTrips
+                  .map((t: any) => t.vehicleId)
+                  .filter((id: any) => vehicleIds.includes(id)),
+              );
 
-          this.totalVehicles = total;
-          this.availableVehicles = available;
-          this.occupiedVehicles = occupied;
+              const occupied = occupiedIds.size;
+              const available = total - occupied;
 
-          if (this.userRole === 'ADMINISTRADOR') {
-            this.globalStats = {
-              total: this.totalVehicles,
-              available: this.availableVehicles,
-              occupied: this.occupiedVehicles,
-            };
-          }
+              this.totalVehicles = total;
+              this.availableVehicles = available;
+              this.occupiedVehicles = occupied;
+
+              if (this.userRole === 'ADMINISTRADOR') {
+                this.globalStats = {
+                  total: this.totalVehicles,
+                  available: this.availableVehicles,
+                  occupied: this.occupiedVehicles,
+                };
+              }
+            },
+          });
         },
       });
   }
@@ -470,12 +488,33 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         }
 
         this.totalVehicles = this.ownerVehicles.length;
-        this.availableVehicles = this.ownerVehicles.filter(
-          (v) => v.status?.toLowerCase() === 'activo',
-        ).length;
-        this.occupiedVehicles = this.totalVehicles - this.availableVehicles;
 
-        this.isLoadingExpandedVehicles = false;
+        const vehicleIds = this.ownerVehicles.map((v: any) => v.id);
+        const tripFilter = new ModelFilterTable(
+          [new Filter('status', '=', 'En Curso')],
+          new Pagination(20000, 0),
+          new Sort('id', true),
+        );
+
+        this.tripService.getTripFilter(tripFilter).subscribe({
+          next: (tripResp: any) => {
+            const activeTrips = tripResp?.data?.content ?? [];
+            const occupiedIds = new Set(
+              activeTrips
+                .map((t: any) => t.vehicleId)
+                .filter((id: any) => vehicleIds.includes(id)),
+            );
+
+            this.occupiedVehicles = occupiedIds.size;
+            this.availableVehicles = this.totalVehicles - this.occupiedVehicles;
+            this.isLoadingExpandedVehicles = false;
+          },
+          error: () => {
+            this.occupiedVehicles = 0;
+            this.availableVehicles = this.totalVehicles;
+            this.isLoadingExpandedVehicles = false;
+          },
+        });
       },
       error: () => {
         this.ownerVehicles = [];
@@ -973,10 +1012,40 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   calculateStats(): void {
-    this.availableVehicles = this.allVehicles.filter(
-      (v) => v.status?.toLowerCase() === 'activo',
-    ).length;
-    this.occupiedVehicles = this.totalVehicles - this.availableVehicles;
+    if (this.allVehicles.length === 0) {
+      this.availableVehicles = 0;
+      this.occupiedVehicles = 0;
+      return;
+    }
+
+    const total =
+      this.userRole === 'ADMINISTRADOR'
+        ? this.totalVehicles
+        : this.allVehicles.length;
+    const vehicleIds = this.allVehicles.map((v) => v.id);
+
+    const tripFilter = new ModelFilterTable(
+      [new Filter('status', '=', 'En Curso')],
+      new Pagination(20000, 0),
+      new Sort('id', true),
+    );
+
+    this.tripService.getTripFilter(tripFilter).subscribe({
+      next: (tripResp: any) => {
+        const activeTrips = tripResp?.data?.content ?? [];
+        const occupiedIds = new Set(
+          activeTrips
+            .map((t: any) => t.vehicleId)
+            .filter((id: any) => vehicleIds.includes(id)),
+        );
+
+        this.occupiedVehicles = occupiedIds.size;
+        this.availableVehicles =
+          (this.userRole === 'ADMINISTRADOR'
+            ? this.totalVehicles
+            : this.allVehicles.length) - this.occupiedVehicles;
+      },
+    });
   }
 
   applyFilter(): void {
@@ -1002,6 +1071,24 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           v.model?.toLowerCase().includes(term) ||
           v.plate?.toLowerCase().includes(term),
       );
+    }
+
+    if (this.activeFilter !== 'Todos') {
+      const filter = this.activeFilter;
+      filtered = filtered.filter((v) => {
+        const tripStatus = (v.lastTripStatus || '').toUpperCase();
+        if (filter === 'Disponible') {
+          return (
+            tripStatus === 'COMPLETADO' ||
+            tripStatus === 'PENDIENTE' ||
+            tripStatus === 'CANCELADO' ||
+            tripStatus === ''
+          );
+        } else if (filter === 'En Curso') {
+          return tripStatus === 'EN CURSO';
+        }
+        return true;
+      });
     }
 
     if (this.userRole !== 'ADMINISTRADOR') {
@@ -1046,49 +1133,30 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   buildGroups(vehicles: ModelVehicle[]): void {
+    const owner: ModelOwner =
+      this.loggedInOwner ??
+      new ModelOwner(
+        this.loggedInOwnerId ?? undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'Mi Propietario',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'Activo',
+      );
     if (this.userRole === 'PROPIETARIO') {
       // Single card for the logged-in owner
-      const owner: ModelOwner =
-        this.loggedInOwner ??
-        new ModelOwner(
-          this.loggedInOwnerId ?? undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          'Mi Propietario',
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          'Activo',
-        );
       this.groupedVehicles = [{ owner, vehicles }];
     } else if (this.userRole === 'CONDUCTOR') {
       // For CONDUCTOR, also ensure a fixed group for their owner
-      const owner: ModelOwner =
-        this.loggedInOwner ??
-        new ModelOwner(
-          this.loggedInOwnerId ?? undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          'Mi Propietario',
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          'Activo',
-        );
       this.groupedVehicles = [{ owner, vehicles }];
     } else {
       // Group vehicles using the nested owners array from the API response
@@ -1175,6 +1243,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         },
       });
     });
+  }
+
+  setFilter(filter: string): void {
+    this.activeFilter = filter;
+    this.applyFilter();
   }
 
   onViewProfile(owner: ModelOwner): void {
