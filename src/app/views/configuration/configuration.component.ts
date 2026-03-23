@@ -123,7 +123,7 @@ export class ConfigurationComponent implements OnInit {
     const filter = new ModelFilterTable(
       filtros,
       new Pagination(1000, 0),
-      new Sort('id', true),
+      new Sort('name', true),
     );
     this.loading = true;
 
@@ -197,7 +197,9 @@ export class ConfigurationComponent implements OnInit {
       filtered = filtered.filter((c) => c.name.toLowerCase().includes(term));
     }
 
-    this.categories = filtered;
+    this.categories = filtered.sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }),
+    );
     this.page = 0;
     this.updatePagination();
   }

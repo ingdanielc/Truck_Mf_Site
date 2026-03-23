@@ -105,7 +105,7 @@ export class GAddExpenseComponent implements OnInit {
     const filter = new ModelFilterTable(
       filtros,
       new Pagination(500, 0),
-      new Sort('id', true),
+      new Sort('name', true),
     );
     this.expenseService.getExpenseCategoryFilter(filter).subscribe({
       next: (response: any) => {
@@ -176,12 +176,16 @@ export class GAddExpenseComponent implements OnInit {
 
   filterCategories(): void {
     const query = this.searchQuery.toLowerCase();
-    this.filteredCategories = this.categories.filter((cat) => {
-      const catType = Number(cat.type);
-      const matchesType = catType === this.selectedType;
-      const matchesSearch = cat.name.toLowerCase().includes(query);
-      return matchesType && matchesSearch;
-    });
+    this.filteredCategories = this.categories
+      .filter((cat) => {
+        const catType = Number(cat.type);
+        const matchesType = catType === this.selectedType;
+        const matchesSearch = cat.name.toLowerCase().includes(query);
+        return matchesType && matchesSearch;
+      })
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }),
+      );
   }
 
   onSearchChange(event: any): void {

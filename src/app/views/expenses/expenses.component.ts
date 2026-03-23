@@ -380,7 +380,9 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       );
       this.vehicleService.getVehicleFilter(filter).subscribe({
         next: (resp: any) => {
-          this.vehicles = resp?.data?.content ?? [];
+          this.vehicles = (resp?.data?.content ?? []).sort((a: any, b: any) =>
+            a.plate.localeCompare(b.plate, 'es', { sensitivity: 'base' }),
+          );
           if (this.vehicles.length > 0) {
             const index = preselectedId
               ? this.vehicles.findIndex((v) => v.id === preselectedId)
@@ -412,7 +414,9 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     );
     this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
       next: (resp: any) => {
-        this.vehicles = resp?.data?.content ?? [];
+        this.vehicles = (resp?.data?.content ?? []).sort((a: any, b: any) =>
+          a.plate.localeCompare(b.plate, 'es', { sensitivity: 'base' }),
+        );
         if (this.vehicles.length > 0) {
           const index = preselectedId
             ? this.vehicles.findIndex((v) => v.id === preselectedId)
@@ -453,7 +457,10 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           );
           this.vehicleService.getVehicleFilter(vehicleFilter).subscribe({
             next: (resp: any) => {
-              this.vehicles = resp?.data?.content ?? [];
+              this.vehicles = (resp?.data?.content ?? []).sort(
+                (a: any, b: any) =>
+                  a.plate.localeCompare(b.plate, 'es', { sensitivity: 'base' }),
+              );
               if (this.vehicles.length > 0) {
                 const index = preselectedId
                   ? this.vehicles.findIndex((v) => v.id === preselectedId)
