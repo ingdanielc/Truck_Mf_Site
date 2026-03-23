@@ -118,11 +118,10 @@ export class GVehicleCardComponent implements OnInit {
     switch (status) {
       case 'COMPLETADO':
       case 'PENDIENTE':
+      case 'CANCELADO':
         return 'badge-completed';
       case 'EN CURSO':
         return 'badge-in-progress';
-      case 'CANCELADO':
-        return 'badge-cancelled';
       default:
         return 'badge-default';
     }
@@ -130,7 +129,12 @@ export class GVehicleCardComponent implements OnInit {
 
   get displayTripStatus(): string {
     const status = (this.vehicle.lastTripStatus || '').toUpperCase();
-    if (status === 'COMPLETADO' || status === 'PENDIENTE') return 'Disponible';
+    if (
+      status === 'COMPLETADO' ||
+      status === 'PENDIENTE' ||
+      status === 'CANCELADO'
+    )
+      return 'Disponible';
     return this.vehicle.lastTripStatus || 'Sin Viajes';
   }
 

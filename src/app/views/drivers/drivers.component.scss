@@ -29,6 +29,22 @@
     transform: translateY(-5px);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05) !important;
   }
+
+  &.cursor-pointer {
+    cursor: pointer;
+  }
+
+  &.border-primary {
+    border: 1px solid var(--bs-primary) !important;
+  }
+
+  &.border-success {
+    border: 1px solid var(--bs-success) !important;
+  }
+
+  &.border-warning {
+    border: 1px solid var(--bs-warning) !important;
+  }
 }
 
 .icon-shape {

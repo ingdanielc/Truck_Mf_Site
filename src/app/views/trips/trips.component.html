@@ -68,7 +68,7 @@
     <div class="col-12 col-md-6 col-xl-3">
       <div
         class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer transition-all"
-        [class.ring-selected]="selectedStatus === null"
+        [class.border-primary]="selectedStatus === null"
         (click)="filterByStatus(null)"
         onkeypress
       >
@@ -92,7 +92,7 @@
     <div class="col-12 col-md-6 col-xl-3">
       <div
         class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer transition-all"
-        [class.ring-selected]="selectedStatus === 'En Curso'"
+        [class.border-primary]="selectedStatus === 'En Curso'"
         (click)="filterByStatus('En Curso')"
         onkeypress
       >
@@ -116,7 +116,7 @@
     <div class="col-12 col-md-6 col-xl-3">
       <div
         class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer transition-all"
-        [class.ring-selected]="selectedStatus === 'Pendiente'"
+        [class.border-warning]="selectedStatus === 'Pendiente'"
         (click)="filterByStatus('Pendiente')"
         onkeypress
       >
@@ -140,7 +140,7 @@
     <div class="col-12 col-md-6 col-xl-3">
       <div
         class="card stat-card border-0 rounded-4 h-100 shadow-sm bg-body-tertiary cursor-pointer transition-all"
-        [class.ring-selected]="selectedStatus === 'Completado'"
+        [class.border-success]="selectedStatus === 'Completado'"
         (click)="filterByStatus('Completado')"
         onkeypress
       >
