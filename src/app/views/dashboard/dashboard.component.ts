@@ -45,10 +45,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     expenses: ModelExpense[];
   }[] = [];
 
-  public readonly currentMonthName: string = new Date()
-    .toLocaleString('es-CO', { month: 'long' })
-    .replace(/./, (c) => c.toUpperCase());
-  public readonly currentYear: number = new Date().getFullYear();
+  showHistoryPanel: boolean = false;
+
+  public currentMonthName: string = '';
+  public selectedMonth: number = new Date().getMonth();
+  public selectedYear: number = new Date().getFullYear();
+  public browsingYear: number = new Date().getFullYear();
+  public readonly systemMonth: number = new Date().getMonth();
+  public readonly systemYear: number = new Date().getFullYear();
 
   // Chart 1: Trips por Vehículo
   public tripsByVehicleOptions: ChartConfiguration['options'] = {
@@ -153,7 +157,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: true, position: 'top' },
-      title: { display: true, text: 'Costo Mantenimiento' },
+      title: {
+        display: true,
+        text: `Costo Mantenimiento (${this.currentMonthName})`,
+      },
     },
   };
   public maintenanceType: ChartType = 'line';
@@ -178,7 +185,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       legend: { display: true, position: 'top' },
       title: {
         display: true,
-        text: `Viajes por Mes y Vehículo (${this.currentYear})`,
+        text: `Viajes por Mes y Vehículo (${this.selectedYear})`,
       },
     },
     scales: {
@@ -215,7 +222,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       legend: { display: true, position: 'top' },
       title: {
         display: true,
-        text: `Utilidad por Mes y Vehículo (${this.currentYear})`,
+        text: `Utilidad por Mes y Vehículo (${this.selectedYear})`,
       },
     },
     scales: {
@@ -247,6 +254,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private userSub?: Subscription;
   private brands: any[] = [];
   private vehicles: ModelVehicle[] = [];
+  private currentUser: any = null;
 
   constructor(
     private readonly tripService: TripService,
@@ -262,8 +270,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.setupThemeObserver();
     this.loadBrands();
+    this.updateCurrentMonthName();
     this.userSub = this.securityService.userData$.subscribe((user) => {
       if (user) {
+        this.currentUser = user;
         this.loadData(user);
       }
     });
@@ -274,6 +284,61 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.observer.disconnect();
     }
     this.userSub?.unsubscribe();
+  }
+
+  private updateCurrentMonthName(): void {
+    const date = new Date(this.selectedYear, this.selectedMonth, 1);
+    this.currentMonthName = date
+      .toLocaleString('es-CO', { month: 'long' })
+      .replace(/./, (c) => c.toUpperCase());
+
+    // Update chart titles
+    if (this.currentMonthTripsOptions?.plugins?.title) {
+      this.currentMonthTripsOptions.plugins.title.text = `Viajes por Vehículo (${this.currentMonthName})`;
+    }
+    if (this.monthTripFinOptions?.plugins?.title) {
+      this.monthTripFinOptions.plugins.title.text = `Ingresos vs Egresos por Viaje (${this.currentMonthName})`;
+    }
+    if (this.monthVehicleFinOptions?.plugins?.title) {
+      this.monthVehicleFinOptions.plugins.title.text = `Ingresos vs Gastos por Vehículo (${this.currentMonthName})`;
+    }
+    if (this.monthlyTripsOptions?.plugins?.title) {
+      this.monthlyTripsOptions.plugins.title.text = `Viajes por Mes y Vehículo (${this.selectedYear})`;
+    }
+    if (this.monthlyProfitOptions?.plugins?.title) {
+      this.monthlyProfitOptions.plugins.title.text = `Utilidad por Mes y Vehículo (${this.selectedYear})`;
+    }
+    if (this.maintenanceOptions?.plugins?.title) {
+      this.maintenanceOptions.plugins.title.text = `Costo Mantenimiento (${this.currentMonthName})`;
+    }
+  }
+
+  public changeBrowsingYear(delta: number): void {
+    this.browsingYear += delta;
+  }
+
+  public isMonthDisabled(month: number): boolean {
+    const now = new Date();
+    if (this.browsingYear < now.getFullYear()) return false;
+    if (this.browsingYear > now.getFullYear()) return true;
+    return month > now.getMonth();
+  }
+
+  public getMonthName(month: number): string {
+    return new Date(2000, month, 1)
+      .toLocaleString('es-CO', { month: 'short' })
+      .replace('.', '')
+      .toUpperCase();
+  }
+
+  public setHistoryDate(month: number, year: number): void {
+    this.selectedMonth = month;
+    this.selectedYear = year;
+    this.updateCurrentMonthName();
+
+    if (this.currentUser) {
+      this.loadData(this.currentUser);
+    }
   }
 
   private formatMobileValue(value: number): string {
@@ -531,15 +596,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private processMonthTripFin(trips: ModelTrip[], expenses: ModelExpense[]) {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
     const monthTrips = trips
       .filter((t) => {
         if (!t.startDate) return false;
         const d = new Date(t.startDate);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        return (
+          d.getMonth() === this.selectedMonth &&
+          d.getFullYear() === this.selectedYear
+        );
       })
       .sort((a, b) => {
         const plateA = (a.vehiclePlate || a.vehicle?.plate || '').toUpperCase();
@@ -577,11 +641,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
         counts[plate.toUpperCase()] = (counts[plate.toUpperCase()] || 0) + 1;
     });
 
+    const labels = Object.keys(counts).sort();
+    const data = labels.map((l) => counts[l]);
+
     this.tripsByVehicleData = {
-      labels: Object.keys(counts),
-      datasets: [
-        { ...this.tripsByVehicleData.datasets[0], data: Object.values(counts) },
-      ],
+      labels: labels,
+      datasets: [{ ...this.tripsByVehicleData.datasets[0], data: data }],
     };
   }
 
@@ -589,10 +654,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     trips: ModelTrip[],
     vehicles: ModelVehicle[],
   ) {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
     const counts: Record<string, number> = {};
     vehicles.forEach((v) => (counts[v.plate.toUpperCase()] = 0));
 
@@ -600,8 +661,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (!t.startDate) return;
       const tripDate = new Date(t.startDate);
       if (
-        tripDate.getMonth() === currentMonth &&
-        tripDate.getFullYear() === currentYear
+        tripDate.getMonth() === this.selectedMonth &&
+        tripDate.getFullYear() === this.selectedYear
       ) {
         const plate = t.vehicle?.plate || t.vehiclePlate;
         if (plate) {
@@ -610,12 +671,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
     });
 
+    const labels = Object.keys(counts).sort();
+    const data = labels.map((l) => counts[l]);
+
     this.currentMonthTripsData = {
-      labels: Object.keys(counts),
+      labels: labels,
       datasets: [
         {
           ...this.currentMonthTripsData.datasets[0],
-          data: Object.values(counts),
+          data: data,
         },
       ],
     };
@@ -626,10 +690,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     expenses: ModelExpense[],
     vehicles: ModelVehicle[],
   ) {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
     const stats: Record<string, { income: number; expense: number }> = {};
     vehicles.forEach(
       (v) => (stats[v.plate.toUpperCase()] = { income: 0, expense: 0 }),
@@ -639,8 +699,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (!t.startDate) return;
       const tripDate = new Date(t.startDate);
       if (
-        tripDate.getMonth() === currentMonth &&
-        tripDate.getFullYear() === currentYear
+        tripDate.getMonth() === this.selectedMonth &&
+        tripDate.getFullYear() === this.selectedYear
       ) {
         const plate = (t.vehicle?.plate || t.vehiclePlate)?.toUpperCase();
         if (plate && stats[plate]) {
@@ -652,8 +712,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     expenses.forEach((e) => {
       const expenseDate = e.creationDate ? new Date(e.creationDate) : null;
       if (
-        expenseDate?.getMonth() === currentMonth &&
-        expenseDate?.getFullYear() === currentYear
+        expenseDate?.getMonth() === this.selectedMonth &&
+        expenseDate?.getFullYear() === this.selectedYear
       ) {
         const vehicle = vehicles.find((v) => v.id === e.vehicleId);
         const plate = vehicle?.plate?.toUpperCase();
@@ -663,7 +723,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
     });
 
-    const labels = Object.keys(stats);
+    const labels = Object.keys(stats).sort();
     const incomeData = labels.map((l) => stats[l].income);
     const expenseData = labels.map((l) => stats[l].expense);
 
@@ -679,16 +739,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private processFinancialData(trips: ModelTrip[], expenses: ModelExpense[]) {
     // Top 10 most recent trips
     // Top 10 most recent trips, grouped by vehicle for visualization
-    const recentTrips = trips
-      .slice(0, 10)
-      .sort((a, b) => {
-        const plateA = (a.vehiclePlate || a.vehicle?.plate || '').toUpperCase();
-        const plateB = (b.vehiclePlate || b.vehicle?.plate || '').toUpperCase();
-        if (plateA < plateB) return -1;
-        if (plateA > plateB) return 1;
-        return Number(a.numberTrip ?? 0) - Number(b.numberTrip ?? 0);
-      })
-      .reverse();
+    const recentTrips = trips.slice(0, 10).sort((a, b) => {
+      const plateA = (a.vehiclePlate || a.vehicle?.plate || '').toUpperCase();
+      const plateB = (b.vehiclePlate || b.vehicle?.plate || '').toUpperCase();
+      if (plateA < plateB) return -1;
+      if (plateA > plateB) return 1;
+      return Number(a.numberTrip ?? 0) - Number(b.numberTrip ?? 0);
+    });
     const labels = recentTrips.map(
       (t) =>
         `${(t.vehiclePlate || t.vehicle?.plate || 'S/P').toUpperCase()} - #${t.numberTrip}`,
@@ -716,28 +773,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
     vehicles.forEach((v) => (maintCounts[v.plate.toUpperCase()] = 0));
 
     // Type 4 is Maintenance
-    const maintenanceExpenses = expenses.filter(
-      (e) => e.category?.expenseTypeId === 4,
-    );
+    const maintenanceExpenses = expenses.filter((e) => {
+      if (e.category?.expenseTypeId !== 4) return false;
+      const expenseDate = e.creationDate ? new Date(e.creationDate) : null;
+      return (
+        expenseDate?.getMonth() === this.selectedMonth &&
+        expenseDate?.getFullYear() === this.selectedYear
+      );
+    });
+
     maintenanceExpenses.forEach((e) => {
       const vehicle = vehicles.find((v) => v.id === e.vehicleId);
       const plate = (vehicle?.plate || 'Desconocido').toUpperCase();
       maintCounts[plate] = (maintCounts[plate] || 0) + e.amount;
     });
 
+    const labels = Object.keys(maintCounts).sort();
+    const data = labels.map((l) => maintCounts[l]);
+
     this.maintenanceData = {
-      labels: Object.keys(maintCounts),
+      labels,
       datasets: [
         {
           ...this.maintenanceData.datasets[0],
-          data: Object.values(maintCounts),
+          data: data,
         },
       ],
     };
   }
 
   private processTripsByMonth(trips: ModelTrip[], vehicles: ModelVehicle[]) {
-    const currentYear = new Date().getFullYear();
     const colors = [
       '#3b82f6',
       '#10b981',
@@ -759,7 +824,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         const tripDate = t.startDate ? new Date(t.startDate) : null;
         return (
           plate?.toUpperCase() === v.plate.toUpperCase() &&
-          tripDate?.getFullYear() === currentYear
+          tripDate?.getFullYear() === this.selectedYear
         );
       });
 
@@ -790,7 +855,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     expenses: ModelExpense[],
     vehicles: ModelVehicle[],
   ) {
-    const currentYear = new Date().getFullYear();
     const colors = [
       '#10b981',
       '#3b82f6',
@@ -808,20 +872,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     vehicles.forEach((v, index) => {
       const vehicleTrips = trips.filter((t) => {
-        const plate = t.vehicle?.plate || t.vehiclePlate;
+        const plate = (t.vehicle?.plate || t.vehiclePlate)?.toUpperCase();
         const tripDate = t.startDate ? new Date(t.startDate) : null;
-        return plate === v.plate && tripDate?.getFullYear() === currentYear;
+        return (
+          plate === v.plate.toUpperCase() &&
+          tripDate?.getFullYear() === this.selectedYear
+        );
+      });
+
+      const vehicleExpenses = expenses.filter((e) => {
+        const expenseDate = e.creationDate ? new Date(e.creationDate) : null;
+        return (
+          e.vehicleId === v.id &&
+          expenseDate?.getFullYear() === this.selectedYear
+        );
       });
 
       const monthlyProfit = new Array(12).fill(0);
+
       vehicleTrips.forEach((t) => {
-        const month = new Date(t.startDate!).getMonth();
-        const freight = t.freight || 0;
+        if (t.startDate) {
+          const month = new Date(t.startDate).getMonth();
+          monthlyProfit[month] += t.freight || 0;
+        }
+      });
 
-        const tripExp = expenses.filter((e) => e.tripId === t.id);
-        const totalExpenses = tripExp.reduce((sum, e) => sum + e.amount, 0);
-
-        monthlyProfit[month] += freight - totalExpenses;
+      vehicleExpenses.forEach((e) => {
+        if (e.creationDate) {
+          const month = new Date(e.creationDate).getMonth();
+          monthlyProfit[month] -= e.amount || 0;
+        }
       });
 
       datasets.push({
