@@ -730,13 +730,21 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   onExpenseAdded(event: any): void {
     if (event) {
       const isUpdating = !!this.editingExpense;
+      let mensaje = '';
+      if (this.isMaintenance) {
+        mensaje = isUpdating
+          ? 'Mantenimiento actualizado exitosamente!'
+          : 'Mantenimiento registrado exitosamente!';
+      } else {
+        mensaje = isUpdating
+          ? 'Gasto actualizado exitosamente!'
+          : 'Gasto registrado exitosamente!';
+      }
       this.expenseService.createExpense(event).subscribe({
         next: () => {
           this.toastService.showSuccess(
-            'Éxito',
-            isUpdating
-              ? 'Gasto actualizado exitosamente!'
-              : 'Gasto registrado exitosamente!',
+            this.isMaintenance ? 'Mantenimiento' : 'Gastos',
+            mensaje,
           );
           this.showAddExpense = false;
           // Refresh list

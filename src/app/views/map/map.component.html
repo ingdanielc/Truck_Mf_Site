@@ -38,19 +38,21 @@
 
     <div class="badges-content-wrapper">
       <div class="badges-list">
-        <div
-          class="vehicle-badge"
-          [class.active]="selectedVehicleId === null"
-          [style.border-color]="'var(--bs-primary)'"
-          (click)="showAll()"
-          onkeypress
-        >
-          <span
-            class="status-dot"
-            [style.background-color]="'var(--bs-primary)'"
-          ></span>
-          Todos
-        </div>
+        @if (activeVehicles.length > 1) {
+          <div
+            class="vehicle-badge"
+            [class.active]="selectedVehicleId === null"
+            [style.border-color]="'var(--bs-primary)'"
+            (click)="showAll()"
+            onkeypress
+          >
+            <span
+              class="status-dot"
+              [style.background-color]="'var(--bs-primary)'"
+            ></span>
+            Todos
+          </div>
+        }
 
         @for (vehicle of activeVehicles; track vehicle.id) {
           <div
