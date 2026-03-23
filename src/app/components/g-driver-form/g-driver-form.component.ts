@@ -201,7 +201,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
         ?.setAsyncValidators([
           CustomValidators.emailUniquenessValidator(
             this.securityService,
-            this.driver.id,
+            this.driver.user?.id,
           ),
         ]);
 
@@ -406,7 +406,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
       emailControl?.setAsyncValidators([
         CustomValidators.emailUniquenessValidator(
           this.securityService,
-          this.driver?.id,
+          this.driver?.user?.id,
         ),
       ]);
       if (!this.driver?.id) {

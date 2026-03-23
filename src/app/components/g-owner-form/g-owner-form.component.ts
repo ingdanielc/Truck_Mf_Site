@@ -83,10 +83,13 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
           0,
           [Validators.required, Validators.min(0), Validators.max(99)],
         ],
-        email: ['', {
-          validators: [Validators.required, Validators.email],
-          updateOn: 'blur'
-        }],
+        email: [
+          '',
+          {
+            validators: [Validators.required, Validators.email],
+            updateOn: 'blur',
+          },
+        ],
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', [Validators.required]],
       },
@@ -258,7 +261,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
       ?.setAsyncValidators([
         CustomValidators.emailUniquenessValidator(
           this.securityService,
-          owner.id,
+          owner.user?.id,
         ),
       ]);
 
