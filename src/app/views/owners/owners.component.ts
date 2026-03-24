@@ -182,17 +182,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
     });
 
     // Query for inactive owners
-    const inactiveFilter = new ModelFilterTable(
-      [new Filter('user.status', '!=', 'Activo')],
-      new Pagination(1, 0),
-      new Sort('id', true),
-    );
-
-    this.ownerService.getOwnerFilter(inactiveFilter).subscribe({
-      next: (response: any) => {
-        this.inactiveOwners = response?.data?.totalElements || 0;
-      },
-    });
+    this.inactiveOwners = this.globalTotalOwners - this.activeOwners;
   }
 
   setFilter(filter: string): void {

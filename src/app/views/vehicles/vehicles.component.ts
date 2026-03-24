@@ -14,6 +14,7 @@ import {
 } from '@angular/forms';
 import { Subscription, firstValueFrom, forkJoin } from 'rxjs';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
+import { ModelTrip } from 'src/app/models/trip-model';
 import {
   Filter,
   ModelFilterTable,
@@ -1255,21 +1256,48 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   mapLastTripStatuses(): void {
     if (this.allVehicles.length === 0) return;
 
-    this.allVehicles.forEach((v) => {
-      if (!v.id) return;
-      const tripFilter = new ModelFilterTable(
-        [new Filter('vehicle.id', '=', v.id.toString())],
-        new Pagination(1, 0),
-        new Sort('startDate', false),
-      );
+    // 1. Collect all valid vehicle IDs
+    const vehicleIds = this.allVehicles
+      .map((v) => v.id)
+      .filter((id) => id != null)
+      .map(String);
 
-      this.tripService.getTripFilter(tripFilter).subscribe({
-        next: (resp: any) => {
-          const lastTrip = resp?.data?.content?.[0];
-          v.lastTripStatus = lastTrip?.status ?? '';
-          v.lastTripId = lastTrip?.id ?? null;
-        },
-      });
+    if (vehicleIds.length === 0) return;
+
+    // 2. Single request to get potential last trips for all these vehicles
+    // Fetch a batch sorted by startDate DESC to identify the most recent one for each
+    const tripFilter = new ModelFilterTable(
+      [new Filter('vehicle.id', 'in', vehicleIds.join(','))],
+      new Pagination(500, 0), // Fetch a sufficient window of recent trips
+      new Sort('startDate', false),
+    );
+
+    this.tripService.getTripFilter(tripFilter).subscribe({
+      next: (resp: any) => {
+        const trips: ModelTrip[] = resp?.data?.content ?? [];
+
+        // 3. Map to store the latest trip for each vehicle
+        // Since the list is sorted DESC, the first trip found for an ID is the latest
+        const latestTripsMap = new Map<number, ModelTrip>();
+
+        trips.forEach((t) => {
+          if (t.vehicleId && !latestTripsMap.has(t.vehicleId)) {
+            latestTripsMap.set(t.vehicleId, t);
+          }
+        });
+
+        // 4. Update the state of allVehicles
+        this.allVehicles.forEach((v) => {
+          if (v.id) {
+            const lastTrip = latestTripsMap.get(v.id);
+            v.lastTripStatus = lastTrip?.status ?? '';
+            v.lastTripId = lastTrip?.id ?? null;
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Error in batch mapping last trips:', err);
+      },
     });
   }
 
