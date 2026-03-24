@@ -265,7 +265,7 @@
             <div class="text-danger small mt-1">
               @if (userForm.get("email")?.hasError("required")) {
                 Este campo es obligatorio para continuar
-              } @else if (userForm.get("email")?.hasError("emailExists")) {
+              } @else if (userForm.get("email")?.hasError("duplicate")) {
                 Este correo electrónico ya se encuentra registrado
               }
             </div>

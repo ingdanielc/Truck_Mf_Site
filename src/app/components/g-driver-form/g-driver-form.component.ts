@@ -199,9 +199,12 @@ export class GDriverFormComponent implements OnInit, OnChanges {
       this.driverForm
         .get('email')
         ?.setAsyncValidators([
-          CustomValidators.emailUniquenessValidator(
+          CustomValidators.emailGlobalUniquenessValidator(
             this.securityService,
+            this.driverService,
             this.driver.user?.id,
+            this.driver.id,
+            this.driver.email,
           ),
         ]);
 
@@ -264,13 +267,18 @@ export class GDriverFormComponent implements OnInit, OnChanges {
       this.driverForm
         .get('email')
         ?.setAsyncValidators([
-          CustomValidators.emailUniquenessValidator(this.securityService, null),
+          CustomValidators.emailGlobalUniquenessValidator(
+            this.securityService,
+            this.driverService,
+            null,
+            null,
+            null,
+          ),
         ]);
       this.updateSalaryValidators(null);
     }
 
     this.driverForm.get('documentNumber')?.updateValueAndValidity();
-    this.driverForm.get('email')?.updateValueAndValidity();
     this.driverForm.get('password')?.updateValueAndValidity();
     this.driverForm.get('confirmPassword')?.updateValueAndValidity();
 
@@ -404,9 +412,12 @@ export class GDriverFormComponent implements OnInit, OnChanges {
         ),
       ]);
       emailControl?.setAsyncValidators([
-        CustomValidators.emailUniquenessValidator(
+        CustomValidators.emailGlobalUniquenessValidator(
           this.securityService,
+          this.driverService,
           this.driver?.user?.id,
+          this.driver?.id,
+          this.driver?.email,
         ),
       ]);
       if (!this.driver?.id) {
@@ -429,7 +440,6 @@ export class GDriverFormComponent implements OnInit, OnChanges {
       passwordControl?.clearValidators();
       confirmPasswordControl?.clearValidators();
     }
-    emailControl?.updateValueAndValidity();
     passwordControl?.updateValueAndValidity();
     confirmPasswordControl?.updateValueAndValidity();
   }

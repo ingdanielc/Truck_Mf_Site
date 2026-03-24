@@ -23,6 +23,7 @@ import { User } from './interfaces/user.interface';
 import { GUserCardComponent } from '../../components/g-user-card/g-user-card.component';
 import { GPasswordCardComponent } from '../../components/g-password-card/g-password-card.component';
 import { ToastService } from '../../services/toast.service';
+import { CustomValidators } from '../../utils/custom-validators';
 
 @Component({
   selector: 'app-security',
@@ -75,7 +76,10 @@ export class SecurityComponent implements OnInit, OnDestroy {
         name: ['', [Validators.required]],
         email: [
           '',
-          [Validators.required, Validators.email, this.emailUniqueValidator()],
+          {
+            validators: [Validators.required, Validators.email],
+            updateOn: 'blur',
+          },
         ],
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', [Validators.required]],
@@ -91,19 +95,6 @@ export class SecurityComponent implements OnInit, OnDestroy {
     return g.get('password')?.value === g.get('confirmPassword')?.value
       ? null
       : { mismatch: true };
-  }
-
-  private emailUniqueValidator() {
-    return (control: AbstractControl): ValidationErrors | null => {
-      const email = control.value?.toLowerCase();
-      if (!email || this.editingUser) {
-        return null; // Don't validate if editing or empty
-      }
-      const exists = this.allUsers.some(
-        (u) => u.email?.toLowerCase() === email,
-      );
-      return exists ? { emailExists: true } : null;
-    };
   }
 
   ngOnInit(): void {
@@ -297,25 +288,48 @@ export class SecurityComponent implements OnInit, OnDestroy {
           (r) => r.name?.toUpperCase() === user.role?.toUpperCase(),
         );
 
-        this.userForm.patchValue({
-          name: user.name,
-          email: user.email,
-          role: role ? role.name : user.role,
-        });
+        this.userForm
+          .get('email')
+          ?.setAsyncValidators([
+            CustomValidators.emailUniquenessValidator(
+              this.securityService,
+              user.id,
+              user.email,
+            ),
+          ]);
+
+        this.userForm.patchValue(
+          {
+            name: user.name,
+            email: user.email,
+            role: role ? role.name : user.role,
+          },
+          { emitEvent: false },
+        );
         // Password is not required when editing
         this.userForm.get('password')?.setValidators([Validators.minLength(6)]);
         this.userForm.get('confirmPassword')?.setValidators([]);
       } else {
-        this.editingUser = null;
-        this.userForm.reset();
-
         // Preselect 'ADMINISTRADOR'
         const adminRole = this.availableRoles.find(
           (r) => r.name?.toUpperCase() === 'ADMINISTRADOR',
         );
-        this.userForm.patchValue({
-          role: adminRole ? adminRole.name : 'ADMINISTRADOR',
-        });
+        this.userForm.reset(
+          {
+            role: adminRole ? adminRole.name : 'ADMINISTRADOR',
+          },
+          { emitEvent: false },
+        );
+
+        this.userForm
+          .get('email')
+          ?.setAsyncValidators([
+            CustomValidators.emailUniquenessValidator(
+              this.securityService,
+              null,
+              null,
+            ),
+          ]);
 
         this.userForm
           .get('password')

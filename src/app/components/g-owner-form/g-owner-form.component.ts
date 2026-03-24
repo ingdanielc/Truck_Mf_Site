@@ -300,14 +300,16 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     this.ownerForm
       .get('email')
       ?.setAsyncValidators([
-        CustomValidators.emailUniquenessValidator(
+        CustomValidators.emailGlobalUniquenessValidator(
           this.securityService,
+          this.driverService,
           owner.user?.id,
+          owner.id,
+          owner.email,
         ),
       ]);
 
     this.ownerForm.get('documentNumber')?.updateValueAndValidity();
-    this.ownerForm.get('email')?.updateValueAndValidity();
     this.ownerForm.get('documentType')?.disable();
 
     this.ownerForm.get('password')?.clearValidators();
@@ -347,10 +349,15 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     this.ownerForm
       .get('email')
       ?.setAsyncValidators([
-        CustomValidators.emailUniquenessValidator(this.securityService, null),
+        CustomValidators.emailGlobalUniquenessValidator(
+          this.securityService,
+          this.driverService,
+          null,
+          null,
+          null,
+        ),
       ]);
     this.ownerForm.get('documentNumber')?.updateValueAndValidity();
-    this.ownerForm.get('email')?.updateValueAndValidity();
 
     this.ownerForm
       .get('password')

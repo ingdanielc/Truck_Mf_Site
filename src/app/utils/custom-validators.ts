@@ -95,9 +95,19 @@ export class CustomValidators {
   static emailUniquenessValidator(
     securityService: SecurityService,
     currentId: number | null | undefined,
+    initialValue?: string | null,
   ): AsyncValidatorFn {
     return (control: AbstractControl) => {
-      if (!control.value) return of(null);
+      const val = (control.value || '').toString().trim().toLowerCase();
+      const init = (initialValue || '').toString().trim().toLowerCase();
+
+      if (
+        initialValue !== null &&
+        initialValue !== undefined &&
+        val === init
+      ) {
+        return of(null);
+      }
 
       const filter = new ModelFilterTable(
         [new Filter('email', '=', control.value)],
