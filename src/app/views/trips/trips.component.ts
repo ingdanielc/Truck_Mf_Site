@@ -792,6 +792,9 @@ export class TripsComponent implements OnInit, OnDestroy {
   }
 
   onTripSaved(savedTrip?: ModelTrip): void {
+    // Keep a reference to the trip being edited before the offcanvas closes
+    const tripBeforeSave = this.editingTrip;
+
     this.toggleOffcanvas();
     this.loadTrips();
 
@@ -813,9 +816,14 @@ export class TripsComponent implements OnInit, OnDestroy {
       this.latestTripDestination = destName;
 
       // Find the full vehicle object to get the correct number of axles
-      const fullVehicle = this.vehicles.find(
-        (v) => String(v.id) === String(savedTrip.vehicleId),
-      );
+      // Try the vehicles list first, then fallback to the nested object in the trip being edited
+      const vehicleId = savedTrip.vehicleId || tripBeforeSave?.vehicleId;
+      const fullVehicle =
+        this.vehicles.find((v) => String(v.id) === String(vehicleId)) ||
+        (tripBeforeSave?.vehicleId === vehicleId
+          ? tripBeforeSave?.vehicle
+          : null);
+
       this.latestTripAxles = fullVehicle?.numberOfAxles || 2;
 
       this.isTripInfoOpen = true;

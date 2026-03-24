@@ -687,11 +687,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (this.tripId) {
       this.loadTrip(this.tripId);
     }
-    if (
-      (this.userRole === 'PROPIETARIO' || this.userRole === 'ADMINISTRADOR') &&
-      this.originName !== 'N/A' &&
-      this.destinationName !== 'N/A'
-    ) {
+    if (this.originName !== 'N/A' && this.destinationName !== 'N/A') {
       this.isTripInfoOpen = true;
     }
   }

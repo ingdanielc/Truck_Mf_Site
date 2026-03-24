@@ -69,6 +69,7 @@ export class GSidebarComponent implements OnInit, OnDestroy {
     this.userSub = this.securityService.userData$.subscribe({
       next: (user) => {
         if (user) {
+          this.userName = user.name || this.userName;
           this.userRole = user.userRoles?.[0]?.role?.name || 'Sin Rol';
           const roleName = this.userRole.toUpperCase();
           if (roleName === 'PROPIETARIO' || roleName === 'CONDUCTOR') {
