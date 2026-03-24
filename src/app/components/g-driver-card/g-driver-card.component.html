@@ -44,15 +44,17 @@
             class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
           >
             <!-- Edit - always visible -->
-            <li>
-              <button
-                class="dropdown-item d-flex align-items-center gap-2 py-2"
-                (click)="onEditClick($event)"
-              >
-                <i class="fa-solid fa-pencil text-secondary"></i>
-                <span>Editar conductor</span>
-              </button>
-            </li>
+            @if (canEdit) {
+              <li>
+                <button
+                  class="dropdown-item d-flex align-items-center gap-2 py-2"
+                  (click)="onEditClick($event)"
+                >
+                  <i class="fa-solid fa-pencil text-secondary"></i>
+                  <span>Editar conductor</span>
+                </button>
+              </li>
+            }
             <!-- Options only for drivers with user -->
             @if (driver.user) {
               <li>
@@ -154,16 +156,18 @@
           </div>
         }
       </div>
-      <button
-        type="button"
-        (click)="onEditClick($event)"
-        class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
-        style="width: 40px"
-        onkeypress
-        aria-label="Editar conductor"
-      >
-        <i class="fa-solid fa-pencil"></i>
-      </button>
+      @if (canEdit) {
+        <button
+          type="button"
+          (click)="onEditClick($event)"
+          class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
+          style="width: 40px"
+          onkeypress
+          aria-label="Editar conductor"
+        >
+          <i class="fa-solid fa-pencil"></i>
+        </button>
+      }
     </div>
   </div>
 </div>

@@ -12,6 +12,7 @@ import { ModelDriver } from 'src/app/models/driver-model';
 export class GDriverCardComponent {
   @Input() driver!: ModelDriver;
   @Input() salaryTypes: any[] = [];
+  @Input() canEdit: boolean = true;
   @Output() edit = new EventEmitter<ModelDriver>();
   @Output() changePassword = new EventEmitter<ModelDriver>();
   @Output() toggleStatus = new EventEmitter<ModelDriver>();

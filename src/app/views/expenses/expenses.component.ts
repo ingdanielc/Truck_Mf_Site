@@ -129,7 +129,20 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           return;
         }
 
-        this.userRole = (user.userRoles?.[0]?.role?.name ?? '').toUpperCase();
+        const roles = (user.userRoles || []).map((ur: any) =>
+          (ur.role?.name || '').toUpperCase(),
+        );
+
+        // Prioritize roles for UI context: ADMIN > PROPIETARIO > CONDUCTOR
+        if (roles.includes('ADMINISTRADOR')) {
+          this.userRole = 'ADMINISTRADOR';
+        } else if (roles.includes('PROPIETARIO')) {
+          this.userRole = 'PROPIETARIO';
+        } else if (roles.includes('CONDUCTOR')) {
+          this.userRole = 'CONDUCTOR';
+        } else {
+          this.userRole = roles[0] || '';
+        }
 
         // 1. Always load the list of vehicles for the user
         this.loadVehiclesForUser(user, vehicleId);
@@ -247,14 +260,18 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     vehicleId: string,
     user: any,
   ): Observable<boolean> {
-    const role = (user.userRoles?.[0]?.role?.name ?? '').toUpperCase();
+    const roles = (user.userRoles || []).map((ur: any) =>
+      (ur.role?.name || '').toUpperCase(),
+    );
+    const isOwner = roles.includes('PROPIETARIO');
+    const isDriver = roles.includes('CONDUCTOR');
 
     // Administrador – unrestricted
-    if (!role.includes('PROPIETARIO') && !role.includes('CONDUCTOR')) {
+    if (!isOwner && !isDriver) {
       return of(true);
     }
 
-    if (role.includes('PROPIETARIO')) {
+    if (isOwner) {
       // 1. Validate Owner -> Vehicle
       const ownerFilter = new ModelFilterTable(
         [new Filter('user.id', '=', user.id.toString())],
@@ -301,6 +318,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     }
 
     // CONDUCTOR – currentDriverId must match, and trip must belong to vehicle
+    // Note: If user is both owner and driver, we already checked owner access above.
+    // If they got here, isOwner was false or they didn't have owner access to this specific vehicle.
     const driverFilter = new ModelFilterTable(
       [new Filter('user.id', '=', user.id.toString())],
       new Pagination(1, 0),
@@ -351,9 +370,11 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     user: any,
     preselectedId: number | null = null,
   ): void {
-    const role = (user.userRoles?.[0]?.role?.name ?? '').toUpperCase();
+    const roles = (user.userRoles || []).map((ur: any) =>
+      (ur.role?.name || '').toUpperCase(),
+    );
 
-    if (role.includes('PROPIETARIO')) {
+    if (roles.includes('PROPIETARIO')) {
       const filter = new ModelFilterTable(
         [new Filter('user.id', '=', user.id.toString())],
         new Pagination(9999, 0),
@@ -370,7 +391,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         },
         error: () => (this.loadingVehicles = false),
       });
-    } else if (role.includes('CONDUCTOR')) {
+    } else if (roles.includes('CONDUCTOR')) {
       this.loadVehiclesByDriver(user.id, preselectedId);
     } else {
       const filter = new ModelFilterTable(
@@ -770,8 +791,10 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   private reportLocationIfDriver(): void {
     this.securityService.userData$.pipe(take(1)).subscribe((user) => {
       if (user) {
-        const role = (user.userRoles?.[0]?.role?.name ?? '').toUpperCase();
-        if (role.includes('CONDUCTOR')) {
+        const roles = (user.userRoles || []).map((ur: any) =>
+          (ur.role?.name || '').toUpperCase(),
+        );
+        if (roles.includes('CONDUCTOR')) {
           const vehicleId = this.selectedVehicle?.id;
           const tripId = this.selectedTrip?.id || null;
           const driverId = this.selectedVehicle?.currentDriverId;

@@ -45,15 +45,17 @@
                 left: auto;
               "
             >
-              <li>
-                <button
-                  class="dropdown-item d-flex align-items-center gap-2 py-2"
-                  (click)="toggleMenu(); openEditOffcanvas()"
-                >
-                  <i class="fa-solid fa-pencil text-secondary"></i>
-                  <span>Editar conductor</span>
-                </button>
-              </li>
+              @if (canEdit) {
+                <li>
+                  <button
+                    class="dropdown-item d-flex align-items-center gap-2 py-2"
+                    (click)="toggleMenu(); openEditOffcanvas()"
+                  >
+                    <i class="fa-solid fa-pencil text-secondary"></i>
+                    <span>Editar conductor</span>
+                  </button>
+                </li>
+              }
               @if (driver.user) {
                 <li>
                   <button
@@ -118,31 +120,33 @@
                   ></i>
                 }
               </div>
-              <button
-                type="button"
-                class="btn btn-light btn-sm rounded-circle position-absolute photo-edit-btn shadow-sm d-flex"
-                (click)="triggerPhotoInput(photoInput)"
-                title="Seleccionar foto"
-              >
-                <i class="fa-solid fa-folder-open text-primary small"></i>
-              </button>
-              <button
-                type="button"
-                class="btn btn-light btn-sm rounded-circle position-absolute photo-camera-btn shadow-sm"
-                (click)="showCamera = true"
-                title="Tomar foto"
-              >
-                <i class="fa-solid fa-camera text-primary small"></i>
-              </button>
-              @if (photoPreview) {
+              @if (canEdit) {
                 <button
                   type="button"
-                  class="btn btn-danger btn-sm rounded-circle position-absolute photo-remove-btn shadow-sm"
-                  (click)="removePhoto()"
-                  title="Eliminar foto"
+                  class="btn btn-light btn-sm rounded-circle position-absolute photo-edit-btn shadow-sm d-flex"
+                  (click)="triggerPhotoInput(photoInput)"
+                  title="Seleccionar foto"
                 >
-                  <i class="fa-solid fa-trash small"></i>
+                  <i class="fa-solid fa-folder-open text-primary small"></i>
                 </button>
+                <button
+                  type="button"
+                  class="btn btn-light btn-sm rounded-circle position-absolute photo-camera-btn shadow-sm"
+                  (click)="showCamera = true"
+                  title="Tomar foto"
+                >
+                  <i class="fa-solid fa-camera text-primary small"></i>
+                </button>
+                @if (photoPreview) {
+                  <button
+                    type="button"
+                    class="btn btn-danger btn-sm rounded-circle position-absolute photo-remove-btn shadow-sm"
+                    (click)="removePhoto()"
+                    title="Eliminar foto"
+                  >
+                    <i class="fa-solid fa-trash small"></i>
+                  </button>
+                }
               }
               <div
                 class="status-indicator position-absolute bg-success border border-3 border-dark rounded-circle"
@@ -284,13 +288,17 @@
             >
               <i class="fa-solid fa-user"></i> Información Personal
             </h5>
-            <button
-              class="btn btn-link text-primary p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
-              (click)="openEditOffcanvas()"
-            >
-              <i class="fa-solid fa-pen-to-square d-inline d-md-none fs-5"></i>
-              <span class="d-none d-md-inline">Actualizar</span>
-            </button>
+            @if (canEdit) {
+              <button
+                class="btn btn-link text-primary p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
+                (click)="openEditOffcanvas()"
+              >
+                <i
+                  class="fa-solid fa-pen-to-square d-inline d-md-none fs-5"
+                ></i>
+                <span class="d-none d-md-inline">Actualizar</span>
+              </button>
+            }
           </div>
           <div class="card-body p-4">
             <div class="row g-4">

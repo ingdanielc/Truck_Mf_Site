@@ -11,6 +11,7 @@ import { ToastService } from 'src/app/services/toast.service';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { ModelDriver } from 'src/app/models/driver-model';
+import { ModelOwner } from 'src/app/models/owner-model';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
 import { GDriverFormComponent } from 'src/app/components/g-driver-form/g-driver-form.component';
@@ -59,6 +60,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   // Offcanvas states
   isEditOffcanvasOpen: boolean = false;
   isPasswordOffcanvasOpen: boolean = false;
+  loggedInOwner: ModelOwner | null = null;
 
   // Reference data for g-driver-form
   documentTypes: any[] = [];
@@ -84,7 +86,12 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
     this.userSub = this.securityService.userData$.subscribe({
       next: (user: any) => {
         if (user) {
-          this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+          this.userRole = (user.userRoles?.[0]?.role?.name || '')
+            .toUpperCase()
+            .trim();
+          if (this.userRole === 'PROPIETARIO' && user.id) {
+            this.loadLoggedInOwner(user.id);
+          }
         }
       },
     });
@@ -271,6 +278,32 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
     return !this.driver?.user || this.driver.user.status === 'Activo';
   }
 
+  get canEdit(): boolean {
+    if (this.userRole !== 'PROPIETARIO') return true;
+    if (!this.driver || !this.loggedInOwner) return false;
+
+    // 1. Try comparing by user ID (most reliable)
+    if (this.driver.user?.id && this.loggedInOwner.user?.id) {
+      if (this.driver.user.id === this.loggedInOwner.user.id) return false;
+    }
+
+    // 2. Fallback to document number comparison (normalized)
+    const driverDoc = String(this.driver.documentNumber || '').replaceAll(
+      /\D/g,
+      '',
+    );
+    const ownerDoc = String(this.loggedInOwner.documentNumber || '').replaceAll(
+      /\D/g,
+      '',
+    );
+
+    if (driverDoc && ownerDoc) {
+      if (driverDoc === ownerDoc) return false;
+    }
+
+    return true;
+  }
+
   goBack(): void {
     this.router.navigate(['/site/drivers']);
   }
@@ -299,6 +332,22 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   toggleMenu(event?: Event): void {
     event?.stopPropagation();
     this.isMenuOpen = !this.isMenuOpen;
+  }
+
+  loadLoggedInOwner(userId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('user.id', '=', userId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (resp: any) => {
+        if (resp?.data?.content?.[0]) {
+          this.loggedInOwner = resp.data.content[0];
+        }
+      },
+      error: (err: any) => console.error('Error loading logged in owner:', err),
+    });
   }
 
   // ─── Edit Offcanvas ──────────────────────────────────────────────────────────

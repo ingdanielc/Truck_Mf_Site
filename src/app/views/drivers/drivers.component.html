@@ -135,6 +135,10 @@
               <app-g-driver-card
                 [driver]="driver"
                 [salaryTypes]="salaryTypes"
+                [canEdit]="
+                  userRole !== 'PROPIETARIO' ||
+                  !isSameUser(driver, loggedInOwner)
+                "
                 (edit)="toggleOffcanvas($event)"
                 (changePassword)="togglePasswordOffcanvas($event)"
                 (toggleStatus)="onToggleDriverStatus($event)"
@@ -216,6 +220,7 @@
                             <app-g-driver-card
                               [driver]="driver"
                               [salaryTypes]="salaryTypes"
+                              [canEdit]="true"
                               (edit)="toggleOffcanvas($event)"
                               (changePassword)="togglePasswordOffcanvas($event)"
                               (toggleStatus)="onToggleDriverStatus($event)"

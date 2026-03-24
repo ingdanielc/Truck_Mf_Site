@@ -134,7 +134,9 @@ export class DriversComponent implements OnInit, OnDestroy {
     this.userSub = this.securityService.userData$.subscribe({
       next: (user: any) => {
         if (user) {
-          this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+          this.userRole = (user.userRoles?.[0]?.role?.name || '')
+            .toUpperCase()
+            .trim();
           if (this.userRole !== 'ADMINISTRADOR') {
             this.rows = 100;
           } else {
@@ -239,12 +241,10 @@ export class DriversComponent implements OnInit, OnDestroy {
           if (this.drivers.length > 0 && this.userRole !== 'ADMINISTRADOR') {
             this.buildGroups();
           }
-        } else {
-          if (this.userRole === 'ADMINISTRADOR') {
-            this.owners = [];
-            this.totalOwners = 0;
-            this.loading = false;
-          }
+        } else if (this.userRole === 'ADMINISTRADOR') {
+          this.owners = [];
+          this.totalOwners = 0;
+          this.loading = false;
         }
       },
       error: (err: any) => {
@@ -739,5 +739,18 @@ export class DriversComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error in onUpdatePassword:', error);
     }
+  }
+
+  isSameUser(driver: ModelDriver, owner: ModelOwner | null): boolean {
+    if (!driver || !owner) return false;
+    // 1. User ID
+    if (driver.user?.id && owner.user?.id) {
+      if (driver.user.id === owner.user.id) return true;
+    }
+
+    // 2. Document Number
+    const d1 = String(driver.documentNumber || '').replaceAll(/\D/g, '');
+    const d2 = String(owner.documentNumber || '').replaceAll(/\D/g, '');
+    return d1 !== '' && d1 === d2;
   }
 }

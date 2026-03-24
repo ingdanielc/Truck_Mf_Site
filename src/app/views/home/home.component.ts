@@ -118,10 +118,26 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.userSub = this.securityService.userData$.subscribe({
       next: (user: any) => {
         if (user) {
-          const role = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
-          this.filterCards(role);
+          const roles = (user.userRoles || []).map((ur: any) =>
+            (ur.role?.name || '').toUpperCase(),
+          );
+          const hasConductorRole = roles.some((r: string) =>
+            r.includes('CONDUCTOR'),
+          );
 
-          if (role.includes('CONDUCTOR') && user.id) {
+          // For card filtering, prioritize roles: ADMIN > PROPIETARIO > CONDUCTOR
+          let displayRole = roles[0] || '';
+          if (roles.includes('ADMINISTRADOR')) {
+            displayRole = 'ADMINISTRADOR';
+          } else if (roles.includes('PROPIETARIO')) {
+            displayRole = 'PROPIETARIO';
+          } else if (roles.includes('CONDUCTOR')) {
+            displayRole = 'CONDUCTOR';
+          }
+
+          this.filterCards(displayRole);
+
+          if (hasConductorRole && user.id) {
             this.handleDriverLocation(user.id);
           }
         } else {
