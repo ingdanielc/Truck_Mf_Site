@@ -499,7 +499,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
           this.driverService.createDriver(driverToSave).subscribe({
             next: () => {
               this.toastService.showSuccess(
-                'Gestión',
+                'Gestión de Conductores',
                 'Conductor actualizado exitosamente!',
               );
               this.saved.emit();
@@ -572,7 +572,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
                 }
               }
               this.toastService.showSuccess(
-                'Gestión',
+                'Gestión de Conductores',
                 'Conductor creado exitosamente!',
               );
               this.saved.emit();
