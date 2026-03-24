@@ -352,9 +352,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     if (
       this.userRole === 'ADMINISTRADOR' &&
       this.searchTerm &&
-      !this.expandedOwnerId
+      !this.expandedOwnerId &&
+      !this.ownerIdFilter
     ) {
       filtros.push(new Filter('name', 'like', this.searchTerm));
+    }
+
+    if (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter) {
+      filtros.push(new Filter('id', '=', this.ownerIdFilter.toString()));
     }
 
     const paginationRows = this.userRole === 'ADMINISTRADOR' ? this.rows : 100;
@@ -381,6 +386,18 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.loadVehicles();
           } else if (this.userRole === 'ADMINISTRADOR') {
             this.totalOwners = response.data.totalElements ?? 0;
+
+            // Handle auto-expansion if ownerIdFilter is present
+            if (this.ownerIdFilter && this.owners.length > 0) {
+              const matchedOwner = this.owners.find(
+                (o) => o.id === this.ownerIdFilter,
+              );
+              if (matchedOwner) {
+                this.expandedOwnerId = matchedOwner.id ?? null;
+                this.isLoadingExpandedVehicles = true;
+                this.loadVehiclesForAdmin(matchedOwner.id!);
+              }
+            }
 
             // Initial global stats calculation for admin
             if (!this.expandedOwnerId && this.page === 0 && !this.searchTerm) {
@@ -1396,5 +1413,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       normalized[key] = val;
     });
     return normalized;
+  }
+
+  goBackToOwners(): void {
+    this.router.navigate(['/site/owners']);
   }
 }

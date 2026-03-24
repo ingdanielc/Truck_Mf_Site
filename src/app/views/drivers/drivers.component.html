@@ -1,7 +1,18 @@
 <div class="drivers-container py-4 bg-body">
   <div class="row mb-4 gy-3 align-items-center">
     <div class="col-12 col-md">
-      <h1 class="h3 fw-bold mb-1 text-body">Listado de Conductores</h1>
+      <h1 class="d-flex align-items-center gap-3">
+        @if (ownerIdFilter) {
+          <button
+            (click)="goBackToOwners()"
+            class="btn btn-link p-0 text-body border-0 shadow-none mt-1"
+            aria-label="atras"
+          >
+            <i class="fa-solid fa-arrow-left fs-4"></i>
+          </button>
+        }
+        <h1 class="h3 fw-bold mb-0 text-body">Listado de Conductores</h1>
+      </h1>
       <p class="text-body-secondary mb-0">
         Gestión administrativa de tus conductores
       </p>

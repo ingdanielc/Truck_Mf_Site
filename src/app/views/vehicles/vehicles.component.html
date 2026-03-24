@@ -1,7 +1,18 @@
 <div class="vehicles-container py-4 bg-body">
   <div class="row mb-4 gy-3 align-items-center">
     <div class="col-12 col-md">
-      <h1 class="h3 fw-bold mb-1 text-body">Gestión de Vehículos</h1>
+      <div class="d-flex align-items-center gap-3">
+        @if (ownerIdFilter) {
+        <button
+          class="btn btn-link p-0 text-body border-0 shadow-none mt-1"
+          (click)="goBackToOwners()"
+          aria-label="atras"
+        >
+          <i class="fa-solid fa-arrow-left fs-4"></i>
+        </button>
+        }
+        <h1 class="h3 fw-bold mb-0 text-body">Gestión de Vehículos</h1>
+      </div>
       <p class="text-body-secondary mb-0">
         Control y administración de tus vehículos
       </p>

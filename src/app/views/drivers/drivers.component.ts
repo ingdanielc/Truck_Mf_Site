@@ -205,9 +205,14 @@ export class DriversComponent implements OnInit, OnDestroy {
     if (
       this.userRole === 'ADMINISTRADOR' &&
       this.searchTerm &&
-      !this.expandedOwnerId
+      !this.expandedOwnerId &&
+      !this.ownerIdFilter
     ) {
       filtros.push(new Filter('name', 'like', this.searchTerm));
+    }
+
+    if (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter) {
+      filtros.push(new Filter('id', '=', this.ownerIdFilter.toString()));
     }
 
     const paginationRows = this.userRole === 'ADMINISTRADOR' ? this.rows : 100;
@@ -231,6 +236,18 @@ export class DriversComponent implements OnInit, OnDestroy {
             this.loadDrivers();
           } else if (this.userRole === 'ADMINISTRADOR') {
             this.totalOwners = response.data.totalElements ?? 0;
+
+            // Handle auto-expansion if ownerIdFilter is present
+            if (this.ownerIdFilter && this.owners.length > 0) {
+              const matchedOwner = this.owners.find(
+                (o) => o.id === this.ownerIdFilter,
+              );
+              if (matchedOwner) {
+                this.expandedOwnerId = matchedOwner.id ?? null;
+                this.isLoadingExpandedDrivers = true;
+                this.loadDriversForAdmin(matchedOwner.id!);
+              }
+            }
 
             // Initial global stats calculation for admin
             if (!this.expandedOwnerId && this.page === 0 && !this.searchTerm) {
@@ -752,5 +769,9 @@ export class DriversComponent implements OnInit, OnDestroy {
     const d1 = String(driver.documentNumber || '').replaceAll(/\D/g, '');
     const d2 = String(owner.documentNumber || '').replaceAll(/\D/g, '');
     return d1 !== '' && d1 === d2;
+  }
+
+  goBackToOwners(): void {
+    this.router.navigate(['/site/owners']);
   }
 }
