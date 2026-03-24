@@ -13,7 +13,6 @@ export class ModelDriver {
     public genderId?: number,
     public birthdate?: any,
     public age?: number,
-    public vehicles?: number,
     public status?: string,
     public password?: string,
     public ownerId?: number,

@@ -377,8 +377,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     this.tripService.createTrip(this.trip).subscribe({
       next: () => {
         this.toastService.showSuccess(
-          'Éxito',
-          'Viaje actualizado correctamente',
+          'Gestión de Viajes',
+          'Viaje actualizado exitosamente!',
         );
         if (this.tripId) {
           this.loadTrip(this.tripId);

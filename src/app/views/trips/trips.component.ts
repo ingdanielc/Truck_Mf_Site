@@ -797,7 +797,9 @@ export class TripsComponent implements OnInit, OnDestroy {
 
     if (
       savedTrip &&
-      (this.userRole === 'PROPIETARIO' || this.userRole === 'ADMINISTRADOR')
+      (this.userRole === 'PROPIETARIO' ||
+        this.userRole === 'ADMINISTRADOR' ||
+        this.userRole === 'CONDUCTOR')
     ) {
       const originName =
         this.cities.find((c) => String(c.id) === String(savedTrip.originId))

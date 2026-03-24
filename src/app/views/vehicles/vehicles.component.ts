@@ -12,7 +12,7 @@ import {
   ValidationErrors,
   ValidatorFn,
 } from '@angular/forms';
-import { Subscription, firstValueFrom } from 'rxjs';
+import { Subscription, firstValueFrom, forkJoin } from 'rxjs';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import {
   Filter,
@@ -275,14 +275,42 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   loadDriversByOwner(ownerId: number): void {
     this.loadingDrivers = true;
-    const filter = new ModelFilterTable(
+
+    const driverFilter = new ModelFilterTable(
       [new Filter('ownerId', '=', ownerId.toString())],
       new Pagination(100, 0),
       new Sort('name', true),
     );
-    this.driverService.getDriverFilter(filter).subscribe({
-      next: (response: any) => {
-        this.drivers = response?.data?.content ?? [];
+
+    const vehicleFilter = new ModelFilterTable(
+      [new Filter('ownerId', '=', ownerId.toString())],
+      new Pagination(1000, 0),
+      new Sort('id', true),
+    );
+
+    forkJoin({
+      drivers: this.driverService.getDriverFilter(driverFilter),
+      vehicles: this.vehicleService.getVehicleOwnerFilter(vehicleFilter),
+    }).subscribe({
+      next: (resp: any) => {
+        const allDrivers: ModelDriver[] = resp.drivers?.data?.content ?? [];
+        const allVehicles: ModelVehicle[] = resp.vehicles?.data?.content ?? [];
+
+        // Collect IDs of drivers already assigned to a vehicle
+        const assignedDriverIds: any[] = allVehicles
+          .map((v) => v.currentDriverId)
+          .filter((id) => id != null);
+
+        // Filter: Keep unassigned drivers OR the driver of the vehicle currently being edited
+        this.drivers = allDrivers.filter((d: any) => {
+          if (!d.id) return false;
+          const isAssigned = assignedDriverIds.includes(d.id);
+          const isCurrentOfEditing =
+            this.editingVehicle &&
+            (d.id as any) === (this.editingVehicle.currentDriverId as any);
+          return !isAssigned || isCurrentOfEditing;
+        });
+
         this.loadingDrivers = false;
 
         const originalOwnerRel = this.editingVehicle?.owners?.[0];

@@ -511,8 +511,8 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       this.tripService.createTrip(tripData).subscribe({
         next: () => {
           this.toastService.showSuccess(
-            'Éxito',
-            `Viaje ${this.trip ? 'actualizado' : 'creado'} correctamente`,
+            'Gestión de Viajes',
+            `Viaje ${this.trip ? 'actualizado' : 'creado'} exitosamente!`,
           );
           this.notificationsService.refreshNotifications();
           this.saved.emit(tripData);
