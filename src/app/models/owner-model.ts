@@ -18,6 +18,10 @@ export class ModelOwner {
     public password?: string,
     public vehicleCount?: number,
     public driverCount?: number,
+    public isDriver?: boolean,
+    public licenseCategory?: string,
+    public licenseNumber?: string,
+    public licenseExpiry?: any,
     public user?: {
       id?: number;
       name?: string;

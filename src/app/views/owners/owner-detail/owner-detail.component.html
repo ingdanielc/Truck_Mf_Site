@@ -352,6 +352,47 @@
               {{ owner.birthdate | date: "longDate" }} ({{ owner.age }} años)
             </h6>
           </div>
+          <!-- License Sub-section -->
+          @if (owner.isDriver) {
+            <div class="col-12 mt-5">
+              <h5
+                class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary"
+              >
+                <i class="fa-solid fa-id-card small"></i> Licencia de Conducción
+              </h5>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-4">
+              <p class="text-secondary small fw-bold mb-1 text-uppercase">
+                Número
+              </p>
+              <h6 class="fw-bold mb-0">
+                {{ formatDocNumber(owner.licenseNumber) || "---" }}
+              </h6>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-4">
+              <p class="text-secondary small fw-bold mb-1 text-uppercase">
+                Categoría
+              </p>
+              <h6 class="fw-bold mb-0">
+                <span
+                  class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2 text-uppercase"
+                >
+                  {{ owner.licenseCategory || "---" }}
+                </span>
+              </h6>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-4">
+              <p class="text-secondary small fw-bold mb-1 text-uppercase">
+                Vencimiento
+              </p>
+              <h6
+                class="fw-bold mb-0"
+                [class.text-danger]="$any(owner).licenseExpiry < now"
+              >
+                {{ (owner.licenseExpiry | date: "longDate") || "---" }}
+              </h6>
+            </div>
+          }
         </div>
       </div>
     </div>

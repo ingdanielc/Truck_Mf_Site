@@ -335,7 +335,7 @@
         </div>
 
         @if (owner) {
-          <div class="mt-3 mb-3">
+          <div class="mt-3 mb-3 col-12">
             <label for="email" class="form-label small fw-bold mb-2"
               >Correo electrónico*</label
             >
@@ -365,6 +365,93 @@
             }
           </div>
         }
+
+        <div class="row g-3 mb-4">
+          <div class="col-12 mt-4">
+            <div
+              class="form-check form-switch custom-switch p-0 d-flex align-items-center gap-3"
+            >
+              <input
+                class="form-check-input ms-0"
+                type="checkbox"
+                id="isDriver"
+                formControlName="isDriver"
+              />
+              <label
+                class="form-check-label fw-bold text-primary mb-0"
+                for="isDriver"
+              >
+                Soy el conductor de mi vehículo
+              </label>
+            </div>
+          </div>
+        </div>
+
+        @if (ownerForm.get("isDriver")?.value) {
+          <div class="mb-4 animate__animated animate__fadeIn">
+            <h6
+              class="text-primary fw-bold mb-3 d-flex align-items-center title-section"
+            >
+              <i class="fa-solid fa-id-card me-2"></i>Licencia de Conducción
+            </h6>
+            <div class="row g-3">
+              <div class="col-6 mb-3">
+                <label
+                  for="licenseCategory"
+                  class="form-label small fw-bold mb-2"
+                  >Categoría*</label
+                >
+                <select
+                  id="licenseCategory"
+                  class="form-select rounded-3 py-2 px-3"
+                  formControlName="licenseCategory"
+                  [class.is-invalid]="
+                    ownerForm.get('licenseCategory')?.invalid &&
+                    ownerForm.get('licenseCategory')?.touched
+                  "
+                >
+                  <option [value]="null" disabled selected>Selecciona</option>
+                  @for (cat of licenseCategories; track cat.id) {
+                    <option [value]="cat.id">{{ cat.name }}</option>
+                  }
+                </select>
+                @if (
+                  ownerForm.get("licenseCategory")?.invalid &&
+                  ownerForm.get("licenseCategory")?.touched
+                ) {
+                  <div class="text-danger small mt-1">
+                    Este campo es obligatorio
+                  </div>
+                }
+              </div>
+              <div class="col-6 mb-3">
+                <label for="licenseExpiry" class="form-label small fw-bold mb-2"
+                  >Fecha de vencimiento*</label
+                >
+                <input
+                  id="licenseExpiry"
+                  type="date"
+                  class="form-control rounded-3 py-2 px-3"
+                  formControlName="licenseExpiry"
+                  [min]="maxDate"
+                  [class.is-invalid]="
+                    ownerForm.get('licenseExpiry')?.invalid &&
+                    ownerForm.get('licenseExpiry')?.touched
+                  "
+                />
+                @if (
+                  ownerForm.get("licenseExpiry")?.invalid &&
+                  ownerForm.get("licenseExpiry")?.touched
+                ) {
+                  <div class="text-danger small mt-1">
+                    Este campo es obligatorio
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
       </div>
 
       <!-- Access Data Section -->

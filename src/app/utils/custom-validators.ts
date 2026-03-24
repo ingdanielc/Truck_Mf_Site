@@ -4,7 +4,7 @@ import {
   ValidationErrors,
   ValidatorFn,
 } from '@angular/forms';
-import { map, catchError, of } from 'rxjs';
+import { map, catchError, of, forkJoin } from 'rxjs';
 import {
   ModelFilterTable,
   Filter,
@@ -12,6 +12,7 @@ import {
   Sort,
 } from '../models/model-filter-table';
 import { SecurityService } from '../services/security/security.service';
+import { DriverService } from '../services/driver.service';
 
 export class CustomValidators {
   /**
@@ -151,5 +152,65 @@ export class CustomValidators {
       };
       reader.readAsDataURL(file);
     });
+  }
+
+  /**
+   * Validates if an email is already registered in the system (Users or Drivers).
+   * @param securityService The SecurityService to perform the check.
+   * @param driverService The DriverService to perform the check.
+   * @param currentUserId The ID of the item being edited.
+   * @param currentDriverId The ID of the driver being edited (if applicable).
+   * @returns An AsyncValidatorFn
+   */
+  static emailGlobalUniquenessValidator(
+    securityService: SecurityService,
+    driverService: DriverService,
+    currentUserId: number | null | undefined,
+    currentDriverId: number | null | undefined,
+    initialValue?: string | null,
+  ): AsyncValidatorFn {
+    return (control: AbstractControl) => {
+      if (!control.value) return of(null);
+
+      if (
+        initialValue &&
+        control.value.toLowerCase() === initialValue.toLowerCase()
+      ) {
+        return of(null);
+      }
+
+      const filter = new ModelFilterTable(
+        [new Filter('email', '=', control.value)],
+        new Pagination(1, 0),
+        new Sort('id', true),
+      );
+
+      return forkJoin({
+        users: securityService.getUserFilter(filter),
+        drivers: driverService.getDriverFilter(filter),
+      }).pipe(
+        map(({ users, drivers }) => {
+          const userList = users?.data?.content || [];
+          const driverList = drivers?.data?.content || [];
+
+          const isDuplicateUser = userList.some(
+            (user: any) =>
+              user.id !== currentUserId &&
+              user.email.toLowerCase() === control.value.toLowerCase(),
+          );
+
+          const isDuplicateDriver = driverList.some(
+            (driver: any) =>
+              driver.id !== currentDriverId &&
+              driver.email.toLowerCase() === control.value.toLowerCase(),
+          );
+
+          return isDuplicateUser || isDuplicateDriver
+            ? { duplicate: true }
+            : null;
+        }),
+        catchError(() => of(null)),
+      );
+    };
   }
 }

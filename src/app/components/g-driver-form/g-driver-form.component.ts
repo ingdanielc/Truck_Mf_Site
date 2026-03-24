@@ -438,7 +438,9 @@ export class GDriverFormComponent implements OnInit, OnChanges {
     if (this.driverForm.valid) {
       try {
         const formValue = this.driverForm.getRawValue();
-        const password = formValue.password;
+        const password = formValue.password
+          ? btoa(formValue.password)
+          : undefined;
 
         if (this.driver?.id) {
           // EDIT
@@ -471,7 +473,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
             licenseNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
             licenseExpiry: formValue.licenseExpiry,
             email: formValue.email || undefined,
-            password: this.showAccessData ? password || null : null,
+            password: this.showAccessData ? password || undefined : undefined,
             status: this.driver.status || 'Activo',
             photo: photoUrl,
             ownerId:
@@ -515,7 +517,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
             licenseNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
             licenseExpiry: formValue.licenseExpiry,
             email: formValue.email || undefined,
-            password: this.showAccessData ? password || null : null,
+            password: this.showAccessData ? password || undefined : undefined,
             status: 'Activo',
             photo: '',
             ownerId:

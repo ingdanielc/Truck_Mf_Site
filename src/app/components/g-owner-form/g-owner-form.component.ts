@@ -25,6 +25,7 @@ import {
 } from 'src/app/models/model-filter-table';
 import { CommonService } from 'src/app/services/common.service';
 import { OwnerService } from 'src/app/services/owner.service';
+import { DriverService } from 'src/app/services/driver.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 import { SecurityService } from 'src/app/services/security/security.service';
@@ -58,6 +59,16 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
   showCamera = false;
   photoPreview: string = '';
   photoFile: File | Blob | null = null;
+  licenseCategories: any[] = [
+    { id: 'a1', name: 'A1' },
+    { id: 'a2', name: 'A2' },
+    { id: 'b1', name: 'B1' },
+    { id: 'b2', name: 'B2' },
+    { id: 'b3', name: 'B3' },
+    { id: 'c1', name: 'C1' },
+    { id: 'c2', name: 'C2' },
+    { id: 'c3', name: 'C3' },
+  ];
   private initialFormValue: string = '';
 
   constructor(
@@ -66,6 +77,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     private readonly commonService: CommonService,
     private readonly toastService: ToastService,
     private readonly securityService: SecurityService,
+    private readonly driverService: DriverService,
   ) {
     this.ownerForm = this.fb.group(
       {
@@ -87,11 +99,15 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
           '',
           {
             validators: [Validators.required, Validators.email],
+            asyncValidators: [],
             updateOn: 'blur',
           },
         ],
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', [Validators.required]],
+        isDriver: [false],
+        licenseCategory: [null],
+        licenseExpiry: [''],
       },
       {
         validators: [CustomValidators.passwordMatchValidator],
@@ -102,6 +118,26 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.loadReferenceData();
+    this.ownerForm.get('isDriver')?.valueChanges.subscribe((isDriver) => {
+      this.updateLicenseValidators(isDriver);
+    });
+  }
+
+  private updateLicenseValidators(isDriver: boolean): void {
+    const categoryControl = this.ownerForm.get('licenseCategory');
+    const expiryControl = this.ownerForm.get('licenseExpiry');
+
+    if (isDriver) {
+      categoryControl?.setValidators([Validators.required]);
+      expiryControl?.setValidators([Validators.required]);
+    } else {
+      categoryControl?.clearValidators();
+      expiryControl?.clearValidators();
+      categoryControl?.setValue(null);
+      expiryControl?.setValue('');
+    }
+    categoryControl?.updateValueAndValidity();
+    expiryControl?.updateValueAndValidity();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -231,6 +267,11 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
       gender: owner.genderId,
       email: owner.email,
       maxVehicles: owner.maxVehicles,
+      isDriver: owner.isDriver || false,
+      licenseCategory: owner.licenseCategory || null,
+      licenseExpiry: owner.licenseExpiry
+        ? owner.licenseExpiry.split('T')[0]
+        : '',
     });
     this.photoPreview = owner.photo || '';
 
@@ -280,6 +321,9 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
   resetForm(): void {
     this.ownerForm.reset({
       birthdate: this.defaultBirthdate,
+      isDriver: false,
+      licenseCategory: null,
+      licenseExpiry: '',
     });
     this.ownerForm.get('documentType')?.enable();
     this.ownerForm
@@ -345,7 +389,9 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     if (this.ownerForm.valid) {
       try {
         const formValue = this.ownerForm.getRawValue();
-        const password = formValue.password;
+        const password = formValue.password
+          ? btoa(formValue.password)
+          : undefined;
 
         if (this.owner) {
           // EDICIÓN: subir foto primero (si hay nueva), luego guardar
@@ -366,17 +412,22 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
             }
           }
 
+          const documentNumber = formValue.documentNumber.replaceAll(/\D/g, '');
           const ownerToSave: ModelOwner = {
             id: this.owner.id,
             name: formValue.name,
             documentTypeId: formValue.documentType,
-            documentNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
+            documentNumber: documentNumber,
             cellPhone: formValue.cellPhone,
             birthdate: formValue.birthdate,
             cityId: formValue.city,
             genderId: formValue.gender,
             email: formValue.email,
             maxVehicles: formValue.maxVehicles,
+            isDriver: formValue.isDriver,
+            licenseCategory: formValue.licenseCategory,
+            licenseExpiry: formValue.licenseExpiry,
+            licenseNumber: formValue.isDriver ? documentNumber : undefined,
             password: password || undefined,
             status: this.owner.status || 'Activo',
             photo: photoUrl,
@@ -401,17 +452,22 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
           });
         } else {
           // CREACIÓN: guardar owner primero, obtener ID, luego subir foto
+          const documentNumber = formValue.documentNumber.replaceAll(/\D/g, '');
           const ownerToSave: ModelOwner = {
             id: null,
             name: formValue.name,
             documentTypeId: formValue.documentType,
-            documentNumber: formValue.documentNumber.replaceAll(/\D/g, ''),
+            documentNumber: documentNumber,
             cellPhone: formValue.cellPhone,
             birthdate: formValue.birthdate,
             cityId: formValue.city,
             genderId: formValue.gender,
             email: formValue.email,
             maxVehicles: formValue.maxVehicles,
+            isDriver: formValue.isDriver,
+            licenseCategory: formValue.licenseCategory,
+            licenseExpiry: formValue.licenseExpiry,
+            licenseNumber: formValue.isDriver ? documentNumber : undefined,
             password: password || undefined,
             status: 'Activo',
             photo: '',

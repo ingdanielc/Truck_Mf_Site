@@ -55,6 +55,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   showCamera: boolean = false;
   isAdmin: boolean = false;
   isConductor: boolean = false;
+  now: Date = new Date();
 
   // Offcanvas variables
   isOffcanvasOpen: boolean = false;
