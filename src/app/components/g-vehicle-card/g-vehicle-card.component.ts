@@ -25,6 +25,7 @@ export class GVehicleCardComponent implements OnInit {
   @Output() edit = new EventEmitter<ModelVehicle>();
   @Output() viewDetails = new EventEmitter<ModelVehicle>();
   @Output() maintenance = new EventEmitter<ModelVehicle>();
+  @Output() sell = new EventEmitter<ModelVehicle>();
 
   lastLocation: ModelDriverLocation | null = null;
   loadingLocation: boolean = true;
@@ -113,7 +114,26 @@ export class GVehicleCardComponent implements OnInit {
     }
   }
 
+  onSellClick(): void {
+    if (this.canSell) {
+      this.sell.emit(this.vehicle);
+    }
+  }
+
+  get canSell(): boolean {
+    return (
+      (this.userRole === 'ADMINISTRADOR' || this.userRole === 'PROPIETARIO') &&
+      this.displayTripStatus === 'Disponible' &&
+      this.vehicle.status !== 'Vendido'
+    );
+  }
+
+  get isSold(): boolean {
+    return this.vehicle.status === 'Vendido';
+  }
+
   get statusClass(): string {
+    if (this.vehicle.status === 'Vendido') return 'badge-sold';
     const status = (this.vehicle.lastTripStatus || '').toUpperCase();
     switch (status) {
       case 'COMPLETADO':
@@ -128,6 +148,7 @@ export class GVehicleCardComponent implements OnInit {
   }
 
   get displayTripStatus(): string {
+    if (this.vehicle.status === 'Vendido') return 'Vendido';
     const status = (this.vehicle.lastTripStatus || '').toUpperCase();
     if (
       status === 'COMPLETADO' ||

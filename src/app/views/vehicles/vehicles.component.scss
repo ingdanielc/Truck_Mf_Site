@@ -292,3 +292,29 @@
     padding-left: 0.4rem;
   }
 }
+
+/* Confirmation Content inside Offcanvas */
+.confirm-card {
+  background-color: var(--bs-body-bg);
+  border-radius: 20px;
+  width: 90%;
+  max-width: 400px;
+  padding: 2rem !important;
+  transform: translateY(20px);
+  transition: transform 0.3s ease;
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+}
+
+.custom-offcanvas.open .confirm-card {
+  transform: translateY(0);
+}
+
+.confirm-icon-box {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}

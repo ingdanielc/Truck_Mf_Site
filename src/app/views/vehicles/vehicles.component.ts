@@ -91,6 +91,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   photoPreview: string = '';
   private initialFormValue: string = '';
 
+  // Sell confirmation
+  showSellConfirm: boolean = false;
+  isSelling: boolean = false;
+  vehicleToSell: ModelVehicle | null = null;
+
   // Selection Lists
   brands: any[] = [];
   years: number[] = [];
@@ -208,10 +213,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         if (user) {
           this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
 
-          if (this.userRole !== 'ADMINISTRADOR') {
-            this.rows = 100;
-          } else {
+          if (this.userRole === 'ADMINISTRADOR') {
             this.rows = 9;
+          } else {
+            this.rows = 100;
           }
 
           if (this.userRole === 'ADMINISTRADOR') {
@@ -308,7 +313,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           const isAssigned = assignedDriverIds.includes(d.id);
           const isCurrentOfEditing =
             this.editingVehicle &&
-            (d.id as any) === (this.editingVehicle.currentDriverId as any);
+            d.id === (this.editingVehicle.currentDriverId as any);
           return !isAssigned || isCurrentOfEditing;
         });
 
@@ -443,9 +448,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (response: any) => {
-          const allVehicles = response?.data?.content ?? [];
-          const total = response?.data?.totalElements ?? allVehicles.length;
-          const vehicleIds = allVehicles.map((v: any) => v.id);
+          const allVehicles = (response?.data?.content ?? []).filter(
+            (v: any) => v.status !== 'Vendido',
+          );
+          const total = allVehicles.length;
+          const vehicleIds = new Set(allVehicles.map((v: any) => v.id));
 
           // Get all 'En curso' trips to determine occupied vehicles
           const tripFilter = new ModelFilterTable(
@@ -461,7 +468,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               const occupiedIds = new Set(
                 activeTrips
                   .map((t: any) => t.vehicleId)
-                  .filter((id: any) => vehicleIds.includes(id)),
+                  .filter((id: any) => vehicleIds.has(id)),
               );
 
               const occupied = occupiedIds.size;
@@ -519,7 +526,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
     this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
       next: (respVehicles: any) => {
-        this.ownerVehicles = respVehicles?.data?.content ?? [];
+        this.ownerVehicles = (respVehicles?.data?.content ?? []).filter(
+          (v: any) => v.status !== 'Vendido',
+        );
 
         // Ensure properties needed for display mapped correctly if applicable, or just map brand names
         if (this.ownerVehicles.length > 0) {
@@ -535,7 +544,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
         this.totalVehicles = this.ownerVehicles.length;
 
-        const vehicleIds = this.ownerVehicles.map((v: any) => v.id);
+        const vehicleIds = new Set(this.ownerVehicles.map((v: any) => v.id));
         const tripFilter = new ModelFilterTable(
           [new Filter('status', '=', 'En Curso')],
           new Pagination(20000, 0),
@@ -548,7 +557,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             const occupiedIds = new Set(
               activeTrips
                 .map((t: any) => t.vehicleId)
-                .filter((id: any) => vehicleIds.includes(id)),
+                .filter((id: any) => vehicleIds.has(id)),
             );
 
             this.occupiedVehicles = occupiedIds.size;
@@ -667,7 +676,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   private checkVehicleLimit(owner: ModelOwner | null): boolean {
     if (!owner) return false;
     const max = owner.maxVehicles;
-    const current = owner.vehicleCount ?? this.totalVehicles;
+    // We strictly use the current local total (which is already filtered for Non-Sold)
+    // or we should calculate it again to be absolutely sure
+    const current = this.totalVehicles;
     if (max != null && current >= max) {
       this.showingVehicleLimitWarning = true;
       return true;
@@ -863,8 +874,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
         next: (response: any) => {
           if (response?.data?.content) {
-            this.totalVehicles = response.data.totalElements || 0;
-            const content = response.data.content;
+            const content = response.data.content as any[];
+            this.totalVehicles = content.filter(
+              (v: any) => v.status !== 'Vendido',
+            ).length;
             content.forEach((v: any) => {
               if (v.driver?.name) {
                 v.currentDriverName = v.driver.name;
@@ -904,8 +917,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
         next: (response: any) => {
           if (response?.data?.content) {
-            this.totalVehicles = response.data.totalElements || 0;
-            const content = response.data.content;
+            const content = response.data.content as any[];
+            this.totalVehicles = content.filter(
+              (v: any) => v.status !== 'Vendido',
+            ).length;
             content.forEach((v: any) => {
               if (v.driver?.name) {
                 v.currentDriverName = v.driver.name;
@@ -947,8 +962,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       this.vehicleService.getVehicleFilter(filter).subscribe({
         next: (response: any) => {
           if (response?.data?.content) {
-            this.totalVehicles = response.data.totalElements || 0;
-            const content = response.data.content;
+            const content = response.data.content as any[];
+            this.totalVehicles = content.filter(
+              (v: any) => v.status !== 'Vendido',
+            ).length;
             content.forEach((v: any) => {
               if (v.driver?.name) {
                 v.currentDriverName = v.driver.name;
@@ -990,8 +1007,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       this.vehicleService.getVehicleFilter(filter).subscribe({
         next: (response: any) => {
           if (response?.data?.content) {
-            this.totalVehicles = response.data.totalElements || 0;
-            const content = response.data.content;
+            const content = response.data.content as any[];
+            this.totalVehicles = content.filter(
+              (v: any) => v.status !== 'Vendido',
+            ).length;
             content.forEach((v: any) => {
               if (v.driver?.name) {
                 v.currentDriverName = v.driver.name;
@@ -1030,8 +1049,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       this.vehicleService.getVehicleFilter(filter).subscribe({
         next: (response: any) => {
           if (response?.data?.content) {
-            this.totalVehicles = response.data.totalElements || 0;
-            const content = response.data.content;
+            const content = response.data.content as any[];
+            this.totalVehicles = content.filter(
+              (v: any) => v.status !== 'Vendido',
+            ).length;
             content.forEach((v: any) => {
               if (v.driver?.name) {
                 v.currentDriverName = v.driver.name;
@@ -1068,7 +1089,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       this.userRole === 'ADMINISTRADOR'
         ? this.totalVehicles
         : this.allVehicles.length;
-    const vehicleIds = this.allVehicles.map((v) => v.id);
+    const vehicleIds = new Set(this.allVehicles.map((v) => v.id));
 
     const tripFilter = new ModelFilterTable(
       [new Filter('status', '=', 'En Curso')],
@@ -1082,14 +1103,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         const occupiedIds = new Set(
           activeTrips
             .map((t: any) => t.vehicleId)
-            .filter((id: any) => vehicleIds.includes(id)),
+            .filter((id: any) => vehicleIds.has(id)),
         );
 
         this.occupiedVehicles = occupiedIds.size;
-        this.availableVehicles =
-          (this.userRole === 'ADMINISTRADOR'
-            ? this.totalVehicles
-            : this.allVehicles.length) - this.occupiedVehicles;
+        const totalActive = this.allVehicles.filter(
+          (v) => v.status !== 'Vendido',
+        ).length;
+        this.availableVehicles = totalActive - this.occupiedVehicles;
       },
     });
   }
@@ -1137,11 +1158,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       });
     }
 
-    if (this.userRole !== 'ADMINISTRADOR') {
-      this.buildGroups(filtered);
-    } else {
+    if (this.userRole === 'ADMINISTRADOR') {
       this.page = 0;
       this.loadOwners();
+    } else {
+      this.buildGroups(filtered);
     }
   }
 
@@ -1417,5 +1438,43 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   goBackToOwners(): void {
     this.router.navigate(['/site/owners']);
+  }
+
+  openSellConfirm(vehicle: ModelVehicle): void {
+    this.vehicleToSell = vehicle;
+    this.showSellConfirm = true;
+  }
+
+  cancelSell(): void {
+    this.showSellConfirm = false;
+    this.vehicleToSell = null;
+  }
+
+  confirmSell(): void {
+    if (!this.vehicleToSell?.id) return;
+
+    this.isSelling = true;
+    this.vehicleService.sellVehicle(this.vehicleToSell.id).subscribe({
+      next: () => {
+        this.toastService.showSuccess(
+          'Venta de Vehículo',
+          'Vehículo vendido exitosamente',
+        );
+        if (this.vehicleToSell) {
+          this.vehicleToSell.status = 'Vendido';
+        }
+        this.showSellConfirm = false;
+        this.isSelling = false;
+        this.vehicleToSell = null;
+        this.updateStatusCounts();
+      },
+      error: (err) => {
+        console.error('Error selling vehicle:', err);
+        const errorMsg =
+          err?.error?.message || 'No se pudo procesar la venta del vehículo';
+        this.toastService.showError('Error', errorMsg);
+        this.isSelling = false;
+      },
+    });
   }
 }

@@ -272,7 +272,8 @@ export class TripsComponent implements OnInit, OnDestroy {
     );
     this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
       next: (response: any) => {
-        this.vehicles = response?.data?.content ?? [];
+        const content = response?.data?.content ?? [];
+        this.vehicles = content.filter((v: any) => v.status !== 'Vendido');
         if (isInitialLoad) {
           this.loadTrips();
         }
@@ -436,7 +437,7 @@ export class TripsComponent implements OnInit, OnDestroy {
           return undefined;
         };
 
-        const currentOwnerIds = this.owners.map((o) => o.id);
+        const currentOwnerIds = new Set(this.owners.map((o) => o.id));
         const missingOwnerIds = [
           ...new Set(
             this.allTrips
@@ -444,7 +445,7 @@ export class TripsComponent implements OnInit, OnDestroy {
               .filter(
                 (id): id is number =>
                   id != null &&
-                  !currentOwnerIds.includes(id) &&
+                  !currentOwnerIds.has(id) &&
                   id !== this.ownerIdFilter,
               ),
           ),
@@ -648,7 +649,9 @@ export class TripsComponent implements OnInit, OnDestroy {
 
     this.vehicleService.getVehicleOwnerFilter(vehicleFilter).subscribe({
       next: (respVehicles: any) => {
-        const vehicles = respVehicles?.data?.content ?? [];
+        const vehicles = (respVehicles?.data?.content ?? []).filter(
+          (v: any) => v.status !== 'Vendido',
+        );
         this.expandedOwnerVehiclesCount = vehicles.length;
         const vehicleIds = vehicles
           .map((v: any) => v.id)

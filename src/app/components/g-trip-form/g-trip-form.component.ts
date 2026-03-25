@@ -381,14 +381,18 @@ export class GTripFormComponent implements OnInit, OnDestroy {
           const { allVehicles, activeTrips } = resps;
 
           // Identify vehicle IDs that have active trips
-          const busyVehicleIds = activeTrips.map((t: any) => t.vehicleId);
+          const busyVehicleIds = new Set(
+            activeTrips.map((t: any) => t.vehicleId),
+          );
 
           // Filter: Keep vehicles that are NOT busy,
+          // AND are NOT sold,
           // OR is the vehicle of the trip we are currently editing
           this.vehicles = allVehicles.filter((v: any) => {
-            const isBusy = busyVehicleIds.includes(v.id);
+            const isBusy = busyVehicleIds.has(v.id);
+            const isSold = v.status === 'Vendido';
             const isSameAsEditing = this.trip && v.id === this.trip.vehicleId;
-            return !isBusy || isSameAsEditing;
+            return (!isBusy && !isSold) || isSameAsEditing;
           });
 
           this.mapBrandNames();

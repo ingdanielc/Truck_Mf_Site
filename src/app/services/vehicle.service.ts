@@ -38,4 +38,8 @@ export class VehicleService {
       headers: headers,
     });
   }
+
+  sellVehicle(id: number) {
+    return this.http.post<any>(`${this.basePath}/${id}/sell`, {});
+  }
 }
