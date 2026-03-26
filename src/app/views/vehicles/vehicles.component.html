@@ -18,28 +18,28 @@
       </p>
     </div>
     <div class="col-12 col-md-auto">
-      <div class="d-flex flex-column flex-sm-row gap-3">
-        <div class="search-wrapper position-relative flex-grow-1">
-          <i
-            class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary"
-          ></i>
-          <input
-            type="text"
-            class="form-control ps-5 py-2 rounded-3 w-100"
-            placeholder="Buscar por placa, marca o modelo..."
-            [(ngModel)]="searchTerm"
-            (input)="applyFilter()"
-          />
-        </div>
-        @if (userRole !== "CONDUCTOR") {
+      @if (userRole !== "CONDUCTOR") {
+        <div class="d-flex flex-column flex-sm-row gap-3">
+          <div class="search-wrapper position-relative flex-grow-1">
+            <i
+              class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary"
+            ></i>
+            <input
+              type="text"
+              class="form-control ps-5 py-2 rounded-3 w-100"
+              placeholder="Buscar por placa, marca o modelo..."
+              [(ngModel)]="searchTerm"
+              (input)="applyFilter()"
+            />
+          </div>
           <button
             class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
             (click)="toggleOffcanvas()"
           >
             <i class="fa-solid fa-plus me-2"></i>Agregar Vehículo
           </button>
-        }
-      </div>
+        </div>
+      }
     </div>
   </div>
 
