@@ -731,6 +731,25 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     return Array.from({ length: this.totalDots }, (_, i) => i);
   }
 
+  get isTripLockedForDriver(): boolean {
+    if (
+      this.userRole !== 'CONDUCTOR' ||
+      this.isMaintenance ||
+      !this.selectedTrip
+    )
+      return false;
+
+    if (['Completado', 'Pendiente'].includes(this.selectedTrip.status || '')) {
+      if (this.selectedTrip.endDate) {
+        const end = new Date(this.selectedTrip.endDate);
+        const now = new Date();
+        const diffHours = (now.getTime() - end.getTime()) / (1000 * 60 * 60);
+        return diffHours > 48;
+      }
+    }
+    return false;
+  }
+
   // ── Add Expense Offcanvas ──────────────────────────────────────────
 
   openAddExpense(typeId?: number): void {
@@ -739,6 +758,13 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       this.selectedVehicle && (!tripRequired || this.selectedTrip);
 
     if (canOpen) {
+      if (this.isTripLockedForDriver) {
+        this.toastService.showError(
+          'Acción denegada',
+          'El periodo de 48 horas para registrar gastos en este viaje ha expirado.',
+        );
+        return;
+      }
       this.editingExpense = null;
       this.preselectedExpenseTypeId = typeId || null;
       this.showAddExpense = true;
@@ -753,6 +779,13 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   onEditExpense(expense: ModelExpense): void {
+    if (this.isTripLockedForDriver) {
+      this.toastService.showError(
+        'Acción denegada',
+        'El periodo de 48 horas para modificar gastos en este viaje ha expirado.',
+      );
+      return;
+    }
     this.editingExpense = expense;
     this.showAddExpense = true;
   }
