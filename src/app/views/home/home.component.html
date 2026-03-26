@@ -12,7 +12,11 @@
     <div class="row g-4 justify-content-center">
       @for (card of listCard; track card.routing) {
         <div class="col-12 col-md-6 col-lg-4 col-xl-3">
-          <div class="hub-card h-100 p-4" (click)="navigateTo(card.routing)">
+          <div
+            class="hub-card h-100 p-4"
+            (click)="navigateTo(card.routing)"
+            onkeypress
+          >
             <div class="card-icon-container mb-4">
               <i [class]="card.icon"></i>
             </div>
@@ -26,6 +30,19 @@
           </div>
         </div>
       }
+    </div>
+
+    <!-- Developer Info Footer -->
+    <div class="row mt-5">
+      <div class="col-12 text-center text-secondary small opacity-75">
+        <p class="mb-1 fw-bold">CashTruck</p>
+        <p class="mb-1">Menos gastos, más camino.</p>
+        <p class="mb-0">
+          Ing. Daniel Castro S.
+          <i class="fa-brands fa-whatsapp text-success ms-1 me-1"></i>314 723
+          5739
+        </p>
+      </div>
     </div>
   </div>
 </div>
