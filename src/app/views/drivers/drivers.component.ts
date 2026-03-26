@@ -445,7 +445,7 @@ export class DriversComponent implements OnInit, OnDestroy {
         this.calculateStats();
         this.toastService.showSuccess(
           'Conductor',
-          `Conductor ${newStatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente`,
+          `Conductor ${newStatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente!`,
         );
       },
       error: (err: any) => {
@@ -731,7 +731,7 @@ export class DriversComponent implements OnInit, OnDestroy {
                 next: () => {
                   this.toastService.showSuccess(
                     'Seguridad',
-                    'Contraseña actualizada exitosamente',
+                    'Contraseña actualizada exitosamente!',
                   );
                   this.togglePasswordOffcanvas();
                 },

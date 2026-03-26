@@ -520,7 +520,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         this.toastService.showSuccess(
           'Perfil',
-          'Foto actualizada exitosamente',
+          'Foto actualizada exitosamente!',
         );
         this.owner!.photo = photoUrl;
       },
@@ -630,7 +630,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
                 next: () => {
                   this.toastService.showSuccess(
                     'Seguridad',
-                    'Contraseña actualizada exitosamente',
+                    'Contraseña actualizada exitosamente!',
                   );
                   this.togglePasswordOffcanvas();
                 },

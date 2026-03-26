@@ -445,7 +445,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
                 next: () => {
                   this.toastService.showSuccess(
                     'Seguridad',
-                    'Contraseña actualizada exitosamente',
+                    'Contraseña actualizada exitosamente!',
                   );
                   this.togglePasswordOffcanvas();
                 },
@@ -496,7 +496,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
               next: () => {
                 this.toastService.showSuccess(
                   'Gestión de Usuarios',
-                  `Usuario ${newStatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente`,
+                  `Usuario ${newStatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente!`,
                 );
                 const newCardStatus =
                   newStatus === 'Activo' ? 'online' : 'offline';

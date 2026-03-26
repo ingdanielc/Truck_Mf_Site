@@ -1458,7 +1458,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       next: () => {
         this.toastService.showSuccess(
           'Venta de Vehículo',
-          'Vehículo vendido exitosamente',
+          'Vehículo vendido exitosamente!',
         );
         if (this.vehicleToSell) {
           this.vehicleToSell.status = 'Vendido';

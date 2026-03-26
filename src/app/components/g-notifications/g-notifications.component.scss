@@ -42,6 +42,10 @@
       margin-top: 0.25rem; // mt-1 equivalent if needed via SCSS
     }
   }
+
+  :host-context([data-bs-theme="dark"]) .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%); // Force white in dark mode
+  }
 }
 
 .offcanvas-overlay {

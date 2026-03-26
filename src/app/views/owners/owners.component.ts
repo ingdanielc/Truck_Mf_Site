@@ -266,7 +266,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
                 next: () => {
                   this.toastService.showSuccess(
                     'Seguridad',
-                    'Contraseña actualizada exitosamente',
+                    'Contraseña actualizada exitosamente!',
                   );
                   this.togglePasswordOffcanvas();
                 },

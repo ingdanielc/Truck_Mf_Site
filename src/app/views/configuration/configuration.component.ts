@@ -299,8 +299,8 @@ export class ConfigurationComponent implements OnInit {
           this.toastService.showSuccess(
             'Configuración',
             this.editingCategory
-              ? 'Categoría actualizada exitosamente'
-              : 'Categoría creada exitosamente',
+              ? 'Categoría actualizada exitosamente!'
+              : 'Categoría creada exitosamente!',
           );
           this.loadCategories();
           this.toggleOffcanvas();

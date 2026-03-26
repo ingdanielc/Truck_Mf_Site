@@ -410,7 +410,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
                 next: () => {
                   this.toastService.showSuccess(
                     'Seguridad',
-                    'Contraseña actualizada exitosamente',
+                    'Contraseña actualizada exitosamente!',
                   );
                   this.closePasswordOffcanvas();
                 },
@@ -459,7 +459,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
         this.driver!.user!.status = newStatus;
         this.toastService.showSuccess(
           'Conductor',
-          `Conductor ${newStatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente`,
+          `Conductor ${newStatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente!`,
         );
       },
       error: (err: any) => {
@@ -544,7 +544,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
       next: () => {
         this.toastService.showSuccess(
           'Perfil',
-          'Fotografía actualizada exitosamente',
+          'Fotografía actualizada exitosamente!',
         );
         if (this.driver) this.driver.photo = photoUrl;
       },
