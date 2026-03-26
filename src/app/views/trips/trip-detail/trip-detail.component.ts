@@ -60,8 +60,10 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   // Location
   lastLocation: ModelDriverLocation | null = null;
+  routeLocations: ModelDriverLocation[] = [];
   mapInstance: any = null;
   mapMarker: any = null;
+  routePolyline: any = null;
 
   private routeSub?: Subscription;
   private readonly userSub?: Subscription;
@@ -364,7 +366,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (!this.trip) return;
 
     if (['Completado', 'Cancelado', 'Pendiente'].includes(this.trip.status)) {
-      this.trip.endDate = new Date().toISOString().split('T')[0];
+      this.trip.endDate = new Date().toISOString();
       if (this.trip.startDate && this.trip.endDate) {
         const start = new Date(this.trip.startDate);
         const end = new Date(this.trip.endDate);
@@ -580,13 +582,14 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
     const filterPayload = new ModelFilterTable(
       filters,
-      new Pagination(1, 0),
-      new Sort('id', false), // Get the latest one (Descending)
+      new Pagination(2000, 0),
+      new Sort('id', false), // Get the latest ones (Descending)
     );
 
     this.locationService.getLocationService(filterPayload).subscribe({
       next: (resp: any) => {
         if (resp?.data?.content && resp.data.content.length > 0) {
+          this.routeLocations = resp.data.content;
           this.lastLocation = resp.data.content[0];
           this.initMap();
         }
@@ -599,6 +602,21 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         this.calculateLocationProgress();
       },
     });
+  }
+
+  private drawSimplePolyline(pathCoordinates: any[]): void {
+    if (!this.mapInstance) return;
+    this.routePolyline = new globalThis.google.maps.Polyline({
+      path: pathCoordinates,
+      geodesic: true,
+      strokeColor: '#0d6efd',
+      strokeOpacity: 0.8,
+      strokeWeight: 4,
+      map: this.mapInstance,
+    });
+    const bounds = new globalThis.google.maps.LatLngBounds();
+    pathCoordinates.forEach((coord: any) => bounds.extend(coord));
+    this.mapInstance.fitBounds(bounds);
   }
 
   initMap(): void {
@@ -623,6 +641,81 @@ export class TripDetailComponent implements OnInit, OnDestroy {
           streetViewControl: false,
         });
 
+        // Draw the path
+        if (this.routeLocations && this.routeLocations.length > 1) {
+          const pathCoordinates = this.routeLocations
+            .slice()
+            .reverse()
+            .map((loc) => ({
+              lat: loc.latitude,
+              lng: loc.longitude,
+            }));
+
+          if (
+            globalThis.google?.maps?.DirectionsService &&
+            globalThis.google?.maps?.DirectionsRenderer
+          ) {
+            const directionsService =
+              new globalThis.google.maps.DirectionsService();
+            const directionsRenderer =
+              new globalThis.google.maps.DirectionsRenderer({
+                map: this.mapInstance,
+                suppressMarkers: true,
+                polylineOptions: {
+                  strokeColor: '#0d6efd',
+                  strokeOpacity: 0.8,
+                  strokeWeight: 4,
+                },
+              });
+
+            const maxWaypoints = 23;
+            const waypoints = [];
+            const origin = pathCoordinates[0];
+            const destination = pathCoordinates[pathCoordinates.length - 1];
+
+            const intermediateCoords = pathCoordinates.slice(
+              1,
+              pathCoordinates.length - 1,
+            );
+            if (intermediateCoords.length > 0) {
+              const step = Math.max(
+                1,
+                Math.floor(intermediateCoords.length / maxWaypoints),
+              );
+              for (
+                let i = 0;
+                i < intermediateCoords.length &&
+                waypoints.length < maxWaypoints;
+                i += step
+              ) {
+                waypoints.push({
+                  location: intermediateCoords[i],
+                  stopover: false,
+                });
+              }
+            }
+
+            directionsService.route(
+              {
+                origin: origin,
+                destination: destination,
+                waypoints: waypoints,
+                travelMode: globalThis.google.maps.TravelMode.DRIVING,
+              },
+              (response: any, status: string) => {
+                if (status === 'OK') {
+                  directionsRenderer.setDirections(response);
+                } else {
+                  this.drawSimplePolyline(pathCoordinates);
+                }
+              },
+            );
+          } else {
+            this.drawSimplePolyline(pathCoordinates);
+          }
+        }
+
+        // Draw final location marker distinctively
         this.mapMarker = new globalThis.google.maps.Marker({
           position: position,
           map: this.mapInstance,
@@ -632,7 +725,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
         if (this.lastLocation!.addressText) {
           const infoWindow = new globalThis.google.maps.InfoWindow({
-            content: `<div style="padding:5px 0;margin:0;font-size:13px"><p class="mb-1 fw-bold">Última ubicación:</p><p class="mb-0 text-secondary">${this.lastLocation!.addressText}</p></div>`,
+            content: `<div style="padding:5px 0;margin:0;font-size:13px"><p class="mb-1 fw-bold text-danger">Ubicación Final / Actual:</p><p class="mb-0 text-secondary">${this.lastLocation!.addressText}</p></div>`,
           });
           this.mapMarker.addListener('click', () => {
             infoWindow.open(this.mapInstance, this.mapMarker);

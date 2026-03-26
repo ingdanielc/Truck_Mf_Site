@@ -502,8 +502,24 @@ export class GTripFormComponent implements OnInit, OnDestroy {
         id: this.trip ? this.trip.id : null,
       };
 
+      if (
+        tripData.startDate &&
+        typeof tripData.startDate === 'string' &&
+        tripData.startDate.length === 10
+      ) {
+        if (
+          this.trip?.startDate &&
+          typeof this.trip.startDate === 'string' &&
+          this.trip.startDate.startsWith(tripData.startDate)
+        ) {
+          tripData.startDate = this.trip.startDate;
+        } else {
+          tripData.startDate = `${tripData.startDate}T${new Date().toISOString().split('T')[1]}`;
+        }
+      }
+
       if (['Completado', 'Cancelado', 'Pendiente'].includes(tripData.status)) {
-        tripData.endDate = new Date().toISOString().split('T')[0];
+        tripData.endDate = new Date().toISOString();
         if (tripData.startDate && tripData.endDate) {
           const start = new Date(tripData.startDate);
           const end = new Date(tripData.endDate);
