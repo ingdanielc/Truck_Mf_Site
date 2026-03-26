@@ -3,7 +3,7 @@
   (ngSubmit)="onSubmit()"
   class="flex-column h-100 d-flex"
 >
-  <div class="offcanvas-body p-4 pt-4 custom-scrollbar">
+  <div class="offcanvas-body p-4 pt-4 custom-scrollbar overflow-x-hidden">
     <!-- Owner Section (Conditional for Admin) -->
     @if (userRole === "ADMINISTRADOR") {
       <div class="mb-4">
