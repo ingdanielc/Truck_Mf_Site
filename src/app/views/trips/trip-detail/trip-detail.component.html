@@ -79,7 +79,10 @@
           ></div>
           <div class="d-flex justify-content-between position-relative z-1">
             <!-- Origin -->
-            <div class="step-point text-center" style="width: 120px">
+            <div
+              class="step-point text-center"
+              style="width: 120px; margin-left: -20px"
+            >
               <div
                 class="icon-circle bg-primary text-white rounded-3 shadow-primary mb-2 mx-auto d-flex align-items-center justify-content-center"
                 style="width: 40px; height: 40px"
@@ -93,7 +96,10 @@
             </div>
 
             <!-- Destination -->
-            <div class="step-point text-center" style="width: 120px">
+            <div
+              class="step-point text-center"
+              style="width: 120px; margin-right: -20px"
+            >
               <div
                 class="icon-circle rounded-3 mb-2 mx-auto d-flex align-items-center justify-content-center transition-all"
                 [ngClass]="
@@ -124,7 +130,9 @@
           ) {
             <div
               class="step-point text-center position-absolute z-2"
-              [style.left.%]="progressPercentage"
+              [style.left]="
+                'clamp(130px, ' + progressPercentage + '%, calc(100% - 130px))'
+              "
               style="
                 top: 1rem;
                 transform: translateX(-50%);

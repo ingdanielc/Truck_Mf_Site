@@ -536,6 +536,9 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (['Completado', 'Pendiente'].includes(this.trip?.status || '')) {
       return this.destinationName;
     }
+    if (this.lastLocation?.addressText) {
+      return this.lastLocation.addressText;
+    }
     return this.originName;
   }
 
@@ -575,22 +578,22 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       filters.push(new Filter('tripId', '=', this.tripId.toString()));
     }
 
-    // fallback if tripId not set but driverId is available
     if (!this.tripId && this.trip?.driverId) {
       filters.push(new Filter('driverId', '=', this.trip.driverId.toString()));
     }
 
     const filterPayload = new ModelFilterTable(
       filters,
-      new Pagination(2000, 0),
-      new Sort('id', false), // Get the latest ones (Descending)
+      new Pagination(1, 0),
+      new Sort('id', false),
     );
 
     this.locationService.getLocationService(filterPayload).subscribe({
       next: (resp: any) => {
         if (resp?.data?.content && resp.data.content.length > 0) {
-          this.routeLocations = resp.data.content;
           this.lastLocation = resp.data.content[0];
+          this.loadVehicleRouteHistory(vehicleId);
+        } else {
           this.initMap();
         }
         this.calculateETA();
@@ -600,6 +603,35 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         console.error('Error loading vehicle location', err);
         this.calculateETA();
         this.calculateLocationProgress();
+      },
+    });
+  }
+
+  private loadVehicleRouteHistory(vehicleId: number): void {
+    const filters = [new Filter('vehicleId', '=', vehicleId.toString())];
+    if (this.tripId) {
+      filters.push(new Filter('tripId', '=', this.tripId.toString()));
+    }
+    if (!this.tripId && this.trip?.driverId) {
+      filters.push(new Filter('driverId', '=', this.trip.driverId.toString()));
+    }
+
+    const filterPayload = new ModelFilterTable(
+      filters,
+      new Pagination(2000, 0),
+      new Sort('id', false),
+    );
+
+    this.locationService.getLocationService(filterPayload).subscribe({
+      next: (resp: any) => {
+        if (resp?.data?.content && resp.data.content.length > 0) {
+          this.routeLocations = resp.data.content;
+        }
+        this.initMap();
+      },
+      error: (err) => {
+        console.error('Error loading vehicle route history', err);
+        this.initMap();
       },
     });
   }
