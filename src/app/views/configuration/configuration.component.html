@@ -201,6 +201,20 @@
         </div>
       }
     </div>
+
+    <!-- Empty State -->
+    @if (paginatedCategories.length === 0) {
+      <div
+        class="text-center p-4 bg-body-tertiary rounded-4 my-4 border border-dashed"
+      >
+        <i
+          class="fa-solid fa-list fs-1 mb-2 opacity-50 text-body-secondary"
+        ></i>
+        <p class="small text-body-secondary mb-0 fw-bold">
+          No se encontraron resultados
+        </p>
+      </div>
+    }
   }
 
   <!-- Footer/Pagination -->
