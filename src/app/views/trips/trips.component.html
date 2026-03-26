@@ -20,10 +20,10 @@
     </div>
     <div class="col-12 col-md-auto">
       <div class="d-flex flex-column flex-sm-row gap-3">
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 w-100">
           <div
-            class="search-wrapper position-relative"
-            style="min-width: 300px"
+            class="search-wrapper position-relative flex-grow-1"
+            style="max-width: 300px"
           >
             <i
               class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary"
@@ -113,7 +113,7 @@
                   <i class="fa-solid fa-search me-2"></i>Buscar
                 </button>
                 <button
-                  class="btn btn-outline-secondary flex-grow-1 rounded-3 bg-white"
+                  class="btn btn-outline-secondary flex-grow-1 rounded-3"
                   (click)="clearFilters()"
                 >
                   <i class="fa-solid fa-eraser me-2"></i>Limpiar

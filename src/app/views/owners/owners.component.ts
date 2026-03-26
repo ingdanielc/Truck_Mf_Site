@@ -160,9 +160,20 @@ export class OwnersComponent implements OnInit, OnDestroy {
   }
 
   updateStats(): void {
+    const baseFilters: Filter[] = [];
+    if (this.searchTerm) {
+      const term = this.searchTerm.trim();
+      const isNumeric = /^[\d\.\-]+$/.test(term);
+      if (isNumeric) {
+        baseFilters.push(new Filter('documentNumber', 'like', term));
+      } else {
+        baseFilters.push(new Filter('name', 'like', term));
+      }
+    }
+
     // Query for total owners (no status filter)
     const totalFilter = new ModelFilterTable(
-      [],
+      [...baseFilters],
       new Pagination(1, 0),
       new Sort('id', true),
     );
@@ -175,7 +186,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
 
     // Query for active owners
     const activeFilter = new ModelFilterTable(
-      [new Filter('user.status', '=', 'Activo')],
+      [...baseFilters, new Filter('user.status', '=', 'Activo')],
       new Pagination(1, 0),
       new Sort('id', true),
     );

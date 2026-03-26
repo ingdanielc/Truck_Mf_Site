@@ -595,9 +595,22 @@ export class TripsComponent implements OnInit, OnDestroy {
     }
 
     let filtered = this.allTrips;
+
+    if (this.originFilter) {
+      filtered = filtered.filter(
+        (t) => String(t.originId) === String(this.originFilter),
+      );
+    }
+
+    if (this.destinationFilter) {
+      filtered = filtered.filter(
+        (t) => String(t.destinationId) === String(this.destinationFilter),
+      );
+    }
+
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
-      filtered = this.allTrips.filter((t) => {
+      filtered = filtered.filter((t) => {
         return (
           (t.numberTrip?.toLowerCase() || '').includes(term) ||
           (t.manifestNumber?.toLowerCase() || '').includes(term) ||
