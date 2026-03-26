@@ -215,6 +215,11 @@ export const CATEGORY_UI_CONFIG: Record<string, CategoryConfig> = {
     icon: 'fa-solid fa-ellipsis',
     colorClass: 'text-secondary bg-secondary',
   },
+  varios: {
+    name: 'VARIOS',
+    icon: 'fa-solid fa-ellipsis',
+    colorClass: 'text-secondary bg-secondary',
+  },
 };
 
 export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
