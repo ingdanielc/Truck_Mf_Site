@@ -17,7 +17,8 @@
             class="form-control ps-5 py-2 rounded-3 w-100"
             placeholder="Buscar por nombre o ID..."
             [(ngModel)]="searchTerm"
-            (input)="onSearch()"
+            (blur)="onSearch()"
+            (keydown.enter)="onSearch()"
           />
         </div>
         <button

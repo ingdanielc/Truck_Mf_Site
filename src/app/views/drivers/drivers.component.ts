@@ -75,6 +75,10 @@ export class DriversComponent implements OnInit, OnDestroy {
   // Offcanvas flags
   isOffcanvasOpen: boolean = false;
   editingDriver: ModelDriver | null = null;
+  
+  get isSearchingDrivers(): boolean {
+    return this.userRole === 'ADMINISTRADOR' && !!this.searchTerm && !this.expandedOwnerId && !this.ownerIdFilter;
+  }
 
   // Data for lists and forms (passed to g-driver-form)
   documentTypes: any[] = [];
@@ -204,14 +208,8 @@ export class DriversComponent implements OnInit, OnDestroy {
 
     if (
       this.userRole === 'ADMINISTRADOR' &&
-      this.searchTerm &&
-      !this.expandedOwnerId &&
-      !this.ownerIdFilter
+      this.ownerIdFilter
     ) {
-      filtros.push(new Filter('name', 'like', this.searchTerm));
-    }
-
-    if (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter) {
       filtros.push(new Filter('id', '=', this.ownerIdFilter.toString()));
     }
 
@@ -340,7 +338,13 @@ export class DriversComponent implements OnInit, OnDestroy {
     const filtros = [new Filter('ownerId', '=', ownerId.toString())];
 
     if (this.searchTerm) {
-      filtros.push(new Filter('name', 'like', this.searchTerm)); // Basic search for expanded view
+      const term = this.searchTerm.trim();
+      const isNumeric = /^[\d\.\-]+$/.test(term);
+      if (isNumeric) {
+        filtros.push(new Filter('documentNumber', 'like', term)); // Basic search for expanded view
+      } else {
+        filtros.push(new Filter('name', 'like', term)); // Basic search for expanded view
+      }
     }
 
     const filter = new ModelFilterTable(
@@ -471,7 +475,13 @@ export class DriversComponent implements OnInit, OnDestroy {
     }
 
     if (this.searchTerm) {
-      filtros.push(new Filter('name', 'like', this.searchTerm));
+      const term = this.searchTerm.trim();
+      const isNumeric = /^[\d\.\-]+$/.test(term);
+      if (isNumeric) {
+        filtros.push(new Filter('documentNumber', 'like', term));
+      } else {
+        filtros.push(new Filter('name', 'like', term));
+      }
     }
 
     const filter = new ModelFilterTable(
@@ -500,7 +510,7 @@ export class DriversComponent implements OnInit, OnDestroy {
             this.calculateStats();
           }
 
-          if (this.userRole !== 'ADMINISTRADOR') {
+          if (this.userRole !== 'ADMINISTRADOR' || this.isSearchingDrivers) {
             this.buildGroups();
           }
 
@@ -550,7 +560,8 @@ export class DriversComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.userRole !== 'ADMINISTRADOR') {
+    if (this.userRole !== 'ADMINISTRADOR' || this.isSearchingDrivers) {
+      if (this.userRole === 'ADMINISTRADOR') this.page = 0;
       this.loadDrivers();
     } else {
       this.page = 0;
@@ -640,13 +651,13 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   get dataTotal(): number {
-    return this.userRole === 'ADMINISTRADOR'
+    return this.userRole === 'ADMINISTRADOR' && !this.isSearchingDrivers
       ? this.totalOwners
       : this.totalDrivers;
   }
 
   get itemsShownCount(): number {
-    return this.userRole === 'ADMINISTRADOR'
+    return this.userRole === 'ADMINISTRADOR' && !this.isSearchingDrivers
       ? this.owners.length
       : this.drivers.length;
   }
@@ -664,7 +675,7 @@ export class DriversComponent implements OnInit, OnDestroy {
       this.page = newPage;
       this.expandedOwnerId = null;
       this.ownerDrivers = [];
-      if (this.userRole === 'ADMINISTRADOR') {
+      if (this.userRole === 'ADMINISTRADOR' && !this.isSearchingDrivers) {
         this.loadOwners();
       } else {
         this.loadDrivers();

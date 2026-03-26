@@ -122,7 +122,12 @@ export class OwnersComponent implements OnInit, OnDestroy {
     // Add search term filters
     if (this.searchTerm) {
       const term = this.searchTerm.trim();
-      filters.push(new Filter('name', 'like', term));
+      const isNumeric = /^[\d\.\-]+$/.test(term);
+      if (isNumeric) {
+        filters.push(new Filter('documentNumber', 'like', term));
+      } else {
+        filters.push(new Filter('name', 'like', term));
+      }
     }
 
     const filter = new ModelFilterTable(

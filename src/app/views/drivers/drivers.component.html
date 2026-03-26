@@ -28,7 +28,8 @@
             class="form-control ps-5 py-2 rounded-3 w-100"
             placeholder="Buscar por nombre o ID..."
             [(ngModel)]="searchTerm"
-            (input)="applyFilter()"
+            (blur)="applyFilter()"
+            (keydown.enter)="applyFilter()"
           />
         </div>
         <button
@@ -128,7 +129,7 @@
       </p>
     </div>
   } @else {
-    @if (userRole !== "ADMINISTRADOR") {
+    @if (userRole !== "ADMINISTRADOR" || isSearchingDrivers) {
       @for (group of groupedDrivers; track group.owner.id) {
         <!-- Owner Header Card -->
         <g-vehicle-owner-card
@@ -292,7 +293,11 @@
     <div class="col-12 col-md-6 text-center text-md-start">
       <p class="text-secondary small mb-0">
         Mostrando {{ itemsShownCount }} de {{ dataTotal }}
-        {{ userRole === "ADMINISTRADOR" ? "propietarios" : "conductores" }}
+        {{
+          userRole === "ADMINISTRADOR" && !isSearchingDrivers
+            ? "propietarios"
+            : "conductores"
+        }}
       </p>
     </div>
     @if (userRole === "ADMINISTRADOR") {
