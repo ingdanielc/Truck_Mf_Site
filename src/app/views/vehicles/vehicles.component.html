@@ -153,7 +153,7 @@
       <p class="mt-1 text-body-secondary fw-medium">Obteniendo vehículos...</p>
     </div>
   } @else {
-    @if (userRole !== "ADMINISTRADOR" || isSearchingVehicles) {
+    @if (userRole !== "ADMINISTRADOR" || isSearchActive) {
       @for (group of groupedVehicles; track group.owner.id) {
         <!-- Owner Header Card — independent, only the header -->
         <g-vehicle-owner-card
@@ -184,13 +184,27 @@
             class="text-center p-4 bg-body-tertiary rounded-4 mb-4 border border-dashed"
           >
             <i
-              class="fa-solid fa-truck-moving fs-3 mb-2 opacity-50 text-body-secondary"
+              class="fa-solid fa-truck-moving fs-1 mb-2 opacity-50 text-body-secondary"
             ></i>
-            <p class="small text-body-secondary mb-0">
+            <p class="small text-body-secondary mb-0 fw-bold">
               No se encontraron vehículos para este propietario
             </p>
           </div>
         }
+      }
+
+      <!-- Empty State -->
+      @if (groupedVehicles.length === 0) {
+        <div
+          class="text-center p-4 bg-body-tertiary rounded-4 my-4 border border-dashed"
+        >
+          <i
+            class="fa-solid fa-truck-moving fs-1 mb-2 opacity-50 text-body-secondary"
+          ></i>
+          <p class="small text-body-secondary mb-0 fw-bold">
+            No se encontraron resultados
+          </p>
+        </div>
       }
     } @else {
       <!-- Admin View: Owners List with expansion (Full Width) -->
@@ -311,7 +325,7 @@
       <p class="text-secondary small mb-0">
         Mostrando {{ itemsShownCount }} de {{ dataTotal }}
         {{
-          userRole === "ADMINISTRADOR" && !isSearchingVehicles
+          userRole === "ADMINISTRADOR" && !isSearchActive
             ? "propietarios"
             : "vehículos"
         }}

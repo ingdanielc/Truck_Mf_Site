@@ -20,17 +20,31 @@
     </div>
     <div class="col-12 col-md-auto">
       <div class="d-flex flex-column flex-sm-row gap-3">
-        <div class="search-wrapper position-relative" style="min-width: 300px">
-          <i
-            class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary"
-          ></i>
-          <input
-            type="text"
-            class="form-control ps-5 py-2 rounded-3 w-100"
-            placeholder="Buscar viaje, manifiesto, placa o conductor..."
-            [(ngModel)]="searchTerm"
-            (input)="applyFilter()"
-          />
+        <div class="d-flex gap-2">
+          <div
+            class="search-wrapper position-relative"
+            style="min-width: 300px"
+          >
+            <i
+              class="fa-solid fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary"
+            ></i>
+            <input
+              type="text"
+              class="form-control ps-5 py-2 rounded-3 w-100"
+              placeholder="Buscar por nro de viaje o manifiesto..."
+              [(ngModel)]="searchTerm"
+              (blur)="applyFilter()"
+              (keydown.enter)="applyFilter()"
+            />
+          </div>
+          <button
+            class="btn btn-outline-secondary d-flex align-items-center"
+            [class.active]="showFilters || originFilter || destinationFilter"
+            (click)="toggleFilters()"
+            title="Filtros avanzados"
+          >
+            <i class="fa-solid fa-filter"></i>
+          </button>
         </div>
         <button
           class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
@@ -41,6 +55,76 @@
       </div>
     </div>
   </div>
+
+  <!-- Advanced Filters Inline Pane -->
+  @if (showFilters) {
+    <div class="row mb-4 animate__animated animate__fadeIn">
+      <div class="col-12">
+        <div class="card bg-body-tertiary border-0 rounded-4 shadow-sm">
+          <div class="card-body p-3">
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-md-4">
+                <label
+                  for="origen"
+                  class="form-label small text-secondary fw-bold mb-1"
+                  >Origen</label
+                >
+                <select
+                  id="origen"
+                  class="form-select rounded-3 shadow-sm border-0"
+                  [(ngModel)]="originFilter"
+                >
+                  <option [value]="null">Todos</option>
+                  @for (group of groupedCities; track group) {
+                    <optgroup [label]="group.state">
+                      @for (city of group.cities; track city.id) {
+                        <option [value]="city.id">{{ city.name }}</option>
+                      }
+                    </optgroup>
+                  }
+                </select>
+              </div>
+              <div class="col-12 col-md-4">
+                <label
+                  for="destino"
+                  class="form-label small text-secondary fw-bold mb-1"
+                  >Destino</label
+                >
+                <select
+                  id="destino"
+                  class="form-select rounded-3 shadow-sm border-0"
+                  [(ngModel)]="destinationFilter"
+                >
+                  <option [value]="null">Todos</option>
+                  @for (group of groupedCities; track group) {
+                    <optgroup [label]="group.state">
+                      @for (city of group.cities; track city.id) {
+                        <option [value]="city.id">{{ city.name }}</option>
+                      }
+                    </optgroup>
+                  }
+                </select>
+              </div>
+              <div class="col-12 col-md-4 d-flex gap-2">
+                <button
+                  class="btn btn-primary flex-grow-1 rounded-3 shadow-primary"
+                  (click)="applyFilter()"
+                >
+                  <i class="fa-solid fa-search me-2"></i>Buscar
+                </button>
+                <button
+                  class="btn btn-outline-secondary flex-grow-1 rounded-3 bg-white"
+                  (click)="clearFilters()"
+                >
+                  <i class="fa-solid fa-eraser me-2"></i>Limpiar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
 
   <!-- Active Trip Alert -->
   @if (showingActiveTripWarning) {
@@ -173,7 +257,7 @@
     </div>
   } @else {
     <!-- Trip List Grouped by Owner (Owner/Driver roles) -->
-    @if (userRole !== "ADMINISTRADOR") {
+    @if (userRole !== "ADMINISTRADOR" || isSearchActive) {
       <div class="trips-grid animate__animated animate__fadeIn">
         @for (group of groupedTrips; track group) {
           <div class="owner-section mb-2">
@@ -207,9 +291,9 @@
                 class="text-center p-4 bg-body-tertiary rounded-4 my-4 border border-dashed"
               >
                 <i
-                  class="fa-solid fa-route fs-3 mb-2 opacity-50 text-body-secondary"
+                  class="fa-solid fa-route fs-1 mb-2 opacity-50 text-body-secondary"
                 ></i>
-                <p class="small text-body-secondary mb-0">
+                <p class="small text-body-secondary mb-0 fw-bold">
                   No se encontraron viajes para este propietario
                 </p>
               </div>
@@ -219,9 +303,15 @@
 
         <!-- Empty State -->
         @if (groupedTrips.length === 0) {
-          <div class="text-center py-5 text-body-secondary">
-            <i class="fa-solid fa-route fs-1 mb-3 opacity-25"></i>
-            <p class="fw-bold">No se encontraron resultados</p>
+          <div
+            class="text-center p-4 bg-body-tertiary rounded-4 my-4 border border-dashed"
+          >
+            <i
+              class="fa-solid fa-route fs-1 mb-2 opacity-50 text-body-secondary"
+            ></i>
+            <p class="small text-body-secondary mb-0 fw-bold">
+              No se encontraron resultados
+            </p>
           </div>
         }
       </div>
@@ -347,7 +437,11 @@
     <div class="col-12 col-md-6 text-center text-md-start">
       <p class="text-secondary small mb-0">
         Mostrando {{ itemsShownCount }} de {{ dataTotal }}
-        {{ userRole === "ADMINISTRADOR" ? "propietarios" : "viajes" }}
+        {{
+          userRole === "ADMINISTRADOR" && !isSearchActive
+            ? "propietarios"
+            : "viajes"
+        }}
       </p>
     </div>
     <div

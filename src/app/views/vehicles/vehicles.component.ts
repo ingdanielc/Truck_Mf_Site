@@ -84,6 +84,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   isOffcanvasOpen: boolean = false;
   editingVehicle: ModelVehicle | null = null;
   vehicleForm: FormGroup;
+  isSearchActive: boolean = false;
 
   get isSearchingVehicles(): boolean {
     return (
@@ -189,6 +190,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     const rawOwnerId = this.route.snapshot.queryParamMap.get('ownerId');
     if (rawOwnerId != null) {
       this.ownerIdFilter = Number(rawOwnerId);
+      this.isSearchActive = false;
       this.loadFilteredOwner(this.ownerIdFilter);
     }
 
@@ -1040,8 +1042,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
       // Case 3: ADMINISTRADOR without any owner filter → load all
     } else {
-      const fetchRows = this.isSearchingVehicles ? 20000 : this.rows;
-      const fetchPage = this.isSearchingVehicles ? 0 : this.page;
+      const fetchRows = this.isSearchActive ? 20000 : this.rows;
+      const fetchPage = this.isSearchActive ? 0 : this.page;
       const filter = new ModelFilterTable(
         [],
         new Pagination(fetchRows, fetchPage),
@@ -1118,17 +1120,21 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   applyFilter(fromLoadVehicles: boolean = false): void {
+    if (!fromLoadVehicles) {
+      this.isSearchActive = this.isSearchingVehicles;
+    }
+
     if (this.userRole === 'ADMINISTRADOR' && this.expandedOwnerId) {
       this.loadVehiclesForAdmin(this.expandedOwnerId);
       return;
     }
 
     if (this.userRole === 'ADMINISTRADOR') {
-      if (this.isSearchingVehicles && !fromLoadVehicles) {
+      if (this.isSearchActive && !fromLoadVehicles) {
         this.page = 0;
         this.loadVehicles();
         return;
-      } else if (!this.isSearchingVehicles) {
+      } else if (!this.isSearchActive) {
         this.page = 0;
         this.loadOwners();
         return;
@@ -1172,7 +1178,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       });
     }
 
-    if (this.userRole === 'ADMINISTRADOR' && this.isSearchingVehicles) {
+    if (this.userRole === 'ADMINISTRADOR' && this.isSearchActive) {
       this.totalVehicles = filtered.length;
     }
 
@@ -1180,13 +1186,13 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   get dataTotal(): number {
-    return this.userRole === 'ADMINISTRADOR' && !this.isSearchingVehicles
+    return this.userRole === 'ADMINISTRADOR' && !this.isSearchActive
       ? this.totalOwners
       : this.totalVehicles;
   }
 
   get itemsShownCount(): number {
-    return this.userRole === 'ADMINISTRADOR' && !this.isSearchingVehicles
+    return this.userRole === 'ADMINISTRADOR' && !this.isSearchActive
       ? this.owners.length
       : this.groupedVehicles.reduce((acc, g) => acc + g.vehicles.length, 0);
   }
@@ -1204,7 +1210,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       this.page = newPage;
       this.expandedOwnerId = null;
       this.ownerVehicles = [];
-      if (this.userRole === 'ADMINISTRADOR' && !this.isSearchingVehicles) {
+      if (this.userRole === 'ADMINISTRADOR' && !this.isSearchActive) {
         this.loadOwners();
       } else {
         this.loadVehicles();

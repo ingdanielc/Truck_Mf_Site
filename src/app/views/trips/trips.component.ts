@@ -57,9 +57,22 @@ export class TripsComponent implements OnInit, OnDestroy {
   };
 
   searchTerm: string = '';
+  originFilter: string | null = null;
+  destinationFilter: string | null = null;
+  showFilters: boolean = false;
+  isSearchActive: boolean = false;
   page: number = 0;
   rows: number = 9;
   loading: boolean = true;
+
+  get isSearchingTrips(): boolean {
+    return (
+      this.userRole === 'ADMINISTRADOR' &&
+      (!!this.searchTerm || !!this.originFilter || !!this.destinationFilter) &&
+      !this.expandedOwnerId &&
+      !this.ownerIdFilter
+    );
+  }
 
   // Grouped display
   groupedTrips: TripOwnerGroup[] = [];
@@ -78,6 +91,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   // Selection Lists for parent context
   owners: ModelOwner[] = [];
   cities: any[] = [];
+  groupedCities: { state: string; cities: any[] }[] = [];
   vehicles: any[] = [];
 
   // User context
@@ -120,6 +134,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     const rawOwnerId = this.route.snapshot.queryParamMap.get('ownerId');
     if (rawOwnerId != null) {
       this.ownerIdFilter = Number(rawOwnerId);
+      this.isSearchActive = false;
       this.loadFilteredOwner(this.ownerIdFilter);
     }
 
@@ -143,11 +158,33 @@ export class TripsComponent implements OnInit, OnDestroy {
     this.commonService.getCities().subscribe({
       next: (response: any) => {
         if (response?.data) {
-          this.cities = response.data;
+          this.cities = response.data.sort((a: any, b: any) => {
+            const stateA = a.state || 'Sin departamento';
+            const stateB = b.state || 'Sin departamento';
+            if (stateA === stateB) {
+              return (a.name || '').localeCompare(b.name || '');
+            }
+            return stateA.localeCompare(stateB);
+          });
+          this.groupedCities = this.buildGroupedCities();
         }
       },
       error: (err: any) => console.error('Error loading cities:', err),
     });
+  }
+
+  private buildGroupedCities(): { state: string; cities: any[] }[] {
+    const map = new Map<string, any[]>();
+    for (const city of this.cities) {
+      const state = city.state || 'Sin departamento';
+      if (!map.has(state)) {
+        map.set(state, []);
+      }
+      map.get(state)!.push(city);
+    }
+    return Array.from(map.entries())
+      .map(([state, cities]) => ({ state, cities }))
+      .sort((a, b) => a.state.localeCompare(b.state));
   }
 
   loadFilteredOwner(ownerId: number): void {
@@ -309,9 +346,12 @@ export class TripsComponent implements OnInit, OnDestroy {
             }
           } else if (this.userRole === 'ADMINISTRADOR') {
             this.totalOwners = response.data.totalElements ?? 0;
-            this.applyFilter();
+            this.loading = false;
           }
-        }
+        } else if (this.userRole === 'ADMINISTRADOR') this.loading = false;
+      },
+      error: () => {
+        if (this.userRole === 'ADMINISTRADOR') this.loading = false;
       },
     });
   }
@@ -417,9 +457,21 @@ export class TripsComponent implements OnInit, OnDestroy {
       filtros.push(new Filter('status', '=', this.selectedStatus));
     }
 
+    if (this.originFilter) {
+      filtros.push(new Filter('originId', '=', this.originFilter.toString()));
+    }
+    if (this.destinationFilter) {
+      filtros.push(
+        new Filter('destinationId', '=', this.destinationFilter.toString()),
+      );
+    }
+
+    const fetchRows = this.isSearchActive ? 20000 : this.rows;
+    const fetchPage = this.isSearchActive ? 0 : this.page;
+
     const filter = new ModelFilterTable(
       filtros,
-      new Pagination(this.rows, this.page),
+      new Pagination(fetchRows, fetchPage),
       new Sort('startDate', false),
     );
 
@@ -454,7 +506,7 @@ export class TripsComponent implements OnInit, OnDestroy {
         if (missingOwnerIds.length > 0) {
           this.fetchMissingOwners(missingOwnerIds);
         } else {
-          this.applyFilter();
+          this.applyFilter(true);
         }
       },
       error: (error: any) => {
@@ -475,12 +527,12 @@ export class TripsComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content) {
           this.owners = [...this.owners, ...response.data.content];
-          this.applyFilter();
+          this.applyFilter(true);
         }
       },
       error: (err) => {
         console.error('Error fetching missing owners:', err);
-        this.applyFilter();
+        this.applyFilter(true);
       },
     });
   }
@@ -517,32 +569,61 @@ export class TripsComponent implements OnInit, OnDestroy {
     }
   }
 
-  applyFilter(): void {
+  applyFilter(fromLoadTrips: boolean = false): void {
+    if (!fromLoadTrips) {
+      this.isSearchActive = this.isSearchingTrips;
+    }
+
+    if (this.userRole === 'ADMINISTRADOR') {
+      if (this.isSearchActive && !fromLoadTrips) {
+        this.page = 0;
+        this.loadTrips();
+        return;
+      } else if (!this.isSearchActive && !this.expandedOwnerId) {
+        if (!fromLoadTrips) {
+          this.page = 0;
+          this.loadOwners();
+
+          this.totalTrips = this.globalStats.total;
+          this.inProgressTrips = this.globalStats.inProgress;
+          this.completedTrips = this.globalStats.completed;
+          this.pendingTrips = this.globalStats.pending;
+        }
+        this.loading = false;
+        return;
+      }
+    }
+
     let filtered = this.allTrips;
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
       filtered = this.allTrips.filter((t) => {
-        const originName = this.cities
-          .find((c) => String(c.id) === String(t.originId))
-          ?.name?.toLowerCase();
-        const destName = this.cities
-          .find((c) => String(c.id) === String(t.destinationId))
-          ?.name?.toLowerCase();
-
         return (
           (t.numberTrip?.toLowerCase() || '').includes(term) ||
           (t.manifestNumber?.toLowerCase() || '').includes(term) ||
-          (originName || '').includes(term) ||
-          (destName || '').includes(term) ||
-          (t.originId?.toLowerCase() || '').includes(term) ||
-          (t.destinationId?.toLowerCase() || '').includes(term) ||
           (t.vehicle?.plate?.toLowerCase() || '').includes(term) ||
           (t.driver?.name?.toLowerCase() || '').includes(term)
         );
       });
     }
+
+    if (this.userRole === 'ADMINISTRADOR' && this.isSearchActive) {
+      this.calculateStats(filtered);
+    }
+
     this.buildGroups(filtered);
     this.loading = false;
+  }
+
+  toggleFilters(): void {
+    this.showFilters = !this.showFilters;
+  }
+
+  clearFilters(): void {
+    this.originFilter = null;
+    this.destinationFilter = null;
+    this.searchTerm = '';
+    this.applyFilter();
   }
 
   buildGroups(trips: ModelTrip[]): void {
@@ -702,15 +783,15 @@ export class TripsComponent implements OnInit, OnDestroy {
   }
 
   get dataTotal(): number {
-    return this.userRole === 'ADMINISTRADOR'
+    return this.userRole === 'ADMINISTRADOR' && !this.isSearchActive
       ? this.totalOwners
       : this.totalTrips;
   }
 
   get itemsShownCount(): number {
-    return this.userRole === 'ADMINISTRADOR'
+    return this.userRole === 'ADMINISTRADOR' && !this.isSearchActive
       ? this.owners.length
-      : this.allTrips.length;
+      : this.groupedTrips.reduce((acc, g) => acc + g.trips.length, 0);
   }
 
   get filteredOwnerTrips(): ModelTrip[] {
@@ -759,7 +840,7 @@ export class TripsComponent implements OnInit, OnDestroy {
       this.page = newPage;
       this.expandedOwnerId = null;
       this.ownerTrips = [];
-      if (this.userRole === 'ADMINISTRADOR') {
+      if (this.userRole === 'ADMINISTRADOR' && !this.isSearchActive) {
         this.loadOwners();
       } else {
         this.loadTrips();

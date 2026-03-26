@@ -129,7 +129,7 @@
       </p>
     </div>
   } @else {
-    @if (userRole !== "ADMINISTRADOR" || isSearchingDrivers) {
+    @if (userRole !== "ADMINISTRADOR" || isSearchActive) {
       @for (group of groupedDrivers; track group.owner.id) {
         <!-- Owner Header Card -->
         <g-vehicle-owner-card
@@ -165,13 +165,27 @@
             class="col-12 text-center p-4 bg-body-tertiary rounded-4 my-4 border border-dashed"
           >
             <i
-              class="fa-solid fa-user-slash fs-3 mb-2 opacity-50 text-body-secondary"
+              class="fa-solid fa-user-slash fs-1 mb-2 opacity-50 text-body-secondary"
             ></i>
-            <p class="small text-body-secondary mb-0">
+            <p class="small text-body-secondary mb-0 fw-bold">
               No se encontraron conductores para este propietario
             </p>
           </div>
         }
+      }
+
+      <!-- Empty State -->
+      @if (groupedDrivers.length === 0) {
+        <div
+          class="text-center p-4 bg-body-tertiary rounded-4 my-4 border border-dashed"
+        >
+          <i
+            class="fa-solid fa-user-slash fs-1 mb-2 opacity-50 text-body-secondary"
+          ></i>
+          <p class="small text-body-secondary mb-0 fw-bold">
+            No se encontraron resultados
+          </p>
+        </div>
       }
     } @else {
       <!-- Admin View: Owners List with expansion (Full Width) -->
@@ -294,7 +308,7 @@
       <p class="text-secondary small mb-0">
         Mostrando {{ itemsShownCount }} de {{ dataTotal }}
         {{
-          userRole === "ADMINISTRADOR" && !isSearchingDrivers
+          userRole === "ADMINISTRADOR" && !isSearchActive
             ? "propietarios"
             : "conductores"
         }}

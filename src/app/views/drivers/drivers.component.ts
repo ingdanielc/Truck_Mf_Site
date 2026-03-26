@@ -75,9 +75,15 @@ export class DriversComponent implements OnInit, OnDestroy {
   // Offcanvas flags
   isOffcanvasOpen: boolean = false;
   editingDriver: ModelDriver | null = null;
-  
+  isSearchActive: boolean = false;
+
   get isSearchingDrivers(): boolean {
-    return this.userRole === 'ADMINISTRADOR' && !!this.searchTerm && !this.expandedOwnerId && !this.ownerIdFilter;
+    return (
+      this.userRole === 'ADMINISTRADOR' &&
+      !!this.searchTerm &&
+      !this.expandedOwnerId &&
+      !this.ownerIdFilter
+    );
   }
 
   // Data for lists and forms (passed to g-driver-form)
@@ -106,6 +112,7 @@ export class DriversComponent implements OnInit, OnDestroy {
     const rawOwnerId = this.route.snapshot.queryParamMap.get('ownerId');
     if (rawOwnerId != null) {
       this.ownerIdFilter = Number(rawOwnerId);
+      this.isSearchActive = false;
       this.loadFilteredOwner(this.ownerIdFilter);
     }
 
@@ -206,10 +213,7 @@ export class DriversComponent implements OnInit, OnDestroy {
       filtros.push(new Filter('user.Id', '=', this.loggedInOwnerId.toString()));
     }
 
-    if (
-      this.userRole === 'ADMINISTRADOR' &&
-      this.ownerIdFilter
-    ) {
+    if (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter) {
       filtros.push(new Filter('id', '=', this.ownerIdFilter.toString()));
     }
 
@@ -484,9 +488,12 @@ export class DriversComponent implements OnInit, OnDestroy {
       }
     }
 
+    const fetchRows = this.isSearchActive ? 20000 : this.rows;
+    const fetchPage = this.isSearchActive ? 0 : this.page;
+
     const filter = new ModelFilterTable(
       filtros,
-      new Pagination(this.rows, this.page),
+      new Pagination(fetchRows, fetchPage),
       new Sort('id', true),
     );
     this.loading = true;
@@ -510,7 +517,7 @@ export class DriversComponent implements OnInit, OnDestroy {
             this.calculateStats();
           }
 
-          if (this.userRole !== 'ADMINISTRADOR' || this.isSearchingDrivers) {
+          if (this.userRole !== 'ADMINISTRADOR' || this.isSearchActive) {
             this.buildGroups();
           }
 
@@ -555,12 +562,14 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   applyFilter(): void {
+    this.isSearchActive = this.isSearchingDrivers;
+
     if (this.userRole === 'ADMINISTRADOR' && this.expandedOwnerId) {
       this.loadDriversForAdmin(this.expandedOwnerId);
       return;
     }
 
-    if (this.userRole !== 'ADMINISTRADOR' || this.isSearchingDrivers) {
+    if (this.userRole !== 'ADMINISTRADOR' || this.isSearchActive) {
       if (this.userRole === 'ADMINISTRADOR') this.page = 0;
       this.loadDrivers();
     } else {
@@ -651,7 +660,7 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   get dataTotal(): number {
-    return this.userRole === 'ADMINISTRADOR' && !this.isSearchingDrivers
+    return this.userRole === 'ADMINISTRADOR' && !this.isSearchActive
       ? this.totalOwners
       : this.totalDrivers;
   }
@@ -675,7 +684,7 @@ export class DriversComponent implements OnInit, OnDestroy {
       this.page = newPage;
       this.expandedOwnerId = null;
       this.ownerDrivers = [];
-      if (this.userRole === 'ADMINISTRADOR' && !this.isSearchingDrivers) {
+      if (this.userRole === 'ADMINISTRADOR' && !this.isSearchActive) {
         this.loadOwners();
       } else {
         this.loadDrivers();
