@@ -481,6 +481,7 @@
     <g-password-card
       [userEmail]="owner?.user?.email || ''"
       [requiresCurrentPasswordValidation]="!isAdmin"
+      [isSaving]="isSavingPassword"
       (update)="onUpdatePassword($event)"
       (cancel)="togglePasswordOffcanvas()"
     ></g-password-card>

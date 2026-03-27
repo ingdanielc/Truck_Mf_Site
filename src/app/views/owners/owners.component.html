@@ -239,6 +239,7 @@
       <g-password-card
         [userEmail]="selectedOwnerForPassword?.user?.email || ''"
         [requiresCurrentPasswordValidation]="userRole !== 'ADMINISTRADOR'"
+        [isSaving]="isSavingPassword"
         (update)="onUpdatePassword($event)"
         (cancel)="togglePasswordOffcanvas()"
       ></g-password-card>

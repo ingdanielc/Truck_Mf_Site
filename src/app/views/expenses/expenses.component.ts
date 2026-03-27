@@ -79,6 +79,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   recentTrips: ModelTrip[] = [];
   cities: any[] = [];
   loadingTrips = false;
+  isSavingExpense: boolean = false;
 
   private userSub?: Subscription;
 
@@ -792,6 +793,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   onExpenseAdded(event: any): void {
     if (event) {
+      this.isSavingExpense = true;
       const isUpdating = !!this.editingExpense;
       let mensaje = '';
       if (this.isMaintenance) {
@@ -817,10 +819,12 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           // Reset states AFTER potential usage
           this.editingExpense = null;
           this.preselectedExpenseTypeId = null;
+          this.isSavingExpense = false;
         },
         error: (err) => {
           console.error('Error saving expense:', err);
           this.toastService.showError('Error', 'No se pudo registrar el gasto');
+          this.isSavingExpense = false;
         },
       });
     } else {

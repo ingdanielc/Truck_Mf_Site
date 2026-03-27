@@ -49,6 +49,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
 
   isOffcanvasOpen: boolean = false;
   isPasswordOffcanvasOpen: boolean = false;
+  isSavingPassword: boolean = false;
   openMenuOwnerId: number | null = null;
   constructor(
     private readonly ownerService: OwnerService,
@@ -278,6 +279,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
               const fullUser = response.data.content[0];
               fullUser.password = hashedNewPassword;
 
+              this.isSavingPassword = true;
               this.securityService.createUser(fullUser).subscribe({
                 next: () => {
                   this.toastService.showSuccess(
@@ -285,6 +287,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
                     'Contraseña actualizada exitosamente!',
                   );
                   this.togglePasswordOffcanvas();
+                  this.isSavingPassword = false;
                 },
                 error: (err: any) => {
                   console.error('Error updating password:', err);
@@ -292,6 +295,7 @@ export class OwnersComponent implements OnInit, OnDestroy {
                     'Error',
                     'No se pudo actualizar la contraseña',
                   );
+                  this.isSavingPassword = false;
                 },
               });
             }

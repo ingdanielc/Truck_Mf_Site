@@ -96,6 +96,7 @@ export class DriversComponent implements OnInit, OnDestroy {
   salaryTypes: any[] = [];
 
   isPasswordOffcanvasOpen: boolean = false;
+  isSavingPassword: boolean = false;
   driverChangingPassword: ModelDriver | null = null;
 
   constructor(
@@ -747,6 +748,7 @@ export class DriversComponent implements OnInit, OnDestroy {
               const fullUser = response.data.content[0];
               fullUser.password = hashedNewPassword;
 
+              this.isSavingPassword = true;
               this.securityService.createUser(fullUser).subscribe({
                 next: () => {
                   this.toastService.showSuccess(
@@ -754,6 +756,7 @@ export class DriversComponent implements OnInit, OnDestroy {
                     'Contraseña actualizada exitosamente!',
                   );
                   this.togglePasswordOffcanvas();
+                  this.isSavingPassword = false;
                 },
                 error: (err: any) => {
                   console.error('Error updating password:', err);
@@ -761,6 +764,7 @@ export class DriversComponent implements OnInit, OnDestroy {
                     'Error',
                     'No se pudo actualizar la contraseña',
                   );
+                  this.isSavingPassword = false;
                 },
               });
             }

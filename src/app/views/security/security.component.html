@@ -31,8 +31,6 @@
     </div>
   </header>
 
-  <!-- Search and Stats Cards Section -->
-
   <!-- Stats Cards -->
   <div class="row g-4 mb-4">
     <div class="col-12 col-md-4">
@@ -441,10 +439,17 @@
           <button
             type="submit"
             class="btn btn-primary btn-lg flex-fill py-3 rounded-3 fw-bold shadow-primary"
-            [disabled]="!canSave"
+            [disabled]="!canSave || isSaving"
           >
-            <i class="fa-solid fa-check-circle me-2"></i>
-            {{ editingUser ? "Guardar cambios" : "Crear usuario" }}
+            @if (isSaving) {
+              <output
+                class="spinner-border spinner-border me-2"
+                aria-hidden="true"
+              ></output>
+            } @else {
+              <i class="fa-solid fa-check-circle me-2"></i>
+              {{ editingUser ? "Guardar cambios" : "Crear usuario" }}
+            }
           </button>
         </div>
       </form>
@@ -478,6 +483,7 @@
       <g-password-card
         [userEmail]="userChangingPassword?.email || ''"
         [requiresCurrentPasswordValidation]="userRole !== 'ADMINISTRADOR'"
+        [isSaving]="isSavingPassword"
         (update)="onUpdatePassword($event)"
         (cancel)="togglePasswordOffcanvas()"
       ></g-password-card>

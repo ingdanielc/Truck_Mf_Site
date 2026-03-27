@@ -211,16 +211,24 @@
       <button
         type="submit"
         class="btn btn-primary btn-lg rounded-3 fw-bold py-3"
-        [disabled]="!canSave"
+        (click)="onSave()"
+        [disabled]="!canSave || isSaving"
       >
-        <i class="fa-solid fa-check-circle me-2"></i>
-        {{
-          editingExpense
-            ? "Guardar cambios"
-            : isMaintenance
-              ? "Registrar Mantenimiento"
-              : "Registrar Gasto"
-        }}
+        @if (isSaving) {
+          <output
+            class="spinner-border spinner-border me-2"
+            aria-hidden="true"
+          ></output>
+        } @else {
+          <i class="fa-solid fa-check-circle me-2"></i>
+          {{
+            editingExpense
+              ? "Guardar cambios"
+              : isMaintenance
+                ? "Registrar Mantenimiento"
+                : "Registrar Gasto"
+          }}
+        }
       </button>
     </div>
   </form>

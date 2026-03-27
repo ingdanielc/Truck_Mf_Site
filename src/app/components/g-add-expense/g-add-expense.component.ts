@@ -45,7 +45,8 @@ export class GAddExpenseComponent implements OnInit {
   @Input() preselectedTypeId?: number;
   @Input() isMaintenance = false;
   @Input() userRole = '';
-  @Output() close = new EventEmitter<any>();
+  @Input() isSaving: boolean = false;
+  @Output() close = new EventEmitter<ModelExpense | null>();
   private initialFormValue: string = '';
   private targetOwnerId: number | null = null;
 

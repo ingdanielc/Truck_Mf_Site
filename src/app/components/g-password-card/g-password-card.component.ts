@@ -26,6 +26,7 @@ import { SecurityService } from '../../services/security/security.service';
 export class GPasswordCardComponent implements OnChanges {
   @Input() userEmail: string = '';
   @Input() requiresCurrentPasswordValidation: boolean = false;
+  @Input() isSaving: boolean = false;
 
   @Output() update = new EventEmitter<any>();
   @Output() cancel = new EventEmitter<void>();

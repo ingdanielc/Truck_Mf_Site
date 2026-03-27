@@ -50,6 +50,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
   driverForm!: FormGroup;
   showPassword = false;
   showConfirmPassword = false;
+  isSaving = false;
   showCamera = false;
   photoFile: File | Blob | null = null;
   photoPreview: string = '';
@@ -497,6 +498,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
               : undefined,
           };
 
+          this.isSaving = true;
           this.driverService.createDriver(driverToSave).subscribe({
             next: () => {
               this.toastService.showSuccess(
@@ -504,6 +506,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
                 'Conductor actualizado exitosamente!',
               );
               this.saved.emit();
+              this.isSaving = false;
             },
             error: (err) => {
               console.error('Error saving driver:', err);
@@ -511,6 +514,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
                 'Error',
                 'No se pudo procesar la solicitud.',
               );
+              this.isSaving = false;
             },
           });
         } else {
@@ -541,6 +545,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
               : undefined,
           };
 
+          this.isSaving = true;
           this.driverService.createDriver(driverToSave).subscribe({
             next: async (response: any) => {
               const savedDriver = response?.data;
@@ -577,6 +582,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
                 'Conductor creado exitosamente!',
               );
               this.saved.emit();
+              this.isSaving = false;
             },
             error: (err) => {
               console.error('Error creating driver:', err);
@@ -584,6 +590,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
                 'Error',
                 'No se pudo procesar la solicitud.',
               );
+              this.isSaving = false;
             },
           });
         }

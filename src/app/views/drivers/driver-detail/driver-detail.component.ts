@@ -61,6 +61,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   // Offcanvas states
   isEditOffcanvasOpen: boolean = false;
   isPasswordOffcanvasOpen: boolean = false;
+  isSavingPassword: boolean = false;
   loggedInOwner: ModelOwner | null = null;
 
   // Reference data for g-driver-form
@@ -409,6 +410,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
               const fullUser = response.data.content[0];
               fullUser.password = hashedNewPassword;
 
+              this.isSavingPassword = true;
               this.securityService.createUser(fullUser).subscribe({
                 next: () => {
                   this.toastService.showSuccess(
@@ -416,6 +418,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
                     'Contraseña actualizada exitosamente!',
                   );
                   this.closePasswordOffcanvas();
+                  this.isSavingPassword = false;
                 },
                 error: (err: any) => {
                   console.error('Error updating password:', err);
@@ -423,6 +426,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
                     'Error',
                     'No se pudo actualizar la contraseña',
                   );
+                  this.isSavingPassword = false;
                 },
               });
             }

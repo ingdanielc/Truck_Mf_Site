@@ -368,10 +368,17 @@
           <button
             type="submit"
             class="btn btn-primary btn-lg flex-fill py-3 rounded-3 fw-bold shadow-primary"
-            [disabled]="!canSave"
+            [disabled]="!canSave || isSaving"
           >
-            <i class="fa-solid fa-check-circle me-2"></i>
-            {{ editingCategory ? "Guardar cambios" : "Crear categoría" }}
+            @if (isSaving) {
+              <output
+                class="spinner-border spinner-border me-2"
+                aria-hidden="true"
+              ></output>
+            } @else {
+              <i class="fa-solid fa-check-circle me-2"></i>
+              {{ editingCategory ? "Guardar cambios" : "Crear categoría" }}
+            }
           </button>
         </div>
       </form>

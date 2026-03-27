@@ -78,6 +78,7 @@ export class ConfigurationComponent implements OnInit {
   categoryForm: FormGroup;
   searchTerm: string = '';
   loading: boolean = true;
+  isSaving: boolean = false;
   private initialFormValue: string = '';
 
   hasBackContext = false;
@@ -445,6 +446,7 @@ export class ConfigurationComponent implements OnInit {
 
   onSubmit(): void {
     if (this.categoryForm.valid) {
+      this.isSaving = true;
       const formValue = this.categoryForm.value;
       const categoryToSave = {
         id: this.editingCategory ? this.editingCategory.id : null,
@@ -464,6 +466,7 @@ export class ConfigurationComponent implements OnInit {
           );
           this.loadCategories();
           this.toggleOffcanvas();
+          this.isSaving = false;
         },
         error: (err) => {
           console.error('Error saving category:', err);
@@ -471,6 +474,7 @@ export class ConfigurationComponent implements OnInit {
             'Error',
             'No se pudo guardar la categoría.',
           );
+          this.isSaving = false;
         },
       });
     } else {

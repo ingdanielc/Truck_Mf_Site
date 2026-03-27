@@ -2,12 +2,10 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { forkJoin, Subscription } from 'rxjs';
 
 import {
-  AbstractControl,
   FormBuilder,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
-  ValidationErrors,
   Validators,
 } from '@angular/forms';
 import { SecurityService } from '../../services/security/security.service';
@@ -61,6 +59,8 @@ export class SecurityComponent implements OnInit, OnDestroy {
 
   showUserFormPassword = false;
   showUserFormConfirmPassword = false;
+  isSaving: boolean = false;
+  isSavingPassword: boolean = false;
 
   userRole: string = '';
   private initialFormValue: string = '';
@@ -378,6 +378,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
           this.editingUser?.status === 'online' ? 'Activo' : 'Inactivo', // Simplification
         );
 
+        this.isSaving = true;
         this.securityService.createUser(userToSave).subscribe({
           next: () => {
             this.toastService.showSuccess(
@@ -389,6 +390,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
             this.updateUserCounts();
             this.loadUsers();
             this.toggleOffcanvas();
+            this.isSaving = false;
           },
           error: (err) => {
             console.error('Error saving user:', err);
@@ -396,6 +398,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
               'Error',
               'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
             );
+            this.isSaving = false;
           },
         });
       } catch (error) {
@@ -441,6 +444,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
                 fullUser.status,
               );
 
+              this.isSavingPassword = true;
               this.securityService.createUser(updatedUser).subscribe({
                 next: () => {
                   this.toastService.showSuccess(
@@ -448,6 +452,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
                     'Contraseña actualizada exitosamente!',
                   );
                   this.togglePasswordOffcanvas();
+                  this.isSavingPassword = false;
                 },
                 error: (err) => {
                   console.error('Error updating password:', err);
@@ -455,6 +460,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
                     'Error',
                     'No se pudo actualizar la contraseña',
                   );
+                  this.isSavingPassword = false;
                 },
               });
             }

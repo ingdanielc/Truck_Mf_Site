@@ -66,6 +66,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   brands: any[] = [];
   loadingVehicles: boolean = false;
   loadingDrivers: boolean = false;
+  isSaving: boolean = false;
 
   private _pendingVehicleId: number | null = null;
   private _pendingDriverId: number | null = null;
@@ -528,6 +529,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
         }
       }
 
+      this.isSaving = true;
       this.tripService.createTrip(tripData).subscribe({
         next: () => {
           this.toastService.showSuccess(
@@ -536,10 +538,12 @@ export class GTripFormComponent implements OnInit, OnDestroy {
           );
           this.notificationsService.refreshNotifications();
           this.saved.emit(tripData);
+          this.isSaving = false;
         },
         error: (error) => {
           console.error('Error saving trip:', error);
           this.toastService.showError('Error', 'Error al guardar el viaje');
+          this.isSaving = false;
         },
       });
     }

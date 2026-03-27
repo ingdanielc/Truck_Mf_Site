@@ -468,6 +468,7 @@
       <g-password-card
         [userEmail]="driver?.email || ''"
         [requiresCurrentPasswordValidation]="userRole !== 'ADMINISTRADOR'"
+        [isSaving]="isSavingPassword"
         (update)="onUpdatePassword($event)"
         (cancel)="closePasswordOffcanvas()"
       ></g-password-card>

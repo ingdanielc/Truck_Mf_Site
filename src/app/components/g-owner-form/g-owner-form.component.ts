@@ -49,6 +49,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
   cities: any[] = [];
   groupedCities: { state: string; cities: any[] }[] = [];
   allOwners: ModelOwner[] = [];
+  isSaving: boolean = false;
 
   maxDate: string = '';
   defaultBirthdate: string = '';
@@ -440,6 +441,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
             photo: photoUrl,
           };
 
+          this.isSaving = true;
           this.ownerService.createOwner(ownerToSave).subscribe({
             next: () => {
               this.toastService.showSuccess(
@@ -448,6 +450,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
               );
               this.saved.emit();
               this.closeOffcanvas();
+              this.isSaving = false;
             },
             error: (err) => {
               console.error('Error saving owner:', err);
@@ -455,6 +458,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
                 'Error',
                 'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
               );
+              this.isSaving = false;
             },
           });
         } else {
@@ -480,6 +484,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
             photo: '',
           };
 
+          this.isSaving = true;
           this.ownerService.createOwner(ownerToSave).subscribe({
             next: async (response: any) => {
               const savedOwner = response?.data;
@@ -524,6 +529,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
               );
               this.saved.emit();
               this.closeOffcanvas();
+              this.isSaving = false;
             },
             error: (err) => {
               console.error('Error saving owner:', err);
@@ -531,6 +537,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
                 'Error',
                 'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
               );
+              this.isSaving = false;
             },
           });
         }
