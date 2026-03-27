@@ -125,7 +125,9 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content?.length > 0) {
           this.driver = response.data.content[0];
-          this.photoPreview = this.driver?.photo || '';
+          this.photoPreview = this.driver?.photo
+            ? `${this.driver.photo.split('?')[0]}?t=${Date.now()}`
+            : '';
           this.resolveCityName();
         } else {
           this.toastService.showError('Error', 'No se encontró el conductor');
@@ -488,11 +490,12 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
         this.commonService.uploadPhoto('driver', this.driver.id, file),
       );
       if (uploadRes?.data) {
-        this.photoPreview = uploadRes.data;
+        this.photoPreview = `${uploadRes.data.split('?')[0]}?t=${Date.now()}`;
         this.savePhoto(uploadRes.data);
       }
     } catch (err) {
       this.toastService.showError('Error', 'No se pudo subir la foto');
+      console.error(err);
     }
   }
 
@@ -518,11 +521,12 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
         this.commonService.uploadPhoto('driver', this.driver.id, file),
       );
       if (uploadRes?.data) {
-        this.photoPreview = uploadRes.data;
+        this.photoPreview = `${uploadRes.data.split('?')[0]}?t=${Date.now()}`;
         this.savePhoto(uploadRes.data);
       }
     } catch (err) {
       this.toastService.showError('Error', 'No se pudo subir la foto');
+      console.error(err);
     }
 
     this.showCamera = false;
@@ -546,7 +550,8 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
           'Perfil',
           'Fotografía actualizada exitosamente!',
         );
-        if (this.driver) this.driver.photo = photoUrl;
+        if (this.driver)
+          this.driver.photo = `${photoUrl.split('?')[0]}?t=${Date.now()}`;
       },
       error: (err) => {
         console.error('Error saving photo:', err);

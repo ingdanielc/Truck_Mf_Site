@@ -115,6 +115,9 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content?.length > 0) {
           this.owner = response.data.content[0];
+          if (this.owner?.photo) {
+            this.owner.photo = `${this.owner.photo.split('?')[0]}?t=${Date.now()}`;
+          }
           this.resolveCityName();
         } else {
           this.toastService.showError('Error', 'No se encontró el propietario');
@@ -495,6 +498,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
       }
     } catch (err) {
       this.toastService.showError('Error', 'No se pudo subir la foto');
+      console.error(err);
     }
   }
 
@@ -522,7 +526,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
           'Perfil',
           'Foto actualizada exitosamente!',
         );
-        this.owner!.photo = photoUrl;
+        this.owner!.photo = `${photoUrl.split('?')[0]}?t=${Date.now()}`;
       },
       error: (err) => {
         console.error('Error updating owner photo:', err);
@@ -555,6 +559,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
       }
     } catch (err) {
       this.toastService.showError('Error', 'No se pudo subir la foto');
+      console.error(err);
     }
 
     this.showCamera = false;
