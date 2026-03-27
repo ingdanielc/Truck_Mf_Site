@@ -8,6 +8,7 @@ export interface ModelExpense {
     id: number;
     name: string;
     expenseTypeId?: number;
+    ownerId?: number | null;
   };
   amount: number;
   expenseDate: string | Date;

@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { forkJoin } from 'rxjs';
 import {
   FormBuilder,
   FormGroup,
@@ -17,6 +18,10 @@ import {
   Sort,
 } from 'src/app/models/model-filter-table';
 import { getCategoryConfigByName } from 'src/app/utils/category-config';
+import { SecurityService } from 'src/app/services/security/security.service';
+import { OwnerService } from 'src/app/services/owner.service';
+import { DriverService } from 'src/app/services/driver.service';
+import { VehicleService as VehicleRealService } from 'src/app/services/vehicle.service';
 
 interface CategoryConfig {
   id: number;
@@ -42,6 +47,7 @@ export class GAddExpenseComponent implements OnInit {
   @Input() userRole = '';
   @Output() close = new EventEmitter<any>();
   private initialFormValue: string = '';
+  private targetOwnerId: number | null = null;
 
   expenseForm!: FormGroup;
   expenseTypes = [
@@ -62,11 +68,15 @@ export class GAddExpenseComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly expenseService: VehicleService,
     private readonly router: Router,
+    private readonly securityService: SecurityService,
+    private readonly ownerService: OwnerService,
+    private readonly driverService: DriverService,
+    private readonly vehicleRealService: VehicleRealService,
   ) {}
 
   ngOnInit(): void {
     this.initForm();
-    this.loadCategories();
+    this.determineTargetOwnerId();
 
     if (this.isMaintenance) {
       this.selectedType = 4;
@@ -99,17 +109,104 @@ export class GAddExpenseComponent implements OnInit {
     this.captureInitialState();
   }
 
+  private determineTargetOwnerId(): void {
+    if (this.userRole === 'ADMINISTRADOR') {
+      if (this.vehicleId) {
+        const filter = new ModelFilterTable(
+          [new Filter('vehicleId', '=', this.vehicleId.toString())],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        );
+        this.vehicleRealService.getVehicleOwnerFilter(filter).subscribe({
+          next: (resp: any) => {
+            const vehicle = resp?.data?.content?.[0];
+            this.targetOwnerId = vehicle?.owners[0].ownerId || null;
+            this.loadCategories();
+          },
+          error: () => {
+            this.loadCategories(); // Fallback
+          },
+        });
+      } else {
+        this.targetOwnerId = null;
+        this.loadCategories();
+      }
+    } else if (this.userRole === 'PROPIETARIO') {
+      this.securityService.userData$.subscribe((user) => {
+        if (user) {
+          const filter = new ModelFilterTable(
+            [new Filter('user.id', '=', user?.id?.toString() || '')],
+            new Pagination(1, 0),
+            new Sort('id', true),
+          );
+          this.ownerService.getOwnerFilter(filter).subscribe({
+            next: (resp: any) => {
+              this.targetOwnerId = resp?.data?.content?.[0]?.id || null;
+              this.loadCategories();
+            },
+            error: () => {
+              this.loadCategories(); // Fallback
+            },
+          });
+        } else {
+          this.loadCategories(); // Fallback if null
+        }
+      });
+    } else if (this.userRole === 'CONDUCTOR') {
+      this.securityService.userData$.subscribe((user) => {
+        if (user) {
+          const filter = new ModelFilterTable(
+            [new Filter('user.id', '=', user?.id?.toString() || '')],
+            new Pagination(1, 0),
+            new Sort('id', true),
+          );
+          this.driverService.getDriverFilter(filter).subscribe({
+            next: (resp: any) => {
+              this.targetOwnerId = resp?.data?.content?.[0]?.ownerId || null;
+              this.loadCategories();
+            },
+            error: () => {
+              this.loadCategories(); // Fallback
+            },
+          });
+        } else {
+          this.loadCategories(); // Fallback if null
+        }
+      });
+    } else {
+      this.loadCategories();
+    }
+  }
+
   loadCategories(): void {
     this.loadingCategories = true;
-    let filtros: Filter[] = [];
-    const filter = new ModelFilterTable(
-      filtros,
-      new Pagination(500, 0),
-      new Sort('name', true),
-    );
-    this.expenseService.getExpenseCategoryFilter(filter).subscribe({
-      next: (response: any) => {
-        const data = response?.data?.content || response?.data || response;
+    const pagination = new Pagination(500, 0);
+    const sort = new Sort('name', true);
+
+    const globalFilters = [new Filter('ownerId', 'isnull', '')];
+    const ownFilters = [
+      new Filter('ownerId', '=', this.targetOwnerId?.toString() || ''),
+    ];
+
+    forkJoin({
+      global: this.expenseService.getExpenseCategoryFilter(
+        new ModelFilterTable(globalFilters, pagination, sort),
+      ),
+      own: this.expenseService.getExpenseCategoryFilter(
+        new ModelFilterTable(ownFilters, pagination, sort),
+      ),
+    }).subscribe({
+      next: (results: any) => {
+        const gData =
+          results.global?.data?.content ||
+          results.global?.data ||
+          results.global;
+        const oData =
+          results.own?.data?.content || results.own?.data || results.own;
+        const data = [
+          ...(Array.isArray(gData) ? gData : []),
+          ...(Array.isArray(oData) ? oData : []),
+        ];
 
         if (data && Array.isArray(data)) {
           this.categories = data.map((cat: any) => {
@@ -134,7 +231,7 @@ export class GAddExpenseComponent implements OnInit {
         }
         this.loadingCategories = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading expense categories:', err);
         this.loadingCategories = false;
       },

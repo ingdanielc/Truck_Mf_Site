@@ -10,8 +10,8 @@ import {
   AsyncValidatorFn,
   ValidationErrors,
 } from '@angular/forms';
-import { Observable, of, timer } from 'rxjs';
 import { map, switchMap, catchError } from 'rxjs/operators';
+import { forkJoin, Observable, of, timer } from 'rxjs';
 import { CommonModule } from '@angular/common';
 
 import {
@@ -24,6 +24,9 @@ import { VehicleService } from 'src/app/services/expense.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { GExpenseCategoryCardComponent } from 'src/app/components/g-expense-category-card/g-expense-category-card.component';
 import { getCategoryConfigByName } from 'src/app/utils/category-config';
+import { SecurityService } from 'src/app/services/security/security.service';
+import { OwnerService } from 'src/app/services/owner.service';
+import { DriverService } from 'src/app/services/driver.service';
 
 interface CategoryConfig {
   id: number;
@@ -82,21 +85,38 @@ export class ConfigurationComponent implements OnInit {
   vehicleIdParam: string | null = null;
   tripIdParam: string | null = null;
 
+  currentUser: any = null;
+  currentOwnerId: number | null = null;
+  userRole: string = '';
+
   constructor(
     private readonly expenseService: VehicleService,
     private readonly fb: FormBuilder,
     private readonly toastService: ToastService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
+    private readonly securityService: SecurityService,
+    private readonly ownerService: OwnerService,
+    private readonly driverService: DriverService,
   ) {
     this.categoryForm = this.fb.group({
-      name: ['', [Validators.required], [this.duplicateNameValidator()]],
+      name: [
+        '',
+        {
+          validators: [Validators.required],
+          asyncValidators: [this.duplicateNameValidator()],
+          updateOn: 'blur',
+        },
+      ],
       typeId: [null, [Validators.required]],
     });
   }
 
   ngOnInit(): void {
-    this.loadCategories();
+    this.securityService.userData$.subscribe((user) => {
+      this.currentUser = user;
+      this.determineUserRoleAndOwner();
+    });
 
     this.route.queryParamMap.subscribe((params) => {
       const typeIdStr = params.get('typeId');
@@ -113,57 +133,146 @@ export class ConfigurationComponent implements OnInit {
     });
   }
 
-  loadCategories(): void {
-    let filtros: Filter[] = [];
-    if (this.activeFilter !== -1) {
-      filtros.push(
-        new Filter('expenseType.id', '=', this.activeFilter.toString()),
-      );
+  private determineUserRoleAndOwner(): void {
+    if (!this.currentUser) {
+      // Don't fallback to ADMIN immediately, wait for user data
+      return;
     }
-    const filter = new ModelFilterTable(
-      filtros,
-      new Pagination(1000, 0),
-      new Sort('name', true),
+    const roles = new Set(
+      (this.currentUser.userRoles || []).map((ur: any) => {
+        const roleName =
+          ur.role?.name || ur.name || (typeof ur === 'string' ? ur : '');
+        return roleName.toUpperCase();
+      }),
     );
+
+    if (roles.has('ADMINISTRADOR')) {
+      this.userRole = 'ADMINISTRADOR';
+      this.currentOwnerId = null;
+      this.loadCategories();
+    } else if (roles.has('PROPIETARIO')) {
+      this.userRole = 'PROPIETARIO';
+      const filter = new ModelFilterTable(
+        [new Filter('user.id', '=', this.currentUser.id?.toString() || '')],
+        new Pagination(1, 0),
+        new Sort('id', true),
+      );
+      this.ownerService.getOwnerFilter(filter).subscribe({
+        next: (resp: any) => {
+          this.currentOwnerId = resp?.data?.content?.[0]?.id || null;
+          this.loadCategories();
+        },
+        error: () => {
+          this.loadCategories(); // Load anyway on failure
+        },
+      });
+    } else if (roles.has('CONDUCTOR')) {
+      this.userRole = 'CONDUCTOR';
+      const filter = new ModelFilterTable(
+        [new Filter('user.id', '=', this.currentUser.id?.toString() || '')],
+        new Pagination(1, 0),
+        new Sort('id', true),
+      );
+      this.driverService.getDriverFilter(filter).subscribe({
+        next: (resp: any) => {
+          this.currentOwnerId = resp?.data?.content?.[0]?.ownerId || null;
+          this.loadCategories();
+        },
+        error: () => {
+          this.loadCategories(); // Load anyway on failure
+        },
+      });
+    } else {
+      // Default fallback
+      this.userRole = 'ADMINISTRADOR';
+      this.loadCategories();
+    }
+  }
+
+  loadCategories(): void {
     this.loading = true;
+    const pagination = new Pagination(1000, 0);
+    const sort = new Sort('name', true);
+    let baseFiltros: Filter[] = [];
 
-    this.expenseService.getExpenseCategoryFilter(filter).subscribe({
-      next: (response: any) => {
-        const data = response?.data?.content || response?.data || response;
-        if (data && Array.isArray(data)) {
-          this.allCategories = data.map((cat: any) => {
-            const uiConfig = getCategoryConfigByName(cat.name);
-            const extractedType =
-              cat.expenseTypeId ??
-              cat.type ??
-              cat.typeId ??
-              cat.categoryTypeId ??
-              cat.categoryType?.id;
-            const typeIdNum = Number(extractedType);
-            const typeObj = this.expenseTypes.find((t) => t.id === typeIdNum);
+    if (this.userRole === 'ADMINISTRADOR') {
+      const filter = new ModelFilterTable(baseFiltros, pagination, sort);
+      this.expenseService.getExpenseCategoryFilter(filter).subscribe({
+        next: (resp) => this.handleCategoriesResponse(resp),
+        error: (err) => this.handleCategoriesError(err),
+      });
+    } else {
+      // Global + Own
+      const globalFilters = [
+        ...baseFiltros,
+        new Filter('ownerId', 'isnull', ''),
+      ];
+      const ownFilters = [
+        ...baseFiltros,
+        new Filter('ownerId', '=', this.currentOwnerId?.toString() || ''),
+      ];
 
-            return {
-              id: cat.id,
-              name: cat.name,
-              typeId: typeIdNum,
-              typeStr: typeObj ? typeObj.label : 'Otro',
-              icon: uiConfig.icon,
-              colorClass: uiConfig.colorClass,
-            };
-          });
-          this.updateCounts();
-          this.applyFilter();
-        } else {
-          this.allCategories = [];
-          this.categories = [];
-        }
-        this.loading = false;
-      },
-      error: (err) => {
-        console.error('Error loading expense categories:', err);
-        this.loading = false;
-      },
-    });
+      forkJoin({
+        global: this.expenseService.getExpenseCategoryFilter(
+          new ModelFilterTable(globalFilters, pagination, sort),
+        ),
+        own: this.expenseService.getExpenseCategoryFilter(
+          new ModelFilterTable(ownFilters, pagination, sort),
+        ),
+      }).subscribe({
+        next: (results) => {
+          const gData =
+            results.global?.data?.content ||
+            results.global?.data ||
+            results.global;
+          const oData =
+            results.own?.data?.content || results.own?.data || results.own;
+          const combined = [
+            ...(Array.isArray(gData) ? gData : []),
+            ...(Array.isArray(oData) ? oData : []),
+          ];
+          this.handleCategoriesResponse({ data: { content: combined } });
+        },
+        error: (err) => this.handleCategoriesError(err),
+      });
+    }
+  }
+
+  private handleCategoriesResponse(response: any): void {
+    const data = response?.data?.content || response?.data || response;
+    if (data && Array.isArray(data)) {
+      this.allCategories = data.map((cat: any) => {
+        const uiConfig = getCategoryConfigByName(cat.name);
+        const extractedType =
+          cat.expenseTypeId ??
+          cat.type ??
+          cat.typeId ??
+          cat.categoryTypeId ??
+          cat.categoryType?.id;
+        const typeIdNum = Number(extractedType);
+        const typeObj = this.expenseTypes.find((t) => t.id === typeIdNum);
+
+        return {
+          id: cat.id,
+          name: cat.name,
+          typeId: typeIdNum,
+          typeStr: typeObj ? typeObj.label : 'Otro',
+          icon: uiConfig.icon,
+          colorClass: uiConfig.colorClass,
+        };
+      });
+      this.updateCounts();
+      this.applyFilter();
+    } else {
+      this.allCategories = [];
+      this.categories = [];
+    }
+    this.loading = false;
+  }
+
+  private handleCategoriesError(err: any): void {
+    console.error('Error loading expense categories:', err);
+    this.loading = false;
   }
 
   updateCounts(): void {
@@ -239,17 +348,67 @@ export class ConfigurationComponent implements OnInit {
         return of(null);
       }
 
-      const filtros = [new Filter('name', '=', control.value.trim())];
-      const filter = new ModelFilterTable(
-        filtros,
-        new Pagination(10, 0),
-        new Sort('id', true),
-      );
+      const baseFilters = [new Filter('name', '=', control.value.trim())];
+
+      let check$: Observable<any>;
+
+      if (this.userRole === 'ADMINISTRADOR') {
+        const filter = new ModelFilterTable(
+          baseFilters,
+          new Pagination(10, 0),
+          new Sort('id', true),
+        );
+        check$ = this.expenseService.getExpenseCategoryFilter(filter);
+      } else {
+        const globalFilters = [
+          ...baseFilters,
+          new Filter('ownerId', 'isnull', ''),
+        ];
+        const ownFilters = [
+          ...baseFilters,
+          new Filter('ownerId', '=', this.currentOwnerId?.toString() || ''),
+        ];
+
+        const validationPagination = new Pagination(10, 0);
+        const validationSort = new Sort('id', true);
+
+        check$ = forkJoin({
+          global: this.expenseService.getExpenseCategoryFilter(
+            new ModelFilterTable(
+              globalFilters,
+              validationPagination,
+              validationSort,
+            ),
+          ),
+          own: this.expenseService.getExpenseCategoryFilter(
+            new ModelFilterTable(
+              ownFilters,
+              validationPagination,
+              validationSort,
+            ),
+          ),
+        });
+      }
 
       return timer(500).pipe(
-        switchMap(() => this.expenseService.getExpenseCategoryFilter(filter)),
+        switchMap(() => check$),
         map((response: any) => {
-          const data = response?.data?.content || response?.data || response;
+          let data: any[];
+          if (this.userRole === 'ADMINISTRADOR') {
+            data = response?.data?.content || response?.data || response;
+          } else {
+            const gData =
+              response.global?.data?.content ||
+              response.global?.data ||
+              response.global;
+            const oData =
+              response.own?.data?.content || response.own?.data || response.own;
+            data = [
+              ...(Array.isArray(gData) ? gData : []),
+              ...(Array.isArray(oData) ? oData : []),
+            ];
+          }
+
           if (data && Array.isArray(data) && data.length > 0) {
             const exists = data.some(
               (c: any) => c.name.toLowerCase() === currentName,
@@ -291,6 +450,7 @@ export class ConfigurationComponent implements OnInit {
         id: this.editingCategory ? this.editingCategory.id : null,
         name: formValue.name,
         expenseTypeId: Number(formValue.typeId),
+        ownerId: this.userRole === 'ADMINISTRADOR' ? null : this.currentOwnerId,
         status: 'Activo',
       };
 
