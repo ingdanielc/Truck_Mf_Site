@@ -211,12 +211,11 @@
       <button
         type="submit"
         class="btn btn-primary btn-lg rounded-3 fw-bold py-3"
-        (click)="onSave()"
         [disabled]="!canSave || isSaving"
       >
         @if (isSaving) {
           <output
-            class="spinner-border spinner-border me-2"
+            class="spinner-border me-2"
             aria-hidden="true"
           ></output>
         } @else {

@@ -371,10 +371,7 @@
             [disabled]="!canSave || isSaving"
           >
             @if (isSaving) {
-              <output
-                class="spinner-border spinner-border me-2"
-                aria-hidden="true"
-              ></output>
+              <output class="spinner-border me-2" aria-hidden="true"></output>
             } @else {
               <i class="fa-solid fa-check-circle me-2"></i>
               {{ editingCategory ? "Guardar cambios" : "Crear categoría" }}

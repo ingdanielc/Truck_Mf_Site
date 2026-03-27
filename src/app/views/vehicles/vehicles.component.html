@@ -779,10 +779,7 @@
           [disabled]="!canSave || isSaving"
         >
           @if (isSaving) {
-            <output
-              class="spinner-border spinner-border me-2"
-              aria-hidden="true"
-            ></output>
+            <output class="spinner-border me-2" aria-hidden="true"></output>
           } @else {
             <i class="fa-solid fa-check-circle me-2"></i>
             {{ editingVehicle ? "Guardar cambios" : "Crear vehículo" }}
@@ -854,10 +851,7 @@
           [disabled]="isSelling"
         >
           @if (isSelling) {
-            <output
-              class="spinner-border spinner-border-sm me-2"
-              aria-hidden="true"
-            ></output>
+            <output class="spinner-border me-2" aria-hidden="true"></output>
           } @else {
             Vender
           }

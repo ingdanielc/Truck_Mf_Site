@@ -541,8 +541,13 @@
             <button
               class="btn btn-primary w-100 w-sm-auto px-5 py-2"
               (click)="confirmLogisticsUpdate()"
+              [disabled]="isSavingLogistics"
             >
-              Confirmar
+              @if (isSavingLogistics) {
+                <output class="spinner-border me-2" aria-hidden="true"></output>
+              } @else {
+                Confirmar
+              }
             </button>
           </div>
         </div>

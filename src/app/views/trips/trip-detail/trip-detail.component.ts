@@ -48,6 +48,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   isOffcanvasOpen: boolean = false;
   isTripInfoOpen: boolean = false;
   showConfirmModal: boolean = false;
+  isSavingLogistics: boolean = false;
   estimatedArrivalTime: string = '--:--';
 
   // User context
@@ -375,7 +376,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.loading = true;
+    this.isSavingLogistics = true;
     this.tripService.createTrip(this.trip).subscribe({
       next: () => {
         this.toastService.showSuccess(
@@ -386,11 +387,12 @@ export class TripDetailComponent implements OnInit, OnDestroy {
           this.loadTrip(this.tripId);
         }
         this.notificationsService.refreshNotifications();
+        this.isSavingLogistics = false;
       },
       error: (err: any) => {
         console.error('Error updating trip:', err);
         this.toastService.showError('Error', 'No se pudo actualizar el viaje');
-        this.loading = false;
+        this.isSavingLogistics = false;
       },
     });
   }
