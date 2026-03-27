@@ -24,6 +24,7 @@ export class GNotificationsComponent implements OnDestroy {
   @Output() close = new EventEmitter<void>();
 
   isConfirmOpen = false;
+  isClearing = false;
 
   private readonly notificationsService = inject(NotificationsService);
   private readonly securityService = inject(SecurityService);
@@ -64,7 +65,11 @@ export class GNotificationsComponent implements OnDestroy {
   }
 
   onClearAll(): void {
-    this.isConfirmOpen = true;
+    this.notifications$.pipe(take(1)).subscribe((notifications) => {
+      if (notifications && notifications.length > 0) {
+        this.isConfirmOpen = true;
+      }
+    });
   }
 
   confirmClearAll(): void {
@@ -74,11 +79,19 @@ export class GNotificationsComponent implements OnDestroy {
         return;
       }
 
+      this.isClearing = true;
       const requests = notifications.map((n) =>
         this.notificationsService.markAsDelete(n),
       );
-      forkJoin(requests).subscribe(() => {
-        this.isConfirmOpen = false;
+      forkJoin(requests).subscribe({
+        next: () => {
+          this.isClearing = false;
+          this.isConfirmOpen = false;
+        },
+        error: () => {
+          this.isClearing = false;
+          this.isConfirmOpen = false;
+        },
       });
     });
   }
