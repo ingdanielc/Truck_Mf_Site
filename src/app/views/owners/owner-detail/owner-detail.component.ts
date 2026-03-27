@@ -13,6 +13,7 @@ import { ModelDriver } from 'src/app/models/driver-model';
 import { DriverService } from 'src/app/services/driver.service';
 import { TripService } from 'src/app/services/trip.service';
 import { SecurityService } from 'src/app/services/security/security.service';
+import { CustomValidators } from 'src/app/utils/custom-validators';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
 import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
 import { GOwnerFormComponent } from 'src/app/components/g-owner-form/g-owner-form.component';
@@ -490,8 +491,9 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     if (!file || !this.owner?.id) return;
 
     try {
+      const processed = await CustomValidators.readPhotoFile(event);
       const uploadRes = await firstValueFrom(
-        this.commonService.uploadPhoto('owner', this.owner.id, file),
+        this.commonService.uploadPhoto('owner', this.owner.id, processed.blob),
       );
       if (uploadRes?.data) {
         this.updateOwnerPhoto(uploadRes.data);

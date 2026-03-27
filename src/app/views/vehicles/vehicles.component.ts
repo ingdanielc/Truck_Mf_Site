@@ -1089,10 +1089,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const total =
-      this.userRole === 'ADMINISTRADOR'
-        ? this.totalVehicles
-        : this.allVehicles.length;
     const vehicleIds = new Set(this.allVehicles.map((v) => v.id));
 
     const tripFilter = new ModelFilterTable(
@@ -1399,9 +1395,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     if (!file) return;
 
     CustomValidators.readPhotoFile(event).then(
-      (base64) => {
-        this.photoFile = file;
-        this.photoPreview = base64;
+      (res) => {
+        this.photoFile = res.blob;
+        this.photoPreview = res.base64;
       },
       (err) => this.toastService.showError('Error', err),
     );

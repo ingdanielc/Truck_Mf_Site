@@ -101,11 +101,7 @@ export class CustomValidators {
       const val = (control.value || '').toString().trim().toLowerCase();
       const init = (initialValue || '').toString().trim().toLowerCase();
 
-      if (
-        initialValue !== null &&
-        initialValue !== undefined &&
-        val === init
-      ) {
+      if (initialValue !== null && initialValue !== undefined && val === init) {
         return of(null);
       }
 
@@ -131,14 +127,19 @@ export class CustomValidators {
   }
 
   /**
-   * Reads a photo file from an input change event, validates its size (max 2MB),
-   * and returns a Base64 encoded string via a Promise.
+   * Reads a photo file from an input change event, corrects its orientation using Canvas,
+   * resizes it if it exceeds maxSide, and returns both a Base64 string and a corrected Blob.
    *
    * @param event The file input change event.
-   * @param maxSizeMB Maximum file size allowed in megabytes (default: 2).
-   * @returns A Promise that resolves with the base64 string, or rejects with an error message.
+   * @param maxSide Maximum dimension (width or height) allowed (default: 1200).
+   * @param quality Image quality (0.0 to 1.0) (default: 0.8).
+   * @returns A Promise that resolves with an object { base64: string, blob: Blob }.
    */
-  static readPhotoFile(event: Event, maxSizeMB: number = 5): Promise<string> {
+  static readPhotoFile(
+    event: Event,
+    maxSide: number = 1200,
+    quality: number = 0.8,
+  ): Promise<{ base64: string; blob: Blob }> {
     return new Promise((resolve, reject) => {
       const input = event.target as HTMLInputElement;
       const file = input?.files?.[0];
@@ -148,18 +149,61 @@ export class CustomValidators {
         return;
       }
 
-      if (file.size > maxSizeMB * 1024 * 1024) {
-        reject(`La imagen no debe pesar más de ${maxSizeMB}MB`);
+      if (file.type && !file.type.startsWith('image/')) {
+        reject('El archivo seleccionado no es una imagen.');
         return;
       }
 
       const reader = new FileReader();
-      reader.onload = (e: ProgressEvent<FileReader>) => {
-        resolve(e.target?.result as string);
+      reader.onload = (e: any) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Resize logic
+          if (width > height) {
+            if (width > maxSide) {
+              height *= maxSide / width;
+              width = maxSide;
+            }
+          } else {
+            if (height > maxSide) {
+              width *= maxSide / height;
+              height = maxSide;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject('No se pudo obtener el contexto del canvas.');
+            return;
+          }
+
+          // Modern browsers (Chrome 81+, iOS 13.4+, Safari 13.1+)
+          // automatically handle EXIF orientation when drawing to canvas.
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const base64 = canvas.toDataURL('image/jpeg', quality);
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                resolve({ base64, blob });
+              } else {
+                reject('Error al generar el blob de la imagen.');
+              }
+            },
+            'image/jpeg',
+            quality,
+          );
+        };
+        img.onerror = () => reject('Error al cargar la imagen.');
+        img.src = e.target.result;
       };
-      reader.onerror = () => {
-        reject('Error al leer el archivo.');
-      };
+      reader.onerror = () => reject('Error al leer el archivo.');
       reader.readAsDataURL(file);
     });
   }

@@ -368,10 +368,11 @@ export class GDriverFormComponent implements OnInit, OnChanges {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
+
     CustomValidators.readPhotoFile(event).then(
-      (base64) => {
-        this.photoFile = file;
-        this.photoPreview = base64;
+      (res) => {
+        this.photoFile = res.blob;
+        this.photoPreview = res.base64;
       },
       (err) => this.toastService.showError('Error', err),
     );

@@ -9,6 +9,7 @@ import { VehicleService } from 'src/app/services/vehicle.service';
 import { CommonService } from 'src/app/services/common.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { SecurityService } from 'src/app/services/security/security.service';
+import { CustomValidators } from 'src/app/utils/custom-validators';
 import { OwnerService } from 'src/app/services/owner.service';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { ModelOwner } from 'src/app/models/owner-model';
@@ -486,8 +487,13 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
     if (!file || !this.driver?.id) return;
 
     try {
+      const processed = await CustomValidators.readPhotoFile(event);
       const uploadRes = await firstValueFrom(
-        this.commonService.uploadPhoto('driver', this.driver.id, file),
+        this.commonService.uploadPhoto(
+          'driver',
+          this.driver.id,
+          processed.blob,
+        ),
       );
       if (uploadRes?.data) {
         this.photoPreview = `${uploadRes.data.split('?')[0]}?t=${Date.now()}`;
