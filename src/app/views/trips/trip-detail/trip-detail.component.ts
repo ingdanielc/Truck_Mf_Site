@@ -285,7 +285,16 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       (c) => String(c.id) === String(this.trip?.originId),
     );
     if (!city) return String(this.trip.originId);
-    return city.state ? `${city.name} (${city.state})` : city.name;
+    return city.name.split('-')[0].split(',')[0].trim();
+  }
+
+  get originFullName(): string {
+    if (!this.trip?.originId) return 'N/A';
+    const city = this.cities.find(
+      (c) => String(c.id) === String(this.trip?.originId),
+    );
+    if (!city) return String(this.trip.originId);
+    return this.formatCityName(city);
   }
 
   get destinationName(): string {
@@ -294,7 +303,32 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       (c) => String(c.id) === String(this.trip?.destinationId),
     );
     if (!city) return String(this.trip.destinationId);
-    return city.state ? `${city.name} (${city.state})` : city.name;
+    return city.name.split('-')[0].split(',')[0].trim();
+  }
+
+  get destinationFullName(): string {
+    if (!this.trip?.destinationId) return 'N/A';
+    const city = this.cities.find(
+      (c) => String(c.id) === String(this.trip?.destinationId),
+    );
+    if (!city) return String(this.trip.destinationId);
+    return this.formatCityName(city);
+  }
+
+  private formatCityName(cityObj: any): string {
+    if (!cityObj || !cityObj.name) return '';
+    let name = cityObj.name.trim();
+
+    if (name.includes('-')) {
+      name = name.split('-')[0].trim();
+    } else if (name.includes(',')) {
+      name = name.split(',')[0].trim();
+    }
+
+    if (cityObj.state) {
+      return `${name} (${cityObj.state.trim()})`;
+    }
+    return name;
   }
 
   get vehicleBrandName(): string {

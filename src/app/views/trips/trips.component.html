@@ -105,26 +105,34 @@
                   }
                 </select>
               </div>
-              <div class="col-12 col-md-4 d-flex gap-2">
-                <button
-                  class="btn btn-primary flex-grow-1 rounded-3 shadow-primary d-flex align-items-center justify-content-center"
-                  (click)="applyFilter()"
-                  [disabled]="loading"
-                >
-                  @if (loading) {
-                    <output
-                      class="spinner-border spinner-border-sm me-2"
-                    ></output>
-                  } @else {
-                    <i class="fa-solid fa-search me-2"></i>Buscar
-                  }
-                </button>
-                <button
-                  class="btn btn-outline-secondary flex-grow-1 rounded-3"
-                  (click)="clearFilters()"
-                >
-                  <i class="fa-solid fa-eraser me-2"></i>Limpiar
-                </button>
+              <div class="col-12 col-md-4">
+                <div class="row g-2">
+                  <div class="col-6">
+                    <button
+                      class="btn btn-primary w-100 rounded-3 shadow-primary d-flex align-items-center justify-content-center"
+                      (click)="applyFilter()"
+                      [disabled]="loading"
+                    >
+                      @if (loading) {
+                        <output
+                          class="spinner-border spinner-border-sm"
+                          aria-hidden="true"
+                        ></output>
+                      } @else {
+                        <i class="fa-solid fa-search me-2"></i>
+                        Buscar
+                      }
+                    </button>
+                  </div>
+                  <div class="col-6">
+                    <button
+                      class="btn btn-outline-secondary w-100 rounded-3 d-flex align-items-center justify-content-center text-truncate"
+                      (click)="clearFilters()"
+                    >
+                      <i class="fa-solid fa-eraser me-2"></i>Limpiar
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -20,7 +20,7 @@
           </h1>
         </div>
         <p class="text-secondary mb-0 small">
-          {{ originName }} - {{ destinationName }}
+          {{ originFullName }} - {{ destinationFullName }}
         </p>
       </div>
       <div class="col-12 col-md-auto">
@@ -45,21 +45,46 @@
       onkeypress
     >
       <div class="card-body p-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <h5 class="fw-bold mb-1">Progreso del Viaje</h5>
-            <p class="text-secondary small mb-0">
-              Ubicación actual: {{ currentLocationName }}
-              <span class="d-none d-sm-inline">- Punto de control</span>
-            </p>
+        <div
+          class="d-flex justify-content-between align-items-start align-items-md-center mb-4"
+        >
+          <div class="flex-grow-1">
+            <div
+              class="d-flex justify-content-between align-items-center mb-1 mb-md-0"
+            >
+              <h5 class="fw-bold mb-0 mb-md-1">Progreso del Viaje</h5>
+              <div class="text-primary h2 fw-bold mb-0 d-md-none">
+                {{ progressPercentage }}%
+              </div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-1 mt-md-0">
+              <p class="text-secondary small mb-0">
+                <span class="d-none d-md-inline">Ubicación actual: </span
+                ><i
+                  class="fa-solid fa-location-dot d-inline d-md-none me-1 text-primary"
+                ></i
+                >{{ currentLocationName }}
+                <span class="d-none d-md-inline"> - Punto de control</span>
+              </p>
+              @if (
+                trip.status === "Completado" || trip.status === "Pendiente"
+              ) {
+                <div
+                  class="badge bg-success bg-opacity-10 text-success small border-0 py-1 px-3 rounded-pill d-md-none"
+                >
+                  <i class="fa-solid fa-clock me-1"></i>
+                  {{ tripDurationInHours }}h
+                </div>
+              }
+            </div>
           </div>
-          <div class="text-end">
-            <div class="text-primary h2 fw-bold mb-0">
+          <div class="text-end ms-3 d-none d-md-block">
+            <div class="text-primary h1 fw-bold mb-0">
               {{ progressPercentage }}%
             </div>
             @if (trip.status === "Completado" || trip.status === "Pendiente") {
               <div
-                class="badge bg-success bg-opacity-10 text-success small border-0 py-1 px-3 rounded-pill"
+                class="badge bg-success bg-opacity-10 text-success small border-0 py-1 px-3 rounded-pill mt-1"
               >
                 <i class="fa-solid fa-clock me-1"></i>
                 {{ tripDurationInHours }}h
@@ -89,7 +114,10 @@
               >
                 <i class="fa-solid fa-warehouse"></i>
               </div>
-              <div class="fw-bold small pt-3">{{ originName }}</div>
+              <div class="fw-bold small pt-3 d-md-none">{{ originName }}</div>
+              <div class="fw-bold small pt-3 d-none d-md-block">
+                {{ originFullName }}
+              </div>
               <div class="text-secondary" style="font-size: 0.7rem">
                 {{ trip.startDate | date: "shortTime" }}
               </div>
@@ -111,7 +139,12 @@
               >
                 <i class="fa-solid fa-flag-checkered"></i>
               </div>
-              <div class="fw-bold small pt-3">{{ destinationName }}</div>
+              <div class="fw-bold small pt-3 d-md-none">
+                {{ destinationName }}
+              </div>
+              <div class="fw-bold small pt-3 d-none d-md-block">
+                {{ destinationFullName }}
+              </div>
               <div class="text-secondary" style="font-size: 0.7rem">
                 @if (
                   trip.status === "Completado" || trip.status === "Pendiente"
@@ -279,8 +312,17 @@
                 <button
                   class="btn btn-primary btn-lg fw-bold w-100 rounded-3 shadow-primary d-flex align-items-center justify-content-center"
                   (click)="updateLogistics()"
+                  [disabled]="isSavingLogistics"
                 >
-                  <i class="fa-solid fa-save me-2"></i>Actualizar
+                  @if (isSavingLogistics) {
+                    <output
+                      class="spinner-border me-2"
+                      aria-hidden="true"
+                    ></output>
+                  } @else {
+                    <i class="fa-solid fa-save me-2"></i>
+                    Actualizar
+                  }
                 </button>
               </div>
             }
