@@ -27,6 +27,7 @@ import { getCategoryConfigByName } from 'src/app/utils/category-config';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { DriverService } from 'src/app/services/driver.service';
+import { CustomValidators } from 'src/app/utils/custom-validators';
 
 interface CategoryConfig {
   id: number;
@@ -498,24 +499,18 @@ export class ConfigurationComponent implements OnInit {
   }
 
   private captureInitialState(): void {
-    this.initialFormValue = JSON.stringify(this.getNormalizedFormValue());
+    this.initialFormValue = JSON.stringify(
+      CustomValidators.getNormalizedFormValue(this.categoryForm.getRawValue()),
+    );
   }
 
   get isModified(): boolean {
     return (
-      JSON.stringify(this.getNormalizedFormValue()) !== this.initialFormValue
+      JSON.stringify(
+        CustomValidators.getNormalizedFormValue(
+          this.categoryForm.getRawValue(),
+        ),
+      ) !== this.initialFormValue
     );
-  }
-
-  private getNormalizedFormValue(): any {
-    const raw = this.categoryForm.getRawValue();
-    const normalized: any = {};
-    Object.keys(raw).forEach((key) => {
-      let val = raw[key];
-      if (val === undefined || val === null) val = null;
-      if (typeof val === 'number') val = String(val);
-      normalized[key] = val;
-    });
-    return normalized;
   }
 }

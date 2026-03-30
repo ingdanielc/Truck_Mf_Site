@@ -22,6 +22,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { VehicleService as VehicleRealService } from 'src/app/services/vehicle.service';
+import { CustomValidators } from 'src/app/utils/custom-validators';
 
 interface CategoryConfig {
   id: number;
@@ -346,24 +347,16 @@ export class GAddExpenseComponent implements OnInit {
   }
 
   private captureInitialState(): void {
-    this.initialFormValue = JSON.stringify(this.getNormalizedFormValue());
+    this.initialFormValue = JSON.stringify(
+      CustomValidators.getNormalizedFormValue(this.expenseForm.getRawValue()),
+    );
   }
 
   get isModified(): boolean {
     return (
-      JSON.stringify(this.getNormalizedFormValue()) !== this.initialFormValue
+      JSON.stringify(
+        CustomValidators.getNormalizedFormValue(this.expenseForm.getRawValue()),
+      ) !== this.initialFormValue
     );
-  }
-
-  private getNormalizedFormValue(): any {
-    const raw = this.expenseForm.getRawValue();
-    const normalized: any = {};
-    Object.keys(raw).forEach((key) => {
-      let val = raw[key];
-      if (val === undefined || val === null) val = null;
-      if (typeof val === 'number') val = String(val);
-      normalized[key] = val;
-    });
-    return normalized;
   }
 }

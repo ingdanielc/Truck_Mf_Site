@@ -267,4 +267,20 @@ export class CustomValidators {
       );
     };
   }
+
+  /**
+   * Normalizes form values for comparison by converting numbers to strings
+   * and handling null/undefined consistently.
+   */
+  static getNormalizedFormValue(raw: any): any {
+    const normalized: any = {};
+    if (!raw) return normalized;
+    Object.keys(raw).forEach((key) => {
+      let val = raw[key];
+      if (val === undefined || val === null) val = null;
+      if (typeof val === 'number') val = String(val);
+      normalized[key] = val;
+    });
+    return normalized;
+  }
 }

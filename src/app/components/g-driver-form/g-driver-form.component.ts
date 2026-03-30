@@ -643,24 +643,16 @@ export class GDriverFormComponent implements OnInit, OnChanges {
   }
 
   private captureInitialState(): void {
-    this.initialFormValue = JSON.stringify(this.getNormalizedFormValue());
+    this.initialFormValue = JSON.stringify(
+      CustomValidators.getNormalizedFormValue(this.driverForm.getRawValue()),
+    );
   }
 
   get isModified(): boolean {
     return (
-      JSON.stringify(this.getNormalizedFormValue()) !== this.initialFormValue
+      JSON.stringify(
+        CustomValidators.getNormalizedFormValue(this.driverForm.getRawValue()),
+      ) !== this.initialFormValue
     );
-  }
-
-  private getNormalizedFormValue(): any {
-    const raw = this.driverForm.getRawValue();
-    const normalized: any = {};
-    Object.keys(raw).forEach((key) => {
-      let val = raw[key];
-      if (val === undefined || val === null) val = null;
-      if (typeof val === 'number') val = String(val);
-      normalized[key] = val;
-    });
-    return normalized;
   }
 }

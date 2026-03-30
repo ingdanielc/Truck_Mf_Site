@@ -1437,25 +1437,17 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   private captureInitialState(): void {
-    this.initialFormValue = JSON.stringify(this.getNormalizedFormValue());
+    this.initialFormValue = JSON.stringify(
+      CustomValidators.getNormalizedFormValue(this.vehicleForm.getRawValue()),
+    );
   }
 
   get isModified(): boolean {
     return (
-      JSON.stringify(this.getNormalizedFormValue()) !== this.initialFormValue
+      JSON.stringify(
+        CustomValidators.getNormalizedFormValue(this.vehicleForm.getRawValue()),
+      ) !== this.initialFormValue
     );
-  }
-
-  private getNormalizedFormValue(): any {
-    const raw = this.vehicleForm.getRawValue();
-    const normalized: any = {};
-    Object.keys(raw).forEach((key) => {
-      let val = raw[key];
-      if (val === undefined || val === null) val = null;
-      if (typeof val === 'number') val = String(val);
-      normalized[key] = val;
-    });
-    return normalized;
   }
 
   goBackToOwners(): void {

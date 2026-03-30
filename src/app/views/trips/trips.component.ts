@@ -112,11 +112,11 @@ export class TripsComponent implements OnInit, OnDestroy {
 
   /** driverId filter when navigated from driver profile (query param) */
   driverIdFilter: number | null = null;
-  filteredDriver: any | null = null;
+  filteredDriver: any;
 
   /** vehicleId filter when navigated from vehicle card (query param) */
   vehicleIdFilter: number | null = null;
-  filteredVehicle: any | null = null;
+  filteredVehicle: any;
 
   constructor(
     private readonly tripService: TripService,

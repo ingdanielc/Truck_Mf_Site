@@ -35,6 +35,7 @@ import {
   Sort,
 } from 'src/app/models/model-filter-table';
 import { UpperCasePipe } from '@angular/common';
+import { CustomValidators } from 'src/app/utils/custom-validators';
 
 @Component({
   selector: 'g-trip-form',
@@ -589,24 +590,16 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   }
 
   private captureInitialState(): void {
-    this.initialFormValue = JSON.stringify(this.getNormalizedFormValue());
+    this.initialFormValue = JSON.stringify(
+      CustomValidators.getNormalizedFormValue(this.tripForm.getRawValue()),
+    );
   }
 
   get isModified(): boolean {
     return (
-      JSON.stringify(this.getNormalizedFormValue()) !== this.initialFormValue
+      JSON.stringify(
+        CustomValidators.getNormalizedFormValue(this.tripForm.getRawValue()),
+      ) !== this.initialFormValue
     );
-  }
-
-  private getNormalizedFormValue(): any {
-    const raw = this.tripForm.getRawValue();
-    const normalized: any = {};
-    Object.keys(raw).forEach((key) => {
-      let val = raw[key];
-      if (val === undefined || val === null) val = null;
-      if (typeof val === 'number') val = String(val);
-      normalized[key] = val;
-    });
-    return normalized;
   }
 }
