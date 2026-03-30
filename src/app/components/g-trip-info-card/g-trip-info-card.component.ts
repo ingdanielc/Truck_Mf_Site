@@ -178,16 +178,16 @@ export class GTripInfoCardComponent implements OnChanges {
   }
 
   private mockTollPrice(): number {
-    // Current Colombian Toll rates 2024 (estimates per category)
+    // Current Colombian Toll rates 2024 (estimates per cargo category C2-C6+)
     const axles = this.vehicleAxles || 2;
 
-    if (axles <= 2) return 16700; // Category I/II
-    if (axles === 3) return 25000; // Category III
-    if (axles === 4) return 33000; // Category IV/V
-    if (axles === 5) return 50000; // Category VI
-    if (axles >= 6) return 75000; // Category VII
+    if (axles <= 2) return 21500; // Category II (Truck C2 / Bus)
+    if (axles === 3) return 28500; // Category III (Truck C3)
+    if (axles === 4) return 36500; // Category IV (Truck C4)
+    if (axles === 5) return 54500; // Category V (Truck C5)
+    if (axles >= 6) return 81500; // Category VI+ (Truck C6+)
 
-    return 16700; // Fallback
+    return 21500; // Fallback to Category II for cargo vehicles
   }
 
   private cleanInstructionString(htmlString: string): string {
