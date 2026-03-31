@@ -20,13 +20,8 @@
     box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    .mobile-header {
-      cursor: default;
-
-      @media (max-width: 768px) {
-        cursor: pointer;
-        margin-bottom: 0 !important;
-      }
+    .panel-header {
+      cursor: pointer;
     }
 
     .badges-content-wrapper {
@@ -50,14 +45,16 @@
     }
 
     &.is-collapsed {
-      @media (max-width: 768px) {
-        padding-bottom: 0.75rem;
+      padding-bottom: 0.75rem;
 
-        .badges-content-wrapper {
-          max-height: 0;
-          opacity: 0;
-          pointer-events: none;
-        }
+      .badges-content-wrapper {
+        max-height: 0;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .panel-header {
+        margin-bottom: 0 !important;
       }
     }
 
