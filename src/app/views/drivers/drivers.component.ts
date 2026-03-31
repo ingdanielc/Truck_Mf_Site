@@ -19,6 +19,7 @@ import { CommonService } from '../../services/common.service';
 import { Subscription } from 'rxjs';
 import { OwnerService } from 'src/app/services/owner.service';
 import { ModelOwner } from 'src/app/models/owner-model';
+import { PaginationUtils } from 'src/app/utils/pagination-utils';
 
 export interface DriverOwnerGroup {
   owner: ModelOwner;
@@ -676,8 +677,12 @@ export class DriversComponent implements OnInit, OnDestroy {
     return Math.ceil(this.dataTotal / this.rows);
   }
 
-  get pages(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i);
+  get desktopPages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 12);
+  }
+
+  get mobilePages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 4);
   }
 
   changePage(newPage: number): void {

@@ -21,6 +21,7 @@ import { VehicleService } from 'src/app/services/vehicle.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { GTripFormComponent } from '../../components/g-trip-form/g-trip-form.component';
 import { GTripInfoCardComponent } from '../../components/g-trip-info-card/g-trip-info-card.component';
+import { PaginationUtils } from 'src/app/utils/pagination-utils';
 
 export interface TripOwnerGroup {
   owner: ModelOwner;
@@ -844,8 +845,12 @@ export class TripsComponent implements OnInit, OnDestroy {
     return Math.ceil(this.dataTotal / this.rows);
   }
 
-  get pages(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i);
+  get desktopPages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 12);
+  }
+
+  get mobilePages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 4);
   }
 
   changePage(newPage: number): void {

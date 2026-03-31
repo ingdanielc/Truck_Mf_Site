@@ -336,7 +336,8 @@
         class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end"
       >
         <nav aria-label="Navegación de páginas">
-          <ul class="pagination mb-0">
+          <!-- Desktop Pagination -->
+          <ul class="pagination mb-0 d-none d-md-flex">
             <li class="page-item" [class.disabled]="page === 0">
               <button
                 class="page-link shadow-none px-3 py-2"
@@ -346,7 +347,42 @@
                 <span aria-hidden="true">&laquo;</span>
               </button>
             </li>
-            @for (p of pages; track p) {
+            @for (p of desktopPages; track p) {
+              <li class="page-item" [class.active]="p === page">
+                <button
+                  class="page-link shadow-none px-3 py-2"
+                  (click)="changePage(p)"
+                >
+                  {{ p + 1 }}
+                </button>
+              </li>
+            }
+            <li
+              class="page-item"
+              [class.disabled]="page >= totalPages - 1 || totalPages === 0"
+            >
+              <button
+                class="page-link shadow-none px-3 py-2"
+                (click)="changePage(page + 1)"
+                aria-label="Siguiente"
+              >
+                <span aria-hidden="true">&raquo;</span>
+              </button>
+            </li>
+          </ul>
+
+          <!-- Mobile Pagination -->
+          <ul class="pagination mb-0 d-flex d-md-none">
+            <li class="page-item" [class.disabled]="page === 0">
+              <button
+                class="page-link shadow-none px-3 py-2"
+                (click)="changePage(page - 1)"
+                aria-label="Anterior"
+              >
+                <span aria-hidden="true">&laquo;</span>
+              </button>
+            </li>
+            @for (p of mobilePages; track p) {
               <li class="page-item" [class.active]="p === page">
                 <button
                   class="page-link shadow-none px-3 py-2"

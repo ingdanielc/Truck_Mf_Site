@@ -22,6 +22,7 @@ import { GUserCardComponent } from '../../components/g-user-card/g-user-card.com
 import { GPasswordCardComponent } from '../../components/g-password-card/g-password-card.component';
 import { ToastService } from '../../services/toast.service';
 import { CustomValidators } from '../../utils/custom-validators';
+import { PaginationUtils } from 'src/app/utils/pagination-utils';
 
 @Component({
   selector: 'app-security',
@@ -254,8 +255,12 @@ export class SecurityComponent implements OnInit, OnDestroy {
     return Math.ceil(this.totalUsers / this.rows);
   }
 
-  get pages(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i);
+  get desktopPages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 12);
+  }
+
+  get mobilePages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 4);
   }
 
   changePage(newPage: number): void {

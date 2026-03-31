@@ -14,6 +14,7 @@ import {
 import { OwnerService } from 'src/app/services/owner.service';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { ToastService } from 'src/app/services/toast.service';
+import { PaginationUtils } from 'src/app/utils/pagination-utils';
 
 @Component({
   selector: 'app-owners',
@@ -222,8 +223,12 @@ export class OwnersComponent implements OnInit, OnDestroy {
     return Math.ceil(this.totalOwners / this.rows);
   }
 
-  get pages(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i);
+  get desktopPages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 12);
+  }
+
+  get mobilePages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 4);
   }
 
   changePage(newPage: number): void {

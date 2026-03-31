@@ -34,6 +34,7 @@ import { ModelDriver } from 'src/app/models/driver-model';
 import { DocumentNumberPipe } from 'src/app/pipes/document-number.pipe';
 import { TripService } from 'src/app/services/trip.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
+import { PaginationUtils } from 'src/app/utils/pagination-utils';
 
 export interface VehicleOwnerGroup {
   owner: ModelOwner;
@@ -1204,8 +1205,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     return Math.ceil(this.dataTotal / this.rows);
   }
 
-  get pages(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i);
+  get desktopPages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 12);
+  }
+
+  get mobilePages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 4);
   }
 
   changePage(newPage: number): void {

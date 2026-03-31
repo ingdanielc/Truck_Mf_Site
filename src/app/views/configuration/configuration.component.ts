@@ -28,6 +28,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
+import { PaginationUtils } from 'src/app/utils/pagination-utils';
 
 interface CategoryConfig {
   id: number;
@@ -325,8 +326,12 @@ export class ConfigurationComponent implements OnInit {
     return Math.ceil(this.categories.length / this.rows);
   }
 
-  get pages(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i);
+  get desktopPages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 12);
+  }
+
+  get mobilePages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 4);
   }
 
   changePage(newPage: number): void {
