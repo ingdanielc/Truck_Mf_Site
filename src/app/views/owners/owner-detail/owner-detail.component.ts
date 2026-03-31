@@ -15,6 +15,7 @@ import { TripService } from 'src/app/services/trip.service';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
+import { Formatters } from '../../../utils/formatters';
 import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
 import { GOwnerFormComponent } from 'src/app/components/g-owner-form/g-owner-form.component';
 import {
@@ -456,10 +457,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   }
 
   formatDocNumber(value: any): string {
-    const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
-    return Number.isNaN(n) || value === ''
-      ? String(value ?? '')
-      : new Intl.NumberFormat('es-CO').format(n);
+    return Formatters.formatDocNumber(value);
   }
 
   mapLastTripStatuses(): void {

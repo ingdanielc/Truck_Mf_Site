@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModelDriver } from 'src/app/models/driver-model';
+import { Formatters } from '../../utils/formatters';
 
 @Component({
   selector: 'app-g-driver-card',
@@ -85,18 +86,10 @@ export class GDriverCardComponent {
   }
 
   get formattedCellPhone(): string {
-    if (!this.driver.cellPhone) return '';
-    const phone = this.driver.cellPhone.replaceAll(/\D/g, '');
-    if (phone.length === 10) {
-      return `${phone.substring(0, 3)} ${phone.substring(3, 6)} ${phone.substring(6, 8)} ${phone.substring(8, 10)}`;
-    }
-    return this.driver.cellPhone || '';
+    return Formatters.formatPhone(this.driver.cellPhone);
   }
 
   formatDocNumber(value: any): string {
-    const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
-    return Number.isNaN(n) || value === ''
-      ? String(value ?? '')
-      : new Intl.NumberFormat('es-CO').format(n);
+    return Formatters.formatDocNumber(value);
   }
 }

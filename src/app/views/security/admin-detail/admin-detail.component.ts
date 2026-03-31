@@ -8,6 +8,7 @@ import { VehicleService } from 'src/app/services/vehicle.service';
 import { TripService } from 'src/app/services/trip.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { ModelUser } from 'src/app/models/user-model';
+import { Formatters } from '../../../utils/formatters';
 import {
   Filter,
   ModelFilterTable,
@@ -128,9 +129,6 @@ export class AdminDetailComponent implements OnInit, OnDestroy {
   }
 
   formatDocNumber(value: any): string {
-    const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
-    return isNaN(n) || value === ''
-      ? String(value ?? '')
-      : new Intl.NumberFormat('es-CO').format(n);
+    return Formatters.formatDocNumber(value);
   }
 }

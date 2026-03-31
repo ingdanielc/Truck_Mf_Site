@@ -15,6 +15,7 @@ import { ModelDriver } from 'src/app/models/driver-model';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
+import { Formatters } from '../../../utils/formatters';
 import { GDriverFormComponent } from 'src/app/components/g-driver-form/g-driver-form.component';
 import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
 import {
@@ -325,10 +326,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   }
 
   formatDocNumber(value: any): string {
-    const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
-    return Number.isNaN(n) || value === ''
-      ? String(value ?? '')
-      : new Intl.NumberFormat('es-CO').format(n);
+    return Formatters.formatDocNumber(value);
   }
 
   // ─── Context Menu ────────────────────────────────────────────────────────────

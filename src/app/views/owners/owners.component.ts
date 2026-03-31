@@ -66,10 +66,10 @@ export class OwnersComponent implements OnInit, OnDestroy {
       next: (user) => {
         if (user) {
           this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
-          if (this.userRole !== 'ADMINISTRADOR') {
-            this.rows = 100;
-          } else {
+          if (this.userRole === 'ADMINISTRADOR') {
             this.rows = 9;
+          } else {
+            this.rows = 100;
           }
           this.loadOwners();
         }

@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { SecurityService } from 'src/app/services/security/security.service';
+import { Formatters } from '../../utils/formatters';
 
 @Component({
   selector: 'g-vehicle-owner-card',
@@ -89,9 +90,6 @@ export class GVehicleOwnerCardComponent implements OnInit {
   }
 
   formatDocNumber(value: any): string {
-    const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
-    return Number.isNaN(n) || value === ''
-      ? String(value ?? '')
-      : new Intl.NumberFormat('es-CO').format(n);
+    return Formatters.formatDocNumber(value);
   }
 }
