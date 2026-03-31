@@ -149,10 +149,10 @@ export class DriversComponent implements OnInit, OnDestroy {
           this.userRole = (user.userRoles?.[0]?.role?.name || '')
             .toUpperCase()
             .trim();
-          if (this.userRole !== 'ADMINISTRADOR') {
-            this.rows = 100;
-          } else {
+          if (this.userRole === 'ADMINISTRADOR') {
             this.rows = 9;
+          } else {
+            this.rows = 100;
           }
 
           if (this.userRole === 'PROPIETARIO') {
