@@ -342,7 +342,9 @@
             <p class="text-secondary small fw-bold mb-1 text-uppercase">
               Celular
             </p>
-            <h6 class="fw-bold mb-0">{{ owner.cellPhone }}</h6>
+            <h6 class="fw-bold mb-0">
+              {{ formatPhone(owner.cellPhone) || "---" }}
+            </h6>
           </div>
           <div class="col-12 col-sm-6 col-lg-4">
             <p class="text-secondary small fw-bold mb-1 text-uppercase">

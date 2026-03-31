@@ -460,6 +460,10 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     return Formatters.formatDocNumber(value);
   }
 
+  formatPhone(phone: string | undefined): string {
+    return Formatters.formatPhone(phone);
+  }
+
   mapLastTripStatuses(): void {
     if (this.vehicles.length === 0) return;
 

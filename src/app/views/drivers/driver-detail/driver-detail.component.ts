@@ -329,6 +329,10 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
     return Formatters.formatDocNumber(value);
   }
 
+  formatPhone(phone: string | undefined): string {
+    return Formatters.formatPhone(phone);
+  }
+
   // ─── Context Menu ────────────────────────────────────────────────────────────
 
   toggleMenu(event?: Event): void {
