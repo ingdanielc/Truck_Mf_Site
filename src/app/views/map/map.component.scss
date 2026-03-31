@@ -30,12 +30,16 @@
     }
 
     .badges-content-wrapper {
-      overflow: hidden;
+      overflow-y: auto;
       transition:
         max-height 0.3s ease-out,
         opacity 0.2s ease;
-      max-height: 500px;
+      max-height: 236px;
       opacity: 1;
+
+      @media (max-width: 768px) {
+        max-height: 170px;
+      }
 
       .badges-list {
         display: flex;

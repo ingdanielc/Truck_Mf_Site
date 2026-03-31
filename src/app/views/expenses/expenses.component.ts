@@ -34,6 +34,7 @@ import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-tr
 import { GVehicleTripCardComponent } from 'src/app/components/g-vehicle-trip-card/g-vehicle-trip-card.component';
 import { NotificationsService } from 'src/app/services/notifications.service';
 import { LocationService } from 'src/app/services/location.service';
+import { PaginationUtils } from 'src/app/utils/pagination-utils';
 
 @Component({
   selector: 'app-expenses',
@@ -80,6 +81,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   cities: any[] = [];
   loadingTrips = false;
   isSavingExpense: boolean = false;
+  maxVisibleDots = 10;
 
   private userSub?: Subscription;
 
@@ -729,7 +731,11 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   dotRange(): number[] {
-    return Array.from({ length: this.totalDots }, (_, i) => i);
+    return PaginationUtils.getVisiblePages(
+      this.carouselIndex,
+      this.totalDots,
+      this.maxVisibleDots,
+    );
   }
 
   get isTripLockedForDriver(): boolean {

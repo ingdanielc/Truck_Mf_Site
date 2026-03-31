@@ -1,9 +1,6 @@
 <div class="map-view-container">
   <!-- Top Badges Overlay -->
-  <div
-    class="badges-overlay custom-scrollbar"
-    [class.is-collapsed]="isPanelCollapsed"
-  >
+  <div class="badges-overlay" [class.is-collapsed]="isPanelCollapsed">
     <div
       class="d-flex align-items-center justify-content-between w-100 mb-2 mobile-header"
       (click)="togglePanel()"
@@ -36,7 +33,7 @@
       </button>
     </div>
 
-    <div class="badges-content-wrapper">
+    <div class="badges-content-wrapper custom-scrollbar">
       <div class="badges-list">
         @if (activeVehicles.length > 1) {
           <div

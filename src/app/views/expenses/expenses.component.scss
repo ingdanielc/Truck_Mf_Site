@@ -59,11 +59,39 @@
   opacity: 0.3;
   cursor: pointer;
   transition: all 0.25s ease;
+  flex-shrink: 0;
 
   &.dot-active {
     width: 24px;
     opacity: 1;
     background-color: var(--bs-primary);
+  }
+}
+
+.btn-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  text-decoration: none;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    opacity: 1;
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+    color: var(--bs-primary) !important;
+  }
+
+  &:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+  }
+
+  i {
+    font-size: 0.75rem;
   }
 }
 

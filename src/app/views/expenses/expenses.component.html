@@ -130,7 +130,20 @@
             </div>
             <!-- Dots -->
             @if (totalDots > 1) {
-              <div class="d-flex justify-content-center gap-2 mt-3">
+              <div
+                class="d-flex justify-content-center align-items-center gap-2 mt-3"
+              >
+                @if (totalDots > maxVisibleDots) {
+                  <button
+                    class="btn btn-link btn-pagination p-0 text-secondary"
+                    [disabled]="carouselIndex === 0"
+                    (click)="prev()"
+                    aria-label="Anterior grupo"
+                  >
+                    <i class="fa-solid fa-chevron-left small"></i>
+                  </button>
+                }
+
                 @for (i of dotRange(); track i) {
                   <button
                     class="dot-btn p-0 border-0 rounded-circle transition-all"
@@ -138,6 +151,17 @@
                     (click)="carouselIndex = i; selectVehicle(vehicles[i])"
                     [attr.aria-label]="'Ir al vehículo ' + (i + 1)"
                   ></button>
+                }
+
+                @if (totalDots > maxVisibleDots) {
+                  <button
+                    class="btn btn-link btn-pagination p-0 text-secondary"
+                    [disabled]="carouselIndex === totalDots - 1"
+                    (click)="next()"
+                    aria-label="Siguiente grupo"
+                  >
+                    <i class="fa-solid fa-chevron-right small"></i>
+                  </button>
                 }
               </div>
             }
