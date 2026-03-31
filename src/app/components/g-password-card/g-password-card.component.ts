@@ -15,6 +15,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { SecurityService } from '../../services/security/security.service';
+import { CustomValidators } from '../../utils/custom-validators';
 
 @Component({
   selector: 'g-password-card',
@@ -98,22 +99,11 @@ export class GPasswordCardComponent implements OnChanges {
 
   get strength(): number {
     const pwd = this.passwordForm.get('newPassword')?.value || '';
-    if (!pwd) return 0;
-    let s = 0;
-    if (pwd.length >= 8) s++;
-    if (/[A-Z]/.test(pwd)) s++;
-    if (/[0-9]/.test(pwd)) s++;
-    if (/[^A-Za-z0-9]/.test(pwd)) s++;
-    return s;
+    return CustomValidators.getPasswordStrength(pwd, 8);
   }
 
   get strengthLabel(): string {
-    const s = this.strength;
-    if (s === 0) return '';
-    if (s <= 1) return 'Débil';
-    if (s === 2) return 'Media';
-    if (s === 3) return 'Buena';
-    return 'Fuerte';
+    return CustomValidators.getPasswordStrengthLabel(this.strength);
   }
 
   toggleVisibility(field: 'current' | 'new' | 'confirm'): void {

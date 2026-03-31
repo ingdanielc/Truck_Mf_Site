@@ -224,22 +224,11 @@ export class SecurityComponent implements OnInit, OnDestroy {
 
   get strength(): number {
     const pwd = this.userForm.get('password')?.value || '';
-    if (!pwd) return 0;
-    let s = 0;
-    if (pwd.length >= 6) s++;
-    if (/[A-Z]/.test(pwd)) s++;
-    if (/[0-9]/.test(pwd)) s++;
-    if (/[^A-Za-z0-9]/.test(pwd)) s++;
-    return s;
+    return CustomValidators.getPasswordStrength(pwd);
   }
 
   get strengthLabel(): string {
-    const s = this.strength;
-    if (s === 0) return '';
-    if (s <= 1) return 'Débil';
-    if (s === 2) return 'Media';
-    if (s === 3) return 'Buena';
-    return 'Fuerte';
+    return CustomValidators.getPasswordStrengthLabel(this.strength);
   }
 
   setFilter(filter: string): void {

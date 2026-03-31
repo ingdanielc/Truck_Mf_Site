@@ -283,4 +283,28 @@ export class CustomValidators {
     });
     return normalized;
   }
+
+  /**
+   * Calculates password strength based on length, uppercase, numbers, and special characters.
+   */
+  static getPasswordStrength(password: string, minLength: number = 6): number {
+    if (!password) return 0;
+    let s = 0;
+    if (password.length >= minLength) s++;
+    if (/[A-Z]/.test(password)) s++;
+    if (/[0-9]/.test(password)) s++;
+    if (/[^A-Za-z0-9]/.test(password)) s++;
+    return s;
+  }
+
+  /**
+   * Returns a human-readable label for a given password strength value.
+   */
+  static getPasswordStrengthLabel(strength: number): string {
+    if (strength === 0) return '';
+    if (strength <= 1) return 'Débil';
+    if (strength === 2) return 'Media';
+    if (strength === 3) return 'Buena';
+    return 'Fuerte';
+  }
 }
