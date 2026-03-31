@@ -224,7 +224,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
                 const vehicleFilter = new ModelFilterTable(
                   [
                     new Filter('ownerId', '=', ownerId.toString()),
-                    new Filter('id', '=', vehicleId.toString()),
+                    new Filter('vehicleId', '=', vehicleId.toString()),
                   ],
                   new Pagination(1, 0),
                   new Sort('id', true),
