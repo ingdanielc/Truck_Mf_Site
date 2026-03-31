@@ -13,7 +13,7 @@ export class DocumentNumberPipe implements PipeTransform {
     // Ensure it's a string and remove non-digit characters if any
     // However, for document numbers we usually want just digits.
     // If it's already a formatted string, we might want to be careful.
-    const stringValue = String(value).replace(/\D/g, '');
+    const stringValue = String(value).replaceAll(/\D/g, '');
 
     if (stringValue === '') {
       return String(value);
@@ -21,7 +21,7 @@ export class DocumentNumberPipe implements PipeTransform {
 
     const numberValue = Number(stringValue);
 
-    if (isNaN(numberValue)) {
+    if (Number.isNaN(numberValue)) {
       return String(value);
     }
 
