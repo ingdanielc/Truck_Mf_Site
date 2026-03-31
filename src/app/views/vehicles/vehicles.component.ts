@@ -58,6 +58,7 @@ export interface VehicleOwnerGroup {
 export class VehiclesComponent implements OnInit, OnDestroy {
   allVehicles: ModelVehicle[] = [];
   totalVehicles: number = 0;
+  totalVehiclesPagination: number = 0;
   availableVehicles: number = 0;
   occupiedVehicles: number = 0;
   searchTerm: string = '';
@@ -74,6 +75,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   };
 
   expandedOwnerId: number | null = null;
+  expandedOwnerPage: number = 0;
+  expandedOwnerRows: number = 9;
   ownerVehicles: ModelVehicle[] = [];
   totalOwners: number = 0;
   isLoadingExpandedVehicles: boolean = false;
@@ -193,7 +196,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     if (rawOwnerId != null) {
       this.ownerIdFilter = Number(rawOwnerId);
       this.isSearchActive = false;
-      this.loadFilteredOwner(this.ownerIdFilter);
+      // loadOwners will be triggered by subscribeToUserContext
     }
 
     const rawDriverId = this.route.snapshot.queryParamMap.get('driverId');
@@ -204,21 +207,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.subscribeToUserContext();
   }
 
-  loadFilteredOwner(ownerId: number): void {
-    const filter = new ModelFilterTable(
-      [new Filter('id', '=', ownerId.toString())],
-      new Pagination(1, 0),
-      new Sort('id', true),
-    );
-    this.ownerService.getOwnerFilter(filter).subscribe({
-      next: (response: any) => {
-        if (response?.data?.content?.length > 0) {
-          this.filteredOwner = response.data.content[0];
-          this.applyFilter();
-        }
-      },
-    });
-  }
 
   subscribeToUserContext(): void {
     this.userSub = this.securityService.userData$.subscribe({
@@ -226,7 +214,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         if (user) {
           this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
 
-          if (this.userRole === 'ADMINISTRADOR') {
+          if (
+            this.userRole === 'ADMINISTRADOR' ||
+            this.userRole === 'PROPIETARIO'
+          ) {
             this.rows = 9;
           } else {
             this.rows = 100;
@@ -239,7 +230,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.loadOwners();
           } else if (this.userRole === 'PROPIETARIO') {
             this.loggedInOwnerId = user.id ?? null;
-            this.loadOwners(); // This will trigger loadVehicles upon success
+            this.loadOwners(user.id ?? undefined, true); // This will trigger loadVehicles upon success
           } else if (this.userRole === 'CONDUCTOR') {
             this.loadDriverIdByUser(user.id);
           }
@@ -263,7 +254,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           this.loggedInDriverId = driver.id;
           if (driver.ownerId) {
             this.loggedInOwnerId = driver.ownerId;
-            this.loadOwnerById(driver.ownerId);
+            this.loadOwners(driver.ownerId);
           }
           this.loadVehicles();
         }
@@ -271,21 +262,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadOwnerById(ownerId: number): void {
-    const filter = new ModelFilterTable(
-      [new Filter('id', '=', ownerId.toString())],
-      new Pagination(1, 0),
-      new Sort('id', true),
-    );
-    this.ownerService.getOwnerFilter(filter).subscribe({
-      next: (response: any) => {
-        if (response?.data?.content?.length > 0) {
-          this.loggedInOwner = response.data.content[0];
-          this.applyFilter();
-        }
-      },
-    });
-  }
 
   ngOnDestroy(): void {
     this.userSub?.unsubscribe();
@@ -361,22 +337,22 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadOwners(): void {
+  loadOwners(idOverride?: number, isUserId: boolean = false): void {
     let filtros: Filter[] = [];
-    if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId != null) {
+    if (idOverride != null) {
+      filtros.push(
+        new Filter(isUserId ? 'user.Id' : 'id', '=', idOverride.toString()),
+      );
+    } else if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId != null) {
       filtros.push(new Filter('user.Id', '=', this.loggedInOwnerId.toString()));
-    }
-
-    if (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter) {
-      filtros.push(new Filter('name', 'like', this.searchTerm)); // Though irrelevant if we bypass name searching
-    }
-
-    if (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter) {
+    } else if (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter) {
       filtros.push(new Filter('id', '=', this.ownerIdFilter.toString()));
     }
 
-    const paginationRows = this.userRole === 'ADMINISTRADOR' ? this.rows : 100;
-    const paginationPage = this.userRole === 'ADMINISTRADOR' ? this.page : 0;
+    const paginationRows =
+      this.userRole === 'ADMINISTRADOR' && idOverride == null ? this.rows : 1;
+    const paginationPage =
+      this.userRole === 'ADMINISTRADOR' && idOverride == null ? this.page : 0;
 
     let filter = new ModelFilterTable(
       filtros,
@@ -396,6 +372,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.loggedInOwnerId =
               this.loggedInOwner?.id ?? this.loggedInOwnerId;
             // Now that we have the TRUE owner.id, load the vehicles
+            this.updateStatusCounts();
             this.loadVehicles();
           } else if (this.userRole === 'ADMINISTRADOR') {
             this.totalOwners = response.data.totalElements ?? 0;
@@ -444,6 +421,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     let filtros: Filter[] = [];
     if (this.ownerIdFilter) {
       filtros.push(new Filter('ownerId', '=', this.ownerIdFilter.toString()));
+    } else if (this.loggedInOwnerId) {
+      filtros.push(new Filter('ownerId', '=', this.loggedInOwnerId.toString()));
+    } else if (this.userRole !== 'ADMINISTRADOR') {
+      return;
     }
 
     this.vehicleService
@@ -483,16 +464,15 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               const available = total - occupied;
 
               this.totalVehicles = total;
+              this.totalVehiclesPagination = total;
               this.availableVehicles = available;
               this.occupiedVehicles = occupied;
 
-              if (this.userRole === 'ADMINISTRADOR') {
-                this.globalStats = {
-                  total: this.totalVehicles,
-                  available: this.availableVehicles,
-                  occupied: this.occupiedVehicles,
-                };
-              }
+              this.globalStats = {
+                total: this.totalVehicles,
+                available: this.availableVehicles,
+                occupied: this.occupiedVehicles,
+              };
             },
           });
         },
@@ -504,6 +484,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
     if (this.expandedOwnerId === owner.id) {
       this.expandedOwnerId = null;
+      this.expandedOwnerPage = 0;
       this.ownerVehicles = [];
       // Restore global stats
       this.totalVehicles = this.globalStats.total;
@@ -885,9 +866,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           if (response?.data?.content) {
             const content = response.data.content as any[];
-            this.totalVehicles = content.filter(
-              (v: any) => v.status !== 'Vendido',
-            ).length;
             content.forEach((v: any) => {
               if (v.driver?.name) {
                 v.currentDriverName = v.driver.name;
@@ -896,7 +874,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = content;
             this.mapBrandNames();
             this.mapLastTripStatuses();
-            this.calculateStats();
+            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           }
           this.loading = false;
@@ -904,7 +882,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error loading vehicles via owner filter:', err);
           this.allVehicles = [];
-          this.calculateStats();
+          // this.calculateStats(); // Removed: Stats are handled globally
           this.applyFilter(true);
           this.loading = false;
         },
@@ -917,6 +895,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     ) {
       const filtros = [
         new Filter('owner.id', '=', this.ownerIdFilter.toString()),
+        new Filter('status', '!=', 'Vendido'),
       ];
       const filter = new ModelFilterTable(
         filtros,
@@ -928,9 +907,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           if (response?.data?.content) {
             const content = response.data.content as any[];
-            this.totalVehicles = content.filter(
-              (v: any) => v.status !== 'Vendido',
-            ).length;
             content.forEach((v: any) => {
               if (v.driver?.name) {
                 v.currentDriverName = v.driver.name;
@@ -939,12 +915,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = content;
             this.mapBrandNames();
             this.mapLastTripStatuses();
-            this.calculateStats();
+            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           } else {
             this.allVehicles = [];
-            this.totalVehicles = 0;
-            this.calculateStats();
+            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           }
           this.loading = false;
@@ -962,6 +937,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     } else if (this.driverIdFilter != null) {
       const filtros = [
         new Filter('currentDriverId', '=', this.driverIdFilter.toString()),
+        new Filter('status', '!=', 'Vendido'),
       ];
       const filter = new ModelFilterTable(
         filtros,
@@ -973,9 +949,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           if (response?.data?.content) {
             const content = response.data.content as any[];
-            this.totalVehicles = content.filter(
-              (v: any) => v.status !== 'Vendido',
-            ).length;
             content.forEach((v: any) => {
               if (v.driver?.name) {
                 v.currentDriverName = v.driver.name;
@@ -984,12 +957,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = content;
             this.mapBrandNames();
             this.mapLastTripStatuses();
-            this.calculateStats();
+            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           } else {
             this.allVehicles = [];
-            this.totalVehicles = 0;
-            this.calculateStats();
+            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           }
           this.loading = false;
@@ -1007,6 +979,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     } else if (this.userRole === 'CONDUCTOR' && this.loggedInDriverId != null) {
       const filtros = [
         new Filter('currentDriverId', '=', this.loggedInDriverId.toString()),
+        new Filter('status', '!=', 'Vendido'),
       ];
       const filter = new ModelFilterTable(
         filtros,
@@ -1018,9 +991,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           if (response?.data?.content) {
             const content = response.data.content as any[];
-            this.totalVehicles = content.filter(
-              (v: any) => v.status !== 'Vendido',
-            ).length;
             content.forEach((v: any) => {
               if (v.driver?.name) {
                 v.currentDriverName = v.driver.name;
@@ -1029,12 +999,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = content;
             this.mapBrandNames();
             this.mapLastTripStatuses();
-            this.calculateStats();
+            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           } else {
             this.allVehicles = [];
-            this.totalVehicles = 0;
-            this.calculateStats();
+            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           }
           this.loading = false;
@@ -1042,14 +1011,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error loading vehicles for logged-in driver:', err);
           this.allVehicles = [];
-          this.calculateStats();
+          // this.calculateStats(); // Removed: Stats are handled globally
           this.applyFilter(true);
           this.loading = false;
         },
       });
 
       // Case 3: ADMINISTRADOR without any owner filter → load all
-    } else {
+    } else if (this.userRole === 'ADMINISTRADOR') {
       const fetchRows = this.isSearchActive ? 20000 : this.rows;
       const fetchPage = this.isSearchActive ? 0 : this.page;
       const filter = new ModelFilterTable(
@@ -1062,9 +1031,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           if (response?.data?.content) {
             const content = response.data.content as any[];
-            this.totalVehicles = content.filter(
-              (v: any) => v.status !== 'Vendido',
-            ).length;
             content.forEach((v: any) => {
               if (v.driver?.name) {
                 v.currentDriverName = v.driver.name;
@@ -1073,12 +1039,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = content;
             this.mapBrandNames();
             this.mapLastTripStatuses();
-            this.calculateStats();
+            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           } else {
             this.allVehicles = [];
             this.groupedVehicles = [];
-            this.calculateStats();
+            // this.calculateStats(); // Removed: Stats are handled globally
           }
           this.loading = false;
         },
@@ -1154,6 +1120,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       );
     }
 
+    if (this.userRole !== 'ADMINISTRADOR' && this.loggedInOwnerId == null) {
+      return;
+    }
+
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -1192,7 +1162,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   get dataTotal(): number {
     return this.userRole === 'ADMINISTRADOR' && !this.isSearchActive
       ? this.totalOwners
-      : this.totalVehicles;
+      : this.totalVehiclesPagination;
   }
 
   get itemsShownCount(): number {
@@ -1211,6 +1181,41 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   get mobilePages(): number[] {
     return PaginationUtils.getVisiblePages(this.page, this.totalPages, 4);
+  }
+
+  get paginatedOwnerVehicles(): ModelVehicle[] {
+    const start = this.expandedOwnerPage * this.expandedOwnerRows;
+    return this.ownerVehicles.slice(start, start + this.expandedOwnerRows);
+  }
+
+  get expandedTotalPages(): number {
+    return Math.ceil(this.ownerVehicles.length / this.expandedOwnerRows);
+  }
+
+  get expandedDesktopPages(): number[] {
+    return PaginationUtils.getVisiblePages(
+      this.expandedOwnerPage,
+      this.expandedTotalPages,
+      12,
+    );
+  }
+
+  get expandedMobilePages(): number[] {
+    return PaginationUtils.getVisiblePages(
+      this.expandedOwnerPage,
+      this.expandedTotalPages,
+      4,
+    );
+  }
+
+  changeExpandedPage(newPage: number): void {
+    if (
+      newPage >= 0 &&
+      newPage < this.expandedTotalPages &&
+      newPage !== this.expandedOwnerPage
+    ) {
+      this.expandedOwnerPage = newPage;
+    }
   }
 
   changePage(newPage: number): void {

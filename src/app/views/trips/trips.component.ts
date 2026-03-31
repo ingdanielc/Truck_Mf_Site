@@ -102,6 +102,8 @@ export class TripsComponent implements OnInit, OnDestroy {
   loggedInOwner: ModelOwner | null = null;
   private userSub?: Subscription;
   expandedOwnerId: number | null = null;
+  expandedOwnerPage: number = 0;
+  expandedOwnerRows: number = 9;
   ownerTrips: ModelTrip[] = [];
   totalOwners: number = 0;
 
@@ -717,6 +719,7 @@ export class TripsComponent implements OnInit, OnDestroy {
 
     if (this.expandedOwnerId === owner.id) {
       this.expandedOwnerId = null;
+      this.expandedOwnerPage = 0;
       this.ownerTrips = [];
       this.expandedOwnerVehiclesCount = 0;
       // Restore global stats
@@ -819,6 +822,42 @@ export class TripsComponent implements OnInit, OnDestroy {
         return s === 'COMPLETADO' || s === 'COMPLETED';
       return s === target;
     });
+  }
+
+  get paginatedFilteredOwnerTrips(): ModelTrip[] {
+    const filtered = this.filteredOwnerTrips;
+    const start = this.expandedOwnerPage * this.expandedOwnerRows;
+    return filtered.slice(start, start + this.expandedOwnerRows);
+  }
+
+  get expandedTotalPages(): number {
+    return Math.ceil(this.filteredOwnerTrips.length / this.expandedOwnerRows);
+  }
+
+  get expandedDesktopPages(): number[] {
+    return PaginationUtils.getVisiblePages(
+      this.expandedOwnerPage,
+      this.expandedTotalPages,
+      12,
+    );
+  }
+
+  get expandedMobilePages(): number[] {
+    return PaginationUtils.getVisiblePages(
+      this.expandedOwnerPage,
+      this.expandedTotalPages,
+      4,
+    );
+  }
+
+  changeExpandedPage(newPage: number): void {
+    if (
+      newPage >= 0 &&
+      newPage < this.expandedTotalPages &&
+      newPage !== this.expandedOwnerPage
+    ) {
+      this.expandedOwnerPage = newPage;
+    }
   }
 
   get showActiveTripAlert(): boolean {

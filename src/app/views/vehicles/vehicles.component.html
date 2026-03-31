@@ -260,7 +260,7 @@
                       <div
                         class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-2 px-1"
                       >
-                        @for (vehicle of ownerVehicles; track vehicle.id) {
+                        @for (vehicle of paginatedOwnerVehicles; track vehicle.id) {
                           <div class="col">
                             <app-g-vehicle-card
                               [vehicle]="vehicle"
@@ -297,6 +297,107 @@
                           </div>
                         </div>
                       </div>
+
+                      <!-- Expanded Pagination -->
+                      @if (expandedTotalPages > 1) {
+                        <div
+                          class="row align-items-center g-3 mt-4 animate__animated animate__fadeInUp"
+                        >
+                          <div class="col-12 col-md-6 text-center text-md-start">
+                            <p class="text-secondary small mb-0 fw-medium">
+                              Mostrando {{ paginatedOwnerVehicles.length }} de
+                              {{ ownerVehicles.length }} vehículos
+                            </p>
+                          </div>
+                          <div
+                            class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end"
+                          >
+                            <nav aria-label="Navegación de vehículos internos">
+                              <!-- Desktop -->
+                              <ul class="pagination mb-0 d-none d-md-flex">
+                                <li
+                                  class="page-item"
+                                  [class.disabled]="expandedOwnerPage === 0"
+                                >
+                                  <button
+                                    class="page-link shadow-none px-3 py-2"
+                                    (click)="changeExpandedPage(expandedOwnerPage - 1)"
+                                  >
+                                    &laquo;
+                                  </button>
+                                </li>
+                                @for (p of expandedDesktopPages; track p) {
+                                  <li
+                                    class="page-item"
+                                    [class.active]="p === expandedOwnerPage"
+                                  >
+                                    <button
+                                      class="page-link shadow-none px-3 py-2"
+                                      (click)="changeExpandedPage(p)"
+                                    >
+                                      {{ p + 1 }}
+                                    </button>
+                                  </li>
+                                }
+                                <li
+                                  class="page-item"
+                                  [class.disabled]="
+                                    expandedOwnerPage >= expandedTotalPages - 1
+                                  "
+                                >
+                                  <button
+                                    class="page-link shadow-none px-3 py-2"
+                                    (click)="changeExpandedPage(expandedOwnerPage + 1)"
+                                  >
+                                    &raquo;
+                                  </button>
+                                </li>
+                              </ul>
+
+                              <!-- Mobile -->
+                              <ul class="pagination mb-0 d-flex d-md-none">
+                                <li
+                                  class="page-item"
+                                  [class.disabled]="expandedOwnerPage === 0"
+                                >
+                                  <button
+                                    class="page-link shadow-none px-3 py-2"
+                                    (click)="changeExpandedPage(expandedOwnerPage - 1)"
+                                  >
+                                    &laquo;
+                                  </button>
+                                </li>
+                                @for (p of expandedMobilePages; track p) {
+                                  <li
+                                    class="page-item"
+                                    [class.active]="p === expandedOwnerPage"
+                                  >
+                                    <button
+                                      class="page-link shadow-none px-3 py-2"
+                                      (click)="changeExpandedPage(p)"
+                                    >
+                                      {{ p + 1 }}
+                                    </button>
+                                  </li>
+                                }
+                                <li
+                                  class="page-item"
+                                  [class.disabled]="
+                                    expandedOwnerPage >= expandedTotalPages - 1
+                                  "
+                                >
+                                  <button
+                                    class="page-link shadow-none px-3 py-2"
+                                    (click)="changeExpandedPage(expandedOwnerPage + 1)"
+                                  >
+                                    &raquo;
+                                  </button>
+                                </li>
+                              </ul>
+                            </nav>
+                          </div>
+                        </div>
+                      }
                     }
                   </div>
                 }
@@ -331,7 +432,7 @@
         }}
       </p>
     </div>
-    @if (userRole === "ADMINISTRADOR") {
+    @if (userRole === "ADMINISTRADOR" || userRole === "PROPIETARIO") {
       <div
         class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end"
       >
