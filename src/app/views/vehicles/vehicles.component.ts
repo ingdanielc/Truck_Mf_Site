@@ -207,7 +207,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.subscribeToUserContext();
   }
 
-
   subscribeToUserContext(): void {
     this.userSub = this.securityService.userData$.subscribe({
       next: (user) => {
@@ -261,7 +260,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       },
     });
   }
-
 
   ngOnDestroy(): void {
     this.userSub?.unsubscribe();
@@ -343,7 +341,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       filtros.push(
         new Filter(isUserId ? 'user.Id' : 'id', '=', idOverride.toString()),
       );
-    } else if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId != null) {
+    } else if (
+      this.userRole === 'PROPIETARIO' &&
+      this.loggedInOwnerId != null
+    ) {
       filtros.push(new Filter('user.Id', '=', this.loggedInOwnerId.toString()));
     } else if (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter) {
       filtros.push(new Filter('id', '=', this.ownerIdFilter.toString()));
@@ -365,6 +366,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.ownerService.getOwnerFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
+          console.log('uno');
           const owners = response.data.content;
           this.owners = owners;
           if (this.userRole === 'PROPIETARIO' && owners.length > 0) {
@@ -874,7 +876,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = content;
             this.mapBrandNames();
             this.mapLastTripStatuses();
-            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           }
           this.loading = false;
@@ -882,7 +883,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error loading vehicles via owner filter:', err);
           this.allVehicles = [];
-          // this.calculateStats(); // Removed: Stats are handled globally
           this.applyFilter(true);
           this.loading = false;
         },
@@ -915,11 +915,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = content;
             this.mapBrandNames();
             this.mapLastTripStatuses();
-            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           } else {
             this.allVehicles = [];
-            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           }
           this.loading = false;
@@ -957,11 +955,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = content;
             this.mapBrandNames();
             this.mapLastTripStatuses();
-            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           } else {
             this.allVehicles = [];
-            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           }
           this.loading = false;
@@ -999,11 +995,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = content;
             this.mapBrandNames();
             this.mapLastTripStatuses();
-            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           } else {
             this.allVehicles = [];
-            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           }
           this.loading = false;
@@ -1011,7 +1005,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error loading vehicles for logged-in driver:', err);
           this.allVehicles = [];
-          // this.calculateStats(); // Removed: Stats are handled globally
           this.applyFilter(true);
           this.loading = false;
         },
@@ -1039,12 +1032,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.allVehicles = content;
             this.mapBrandNames();
             this.mapLastTripStatuses();
-            // this.calculateStats(); // Removed: Stats are handled globally
             this.applyFilter(true);
           } else {
             this.allVehicles = [];
             this.groupedVehicles = [];
-            // this.calculateStats(); // Removed: Stats are handled globally
           }
           this.loading = false;
         },
