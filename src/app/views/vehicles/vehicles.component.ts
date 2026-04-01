@@ -98,12 +98,17 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   isSearchActive: boolean = false;
 
   get isSearchingVehicles(): boolean {
-    return (
-      this.userRole === 'ADMINISTRADOR' &&
-      !!this.searchTerm &&
-      !this.expandedOwnerId &&
-      !this.ownerIdFilter
-    );
+    const isSearchTermPresent =
+      !!this.searchTerm && this.searchTerm.trim().length > 0;
+    if (this.userRole === 'ADMINISTRADOR') {
+      return (
+        isSearchTermPresent && !this.expandedOwnerId && !this.ownerIdFilter
+      );
+    }
+    if (this.userRole === 'PROPIETARIO') {
+      return isSearchTermPresent;
+    }
+    return false;
   }
   isPatching: boolean = false;
   showingVehicleLimitWarning: boolean = false;
@@ -878,12 +883,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   loadVehicles(): void {
     // Case 1: PROPIETARIO → filter by their own owner id using owner filter endpoint
     if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId != null) {
+      const fetchRows = this.isSearchActive ? 20000 : this.rows;
+      const fetchPage = this.isSearchActive ? 0 : this.page;
       const filtros = [
         new Filter('owner.id', '=', this.loggedInOwnerId.toString()),
       ];
       const filter = new ModelFilterTable(
         filtros,
-        new Pagination(this.rows, this.page),
+        new Pagination(fetchRows, fetchPage),
         new Sort('id', true),
       );
       this.loading = true;
