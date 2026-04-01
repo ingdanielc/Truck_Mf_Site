@@ -366,7 +366,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.ownerService.getOwnerFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
-          console.log('uno');
           const owners = response.data.content;
           this.owners = owners;
           if (this.userRole === 'PROPIETARIO' && owners.length > 0) {
@@ -874,11 +873,19 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               }
             });
             this.allVehicles = content;
+            if (this.activeFilter === 'Disponible') {
+              this.totalVehiclesPagination = this.availableVehicles;
+            } else if (this.activeFilter === 'En Curso') {
+              this.totalVehiclesPagination = this.occupiedVehicles;
+            } else {
+              this.totalVehiclesPagination = response.data.totalElements || 0;
+            }
             this.mapBrandNames();
             this.mapLastTripStatuses();
             this.applyFilter(true);
+          } else {
+            this.loading = false;
           }
-          this.loading = false;
         },
         error: (err) => {
           console.error('Error loading vehicles via owner filter:', err);
@@ -913,14 +920,21 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               }
             });
             this.allVehicles = content;
+            if (this.activeFilter === 'Disponible') {
+              this.totalVehiclesPagination = this.availableVehicles;
+            } else if (this.activeFilter === 'En Curso') {
+              this.totalVehiclesPagination = this.occupiedVehicles;
+            } else {
+              this.totalVehiclesPagination = response.data.totalElements || 0;
+            }
             this.mapBrandNames();
             this.mapLastTripStatuses();
             this.applyFilter(true);
           } else {
             this.allVehicles = [];
             this.applyFilter(true);
+            this.loading = false;
           }
-          this.loading = false;
         },
         error: (err) => {
           console.error('Error loading vehicles for owner:', err);
@@ -953,14 +967,21 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               }
             });
             this.allVehicles = content;
+            if (this.activeFilter === 'Disponible') {
+              this.totalVehiclesPagination = this.availableVehicles;
+            } else if (this.activeFilter === 'En Curso') {
+              this.totalVehiclesPagination = this.occupiedVehicles;
+            } else {
+              this.totalVehiclesPagination = response.data.totalElements || 0;
+            }
             this.mapBrandNames();
             this.mapLastTripStatuses();
             this.applyFilter(true);
           } else {
             this.allVehicles = [];
             this.applyFilter(true);
+            this.loading = false;
           }
-          this.loading = false;
         },
         error: (err) => {
           console.error('Error loading vehicles for driver:', err);
@@ -993,6 +1014,13 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               }
             });
             this.allVehicles = content;
+            if (this.activeFilter === 'Disponible') {
+              this.totalVehiclesPagination = this.availableVehicles;
+            } else if (this.activeFilter === 'En Curso') {
+              this.totalVehiclesPagination = this.occupiedVehicles;
+            } else {
+              this.totalVehiclesPagination = response.data.totalElements || 0;
+            }
             this.mapBrandNames();
             this.mapLastTripStatuses();
             this.applyFilter(true);
@@ -1030,14 +1058,21 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               }
             });
             this.allVehicles = content;
+            if (this.activeFilter === 'Disponible') {
+              this.totalVehiclesPagination = this.availableVehicles;
+            } else if (this.activeFilter === 'En Curso') {
+              this.totalVehiclesPagination = this.occupiedVehicles;
+            } else {
+              this.totalVehiclesPagination = response.data.totalElements || 0;
+            }
             this.mapBrandNames();
             this.mapLastTripStatuses();
             this.applyFilter(true);
           } else {
             this.allVehicles = [];
             this.groupedVehicles = [];
+            this.loading = false;
           }
-          this.loading = false;
         },
         error: (err) => {
           console.error('Error loading vehicles:', err);
@@ -1100,6 +1135,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         this.loadOwners();
         return;
       }
+    } else if (this.userRole === 'PROPIETARIO' && !fromLoadVehicles) {
+      this.page = 0;
+      this.loadVehicles();
+      return;
     }
 
     let filtered = this.allVehicles;
@@ -1129,15 +1168,15 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       const filter = this.activeFilter;
       filtered = filtered.filter((v) => {
         const tripStatus = (v.lastTripStatus || '').toUpperCase();
+        const isBusy =
+          tripStatus === 'EN CURSO' ||
+          tripStatus === 'IN_PROGRESS' ||
+          tripStatus === 'IN_CURSO';
+
         if (filter === 'Disponible') {
-          return (
-            tripStatus === 'COMPLETADO' ||
-            tripStatus === 'PENDIENTE' ||
-            tripStatus === 'CANCELADO' ||
-            tripStatus === ''
-          );
+          return !isBusy;
         } else if (filter === 'En Curso') {
-          return tripStatus === 'EN CURSO';
+          return isBusy;
         }
         return true;
       });
@@ -1355,15 +1394,19 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             v.lastTripId = lastTrip?.id ?? null;
           }
         });
+        this.applyFilter(true);
+        this.loading = false;
       },
       error: (err) => {
         console.error('Error in batch mapping last trips:', err);
+        this.loading = false;
       },
     });
   }
 
   setFilter(filter: string): void {
     this.activeFilter = filter;
+    this.page = 0;
     this.applyFilter();
   }
 

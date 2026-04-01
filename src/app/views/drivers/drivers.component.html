@@ -241,7 +241,10 @@
                       <div
                         class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4"
                       >
-                        @for (driver of paginatedOwnerDrivers; track driver.id) {
+                        @for (
+                          driver of paginatedOwnerDrivers;
+                          track driver.id
+                        ) {
                           <div class="col">
                             <app-g-driver-card
                               [driver]="driver"
@@ -282,11 +285,13 @@
                       </div>
 
                       <!-- Expanded Pagination -->
-                      @if (expandedTotalPages > 1) {
+                      @if (userRole === "ADMINISTRADOR") {
                         <div
                           class="row align-items-center g-3 mt-4 animate__animated animate__fadeInUp"
                         >
-                          <div class="col-12 col-md-6 text-center text-md-start">
+                          <div
+                            class="col-12 col-md-6 text-center text-md-start"
+                          >
                             <p class="text-secondary small mb-0 fw-medium">
                               Mostrando {{ paginatedOwnerDrivers.length }} de
                               {{ ownerDrivers.length }} conductores
@@ -295,7 +300,9 @@
                           <div
                             class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end"
                           >
-                            <nav aria-label="Navegación de conductores internos">
+                            <nav
+                              aria-label="Navegación de conductores internos"
+                            >
                               <!-- Desktop -->
                               <ul class="pagination mb-0 d-none d-md-flex">
                                 <li
@@ -304,7 +311,9 @@
                                 >
                                   <button
                                     class="page-link shadow-none px-3 py-2"
-                                    (click)="changeExpandedPage(expandedOwnerPage - 1)"
+                                    (click)="
+                                      changeExpandedPage(expandedOwnerPage - 1)
+                                    "
                                   >
                                     &laquo;
                                   </button>
@@ -330,7 +339,9 @@
                                 >
                                   <button
                                     class="page-link shadow-none px-3 py-2"
-                                    (click)="changeExpandedPage(expandedOwnerPage + 1)"
+                                    (click)="
+                                      changeExpandedPage(expandedOwnerPage + 1)
+                                    "
                                   >
                                     &raquo;
                                   </button>
@@ -345,7 +356,9 @@
                                 >
                                   <button
                                     class="page-link shadow-none px-3 py-2"
-                                    (click)="changeExpandedPage(expandedOwnerPage - 1)"
+                                    (click)="
+                                      changeExpandedPage(expandedOwnerPage - 1)
+                                    "
                                   >
                                     &laquo;
                                   </button>
@@ -371,7 +384,9 @@
                                 >
                                   <button
                                     class="page-link shadow-none px-3 py-2"
-                                    (click)="changeExpandedPage(expandedOwnerPage + 1)"
+                                    (click)="
+                                      changeExpandedPage(expandedOwnerPage + 1)
+                                    "
                                   >
                                     &raquo;
                                   </button>

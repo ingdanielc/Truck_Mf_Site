@@ -260,7 +260,10 @@
                       <div
                         class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-2 px-1"
                       >
-                        @for (vehicle of paginatedOwnerVehicles; track vehicle.id) {
+                        @for (
+                          vehicle of paginatedOwnerVehicles;
+                          track vehicle.id
+                        ) {
                           <div class="col">
                             <app-g-vehicle-card
                               [vehicle]="vehicle"
@@ -299,11 +302,13 @@
                       </div>
 
                       <!-- Expanded Pagination -->
-                      @if (expandedTotalPages > 1) {
+                      @if (userRole === "ADMINISTRADOR") {
                         <div
                           class="row align-items-center g-3 mt-4 animate__animated animate__fadeInUp"
                         >
-                          <div class="col-12 col-md-6 text-center text-md-start">
+                          <div
+                            class="col-12 col-md-6 text-center text-md-start"
+                          >
                             <p class="text-secondary small mb-0 fw-medium">
                               Mostrando {{ paginatedOwnerVehicles.length }} de
                               {{ ownerVehicles.length }} vehículos
@@ -321,7 +326,9 @@
                                 >
                                   <button
                                     class="page-link shadow-none px-3 py-2"
-                                    (click)="changeExpandedPage(expandedOwnerPage - 1)"
+                                    (click)="
+                                      changeExpandedPage(expandedOwnerPage - 1)
+                                    "
                                   >
                                     &laquo;
                                   </button>
@@ -347,7 +354,9 @@
                                 >
                                   <button
                                     class="page-link shadow-none px-3 py-2"
-                                    (click)="changeExpandedPage(expandedOwnerPage + 1)"
+                                    (click)="
+                                      changeExpandedPage(expandedOwnerPage + 1)
+                                    "
                                   >
                                     &raquo;
                                   </button>
@@ -362,7 +371,9 @@
                                 >
                                   <button
                                     class="page-link shadow-none px-3 py-2"
-                                    (click)="changeExpandedPage(expandedOwnerPage - 1)"
+                                    (click)="
+                                      changeExpandedPage(expandedOwnerPage - 1)
+                                    "
                                   >
                                     &laquo;
                                   </button>
@@ -388,7 +399,9 @@
                                 >
                                   <button
                                     class="page-link shadow-none px-3 py-2"
-                                    (click)="changeExpandedPage(expandedOwnerPage + 1)"
+                                    (click)="
+                                      changeExpandedPage(expandedOwnerPage + 1)
+                                    "
                                   >
                                     &raquo;
                                   </button>

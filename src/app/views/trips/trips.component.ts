@@ -800,9 +800,13 @@ export class TripsComponent implements OnInit, OnDestroy {
   }
 
   get dataTotal(): number {
-    return this.userRole === 'ADMINISTRADOR' && !this.isSearchActive
-      ? this.totalOwners
-      : this.totalTrips;
+    if (this.userRole === 'ADMINISTRADOR' && !this.isSearchActive) {
+      return this.totalOwners;
+    }
+    if (this.selectedStatus === 'En Curso') return this.inProgressTrips;
+    if (this.selectedStatus === 'Pendiente') return this.pendingTrips;
+    if (this.selectedStatus === 'Completado') return this.completedTrips;
+    return this.totalTrips;
   }
 
   get itemsShownCount(): number {
