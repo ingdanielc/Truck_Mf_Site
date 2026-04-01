@@ -12,7 +12,7 @@ import {
   ValidationErrors,
   ValidatorFn,
 } from '@angular/forms';
-import { Subscription, firstValueFrom, forkJoin } from 'rxjs';
+import { Subscription, firstValueFrom, forkJoin, of, tap, switchMap } from 'rxjs';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { ModelTrip } from 'src/app/models/trip-model';
 import {
@@ -503,79 +503,73 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   private loadVehiclesForAdmin(ownerId: number): void {
     const filtros = [new Filter('ownerId', '=', ownerId.toString())];
-
     const filter = new ModelFilterTable(
       filtros,
       new Pagination(20000, 0),
       new Sort('id', true),
     );
 
-    this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
-      next: (respVehicles: any) => {
-        let content = (respVehicles?.data?.content ?? []).filter(
-          (v: any) => v.status !== 'Vendido',
-        );
-
-        if (this.searchTerm) {
-          const term = this.searchTerm.toLowerCase();
-          content = content.filter(
-            (v: any) =>
-              v.plate?.toLowerCase().includes(term) ||
-              v.model?.toLowerCase().includes(term) ||
-              v.vehicleBrandName?.toLowerCase().includes(term),
+    this.vehicleService
+      .getVehicleOwnerFilter(filter)
+      .pipe(
+        switchMap((respVehicles: any) => {
+          let content = (respVehicles?.data?.content ?? []).filter(
+            (v: any) => v.status !== 'Vendido',
           );
-        }
-        this.ownerVehicles = content;
 
-        // Ensure properties needed for display mapped correctly if applicable, or just map brand names
-        if (this.ownerVehicles.length > 0) {
-          this.ownerVehicles.forEach((v: any) => {
-            if (v.driver?.name) {
-              v.currentDriverName = v.driver.name;
-            }
-          });
+          if (this.searchTerm) {
+            const term = this.searchTerm.toLowerCase();
+            content = content.filter(
+              (v: any) =>
+                v.plate?.toLowerCase().includes(term) ||
+                v.model?.toLowerCase().includes(term) ||
+                v.vehicleBrandName?.toLowerCase().includes(term),
+            );
+          }
+
+          this.ownerVehicles = content;
           this.allVehicles = this.ownerVehicles;
           this.mapBrandNames();
-          this.mapLastTripStatuses();
-        }
 
-        this.totalVehicles = this.ownerVehicles.length;
-
-        const vehicleIds = new Set(this.ownerVehicles.map((v: any) => v.id));
-        const tripFilter = new ModelFilterTable(
-          [new Filter('status', '=', 'En Curso')],
-          new Pagination(20000, 0),
-          new Sort('id', true),
-        );
-
-        this.tripService.getTripFilter(tripFilter).subscribe({
-          next: (tripResp: any) => {
-            const activeTrips = tripResp?.data?.content ?? [];
-            const occupiedIds = new Set(
-              activeTrips
-                .map((t: any) => t.vehicleId)
-                .filter((id: any) => vehicleIds.has(id)),
+          if (this.ownerVehicles.length > 0) {
+            this.ownerVehicles.forEach((v: any) => {
+              if (v.driver?.name) {
+                v.currentDriverName = v.driver.name;
+              }
+            });
+            return this.mapLastTripStatuses();
+          } else {
+            return of(null);
+          }
+        }),
+        tap(() => {
+          // Re-calculate local stats for the expanded owner based on mapped trip statuses
+          const total = this.ownerVehicles.length;
+          const occupied = this.ownerVehicles.filter((v) => {
+            const status = (v.lastTripStatus || '').toUpperCase();
+            return (
+              status === 'EN CURSO' ||
+              status === 'IN_PROGRESS' ||
+              status === 'IN_CURSO'
             );
+          }).length;
 
-            this.occupiedVehicles = occupiedIds.size;
-            this.availableVehicles = this.totalVehicles - this.occupiedVehicles;
-            this.isLoadingExpandedVehicles = false;
-          },
-          error: () => {
-            this.occupiedVehicles = 0;
-            this.availableVehicles = this.totalVehicles;
-            this.isLoadingExpandedVehicles = false;
-          },
-        });
-      },
-      error: () => {
-        this.ownerVehicles = [];
-        this.totalVehicles = 0;
-        this.availableVehicles = 0;
-        this.occupiedVehicles = 0;
-        this.isLoadingExpandedVehicles = false;
-      },
-    });
+          this.totalVehicles = total;
+          this.occupiedVehicles = occupied;
+          this.availableVehicles = total - occupied;
+          this.isLoadingExpandedVehicles = false;
+        }),
+      )
+      .subscribe({
+        error: (err) => {
+          console.error('Error in loadVehiclesForAdmin:', err);
+          this.ownerVehicles = [];
+          this.totalVehicles = 0;
+          this.availableVehicles = 0;
+          this.occupiedVehicles = 0;
+          this.isLoadingExpandedVehicles = false;
+        },
+      });
   }
 
   generateYears(): void {
@@ -874,37 +868,43 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         new Sort('id', true),
       );
       this.loading = true;
-      this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
-        next: (response: any) => {
-          if (response?.data?.content) {
-            const content = response.data.content as any[];
-            content.forEach((v: any) => {
-              if (v.driver?.name) {
-                v.currentDriverName = v.driver.name;
+      this.vehicleService
+        .getVehicleOwnerFilter(filter)
+        .pipe(
+          switchMap((response: any) => {
+            if (response?.data?.content) {
+              const content = response.data.content as any[];
+              content.forEach((v: any) => {
+                if (v.driver?.name) {
+                  v.currentDriverName = v.driver.name;
+                }
+              });
+              this.allVehicles = content;
+              if (this.activeFilter === 'Disponible') {
+                this.totalVehiclesPagination = this.availableVehicles;
+              } else if (this.activeFilter === 'En Curso') {
+                this.totalVehiclesPagination = this.occupiedVehicles;
+              } else {
+                this.totalVehiclesPagination = response.data.totalElements || 0;
               }
-            });
-            this.allVehicles = content;
-            if (this.activeFilter === 'Disponible') {
-              this.totalVehiclesPagination = this.availableVehicles;
-            } else if (this.activeFilter === 'En Curso') {
-              this.totalVehiclesPagination = this.occupiedVehicles;
+              this.mapBrandNames();
+              return this.mapLastTripStatuses();
             } else {
-              this.totalVehiclesPagination = response.data.totalElements || 0;
+              this.allVehicles = [];
+              this.applyFilter(true);
+              this.loading = false;
+              return of(null);
             }
-            this.mapBrandNames();
-            this.mapLastTripStatuses();
+          }),
+        )
+        .subscribe({
+          error: (err) => {
+            console.error('Error loading vehicles via owner filter:', err);
+            this.allVehicles = [];
             this.applyFilter(true);
-          } else {
             this.loading = false;
-          }
-        },
-        error: (err) => {
-          console.error('Error loading vehicles via owner filter:', err);
-          this.allVehicles = [];
-          this.applyFilter(true);
-          this.loading = false;
-        },
-      });
+          },
+        });
 
       // Case 2: ADMINISTRADOR navigated from owner card → filter by ownerIdFilter
     } else if (
@@ -921,40 +921,43 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         new Sort('id', true),
       );
       this.loading = true;
-      this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
-        next: (response: any) => {
-          if (response?.data?.content) {
-            const content = response.data.content as any[];
-            content.forEach((v: any) => {
-              if (v.driver?.name) {
-                v.currentDriverName = v.driver.name;
+      this.vehicleService
+        .getVehicleOwnerFilter(filter)
+        .pipe(
+          switchMap((response: any) => {
+            if (response?.data?.content) {
+              const content = response.data.content as any[];
+              content.forEach((v: any) => {
+                if (v.driver?.name) {
+                  v.currentDriverName = v.driver.name;
+                }
+              });
+              this.allVehicles = content;
+              if (this.activeFilter === 'Disponible') {
+                this.totalVehiclesPagination = this.availableVehicles;
+              } else if (this.activeFilter === 'En Curso') {
+                this.totalVehiclesPagination = this.occupiedVehicles;
+              } else {
+                this.totalVehiclesPagination = response.data.totalElements || 0;
               }
-            });
-            this.allVehicles = content;
-            if (this.activeFilter === 'Disponible') {
-              this.totalVehiclesPagination = this.availableVehicles;
-            } else if (this.activeFilter === 'En Curso') {
-              this.totalVehiclesPagination = this.occupiedVehicles;
+              this.mapBrandNames();
+              return this.mapLastTripStatuses();
             } else {
-              this.totalVehiclesPagination = response.data.totalElements || 0;
+              this.allVehicles = [];
+              this.applyFilter(true);
+              this.loading = false;
+              return of(null);
             }
-            this.mapBrandNames();
-            this.mapLastTripStatuses();
-            this.applyFilter(true);
-          } else {
+          }),
+        )
+        .subscribe({
+          error: (err) => {
+            console.error('Error loading vehicles for owner:', err);
             this.allVehicles = [];
             this.applyFilter(true);
             this.loading = false;
-          }
-        },
-        error: (err) => {
-          console.error('Error loading vehicles for owner:', err);
-          this.allVehicles = [];
-          this.calculateStats();
-          this.applyFilter(true);
-          this.loading = false;
-        },
-      });
+          },
+        });
 
       // Case 2.1: Filter by driverIdFilter
     } else if (this.driverIdFilter != null) {
@@ -997,7 +1000,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Error loading vehicles for driver:', err);
           this.allVehicles = [];
-          this.calculateStats();
           this.applyFilter(true);
           this.loading = false;
         },
@@ -1015,39 +1017,43 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         new Sort('id', true),
       );
       this.loading = true;
-      this.vehicleService.getVehicleFilter(filter).subscribe({
-        next: (response: any) => {
-          if (response?.data?.content) {
-            const content = response.data.content as any[];
-            content.forEach((v: any) => {
-              if (v.driver?.name) {
-                v.currentDriverName = v.driver.name;
+      this.vehicleService
+        .getVehicleFilter(filter)
+        .pipe(
+          switchMap((response: any) => {
+            if (response?.data?.content) {
+              const content = response.data.content as any[];
+              content.forEach((v: any) => {
+                if (v.driver?.name) {
+                  v.currentDriverName = v.driver.name;
+                }
+              });
+              this.allVehicles = content;
+              if (this.activeFilter === 'Disponible') {
+                this.totalVehiclesPagination = this.availableVehicles;
+              } else if (this.activeFilter === 'En Curso') {
+                this.totalVehiclesPagination = this.occupiedVehicles;
+              } else {
+                this.totalVehiclesPagination = response.data.totalElements || 0;
               }
-            });
-            this.allVehicles = content;
-            if (this.activeFilter === 'Disponible') {
-              this.totalVehiclesPagination = this.availableVehicles;
-            } else if (this.activeFilter === 'En Curso') {
-              this.totalVehiclesPagination = this.occupiedVehicles;
+              this.mapBrandNames();
+              return this.mapLastTripStatuses();
             } else {
-              this.totalVehiclesPagination = response.data.totalElements || 0;
+              this.allVehicles = [];
+              this.applyFilter(true);
+              this.loading = false;
+              return of(null);
             }
-            this.mapBrandNames();
-            this.mapLastTripStatuses();
-            this.applyFilter(true);
-          } else {
+          }),
+        )
+        .subscribe({
+          error: (err) => {
+            console.error('Error loading vehicles for logged-in driver:', err);
             this.allVehicles = [];
             this.applyFilter(true);
-          }
-          this.loading = false;
-        },
-        error: (err) => {
-          console.error('Error loading vehicles for logged-in driver:', err);
-          this.allVehicles = [];
-          this.applyFilter(true);
-          this.loading = false;
-        },
-      });
+            this.loading = false;
+          },
+        });
 
       // Case 3: ADMINISTRADOR without any owner filter → load all
     } else if (this.userRole === 'ADMINISTRADOR') {
@@ -1059,37 +1065,43 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         new Sort('id', true),
       );
       this.loading = true;
-      this.vehicleService.getVehicleFilter(filter).subscribe({
-        next: (response: any) => {
-          if (response?.data?.content) {
-            const content = response.data.content as any[];
-            content.forEach((v: any) => {
-              if (v.driver?.name) {
-                v.currentDriverName = v.driver.name;
+      this.vehicleService
+        .getVehicleFilter(filter)
+        .pipe(
+          switchMap((response: any) => {
+            if (response?.data?.content) {
+              const content = response.data.content as any[];
+              content.forEach((v: any) => {
+                if (v.driver?.name) {
+                  v.currentDriverName = v.driver.name;
+                }
+              });
+              this.allVehicles = content;
+              if (this.activeFilter === 'Disponible') {
+                this.totalVehiclesPagination = this.availableVehicles;
+              } else if (this.activeFilter === 'En Curso') {
+                this.totalVehiclesPagination = this.occupiedVehicles;
+              } else {
+                this.totalVehiclesPagination = response.data.totalElements || 0;
               }
-            });
-            this.allVehicles = content;
-            if (this.activeFilter === 'Disponible') {
-              this.totalVehiclesPagination = this.availableVehicles;
-            } else if (this.activeFilter === 'En Curso') {
-              this.totalVehiclesPagination = this.occupiedVehicles;
+              this.mapBrandNames();
+              return this.mapLastTripStatuses();
             } else {
-              this.totalVehiclesPagination = response.data.totalElements || 0;
+              this.allVehicles = [];
+              this.groupedVehicles = [];
+              this.applyFilter(true);
+              this.loading = false;
+              return of(null);
             }
-            this.mapBrandNames();
-            this.mapLastTripStatuses();
+          }),
+        )
+        .subscribe({
+          error: (err) => {
+            console.error('Error loading vehicles:', err);
             this.applyFilter(true);
-          } else {
-            this.allVehicles = [];
-            this.groupedVehicles = [];
             this.loading = false;
-          }
-        },
-        error: (err) => {
-          console.error('Error loading vehicles:', err);
-          this.loading = false;
-        },
-      });
+          },
+        });
     }
   }
 
@@ -1157,6 +1169,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
       // Case 3: Filtering WITHIN an open card
       if (this.expandedOwnerId && filtersActive && !fromLoadVehicles) {
+        // If we already have owner vehicles, the reactive getters (paginatedOwnerVehicles)
+        // will handle the status filtering instantly in the UI. No need for a network refresh here.
+        if (this.ownerVehicles.length > 0) {
+          this.loading = false;
+          return;
+        }
         this.loadVehiclesForAdmin(this.expandedOwnerId);
         return;
       }
@@ -1164,8 +1182,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       // Case 4: Default return to main list
       if (!this.isSearchActive && !this.expandedOwnerId) {
         if (!fromLoadVehicles) {
-          this.page = 0;
-          this.loadOwners();
+          // If we are just switching a filter in the global view and already have drivers/owners list,
+          // we can skip the full reload and let the memory filter handle it.
+          if (this.owners.length === 0) {
+            this.page = 0;
+            this.loadOwners();
+          }
 
           this.totalVehicles = this.globalStats.total;
           this.availableVehicles = this.globalStats.available;
@@ -1273,13 +1295,36 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     return PaginationUtils.getVisiblePages(this.page, this.totalPages, 4);
   }
 
+  get filteredOwnerVehicles(): ModelVehicle[] {
+    let filtered = this.ownerVehicles;
+
+    if (this.activeFilter !== 'Todos') {
+      const filter = this.activeFilter;
+      filtered = filtered.filter((v) => {
+        const tripStatus = (v.lastTripStatus || '').toUpperCase();
+        const isBusy =
+          tripStatus === 'EN CURSO' ||
+          tripStatus === 'IN_PROGRESS' ||
+          tripStatus === 'IN_CURSO';
+
+        if (filter === 'Disponible') {
+          return !isBusy;
+        } else if (filter === 'En Curso') {
+          return isBusy;
+        }
+        return true;
+      });
+    }
+    return filtered;
+  }
+
   get paginatedOwnerVehicles(): ModelVehicle[] {
     const start = this.expandedOwnerPage * this.expandedOwnerRows;
-    return this.ownerVehicles.slice(start, start + this.expandedOwnerRows);
+    return this.filteredOwnerVehicles.slice(start, start + this.expandedOwnerRows);
   }
 
   get expandedTotalPages(): number {
-    return Math.ceil(this.ownerVehicles.length / this.expandedOwnerRows);
+    return Math.ceil(this.filteredOwnerVehicles.length / this.expandedOwnerRows);
   }
 
   get expandedDesktopPages(): number[] {
@@ -1413,8 +1458,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     }
   }
 
-  mapLastTripStatuses(): void {
-    if (this.allVehicles.length === 0) return;
+  mapLastTripStatuses(): any {
+    if (this.allVehicles.length === 0) {
+      this.applyFilter(true);
+      this.loading = false;
+      return of(null);
+    }
 
     // 1. Collect all valid vehicle IDs
     const vehicleIds = this.allVehicles
@@ -1422,22 +1471,22 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       .filter((id) => id != null)
       .map(String);
 
-    if (vehicleIds.length === 0) return;
+    if (vehicleIds.length === 0) {
+      this.applyFilter(true);
+      this.loading = false;
+      return of(null);
+    }
 
     // 2. Single request to get potential last trips for all these vehicles
-    // Fetch a batch sorted by startDate DESC to identify the most recent one for each
     const tripFilter = new ModelFilterTable(
       [new Filter('vehicle.id', 'in', vehicleIds.join(','))],
-      new Pagination(500, 0), // Fetch a sufficient window of recent trips
+      new Pagination(500, 0),
       new Sort('startDate', false),
     );
 
-    this.tripService.getTripFilter(tripFilter).subscribe({
-      next: (resp: any) => {
+    return this.tripService.getTripFilter(tripFilter).pipe(
+      tap((resp: any) => {
         const trips: ModelTrip[] = resp?.data?.content ?? [];
-
-        // 3. Map to store the latest trip for each vehicle
-        // Since the list is sorted DESC, the first trip found for an ID is the latest
         const latestTripsMap = new Map<number, ModelTrip>();
 
         trips.forEach((t) => {
@@ -1456,17 +1505,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         });
         this.applyFilter(true);
         this.loading = false;
-      },
-      error: (err) => {
-        console.error('Error in batch mapping last trips:', err);
-        this.loading = false;
-      },
-    });
+      })
+    );
   }
 
   setFilter(filter: string): void {
     this.activeFilter = filter;
     this.page = 0;
+    this.expandedOwnerPage = 0; // Reset expanded pagination too
     this.applyFilter();
   }
 
