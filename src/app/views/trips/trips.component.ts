@@ -578,11 +578,37 @@ export class TripsComponent implements OnInit, OnDestroy {
     }
 
     if (this.userRole === 'ADMINISTRADOR') {
+      const filtersActive = !!this.searchTerm || !!this.originFilter || !!this.destinationFilter;
+
+      // Case 1: Manual clearing of all filters (e.g. backspacing search input)
+      if (!filtersActive && !fromLoadTrips) {
+        if (this.isSearchActive || this.expandedOwnerId) {
+          this.expandedOwnerId = null;
+          this.isSearchActive = false;
+          this.updateStatusCounts();
+          this.page = 0;
+          this.loadOwners();
+          this.loading = false;
+          return;
+        }
+      }
+
+      // Case 2: Global Search (when NO owner is open)
       if (this.isSearchActive && !fromLoadTrips) {
         this.page = 0;
+        this.expandedOwnerId = null; // Reset expansion when starting new global search
         this.loadTrips();
         return;
-      } else if (!this.isSearchActive && !this.expandedOwnerId) {
+      }
+
+      // Case 3: Filtering WITHIN an open card
+      if (this.expandedOwnerId && filtersActive && !fromLoadTrips) {
+        this.loadTripsForAdmin(this.expandedOwnerId);
+        return;
+      }
+
+      // Case 4: Default return to main list
+      if (!this.isSearchActive && !this.expandedOwnerId) {
         if (!fromLoadTrips) {
           this.page = 0;
           this.loadOwners();
@@ -625,6 +651,32 @@ export class TripsComponent implements OnInit, OnDestroy {
 
     if (this.userRole === 'ADMINISTRADOR' && this.isSearchActive) {
       this.calculateStats(filtered);
+
+      // Extract unique owner IDs from the matching trips
+      const getOwnerId = (t: ModelTrip): number | undefined => {
+        if (t.driver?.ownerId) return t.driver.ownerId;
+        if (t.vehicle?.owners && t.vehicle.owners.length > 0) {
+          return t.vehicle.owners[0].ownerId;
+        }
+        return undefined;
+      };
+
+      const matchingOwnerIds = [
+        ...new Set(
+          filtered.map((t) => getOwnerId(t)).filter((id) => id != null),
+        ),
+      ] as number[];
+
+      // Show ONLY owners who have matching trips
+      this.owners = this.owners.filter(
+        (o) => o.id != null && matchingOwnerIds.includes(o.id),
+      );
+      this.totalOwners = this.owners.length;
+
+      // Auto-expand the first owner if it's a new search
+      if (fromLoadTrips && this.owners.length > 0 && !this.expandedOwnerId) {
+        this.toggleOwnerExpansion(this.owners[0]);
+      }
     }
 
     this.buildGroups(filtered);
@@ -639,6 +691,8 @@ export class TripsComponent implements OnInit, OnDestroy {
     this.originFilter = null;
     this.destinationFilter = null;
     this.searchTerm = '';
+    this.expandedOwnerId = null;
+    this.updateStatusCounts();
     this.applyFilter();
   }
 
@@ -769,6 +823,12 @@ export class TripsComponent implements OnInit, OnDestroy {
             new Filter('manifestNumber', 'like', this.searchTerm),
           );
         }
+        if (this.originFilter) {
+          tripFiltros.push(new Filter('originId', '=', this.originFilter.toString()));
+        }
+        if (this.destinationFilter) {
+          tripFiltros.push(new Filter('destinationId', '=', this.destinationFilter.toString()));
+        }
 
         const tripFilter = new ModelFilterTable(
           tripFiltros,
@@ -800,7 +860,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   }
 
   get dataTotal(): number {
-    if (this.userRole === 'ADMINISTRADOR' && !this.isSearchActive) {
+    if (this.userRole === 'ADMINISTRADOR') {
       return this.totalOwners;
     }
     if (this.selectedStatus === 'En Curso') return this.inProgressTrips;
@@ -810,7 +870,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   }
 
   get itemsShownCount(): number {
-    return this.userRole === 'ADMINISTRADOR' && !this.isSearchActive
+    return this.userRole === 'ADMINISTRADOR'
       ? this.owners.length
       : this.groupedTrips.reduce((acc, g) => acc + g.trips.length, 0);
   }

@@ -272,7 +272,7 @@
     </div>
   } @else {
     <!-- Trip List Grouped by Owner (Owner/Driver roles) -->
-    @if (userRole !== "ADMINISTRADOR" || isSearchActive) {
+    @if (userRole !== "ADMINISTRADOR") {
       <div class="trips-grid animate__animated animate__fadeIn">
         @for (group of groupedTrips; track group) {
           <div class="owner-section mb-2">
