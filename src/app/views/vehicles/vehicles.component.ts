@@ -512,9 +512,20 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
     this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
       next: (respVehicles: any) => {
-        this.ownerVehicles = (respVehicles?.data?.content ?? []).filter(
+        let content = (respVehicles?.data?.content ?? []).filter(
           (v: any) => v.status !== 'Vendido',
         );
+
+        if (this.searchTerm) {
+          const term = this.searchTerm.toLowerCase();
+          content = content.filter(
+            (v: any) =>
+              v.plate?.toLowerCase().includes(term) ||
+              v.model?.toLowerCase().includes(term) ||
+              v.vehicleBrandName?.toLowerCase().includes(term),
+          );
+        }
+        this.ownerVehicles = content;
 
         // Ensure properties needed for display mapped correctly if applicable, or just map brand names
         if (this.ownerVehicles.length > 0) {
@@ -1120,19 +1131,47 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       this.isSearchActive = this.isSearchingVehicles;
     }
 
-    if (this.userRole === 'ADMINISTRADOR' && this.expandedOwnerId) {
-      this.loadVehiclesForAdmin(this.expandedOwnerId);
-      return;
-    }
-
     if (this.userRole === 'ADMINISTRADOR') {
+      const filtersActive = !!this.searchTerm || this.activeFilter !== 'Todos';
+
+      // Case 1: Manual clearing of all filters (e.g. backspacing search input)
+      if (!filtersActive && !fromLoadVehicles) {
+        if (this.isSearchActive || this.expandedOwnerId) {
+          this.expandedOwnerId = null;
+          this.isSearchActive = false;
+          this.updateStatusCounts();
+          this.page = 0;
+          this.loadOwners();
+          this.loading = false;
+          return;
+        }
+      }
+
+      // Case 2: Global Search (when NO owner is open)
       if (this.isSearchActive && !fromLoadVehicles) {
         this.page = 0;
+        this.expandedOwnerId = null; // Reset expansion when starting new global search
         this.loadVehicles();
         return;
-      } else if (!this.isSearchActive) {
-        this.page = 0;
-        this.loadOwners();
+      }
+
+      // Case 3: Filtering WITHIN an open card
+      if (this.expandedOwnerId && filtersActive && !fromLoadVehicles) {
+        this.loadVehiclesForAdmin(this.expandedOwnerId);
+        return;
+      }
+
+      // Case 4: Default return to main list
+      if (!this.isSearchActive && !this.expandedOwnerId) {
+        if (!fromLoadVehicles) {
+          this.page = 0;
+          this.loadOwners();
+
+          this.totalVehicles = this.globalStats.total;
+          this.availableVehicles = this.globalStats.available;
+          this.occupiedVehicles = this.globalStats.occupied;
+        }
+        this.loading = false;
         return;
       }
     } else if (this.userRole === 'PROPIETARIO' && !fromLoadVehicles) {
@@ -1184,19 +1223,40 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
     if (this.userRole === 'ADMINISTRADOR' && this.isSearchActive) {
       this.totalVehicles = filtered.length;
+
+      // Extract unique owner IDs from matching vehicles
+      const matchingOwnerIds = [
+        ...new Set(
+          filtered
+            .flatMap((v) => v.owners?.map((o) => o.ownerId))
+            .filter((id) => id != null),
+        ),
+      ] as number[];
+
+      // Show ONLY owners who have matching vehicles
+      this.owners = this.owners.filter(
+        (o) => o.id != null && matchingOwnerIds.includes(o.id),
+      );
+      this.totalOwners = this.owners.length;
+
+      // Auto-expand the first owner if it's a new search
+      if (fromLoadVehicles && this.owners.length > 0 && !this.expandedOwnerId) {
+        this.toggleOwnerExpansion(this.owners[0]);
+      }
     }
 
     this.buildGroups(filtered);
+    this.loading = false;
   }
 
   get dataTotal(): number {
-    return this.userRole === 'ADMINISTRADOR' && !this.isSearchActive
+    return this.userRole === 'ADMINISTRADOR'
       ? this.totalOwners
       : this.totalVehiclesPagination;
   }
 
   get itemsShownCount(): number {
-    return this.userRole === 'ADMINISTRADOR' && !this.isSearchActive
+    return this.userRole === 'ADMINISTRADOR'
       ? this.owners.length
       : this.groupedVehicles.reduce((acc, g) => acc + g.vehicles.length, 0);
   }

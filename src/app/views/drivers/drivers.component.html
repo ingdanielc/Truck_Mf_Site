@@ -129,7 +129,7 @@
       </p>
     </div>
   } @else {
-    @if (userRole !== "ADMINISTRADOR" || isSearchActive) {
+    @if (userRole !== "ADMINISTRADOR") {
       @for (group of groupedDrivers; track group.owner.id) {
         <!-- Owner Header Card -->
         <g-vehicle-owner-card

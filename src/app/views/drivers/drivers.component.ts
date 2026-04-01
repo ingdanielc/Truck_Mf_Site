@@ -479,7 +479,7 @@ export class DriversComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadDrivers(): void {
+  loadDrivers(fromLoadDrivers: boolean = false): void {
     let filtros: Filter[] = [];
 
     if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId != null) {
@@ -535,6 +535,26 @@ export class DriversComponent implements OnInit, OnDestroy {
             this.totalDrivers = response.data.totalElements || 0;
           }
 
+          if (this.userRole === 'ADMINISTRADOR' && this.isSearchActive) {
+            // Extract unique owner IDs from matching drivers
+            const matchingOwnerIds = [
+              ...new Set(
+                fetched.map((d) => d.ownerId).filter((id) => id != null),
+              ),
+            ] as number[];
+
+            // Show ONLY owners who have matching drivers
+            this.owners = this.owners.filter(
+              (o) => o.id != null && matchingOwnerIds.includes(o.id),
+            );
+            this.totalOwners = this.owners.length;
+
+            // Auto-expand the first owner if it's a new search
+            if (fromLoadDrivers && this.owners.length > 0 && !this.expandedOwnerId) {
+              this.toggleOwnerExpansion(this.owners[0]);
+            }
+          }
+
           if (this.userRole !== 'ADMINISTRADOR' || this.isSearchActive) {
             this.buildGroups();
           }
@@ -555,6 +575,8 @@ export class DriversComponent implements OnInit, OnDestroy {
         } else {
           this.allDrivers = [];
           this.groupedDrivers = [];
+          this.owners = [];
+          this.totalOwners = 0;
         }
         this.loading = false;
       },
@@ -579,20 +601,57 @@ export class DriversComponent implements OnInit, OnDestroy {
     this.applyFilter();
   }
 
-  applyFilter(): void {
-    this.isSearchActive = this.isSearchingDrivers;
-
-    if (this.userRole === 'ADMINISTRADOR' && this.expandedOwnerId) {
-      this.loadDriversForAdmin(this.expandedOwnerId);
-      return;
+  applyFilter(fromLoadDrivers: boolean = false): void {
+    if (!fromLoadDrivers) {
+      this.isSearchActive = this.isSearchingDrivers;
     }
 
-    if (this.userRole !== 'ADMINISTRADOR' || this.isSearchActive) {
+    if (this.userRole === 'ADMINISTRADOR') {
+      const filtersActive = !!this.searchTerm || this.activeFilter !== 'Todos';
+
+      // Case 1: Manual clearing of all filters (e.g. backspacing search input)
+      if (!filtersActive && !fromLoadDrivers) {
+        if (this.isSearchActive || this.expandedOwnerId) {
+          this.expandedOwnerId = null;
+          this.isSearchActive = false;
+          this.updateStatusCounts();
+          this.page = 0;
+          this.loadOwners();
+          this.loading = false;
+          return;
+        }
+      }
+
+      // Case 2: Global Search (when NO owner is open)
+      if (this.isSearchActive && !fromLoadDrivers) {
+        this.page = 0;
+        this.expandedOwnerId = null; // Reset expansion when starting new global search
+        this.loadDrivers(true);
+        return;
+      }
+
+      // Case 3: Filtering WITHIN an open card
+      if (this.expandedOwnerId && filtersActive && !fromLoadDrivers) {
+        this.loadDriversForAdmin(this.expandedOwnerId);
+        return;
+      }
+
+      // Case 4: Default return to main list
+      if (!this.isSearchActive && !this.expandedOwnerId) {
+        if (!fromLoadDrivers) {
+          this.page = 0;
+          this.loadOwners();
+
+          this.totalDrivers = this.globalStats.total;
+          this.activeDrivers = this.globalStats.active;
+          this.inactiveDrivers = this.globalStats.inactive;
+        }
+        this.loading = false;
+        return;
+      }
+    } else if (this.userRole !== 'ADMINISTRADOR' && !fromLoadDrivers) {
       this.page = 0;
       this.loadDrivers();
-    } else {
-      this.page = 0;
-      this.loadOwners();
     }
   }
 
@@ -678,15 +737,15 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   get dataTotal(): number {
-    return this.userRole === 'ADMINISTRADOR' && !this.isSearchActive
+    return this.userRole === 'ADMINISTRADOR'
       ? this.totalOwners
       : this.totalDrivers;
   }
 
   get itemsShownCount(): number {
-    return this.userRole === 'ADMINISTRADOR' && !this.isSearchingDrivers
+    return this.userRole === 'ADMINISTRADOR'
       ? this.owners.length
-      : this.drivers.length;
+      : this.groupedDrivers.reduce((acc, g) => acc + g.drivers.length, 0);
   }
 
   get totalPages(): number {
