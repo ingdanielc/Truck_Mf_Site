@@ -106,7 +106,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       );
     }
     if (this.userRole === 'PROPIETARIO') {
-      return isSearchTermPresent;
+      return isSearchTermPresent || this.activeFilter !== 'Todos';
     }
     return false;
   }
@@ -1292,6 +1292,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       if (fromLoadVehicles && this.owners.length > 0 && !this.expandedOwnerId) {
         this.toggleOwnerExpansion(this.owners[0]);
       }
+    }
+
+    if (this.userRole === 'PROPIETARIO' && this.isSearchActive) {
+      this.totalVehiclesPagination = filtered.length;
+      const start = this.page * this.rows;
+      filtered = filtered.slice(start, start + this.rows);
     }
 
     this.buildGroups(filtered);
