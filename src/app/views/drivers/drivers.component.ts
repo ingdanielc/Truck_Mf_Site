@@ -297,6 +297,16 @@ export class DriversComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.searchTerm) {
+      const term = this.searchTerm.trim();
+      const isNumeric = /^[\d\.\-]+$/.test(term);
+      if (isNumeric) {
+        filtros.push(new Filter('documentNumber', 'like', term));
+      } else {
+        filtros.push(new Filter('name', 'like', term));
+      }
+    }
+
     this.driverService
       .getDriverFilter(
         new ModelFilterTable(
@@ -321,11 +331,13 @@ export class DriversComponent implements OnInit, OnDestroy {
           this.activeDrivers = active;
           this.inactiveDrivers = inactive;
 
-          this.globalStats = {
-            total: this.totalDrivers,
-            active: this.activeDrivers,
-            inactive: this.inactiveDrivers,
-          };
+          if (!this.searchTerm) {
+            this.globalStats = {
+              total: this.totalDrivers,
+              active: this.activeDrivers,
+              inactive: this.inactiveDrivers,
+            };
+          }
         },
       });
   }
@@ -463,7 +475,7 @@ export class DriversComponent implements OnInit, OnDestroy {
       next: () => {
         // Update local model without reloading
         driver.user!.status = newStatus;
-        this.calculateStats();
+        this.updateStatusCounts();
         this.toastService.showSuccess(
           'Conductor',
           `Conductor ${newStatus === 'Activo' ? 'activado' : 'desactivado'} exitosamente!`,
@@ -523,12 +535,7 @@ export class DriversComponent implements OnInit, OnDestroy {
             // Update counts only if there's a search term active, otherwise keep totals from globalStats
             if (this.searchTerm) {
               const total = response.data.totalElements || fetched.length;
-              const active = fetched.filter(
-                (d: ModelDriver) => !d.user || d.user.status === 'Activo',
-              ).length;
               this.totalDrivers = total;
-              this.activeDrivers = active;
-              this.inactiveDrivers = total - active;
             } else {
               this.totalDrivers = this.globalStats.total;
               this.activeDrivers = this.globalStats.active;
@@ -582,7 +589,11 @@ export class DriversComponent implements OnInit, OnDestroy {
             this.totalOwners = this.owners.length;
 
             // Auto-expand the first owner if it's a new search
-            if (fromLoadDrivers && this.owners.length > 0 && !this.expandedOwnerId) {
+            if (
+              fromLoadDrivers &&
+              this.owners.length > 0 &&
+              !this.expandedOwnerId
+            ) {
               this.toggleOwnerExpansion(this.owners[0]);
             }
           }
@@ -617,14 +628,6 @@ export class DriversComponent implements OnInit, OnDestroy {
         this.loading = false;
       },
     });
-  }
-
-  calculateStats(): void {
-    this.activeDrivers = this.allDrivers.filter((d: ModelDriver) => {
-      const status = d.user?.status;
-      return !d.user || status === 'Activo';
-    }).length;
-    this.inactiveDrivers = this.totalDrivers - this.activeDrivers;
   }
 
   setFilter(filter: string): void {
@@ -683,6 +686,7 @@ export class DriversComponent implements OnInit, OnDestroy {
       }
     } else if (this.userRole !== 'ADMINISTRADOR' && !fromLoadDrivers) {
       this.page = 0;
+      this.updateStatusCounts();
       this.loadDrivers();
     }
   }
