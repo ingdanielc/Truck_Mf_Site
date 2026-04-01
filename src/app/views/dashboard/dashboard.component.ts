@@ -509,17 +509,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       const vehicleFilterPayload = new ModelFilterTable(
         vehicleFilters,
-        new Pagination(1000, 0),
+        new Pagination(10000, 0),
         new Sort('id', false),
       );
       const tripFilterPayload = new ModelFilterTable(
         tripFilters,
-        new Pagination(1000, 0),
+        new Pagination(10000, 0),
         new Sort('id', false),
       );
       const expenseFilterPayload = new ModelFilterTable(
         expenseFilters,
-        new Pagination(1000, 0),
+        new Pagination(10000, 0),
         new Sort('id', false),
       );
 
