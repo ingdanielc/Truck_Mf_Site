@@ -105,6 +105,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   expandedOwnerPage: number = 0;
   expandedOwnerRows: number = 9;
   ownerTrips: ModelTrip[] = [];
+  totalExpandedTrips: number = 0;
   totalOwners: number = 0;
 
   // filters
@@ -398,33 +399,48 @@ export class TripsComponent implements OnInit, OnDestroy {
   }
 
   private updateStatusCounts(): void {
-    const baseFilters = this.getBaseFilters();
+    const filtros = this.getBaseFilters();
+
+    // For non-ADMINISTRADOR roles (like PROPIETARIO), make counts search-aware
+    if (this.userRole !== 'ADMINISTRADOR' || this.isSearchingTrips) {
+      if (this.searchTerm) {
+        filtros.push(new Filter('manifestNumber', 'like', this.searchTerm));
+      }
+      if (this.originFilter) {
+        filtros.push(new Filter('originId', '=', this.originFilter.toString()));
+      }
+      if (this.destinationFilter) {
+        filtros.push(
+          new Filter('destinationId', '=', this.destinationFilter.toString()),
+        );
+      }
+    }
 
     forkJoin({
       total: this.tripService.getTripFilter(
         new ModelFilterTable(
-          baseFilters,
+          filtros,
           new Pagination(1, 0),
           new Sort('id', true),
         ),
       ),
       inProgress: this.tripService.getTripFilter(
         new ModelFilterTable(
-          [...baseFilters, new Filter('status', '=', 'En Curso')],
+          [...filtros, new Filter('status', '=', 'En Curso')],
           new Pagination(1, 0),
           new Sort('id', true),
         ),
       ),
       pending: this.tripService.getTripFilter(
         new ModelFilterTable(
-          [...baseFilters, new Filter('status', '=', 'Pendiente')],
+          [...filtros, new Filter('status', '=', 'Pendiente')],
           new Pagination(1, 0),
           new Sort('id', true),
         ),
       ),
       completed: this.tripService.getTripFilter(
         new ModelFilterTable(
-          [...baseFilters, new Filter('status', '=', 'Completado')],
+          [...filtros, new Filter('status', '=', 'Completado')],
           new Pagination(1, 0),
           new Sort('id', true),
         ),
@@ -578,7 +594,8 @@ export class TripsComponent implements OnInit, OnDestroy {
     }
 
     if (this.userRole === 'ADMINISTRADOR') {
-      const filtersActive = !!this.searchTerm || !!this.originFilter || !!this.destinationFilter;
+      const filtersActive =
+        !!this.searchTerm || !!this.originFilter || !!this.destinationFilter;
 
       // Case 1: Manual clearing of all filters (e.g. backspacing search input)
       if (!filtersActive && !fromLoadTrips) {
@@ -621,6 +638,10 @@ export class TripsComponent implements OnInit, OnDestroy {
         this.loading = false;
         return;
       }
+    } else if (this.userRole !== 'ADMINISTRADOR' && !fromLoadTrips) {
+      this.page = 0;
+      this.loadTrips();
+      return;
     }
 
     let filtered = this.allTrips;
@@ -792,7 +813,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     }
   }
 
-  private loadTripsForAdmin(ownerId: number): void {
+  private loadTripsForAdmin(ownerId: number, page: number = 0): void {
     const vehicleFilter = new ModelFilterTable(
       [new Filter('owner.id', '=', ownerId.toString())],
       new Pagination(100, 0),
@@ -812,39 +833,50 @@ export class TripsComponent implements OnInit, OnDestroy {
 
         if (!vehicleIds) {
           this.ownerTrips = [];
+          this.totalExpandedTrips = 0;
           this.calculateStats(this.ownerTrips);
           this.isLoadingExpandedTrips = false;
           return;
         }
 
         const tripFiltros = [new Filter('vehicle.id', 'in', vehicleIds)];
+        if (this.selectedStatus) {
+          tripFiltros.push(new Filter('status', '=', this.selectedStatus));
+        }
         if (this.searchTerm) {
           tripFiltros.push(
             new Filter('manifestNumber', 'like', this.searchTerm),
           );
         }
         if (this.originFilter) {
-          tripFiltros.push(new Filter('originId', '=', this.originFilter.toString()));
+          tripFiltros.push(
+            new Filter('originId', '=', this.originFilter.toString()),
+          );
         }
         if (this.destinationFilter) {
-          tripFiltros.push(new Filter('destinationId', '=', this.destinationFilter.toString()));
+          tripFiltros.push(
+            new Filter('destinationId', '=', this.destinationFilter.toString()),
+          );
         }
+
+        // Update top-level status cards with owner-specific totals
+        this.updateExpandedStatusCounts(vehicleIds);
 
         const tripFilter = new ModelFilterTable(
           tripFiltros,
-          new Pagination(20000, 0),
+          new Pagination(this.expandedOwnerRows, page),
           new Sort('startDate', false),
         );
 
         this.tripService.getTripFilter(tripFilter).subscribe({
           next: (respTrips: any) => {
             this.ownerTrips = respTrips?.data?.content ?? [];
-            this.calculateStats(this.ownerTrips);
+            this.totalExpandedTrips = respTrips?.data?.totalElements ?? 0;
             this.isLoadingExpandedTrips = false;
           },
           error: () => {
             this.ownerTrips = [];
-            this.calculateStats(this.ownerTrips);
+            this.totalExpandedTrips = 0;
             this.isLoadingExpandedTrips = false;
             this.expandedOwnerVehiclesCount = 0;
           },
@@ -875,27 +907,69 @@ export class TripsComponent implements OnInit, OnDestroy {
       : this.groupedTrips.reduce((acc, g) => acc + g.trips.length, 0);
   }
 
-  get filteredOwnerTrips(): ModelTrip[] {
-    if (!this.selectedStatus) return this.ownerTrips;
-    return this.ownerTrips.filter((t) => {
-      const s = (t.status || '').toUpperCase();
-      const target = this.selectedStatus!.toUpperCase();
-      if (target === 'EN CURSO') return s === 'EN CURSO' || s === 'IN_PROGRESS';
-      if (target === 'PENDIENTE') return s === 'PENDIENTE' || s === 'PENDING';
-      if (target === 'COMPLETADO')
-        return s === 'COMPLETADO' || s === 'COMPLETED';
-      return s === target;
+  private updateExpandedStatusCounts(vehicleIds: string): void {
+    const baseFilters = [new Filter('vehicle.id', 'in', vehicleIds)];
+    if (this.searchTerm) {
+      baseFilters.push(new Filter('manifestNumber', 'like', this.searchTerm));
+    }
+    if (this.originFilter) {
+      baseFilters.push(new Filter('originId', '=', this.originFilter.toString()));
+    }
+    if (this.destinationFilter) {
+      baseFilters.push(
+        new Filter('destinationId', '=', this.destinationFilter.toString()),
+      );
+    }
+
+    forkJoin({
+      total: this.tripService.getTripFilter(
+        new ModelFilterTable(
+          baseFilters,
+          new Pagination(1, 0),
+          new Sort('id', true),
+        ),
+      ),
+      inProgress: this.tripService.getTripFilter(
+        new ModelFilterTable(
+          [...baseFilters, new Filter('status', '=', 'En Curso')],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        ),
+      ),
+      pending: this.tripService.getTripFilter(
+        new ModelFilterTable(
+          [...baseFilters, new Filter('status', '=', 'Pendiente')],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        ),
+      ),
+      completed: this.tripService.getTripFilter(
+        new ModelFilterTable(
+          [...baseFilters, new Filter('status', '=', 'Completado')],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        ),
+      ),
+    }).subscribe({
+      next: (resps: any) => {
+        this.totalTrips = resps.total?.data?.totalElements ?? 0;
+        this.inProgressTrips = resps.inProgress?.data?.totalElements ?? 0;
+        this.pendingTrips = resps.pending?.data?.totalElements ?? 0;
+        this.completedTrips = resps.completed?.data?.totalElements ?? 0;
+      },
     });
   }
 
+  get filteredOwnerTrips(): ModelTrip[] {
+    return this.ownerTrips;
+  }
+
   get paginatedFilteredOwnerTrips(): ModelTrip[] {
-    const filtered = this.filteredOwnerTrips;
-    const start = this.expandedOwnerPage * this.expandedOwnerRows;
-    return filtered.slice(start, start + this.expandedOwnerRows);
+    return this.ownerTrips;
   }
 
   get expandedTotalPages(): number {
-    return Math.ceil(this.filteredOwnerTrips.length / this.expandedOwnerRows);
+    return Math.ceil(this.totalExpandedTrips / this.expandedOwnerRows);
   }
 
   get expandedDesktopPages(): number[] {
@@ -921,6 +995,10 @@ export class TripsComponent implements OnInit, OnDestroy {
       newPage !== this.expandedOwnerPage
     ) {
       this.expandedOwnerPage = newPage;
+      if (this.expandedOwnerId) {
+        this.isLoadingExpandedTrips = true;
+        this.loadTripsForAdmin(this.expandedOwnerId, newPage);
+      }
     }
   }
 

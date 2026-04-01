@@ -12,7 +12,14 @@ import {
   ValidationErrors,
   ValidatorFn,
 } from '@angular/forms';
-import { Subscription, firstValueFrom, forkJoin, of, tap, switchMap } from 'rxjs';
+import {
+  Subscription,
+  firstValueFrom,
+  forkJoin,
+  of,
+  tap,
+  switchMap,
+} from 'rxjs';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { ModelTrip } from 'src/app/models/trip-model';
 import {
@@ -438,9 +445,21 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (response: any) => {
-          const allVehicles = (response?.data?.content ?? []).filter(
+          let allVehicles = (response?.data?.content ?? []).filter(
             (v: any) => v.status !== 'Vendido',
           );
+
+          if (this.searchTerm) {
+            const term = this.searchTerm.trim().toLowerCase();
+            allVehicles = allVehicles.filter(
+              (v: any) =>
+                v.plate?.toLowerCase().includes(term) ||
+                v.model?.toLowerCase().includes(term) ||
+                (v.vehicleBrand?.name || '').toLowerCase().includes(term) ||
+                (v.driver?.name || '').toLowerCase().includes(term),
+            );
+          }
+
           const total = allVehicles.length;
           const vehicleIds = new Set(allVehicles.map((v: any) => v.id));
 
@@ -1198,6 +1217,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       }
     } else if (this.userRole === 'PROPIETARIO' && !fromLoadVehicles) {
       this.page = 0;
+      this.updateStatusCounts();
       this.loadVehicles();
       return;
     }
@@ -1320,11 +1340,16 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   get paginatedOwnerVehicles(): ModelVehicle[] {
     const start = this.expandedOwnerPage * this.expandedOwnerRows;
-    return this.filteredOwnerVehicles.slice(start, start + this.expandedOwnerRows);
+    return this.filteredOwnerVehicles.slice(
+      start,
+      start + this.expandedOwnerRows,
+    );
   }
 
   get expandedTotalPages(): number {
-    return Math.ceil(this.filteredOwnerVehicles.length / this.expandedOwnerRows);
+    return Math.ceil(
+      this.filteredOwnerVehicles.length / this.expandedOwnerRows,
+    );
   }
 
   get expandedDesktopPages(): number[] {
@@ -1505,7 +1530,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         });
         this.applyFilter(true);
         this.loading = false;
-      })
+      }),
     );
   }
 

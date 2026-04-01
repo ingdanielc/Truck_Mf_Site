@@ -519,20 +519,52 @@ export class DriversComponent implements OnInit, OnDestroy {
         if (response?.data?.content) {
           const fetched: ModelDriver[] = response.data.content;
 
-          if (this.activeFilter === 'Activo') {
-            this.drivers = fetched.filter(
-              (d: ModelDriver) => !d.user || d.user.status === 'Activo',
-            );
-            this.totalDrivers = this.activeDrivers;
-          } else if (this.activeFilter === 'Inactivo') {
-            this.drivers = fetched.filter(
-              (d: ModelDriver) => d.user && d.user.status !== 'Activo',
-            );
-            this.totalDrivers = this.inactiveDrivers;
-          } else {
-            this.drivers = fetched;
+          if (this.userRole === 'PROPIETARIO') {
+            // Update counts only if there's a search term active, otherwise keep totals from globalStats
+            if (this.searchTerm) {
+              const total = response.data.totalElements || fetched.length;
+              const active = fetched.filter(
+                (d: ModelDriver) => !d.user || d.user.status === 'Activo',
+              ).length;
+              this.totalDrivers = total;
+              this.activeDrivers = active;
+              this.inactiveDrivers = total - active;
+            } else {
+              this.totalDrivers = this.globalStats.total;
+              this.activeDrivers = this.globalStats.active;
+              this.inactiveDrivers = this.globalStats.inactive;
+            }
+
+            // Apply status filter to the visual list
+            if (this.activeFilter === 'Activo') {
+              this.drivers = fetched.filter(
+                (d: ModelDriver) => !d.user || d.user.status === 'Activo',
+              );
+            } else if (this.activeFilter === 'Inactivo') {
+              this.drivers = fetched.filter(
+                (d: ModelDriver) => d.user && d.user.status !== 'Activo',
+              );
+            } else {
+              this.drivers = fetched;
+            }
             this.allDrivers = fetched;
-            this.totalDrivers = response.data.totalElements || 0;
+          } else {
+            // Default logic for other roles (ADMINISTRADOR remains as is)
+            if (this.activeFilter === 'Activo') {
+              this.drivers = fetched.filter(
+                (d: ModelDriver) => !d.user || d.user.status === 'Activo',
+              );
+              this.totalDrivers = this.activeDrivers;
+            } else if (this.activeFilter === 'Inactivo') {
+              this.drivers = fetched.filter(
+                (d: ModelDriver) => d.user && d.user.status !== 'Activo',
+              );
+              this.totalDrivers = this.inactiveDrivers;
+            } else {
+              this.drivers = fetched;
+              this.allDrivers = fetched;
+              this.totalDrivers = response.data.totalElements || 0;
+            }
           }
 
           if (this.userRole === 'ADMINISTRADOR' && this.isSearchActive) {
@@ -737,9 +769,17 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   get dataTotal(): number {
-    return this.userRole === 'ADMINISTRADOR'
-      ? this.totalOwners
-      : this.totalDrivers;
+    if (this.userRole === 'ADMINISTRADOR') {
+      return this.totalOwners;
+    }
+
+    // For roles like PROPIETARIO, pagination should match the filtered subset
+    if (this.activeFilter === 'Activo') {
+      return this.activeDrivers;
+    } else if (this.activeFilter === 'Inactivo') {
+      return this.inactiveDrivers;
+    }
+    return this.totalDrivers;
   }
 
   get itemsShownCount(): number {
