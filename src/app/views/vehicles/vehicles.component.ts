@@ -1194,13 +1194,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       }
 
       // Case 3: Filtering WITHIN an open card
-      if (this.expandedOwnerId && filtersActive && !fromLoadVehicles) {
-        // If we already have owner vehicles, the reactive getters (paginatedOwnerVehicles)
-        // will handle the status filtering instantly in the UI. No need for a network refresh here.
-        if (this.ownerVehicles.length > 0) {
-          this.loading = false;
-          return;
-        }
+      if (this.expandedOwnerId && !fromLoadVehicles) {
         this.loadVehiclesForAdmin(this.expandedOwnerId);
         return;
       }
@@ -1330,6 +1324,16 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   get filteredOwnerVehicles(): ModelVehicle[] {
     let filtered = this.ownerVehicles;
+
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (v) =>
+          v.vehicleBrandName?.toLowerCase().includes(term) ||
+          v.model?.toLowerCase().includes(term) ||
+          v.plate?.toLowerCase().includes(term),
+      );
+    }
 
     if (this.activeFilter !== 'Todos') {
       const filter = this.activeFilter;
