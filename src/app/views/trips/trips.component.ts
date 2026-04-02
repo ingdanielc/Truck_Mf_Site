@@ -398,11 +398,18 @@ export class TripsComponent implements OnInit, OnDestroy {
     return filtros;
   }
 
-  private updateStatusCounts(): void {
-    const filtros = this.getBaseFilters();
+  private updateStatusCounts(vehicleIds?: string): void {
+    const filtros = vehicleIds
+      ? [new Filter('vehicle.id', 'in', vehicleIds)]
+      : this.getBaseFilters();
 
     // For non-ADMINISTRADOR roles (like PROPIETARIO), make counts search-aware
-    if (this.userRole !== 'ADMINISTRADOR' || this.isSearchingTrips) {
+    // Also make them search-aware for expanded owner in Admin view (vehicleIds provided)
+    if (
+      this.userRole !== 'ADMINISTRADOR' ||
+      this.isSearchingTrips ||
+      vehicleIds
+    ) {
       if (this.searchTerm) {
         filtros.push(new Filter('manifestNumber', 'like', this.searchTerm));
       }
@@ -452,7 +459,7 @@ export class TripsComponent implements OnInit, OnDestroy {
         this.pendingTrips = resps.pending?.data?.totalElements ?? 0;
         this.completedTrips = resps.completed?.data?.totalElements ?? 0;
 
-        if (this.userRole === 'ADMINISTRADOR') {
+        if (this.userRole === 'ADMINISTRADOR' && !vehicleIds) {
           this.globalStats = {
             total: this.totalTrips,
             inProgress: this.inProgressTrips,
@@ -864,7 +871,7 @@ export class TripsComponent implements OnInit, OnDestroy {
         }
 
         // Update top-level status cards with owner-specific totals
-        this.updateExpandedStatusCounts(vehicleIds);
+        this.updateStatusCounts(vehicleIds);
 
         const tripFilter = new ModelFilterTable(
           tripFiltros,
@@ -909,61 +916,6 @@ export class TripsComponent implements OnInit, OnDestroy {
     return this.userRole === 'ADMINISTRADOR'
       ? this.owners.length
       : this.groupedTrips.reduce((acc, g) => acc + g.trips.length, 0);
-  }
-
-  private updateExpandedStatusCounts(vehicleIds: string): void {
-    const baseFilters = [new Filter('vehicle.id', 'in', vehicleIds)];
-    if (this.searchTerm) {
-      baseFilters.push(new Filter('manifestNumber', 'like', this.searchTerm));
-    }
-    if (this.originFilter) {
-      baseFilters.push(
-        new Filter('originId', '=', this.originFilter.toString()),
-      );
-    }
-    if (this.destinationFilter) {
-      baseFilters.push(
-        new Filter('destinationId', '=', this.destinationFilter.toString()),
-      );
-    }
-
-    forkJoin({
-      total: this.tripService.getTripFilter(
-        new ModelFilterTable(
-          baseFilters,
-          new Pagination(1, 0),
-          new Sort('id', true),
-        ),
-      ),
-      inProgress: this.tripService.getTripFilter(
-        new ModelFilterTable(
-          [...baseFilters, new Filter('status', '=', 'En Curso')],
-          new Pagination(1, 0),
-          new Sort('id', true),
-        ),
-      ),
-      pending: this.tripService.getTripFilter(
-        new ModelFilterTable(
-          [...baseFilters, new Filter('status', '=', 'Pendiente')],
-          new Pagination(1, 0),
-          new Sort('id', true),
-        ),
-      ),
-      completed: this.tripService.getTripFilter(
-        new ModelFilterTable(
-          [...baseFilters, new Filter('status', '=', 'Completado')],
-          new Pagination(1, 0),
-          new Sort('id', true),
-        ),
-      ),
-    }).subscribe({
-      next: (resps: any) => {
-        this.totalTrips = resps.total?.data?.totalElements ?? 0;
-        this.inProgressTrips = resps.inProgress?.data?.totalElements ?? 0;
-        this.pendingTrips = resps.pending?.data?.totalElements ?? 0;
-        this.completedTrips = resps.completed?.data?.totalElements ?? 0;
-      },
-    });
   }
 
   get filteredOwnerTrips(): ModelTrip[] {
