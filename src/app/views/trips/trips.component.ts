@@ -476,6 +476,10 @@ export class TripsComponent implements OnInit, OnDestroy {
       filtros.push(new Filter('status', '=', this.selectedStatus));
     }
 
+    if (this.searchTerm && !this.isSearchActive) {
+      filtros.push(new Filter('manifestNumber', 'like', this.searchTerm));
+    }
+
     if (this.originFilter) {
       filtros.push(new Filter('originId', '=', this.originFilter.toString()));
     }
@@ -913,7 +917,9 @@ export class TripsComponent implements OnInit, OnDestroy {
       baseFilters.push(new Filter('manifestNumber', 'like', this.searchTerm));
     }
     if (this.originFilter) {
-      baseFilters.push(new Filter('originId', '=', this.originFilter.toString()));
+      baseFilters.push(
+        new Filter('originId', '=', this.originFilter.toString()),
+      );
     }
     if (this.destinationFilter) {
       baseFilters.push(
