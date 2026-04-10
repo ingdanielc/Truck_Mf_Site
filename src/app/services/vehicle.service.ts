@@ -23,6 +23,14 @@ export class VehicleService {
     });
   }
 
+  getVehicleCount(filter: any) {
+    const headers = { 'content-type': 'application/json' };
+    const body = JSON.stringify(filter);
+    return this.http.post<any>(`${this.basePath}/counts`, body, {
+      headers: headers,
+    });
+  }
+
   createVehicle(vehicle: ModelVehicle) {
     const headers = { 'content-type': 'application/json' };
     const body = JSON.stringify(vehicle);

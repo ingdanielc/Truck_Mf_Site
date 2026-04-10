@@ -23,6 +23,14 @@ export class DriverService {
     });
   }
 
+  getDriverCount(filter: any) {
+    const headers = { 'content-type': 'application/json' };
+    const body = JSON.stringify(filter);
+    return this.http.post<any>(`${this.basePath}/counts`, body, {
+      headers: headers,
+    });
+  }
+
   createDriver(driver: ModelDriver) {
     const headers = { 'content-type': 'application/json' };
     const body = JSON.stringify(driver);
