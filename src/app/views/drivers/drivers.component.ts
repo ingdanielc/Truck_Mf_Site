@@ -293,7 +293,6 @@ export class DriversComponent implements OnInit, OnDestroy {
     } else if (this.loggedInOwnerId) {
       filtros.push(new Filter('ownerId', '=', this.loggedInOwnerId.toString()));
     } else if (this.userRole !== 'ADMINISTRADOR') {
-      // For non-admins, ensure they don't load everything if ID is missing
       return;
     }
 
@@ -308,24 +307,18 @@ export class DriversComponent implements OnInit, OnDestroy {
     }
 
     this.driverService
-      .getDriverFilter(
+      .getDriverCount(
         new ModelFilterTable(
           filtros,
-          new Pagination(20000, 0),
+          new Pagination(this.rows, 0),
           new Sort('id', true),
         ),
       )
       .subscribe({
         next: (response: any) => {
-          const allDrivers = response?.data?.content ?? [];
-          const total = response?.data?.totalElements ?? allDrivers.length;
-
-          const active = allDrivers.filter((d: ModelDriver) => {
-            const status = d.user?.status;
-            return !d.user || status === 'Activo';
-          }).length;
-
-          const inactive = total - active;
+          const total = response?.data?.total ?? 0;
+          const active = response?.data?.active ?? 0;
+          const inactive = response?.data?.inactive ?? 0;
 
           this.totalDrivers = total;
           this.activeDrivers = active;
@@ -364,59 +357,74 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   private loadDriversForAdmin(ownerId: number): void {
-    const filtros = [new Filter('ownerId', '=', ownerId.toString())];
+    const filtrosBase = [new Filter('ownerId', '=', ownerId.toString())];
 
     if (this.searchTerm) {
       const term = this.searchTerm.trim();
       const isNumeric = /^[\d\.\-]+$/.test(term);
       if (isNumeric) {
-        filtros.push(new Filter('documentNumber', 'like', term)); // Basic search for expanded view
+        filtrosBase.push(new Filter('documentNumber', 'like', term));
       } else {
-        filtros.push(new Filter('name', 'like', term)); // Basic search for expanded view
+        filtrosBase.push(new Filter('name', 'like', term));
       }
     }
 
-    const filter = new ModelFilterTable(
-      filtros,
-      new Pagination(20000, 0),
-      new Sort('name', true),
-    );
+    // Step 1: Call getDriverCount for stats
+    this.driverService
+      .getDriverCount(
+        new ModelFilterTable(
+          filtrosBase,
+          new Pagination(1, 0),
+          new Sort('name', true),
+        ),
+      )
+      .subscribe({
+        next: (response: any) => {
+          this.totalDrivers = response?.data?.total ?? 0;
+          this.activeDrivers = response?.data?.active ?? 0;
+          this.inactiveDrivers = response?.data?.inactive ?? 0;
 
-    this.driverService.getDriverFilter(filter).subscribe({
-      next: (respTrips: any) => {
-        const fetched: ModelDriver[] = respTrips?.data?.content ?? [];
+          // Step 2: Determine exact limit for the cards list (needed for client-side pagination)
+          let limit = this.totalDrivers;
+          if (this.activeFilter === 'Activo') limit = this.activeDrivers;
+          if (this.activeFilter === 'Inactivo') limit = this.inactiveDrivers;
 
-        if (this.activeFilter === 'Activo') {
-          this.ownerDrivers = fetched.filter(
-            (d: ModelDriver) => !d.user || d.user.status === 'Activo',
+          if (limit === 0) {
+            this.ownerDrivers = [];
+            this.isLoadingExpandedDrivers = false;
+            return;
+          }
+
+          // Step 3: Call getDriverFilter to load the records
+          const filtrosCards = [...filtrosBase];
+          if (this.activeFilter === 'Activo') {
+            filtrosCards.push(new Filter('user.status', '=', 'Activo'));
+          } else if (this.activeFilter === 'Inactivo') {
+            filtrosCards.push(new Filter('user.status', '=', 'Inactivo'));
+          }
+
+          const filterTable = new ModelFilterTable(
+            filtrosCards,
+            new Pagination(limit, 0), // Use dynamic limit instead of hardcoded 20000
+            new Sort('name', true),
           );
-        } else if (this.activeFilter === 'Inactivo') {
-          this.ownerDrivers = fetched.filter(
-            (d: ModelDriver) => d.user && d.user.status !== 'Activo',
-          );
-        } else {
-          this.ownerDrivers = fetched;
-        }
 
-        if (this.activeFilter === 'Todos') {
-          this.totalDrivers = fetched.length;
-          this.activeDrivers = fetched.filter((d: ModelDriver) => {
-            const status = d.user?.status;
-            return !d.user || status === 'Activo';
-          }).length;
-          this.inactiveDrivers = this.totalDrivers - this.activeDrivers;
-        }
-
-        this.isLoadingExpandedDrivers = false;
-      },
-      error: () => {
-        this.ownerDrivers = [];
-        this.totalDrivers = 0;
-        this.activeDrivers = 0;
-        this.inactiveDrivers = 0;
-        this.isLoadingExpandedDrivers = false;
-      },
-    });
+          this.driverService.getDriverFilter(filterTable).subscribe({
+            next: (resp: any) => {
+              this.ownerDrivers = resp?.data?.content ?? [];
+              this.isLoadingExpandedDrivers = false;
+            },
+            error: () => {
+              this.ownerDrivers = [];
+              this.isLoadingExpandedDrivers = false;
+            },
+          });
+        },
+        error: () => {
+          this.ownerDrivers = [];
+          this.isLoadingExpandedDrivers = false;
+        },
+      });
   }
 
   fetchOwnerDetails(ownerId: number): void {
