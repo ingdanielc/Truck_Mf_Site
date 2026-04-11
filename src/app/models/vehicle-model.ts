@@ -30,4 +30,5 @@ export interface ModelVehicle {
   currentDriverName?: string;
   lastTripStatus?: string;
   lastTripId?: number | null;
+  occupied?: boolean;
 }

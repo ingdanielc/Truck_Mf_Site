@@ -1,6 +1,6 @@
 {
   "name": "truck-mf-site",
-  "version": "0.0.58",
+  "version": "0.0.59",
   "scripts": {
     "ng": "ng",
     "start": "npm run serve:single-spa:Truck-Mf-Site",

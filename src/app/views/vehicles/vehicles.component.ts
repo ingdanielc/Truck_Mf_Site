@@ -21,7 +21,6 @@ import {
   switchMap,
 } from 'rxjs';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
-import { ModelTrip } from 'src/app/models/trip-model';
 import {
   Filter,
   ModelFilterTable,
@@ -39,7 +38,6 @@ import { ModelOwner } from 'src/app/models/owner-model';
 import { DriverService } from 'src/app/services/driver.service';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { DocumentNumberPipe } from 'src/app/pipes/document-number.pipe';
-import { TripService } from 'src/app/services/trip.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
 
@@ -154,7 +152,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     private readonly securityService: SecurityService,
     private readonly ownerService: OwnerService,
     private readonly driverService: DriverService,
-    private readonly tripService: TripService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
   ) {
@@ -440,66 +437,42 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.searchTerm) {
+      const term = this.searchTerm.trim();
+      // If it looks like a plate format (can be just letters or letters-numbers), we prioritize plate
+      if (/^[A-Z]{0,3}-?\d{0,3}$/i.test(term)) {
+        filtros.push(new Filter('plate', 'like', term));
+      } else {
+        filtros.push(new Filter('model', 'like', term));
+      }
+    }
+
     this.vehicleService
-      .getVehicleOwnerFilter(
+      .getVehicleCount(
         new ModelFilterTable(
           filtros,
-          new Pagination(20000, 0),
+          new Pagination(this.rows, 0),
           new Sort('id', true),
         ),
       )
       .subscribe({
         next: (response: any) => {
-          let allVehicles = (response?.data?.content ?? []).filter(
-            (v: any) => v.status !== 'Vendido',
-          );
+          const total = response?.data?.total ?? 0;
+          const available = response?.data?.available ?? 0;
+          const occupied = response?.data?.inProgress ?? 0;
 
-          if (this.searchTerm) {
-            const term = this.searchTerm.trim().toLowerCase();
-            allVehicles = allVehicles.filter(
-              (v: any) =>
-                v.plate?.toLowerCase().includes(term) ||
-                v.model?.toLowerCase().includes(term) ||
-                (v.vehicleBrand?.name || '').toLowerCase().includes(term) ||
-                (v.driver?.name || '').toLowerCase().includes(term),
-            );
+          this.totalVehicles = total;
+          this.totalVehiclesPagination = total;
+          this.availableVehicles = available;
+          this.occupiedVehicles = occupied;
+
+          if (!this.searchTerm) {
+            this.globalStats = {
+              total: this.totalVehicles,
+              available: this.availableVehicles,
+              occupied: this.occupiedVehicles,
+            };
           }
-
-          const total = allVehicles.length;
-          const vehicleIds = new Set(allVehicles.map((v: any) => v.id));
-
-          // Get all 'En curso' trips to determine occupied vehicles
-          const tripFilter = new ModelFilterTable(
-            [new Filter('status', '=', 'En Curso')],
-            new Pagination(20000, 0),
-            new Sort('id', true),
-          );
-
-          this.tripService.getTripFilter(tripFilter).subscribe({
-            next: (tripResp: any) => {
-              const activeTrips = tripResp?.data?.content ?? [];
-              // A vehicle is occupied if it has an 'En Curso' trip
-              const occupiedIds = new Set(
-                activeTrips
-                  .map((t: any) => t.vehicleId)
-                  .filter((id: any) => vehicleIds.has(id)),
-              );
-
-              const occupied = occupiedIds.size;
-              const available = total - occupied;
-
-              this.totalVehicles = total;
-              this.totalVehiclesPagination = total;
-              this.availableVehicles = available;
-              this.occupiedVehicles = occupied;
-
-              this.globalStats = {
-                total: this.totalVehicles,
-                available: this.availableVehicles,
-                occupied: this.occupiedVehicles,
-              };
-            },
-          });
         },
       });
   }
@@ -536,7 +509,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.vehicleService
       .getVehicleOwnerFilter(filter)
       .pipe(
-        switchMap((respVehicles: any) => {
+        tap((respVehicles: any) => {
           let content = (respVehicles?.data?.content ?? []).filter(
             (v: any) => v.status !== 'Vendido',
           );
@@ -560,23 +533,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               if (v.driver?.name) {
                 v.currentDriverName = v.driver.name;
               }
+              v.lastTripStatus = v.occupied ? 'En Curso' : 'Disponible';
             });
-            return this.mapLastTripStatuses();
-          } else {
-            return of(null);
           }
-        }),
-        tap(() => {
-          // Re-calculate local stats for the expanded owner based on mapped trip statuses
+
           const total = this.ownerVehicles.length;
-          const occupied = this.ownerVehicles.filter((v) => {
-            const status = (v.lastTripStatus || '').toUpperCase();
-            return (
-              status === 'EN CURSO' ||
-              status === 'IN_PROGRESS' ||
-              status === 'IN_CURSO'
-            );
-          }).length;
+          const occupied = this.ownerVehicles.filter((v) => v.occupied).length;
 
           this.totalVehicles = total;
           this.occupiedVehicles = occupied;
@@ -904,6 +866,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
                 if (v.driver?.name) {
                   v.currentDriverName = v.driver.name;
                 }
+                v.lastTripStatus = v.occupied ? 'En Curso' : 'Disponible';
               });
               this.allVehicles = content;
               if (this.activeFilter === 'Disponible') {
@@ -914,7 +877,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
                 this.totalVehiclesPagination = response.data.totalElements || 0;
               }
               this.mapBrandNames();
-              return this.mapLastTripStatuses();
+              this.applyFilter(true);
+              this.loading = false;
+              return of(null);
             } else {
               this.allVehicles = [];
               this.applyFilter(true);
@@ -957,6 +922,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
                 if (v.driver?.name) {
                   v.currentDriverName = v.driver.name;
                 }
+                v.lastTripStatus = v.occupied ? 'En Curso' : 'Disponible';
               });
               this.allVehicles = content;
               if (this.activeFilter === 'Disponible') {
@@ -967,7 +933,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
                 this.totalVehiclesPagination = response.data.totalElements || 0;
               }
               this.mapBrandNames();
-              return this.mapLastTripStatuses();
+              this.applyFilter(true);
+              this.loading = false;
+              return of(null);
             } else {
               this.allVehicles = [];
               this.applyFilter(true);
@@ -1005,6 +973,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               if (v.driver?.name) {
                 v.currentDriverName = v.driver.name;
               }
+              v.lastTripStatus = v.occupied ? 'En Curso' : 'Disponible';
             });
             this.allVehicles = content;
             if (this.activeFilter === 'Disponible') {
@@ -1015,8 +984,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               this.totalVehiclesPagination = response.data.totalElements || 0;
             }
             this.mapBrandNames();
-            this.mapLastTripStatuses();
             this.applyFilter(true);
+            this.loading = false;
           } else {
             this.allVehicles = [];
             this.applyFilter(true);
@@ -1053,6 +1022,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
                 if (v.driver?.name) {
                   v.currentDriverName = v.driver.name;
                 }
+                v.lastTripStatus = v.occupied ? 'En Curso' : 'Disponible';
               });
               this.allVehicles = content;
               if (this.activeFilter === 'Disponible') {
@@ -1063,7 +1033,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
                 this.totalVehiclesPagination = response.data.totalElements || 0;
               }
               this.mapBrandNames();
-              return this.mapLastTripStatuses();
+              this.applyFilter(true);
+              this.loading = false;
+              return of(null);
             } else {
               this.allVehicles = [];
               this.applyFilter(true);
@@ -1094,13 +1066,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       this.vehicleService
         .getVehicleFilter(filter)
         .pipe(
-          switchMap((response: any) => {
+          tap((response: any) => {
             if (response?.data?.content) {
               const content = response.data.content as any[];
               content.forEach((v: any) => {
                 if (v.driver?.name) {
                   v.currentDriverName = v.driver.name;
                 }
+                v.lastTripStatus = v.occupied ? 'En Curso' : 'Disponible';
               });
               this.allVehicles = content;
               if (this.activeFilter === 'Disponible') {
@@ -1111,13 +1084,13 @@ export class VehiclesComponent implements OnInit, OnDestroy {
                 this.totalVehiclesPagination = response.data.totalElements || 0;
               }
               this.mapBrandNames();
-              return this.mapLastTripStatuses();
+              this.applyFilter(true);
+              this.loading = false;
             } else {
               this.allVehicles = [];
               this.groupedVehicles = [];
               this.applyFilter(true);
               this.loading = false;
-              return of(null);
             }
           }),
         )
@@ -1138,30 +1111,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const vehicleIds = new Set(this.allVehicles.map((v) => v.id));
+    const totalActive = this.allVehicles.filter(
+      (v) => v.status !== 'Vendido',
+    ).length;
 
-    const tripFilter = new ModelFilterTable(
-      [new Filter('status', '=', 'En Curso')],
-      new Pagination(20000, 0),
-      new Sort('id', true),
-    );
-
-    this.tripService.getTripFilter(tripFilter).subscribe({
-      next: (tripResp: any) => {
-        const activeTrips = tripResp?.data?.content ?? [];
-        const occupiedIds = new Set(
-          activeTrips
-            .map((t: any) => t.vehicleId)
-            .filter((id: any) => vehicleIds.has(id)),
-        );
-
-        this.occupiedVehicles = occupiedIds.size;
-        const totalActive = this.allVehicles.filter(
-          (v) => v.status !== 'Vendido',
-        ).length;
-        this.availableVehicles = totalActive - this.occupiedVehicles;
-      },
-    });
+    this.occupiedVehicles = this.allVehicles.filter(
+      (v) => v.status !== 'Vendido' && v.occupied,
+    ).length;
+    this.availableVehicles = totalActive - this.occupiedVehicles;
   }
 
   applyFilter(fromLoadVehicles: boolean = false): void {
@@ -1249,11 +1206,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     if (this.activeFilter !== 'Todos') {
       const filter = this.activeFilter;
       filtered = filtered.filter((v) => {
-        const tripStatus = (v.lastTripStatus || '').toUpperCase();
-        const isBusy =
-          tripStatus === 'EN CURSO' ||
-          tripStatus === 'IN_PROGRESS' ||
-          tripStatus === 'IN_CURSO';
+        const isBusy = v.occupied;
 
         if (filter === 'Disponible') {
           return !isBusy;
@@ -1338,11 +1291,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     if (this.activeFilter !== 'Todos') {
       const filter = this.activeFilter;
       filtered = filtered.filter((v) => {
-        const tripStatus = (v.lastTripStatus || '').toUpperCase();
-        const isBusy =
-          tripStatus === 'EN CURSO' ||
-          tripStatus === 'IN_PROGRESS' ||
-          tripStatus === 'IN_CURSO';
+        const isBusy = v.occupied;
 
         if (filter === 'Disponible') {
           return !isBusy;
@@ -1498,57 +1447,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         }
       });
     }
-  }
-
-  mapLastTripStatuses(): any {
-    if (this.allVehicles.length === 0) {
-      this.applyFilter(true);
-      this.loading = false;
-      return of(null);
-    }
-
-    // 1. Collect all valid vehicle IDs
-    const vehicleIds = this.allVehicles
-      .map((v) => v.id)
-      .filter((id) => id != null)
-      .map(String);
-
-    if (vehicleIds.length === 0) {
-      this.applyFilter(true);
-      this.loading = false;
-      return of(null);
-    }
-
-    // 2. Single request to get potential last trips for all these vehicles
-    const tripFilter = new ModelFilterTable(
-      [new Filter('vehicle.id', 'in', vehicleIds.join(','))],
-      new Pagination(500, 0),
-      new Sort('startDate', false),
-    );
-
-    return this.tripService.getTripFilter(tripFilter).pipe(
-      tap((resp: any) => {
-        const trips: ModelTrip[] = resp?.data?.content ?? [];
-        const latestTripsMap = new Map<number, ModelTrip>();
-
-        trips.forEach((t) => {
-          if (t.vehicleId && !latestTripsMap.has(t.vehicleId)) {
-            latestTripsMap.set(t.vehicleId, t);
-          }
-        });
-
-        // 4. Update the state of allVehicles
-        this.allVehicles.forEach((v) => {
-          if (v.id) {
-            const lastTrip = latestTripsMap.get(v.id);
-            v.lastTripStatus = lastTrip?.status ?? '';
-            v.lastTripId = lastTrip?.id ?? null;
-          }
-        });
-        this.applyFilter(true);
-        this.loading = false;
-      }),
-    );
   }
 
   setFilter(filter: string): void {
