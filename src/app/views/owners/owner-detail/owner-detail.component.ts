@@ -225,9 +225,11 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
           this.vehicleService.getVehicleFilter(vehicleFilter).subscribe({
             next: (vResponse: any) => {
               this.vehicles = vResponse?.data?.content ?? [];
+              this.vehicles.forEach((v) => {
+                v.lastTripStatus = v.occupied ? 'En Curso' : 'Disponible';
+              });
               this.mapBrandNames();
               this.mapDriverNames();
-              this.mapLastTripStatuses();
               this.loadingVehicles = false;
 
               if (this.vehicles.length > 0) {
@@ -293,9 +295,11 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
       next: (response: any) => {
         this.vehicles = response?.data?.content ?? [];
+        this.vehicles.forEach((v) => {
+          v.lastTripStatus = v.occupied ? 'En Curso' : 'Disponible';
+        });
         this.mapBrandNames();
         this.mapDriverNames();
-        this.mapLastTripStatuses();
         this.loadingVehicles = false;
       },
       error: (err) => {
@@ -462,26 +466,6 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
 
   formatPhone(phone: string | undefined): string {
     return Formatters.formatPhone(phone);
-  }
-
-  mapLastTripStatuses(): void {
-    if (this.vehicles.length === 0) return;
-
-    this.vehicles.forEach((v) => {
-      if (!v.id) return;
-      const tripFilter = new ModelFilterTable(
-        [new Filter('vehicle.id', '=', v.id.toString())],
-        new Pagination(1, 0),
-        new Sort('startDate', false),
-      );
-
-      this.tripService.getTripFilter(tripFilter).subscribe({
-        next: (resp: any) => {
-          const lastTrip = resp?.data?.content?.[0];
-          v.lastTripStatus = lastTrip?.status ?? '';
-        },
-      });
-    });
   }
 
   triggerPhotoInput(photoInput: HTMLInputElement): void {

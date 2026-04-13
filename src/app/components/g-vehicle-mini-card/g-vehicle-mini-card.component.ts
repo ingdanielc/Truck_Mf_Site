@@ -24,22 +24,20 @@ export class GVehicleMiniCardComponent {
   get statusColorClass(): string {
     const status = (this.vehicle.lastTripStatus || '').toUpperCase();
     if (status === 'EN CURSO') return 'status-in-progress';
-    if (status === 'COMPLETADO' || status === 'PENDIENTE')
-      return 'status-available';
+    if (status === 'DISPONIBLE') return 'status-available';
     return 'status-other';
   }
 
   get displayTripStatus(): string {
     const status = (this.vehicle.lastTripStatus || '').toUpperCase();
-    if (status === 'COMPLETADO' || status === 'PENDIENTE') return 'Disponible';
+    if (status === 'DISPONIBLE') return 'Disponible';
     return this.vehicle.lastTripStatus || 'Sin Viajes';
   }
 
   get statusBadgeClass(): string {
     const status = (this.vehicle.lastTripStatus || '').toUpperCase();
     switch (status) {
-      case 'COMPLETADO':
-      case 'PENDIENTE':
+      case 'DISPONIBLE':
         return 'bg-success bg-opacity-10 text-success border border-success border-opacity-25';
       case 'EN CURSO':
         return 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25';
