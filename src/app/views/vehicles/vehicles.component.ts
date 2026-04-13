@@ -434,7 +434,11 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   private updateStatusCounts(): void {
     let filtros: Filter[] = [];
-    if (this.ownerIdFilter) {
+    if (this.userRole === 'CONDUCTOR' && this.loggedInDriverId) {
+      filtros.push(
+        new Filter('currentDriverId', '=', this.loggedInDriverId.toString()),
+      );
+    } else if (this.ownerIdFilter) {
       filtros.push(new Filter('ownerId', '=', this.ownerIdFilter.toString()));
     } else if (this.loggedInOwnerId) {
       filtros.push(new Filter('ownerId', '=', this.loggedInOwnerId.toString()));
