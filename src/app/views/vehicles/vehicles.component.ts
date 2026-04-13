@@ -224,11 +224,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
           if (
             this.userRole === 'ADMINISTRADOR' ||
-            this.userRole === 'PROPIETARIO'
+            this.userRole === 'PROPIETARIO' ||
+            this.userRole === 'CONDUCTOR'
           ) {
             this.rows = 9;
-          } else {
-            this.rows = 100;
           }
 
           if (this.userRole === 'ADMINISTRADOR') {
@@ -263,8 +262,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           if (driver.ownerId) {
             this.loggedInOwnerId = driver.ownerId;
             this.loadOwners(driver.ownerId);
+          } else {
+            this.loadVehicles();
           }
-          this.loadVehicles();
         }
       },
     });
@@ -377,11 +377,16 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         if (response?.data?.content) {
           const owners = response.data.content;
           this.owners = owners;
-          if (this.userRole === 'PROPIETARIO' && owners.length > 0) {
+          if (
+            (this.userRole === 'PROPIETARIO' ||
+              this.userRole === 'CONDUCTOR') &&
+            owners.length > 0
+          ) {
             this.loggedInOwner = owners[0];
             this.loggedInOwnerId =
               this.loggedInOwner?.id ?? this.loggedInOwnerId;
-            // Now that we have the TRUE owner.id, load the vehicles
+
+            // Trigger data load/refresh for single-context roles
             this.updateStatusCounts();
             this.loadVehicles();
           } else if (this.userRole === 'ADMINISTRADOR') {
