@@ -205,9 +205,9 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
         if (response?.data) {
           this.cities = response.data.sort((a: any, b: any) => {
             const stateCmp = (a.state || '').localeCompare(b.state || '', 'es');
-            return stateCmp !== 0
-              ? stateCmp
-              : a.name.localeCompare(b.name, 'es');
+            return stateCmp === 0
+              ? a.name.localeCompare(b.name, 'es')
+              : stateCmp;
           });
           this.groupedCities = this.buildGroupedCities();
         }

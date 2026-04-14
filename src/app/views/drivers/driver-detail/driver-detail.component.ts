@@ -148,7 +148,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   }
 
   loadReferenceData(): void {
-    this.loadOwners();
+    if (this.userRole === 'ADMINISTRADOR') this.loadOwners();
     this.commonService.getListTypeDocument().subscribe({
       next: (response: any) => {
         if (response?.data) this.documentTypes = response.data;
@@ -192,6 +192,9 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
     this.vehicleService.getVehicleFilter(filter).subscribe({
       next: (response: any) => {
         this.vehicles = response?.data?.content ?? [];
+        this.vehicles.forEach((v) => {
+          v.lastTripStatus = v.occupied ? 'En Curso' : 'Disponible';
+        });
         this.mapBrandNames();
         this.loadingVehicles = false;
       },
