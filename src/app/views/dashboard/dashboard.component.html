@@ -31,26 +31,72 @@
     <!-- Active Trips Grid -->
     @if (activeTrips && activeTrips.length > 0) {
       <div class="row mb-4">
-        <div class="col-12">
-          <h5 class="fw-bold mb-3 text-body">
-            <i class="fa-solid fa-route me-2 text-primary"></i>Viajes Activos
-          </h5>
-        </div>
-        @for (item of activeTrips; track item.vehicle.id) {
-          <div class="col-12 col-xl-6">
-            <g-vehicle-trip-exp-card
-              [vehicle]="item.vehicle"
-              [trip]="item.trip"
-              [expenses]="item.expenses"
-            >
-            </g-vehicle-trip-exp-card>
+        <div class="col-12 mx-1">
+          <div
+            class="d-flex justify-content-between align-items-center mb-3 section-toggle"
+            (click)="activeTripsCollapsed = !activeTripsCollapsed"
+            role="button"
+          >
+            <h5 class="fw-bold mb-0 text-body">
+              <i class="fa-solid fa-route me-2 text-primary"></i>Viajes Activos
+            </h5>
+            <div class="d-flex align-items-center">
+              <span
+                class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill me-3"
+              >
+                {{ activeTrips.length }}
+              </span>
+              <i
+                class="fa-solid fa-chevron-up transition-transform text-secondary opacity-50"
+                [class.rotated]="activeTripsCollapsed"
+              ></i>
+            </div>
           </div>
-        }
+        </div>
+
+        <div
+          [class.d-none]="activeTripsCollapsed"
+          class="row gx-4 gy-2 animate__animated animate__fadeIn"
+        >
+          @for (item of activeTrips; track item.vehicle.id) {
+            <div class="col-12 col-xl-6">
+              <g-vehicle-trip-exp-card
+                [vehicle]="item.vehicle"
+                [trip]="item.trip"
+                [expenses]="item.expenses"
+              >
+              </g-vehicle-trip-exp-card>
+            </div>
+          }
+        </div>
       </div>
     }
 
     <!-- Charts Grid -->
-    <div class="row g-4">
+    <div class="row mb-2 mt-2">
+      <div class="col-12 mx-1">
+        <div
+          class="d-flex justify-content-between align-items-center mb-3 section-toggle"
+          (click)="chartsCollapsed = !chartsCollapsed"
+          role="button"
+        >
+          <h5 class="fw-bold mb-0 text-body">
+            <i class="fa-solid fa-chart-pie me-2 text-primary"></i>Gráficos
+          </h5>
+          <div class="d-flex align-items-center">
+            <i
+              class="fa-solid fa-chevron-up transition-transform text-secondary opacity-50"
+              [class.rotated]="chartsCollapsed"
+            ></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      [class.d-none]="chartsCollapsed"
+      class="row g-4 animate__animated animate__fadeIn"
+    >
       <!-- Chart 1 -->
       <div class="col-12 col-xl-6">
         <div

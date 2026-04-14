@@ -129,3 +129,24 @@
     width: 100% !important;
   }
 }
+
+.section-toggle {
+  margin-left: -1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+  user-select: none;
+
+  &:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+    padding-left: 1.25rem;
+  }
+}
+
+.transition-transform {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rotated {
+  transform: rotate(180deg);
+}

@@ -7,7 +7,6 @@ import { SecurityService } from '../../services/security/security.service';
 import { OwnerService } from '../../services/owner.service';
 import { DriverService } from '../../services/driver.service';
 import { CommonService } from '../../services/common.service';
-import { TokenService } from '../../services/token.service';
 import {
   Filter,
   ModelFilterTable,
@@ -44,6 +43,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     trip: ModelTrip;
     expenses: ModelExpense[];
   }[] = [];
+  activeTripsCollapsed: boolean = true;
+  chartsCollapsed: boolean = false;
+  userRole: string = '';
 
   showHistoryPanel: boolean = false;
 
@@ -264,7 +266,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private readonly ownerService: OwnerService,
     private readonly driverService: DriverService,
     private readonly commonService: CommonService,
-    private readonly tokenService: TokenService,
   ) {}
 
   ngOnInit(): void {
@@ -418,6 +419,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loading = true;
     try {
       const role = (user?.userRoles?.[0]?.role?.name ?? '').toUpperCase();
+      this.userRole = role;
+
+      if (
+        (role.includes('ADMINISTRADOR') || role.includes('PROPIETARIO')) &&
+        this.activeTripsCollapsed === undefined
+      ) {
+        this.activeTripsCollapsed = true;
+      }
 
       let vehicleFilters: Filter[] = [];
       let tripFilters: Filter[] = [];
@@ -439,7 +448,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           // 2. Get Vehicle IDs for this owner
           const vehicleOwnerFilter = new ModelFilterTable(
             [new Filter('owner.id', '=', owner.id.toString())],
-            new Pagination(9999, 0),
+            new Pagination(20000, 0),
             new Sort('id', true),
           );
           const vehiclesResp: any = await lastValueFrom(
@@ -480,7 +489,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           // 2. Filter vehicles by currentDriverId
           const vehicleDriverFilter = new ModelFilterTable(
             [new Filter('currentDriverId', '=', driverId.toString())],
-            new Pagination(9999, 0),
+            new Pagination(20000, 0),
             new Sort('id', true),
           );
           const vehiclesResp: any = await lastValueFrom(
@@ -509,17 +518,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       const vehicleFilterPayload = new ModelFilterTable(
         vehicleFilters,
-        new Pagination(10000, 0),
+        new Pagination(20000, 0),
         new Sort('id', false),
       );
       const tripFilterPayload = new ModelFilterTable(
         tripFilters,
-        new Pagination(10000, 0),
+        new Pagination(20000, 0),
         new Sort('id', false),
       );
       const expenseFilterPayload = new ModelFilterTable(
         expenseFilters,
-        new Pagination(10000, 0),
+        new Pagination(20000, 0),
         new Sort('id', false),
       );
 
@@ -540,24 +549,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.mapBrandNames(this.vehicles);
       this.mapDriverNames(this.vehicles);
 
-      this.activeTrips = [];
-      this.vehicles.forEach((v) => {
-        const activeTrip = trips.find(
-          (t) =>
-            (t.vehicleId === v.id || t.vehiclePlate === v.plate) &&
-            t.status?.toUpperCase() === 'EN CURSO',
-        );
-        if (activeTrip) {
-          const tripExpenses = expenses.filter(
-            (e) => e.tripId === activeTrip.id,
-          );
-          this.activeTrips.push({
-            vehicle: v,
-            trip: activeTrip,
-            expenses: tripExpenses,
-          });
-        }
-      });
+      this.processActiveTrips(trips, expenses);
 
       this.processTripsByVehicle(trips, this.vehicles);
       this.processCurrentMonthTrips(trips, this.vehicles);
@@ -574,6 +566,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
     } finally {
       this.loading = false;
     }
+  }
+
+  private processActiveTrips(trips: ModelTrip[], expenses: ModelExpense[]) {
+    this.activeTrips = [];
+    this.vehicles.forEach((v) => {
+      const activeTrip = trips.find(
+        (t) =>
+          (t.vehicleId === v.id || t.vehiclePlate === v.plate) &&
+          t.status?.toUpperCase() === 'EN CURSO',
+      );
+      if (activeTrip) {
+        const tripExpenses = expenses.filter((e) => e.tripId === activeTrip.id);
+        this.activeTrips.push({
+          vehicle: v,
+          trip: activeTrip,
+          expenses: tripExpenses,
+        });
+      }
+    });
   }
 
   private clearChartData() {
@@ -641,7 +652,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         counts[plate.toUpperCase()] = (counts[plate.toUpperCase()] || 0) + 1;
     });
 
-    const labels = Object.keys(counts).sort();
+    const labels = Object.keys(counts).sort((a, b) => a.localeCompare(b));
     const data = labels.map((l) => counts[l]);
 
     this.tripsByVehicleData = {
@@ -671,7 +682,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
     });
 
-    const labels = Object.keys(counts).sort();
+    const labels = Object.keys(counts).sort((a, b) => a.localeCompare(b));
     const data = labels.map((l) => counts[l]);
 
     this.currentMonthTripsData = {
@@ -723,7 +734,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
     });
 
-    const labels = Object.keys(stats).sort();
+    const labels = Object.keys(stats).sort((a, b) => a.localeCompare(b));
     const incomeData = labels.map((l) => stats[l].income);
     const expenseData = labels.map((l) => stats[l].expense);
 
@@ -788,7 +799,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       maintCounts[plate] = (maintCounts[plate] || 0) + e.amount;
     });
 
-    const labels = Object.keys(maintCounts).sort();
+    const labels = Object.keys(maintCounts).sort((a, b) => a.localeCompare(b));
     const data = labels.map((l) => maintCounts[l]);
 
     this.maintenanceData = {
