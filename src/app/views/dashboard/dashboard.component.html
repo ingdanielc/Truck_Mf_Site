@@ -36,6 +36,7 @@
             class="d-flex justify-content-between align-items-center mb-3 section-toggle"
             (click)="activeTripsCollapsed = !activeTripsCollapsed"
             role="button"
+            onkeypress
           >
             <h5 class="fw-bold mb-0 text-body">
               <i class="fa-solid fa-route me-2 text-primary"></i>Viajes Activos
@@ -79,6 +80,7 @@
           class="d-flex justify-content-between align-items-center mb-3 section-toggle"
           (click)="chartsCollapsed = !chartsCollapsed"
           role="button"
+          onkeypress
         >
           <h5 class="fw-bold mb-0 text-body">
             <i class="fa-solid fa-chart-pie me-2 text-primary"></i>Gráficos
@@ -389,10 +391,36 @@
       }
     </div>
 
+    <!-- Owner Selector (Admin Only) -->
+    @if (userRole.includes("ADMINISTRADOR")) {
+      <div class="mt-4 animate__animated animate__fadeIn">
+        <h6
+          class="text-primary fw-bold mb-3 d-flex align-items-center title-section"
+        >
+          <i class="fa-solid fa-user-tie me-2"></i>Propietario
+        </h6>
+        <div class="mb-3 col-12">
+          <select
+            id="ownerId"
+            class="form-select rounded-3 py-2 px-3"
+            [(ngModel)]="selectedOwnerId"
+            (change)="onOwnerChange(); showHistoryPanel = false"
+          >
+            <option [ngValue]="null">Todos los Propietarios</option>
+            @for (owner of owners; track owner.id) {
+              <option [ngValue]="owner.id">
+                {{ owner.name }}
+              </option>
+            }
+          </select>
+        </div>
+      </div>
+    }
+
     <div class="mt-4 p-3 bg-body-tertiary rounded-3 small text-secondary">
       <i class="fa-solid fa-circle-info me-2 text-info"></i>
-      Selecciona un año y mes para visualizar los reportes históricos del
-      Dashboard.
+      Selecciona un año, mes o propietario para visualizar los reportes
+      históricos del Dashboard.
     </div>
   </div>
 </div>

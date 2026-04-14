@@ -25,6 +25,8 @@ import {
 import { ModelVehicle } from '../../models/vehicle-model';
 import { ModelTrip } from '../../models/trip-model';
 import { ModelExpense } from '../../models/expense-model';
+import { ModelOwner } from '../../models/owner-model';
+import { FormsModule } from '@angular/forms';
 import { GVehicleTripExpCardComponent } from '../../components/g-vehicle-trip-exp-card/g-vehicle-trip-exp-card.component';
 
 Chart.register(...registerables);
@@ -32,7 +34,12 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective, GVehicleTripExpCardComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    BaseChartDirective,
+    GVehicleTripExpCardComponent,
+  ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
@@ -46,6 +53,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   activeTripsCollapsed: boolean = true;
   chartsCollapsed: boolean = false;
   userRole: string = '';
+  owners: ModelOwner[] = [];
+  selectedOwnerId: number | null = null;
 
   showHistoryPanel: boolean = false;
 
@@ -275,6 +284,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.userSub = this.securityService.userData$.subscribe((user) => {
       if (user) {
         this.currentUser = user;
+        const role = (user?.userRoles?.[0]?.role?.name ?? '').toUpperCase();
+        this.userRole = role;
+        if (role.includes('ADMINISTRADOR')) {
+          this.loadOwners();
+        }
         this.loadData(user);
       }
     });
@@ -415,6 +429,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
     applyTheme(this.monthlyProfitOptions);
   }
 
+  async loadOwners() {
+    const filter = new ModelFilterTable(
+      [],
+      new Pagination(20000, 0),
+      new Sort('name', true),
+    );
+    try {
+      const resp = await lastValueFrom(
+        this.ownerService.getOwnerFilter(filter),
+      );
+      this.owners = resp?.data?.content || [];
+    } catch (error) {
+      console.error('Error loading owners:', error);
+    }
+  }
+
+  onOwnerChange() {
+    if (this.currentUser) {
+      this.loadData(this.currentUser);
+    }
+  }
+
   async loadData(user: any) {
     this.loading = true;
     try {
@@ -432,8 +468,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       let tripFilters: Filter[] = [];
       let expenseFilters: Filter[] = [];
 
+      let ownerId: string | undefined;
+
       if (role.includes('PROPIETARIO') && user?.id) {
-        // 1. Get Owner ID linked to this User
         const ownerFilter = new ModelFilterTable(
           [new Filter('user.id', '=', user.id.toString())],
           new Pagination(1, 0),
@@ -442,36 +479,38 @@ export class DashboardComponent implements OnInit, OnDestroy {
         const ownerResp: any = await lastValueFrom(
           this.ownerService.getOwnerFilter(ownerFilter),
         );
-        const owner = ownerResp?.data?.content?.[0];
+        ownerId = ownerResp?.data?.content?.[0]?.id?.toString();
+      } else if (role.includes('ADMINISTRADOR') && this.selectedOwnerId) {
+        ownerId = this.selectedOwnerId.toString();
+      }
 
-        if (owner?.id) {
-          // 2. Get Vehicle IDs for this owner
-          const vehicleOwnerFilter = new ModelFilterTable(
-            [new Filter('owner.id', '=', owner.id.toString())],
-            new Pagination(20000, 0),
-            new Sort('id', true),
-          );
-          const vehiclesResp: any = await lastValueFrom(
-            this.vehicleService.getVehicleOwnerFilter(vehicleOwnerFilter),
-          );
-          const vehiclesContext: ModelVehicle[] =
-            vehiclesResp?.data?.content ?? [];
-          const vehicleIds = vehiclesContext
-            .map((v) => v.id)
-            .filter((id) => id != null)
-            .join(',');
+      if (ownerId) {
+        // 2. Get Vehicle IDs for this owner
+        const vehicleOwnerFilter = new ModelFilterTable(
+          [new Filter('owner.id', '=', ownerId)],
+          new Pagination(3000, 0),
+          new Sort('id', true),
+        );
+        const vehiclesResp: any = await lastValueFrom(
+          this.vehicleService.getVehicleOwnerFilter(vehicleOwnerFilter),
+        );
+        const vehiclesContext: ModelVehicle[] =
+          vehiclesResp?.data?.content ?? [];
+        const vehicleIds = vehiclesContext
+          .map((v) => v.id)
+          .filter((id) => id != null)
+          .join(',');
 
-          if (vehicleIds) {
-            tripFilters.push(new Filter('vehicle.id', 'in', vehicleIds));
-            expenseFilters.push(new Filter('vehicleId', 'in', vehicleIds));
-            vehicleFilters.push(new Filter('id', 'in', vehicleIds));
-          } else {
-            // No vehicles found for owner, data will be empty
-            this.clearChartData();
-            this.updateCharts();
-            this.loading = false;
-            return;
-          }
+        if (vehicleIds) {
+          tripFilters.push(new Filter('vehicle.id', 'in', vehicleIds));
+          expenseFilters.push(new Filter('vehicleId', 'in', vehicleIds));
+          vehicleFilters.push(new Filter('id', 'in', vehicleIds));
+        } else {
+          // No vehicles found for owner, data will be empty
+          this.clearChartData();
+          this.updateCharts();
+          this.loading = false;
+          return;
         }
       } else if (role.includes('CONDUCTOR') && user?.id) {
         // 1. Get Driver linked to this User
@@ -489,7 +528,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           // 2. Filter vehicles by currentDriverId
           const vehicleDriverFilter = new ModelFilterTable(
             [new Filter('currentDriverId', '=', driverId.toString())],
-            new Pagination(20000, 0),
+            new Pagination(3000, 0),
             new Sort('id', true),
           );
           const vehiclesResp: any = await lastValueFrom(
@@ -553,7 +592,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       activeTripFilters.push(new Filter('status', '=', 'En Curso'));
       const activeTripPayload = new ModelFilterTable(
         activeTripFilters,
-        new Pagination(100, 0),
+        new Pagination(1000, 0),
         new Sort('id', false),
       );
 
