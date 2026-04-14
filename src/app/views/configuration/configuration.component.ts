@@ -132,7 +132,8 @@ export class ConfigurationComponent implements OnInit {
       this.originParam = params.get('origin');
       this.vehicleIdParam = params.get('vehicleId');
       this.tripIdParam = params.get('tripId');
-      this.hasBackContext = this.originParam === 'expenses';
+      this.hasBackContext =
+        this.originParam === 'expenses' || this.originParam === 'maintenance';
     });
   }
 
@@ -494,6 +495,12 @@ export class ConfigurationComponent implements OnInit {
         queryParams: {
           vehicleId: this.vehicleIdParam,
           tripId: this.tripIdParam,
+        },
+      });
+    } else if (this.originParam === 'maintenance') {
+      this.router.navigate(['/site/maintenance'], {
+        queryParams: {
+          vehicleId: this.vehicleIdParam,
         },
       });
     }

@@ -297,7 +297,7 @@ export class GAddExpenseComponent implements OnInit {
       this.router.navigate(['/site/configuration'], {
         queryParams: {
           typeId: this.selectedType,
-          origin: 'expenses',
+          origin: this.isMaintenance ? 'maintenance' : 'expenses',
           vehicleId: this.vehicleId,
           tripId: this.tripId,
         },
