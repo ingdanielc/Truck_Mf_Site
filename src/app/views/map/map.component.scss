@@ -24,6 +24,20 @@
       cursor: pointer;
     }
 
+    .owner-filter-container {
+      select {
+        width: 100%;
+        font-size: 0.85rem;
+        cursor: pointer;
+        outline: none;
+
+        &:focus {
+          box-shadow: none;
+          border-color: rgba(var(--bs-primary-rgb), 0.5) !important;
+        }
+      }
+    }
+
     .badges-content-wrapper {
       overflow-y: auto;
       transition:

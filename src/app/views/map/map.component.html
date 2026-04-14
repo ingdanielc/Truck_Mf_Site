@@ -33,6 +33,24 @@
       </button>
     </div>
 
+    @if (userRole === "ADMINISTRADOR") {
+      <div class="owner-filter-container my-2">
+        <select
+          class="form-select form-select-sm rounded-3 py-2 px-3 border-secondary-subtle bg-dark text-white"
+          [(ngModel)]="selectedOwnerFilterId"
+          (change)="onOwnerFilterChange()"
+        >
+          <option [ngValue]="null" disabled>Seleccione un propietario</option>
+          <option [ngValue]="-1">Todos los Propietarios</option>
+          @for (owner of owners; track owner.id) {
+            <option [ngValue]="owner.id">
+              {{ owner.name || owner.user?.name || "Propietario " + owner.id }}
+            </option>
+          }
+        </select>
+      </div>
+    }
+
     <div class="badges-content-wrapper custom-scrollbar">
       <div class="badges-list">
         @if (activeVehicles.length > 1) {
@@ -66,9 +84,11 @@
             {{ vehicle.plate }}
           </div>
         } @empty {
-          <div class="text-secondary small py-1">
-            No hay viajes en curso en este momento.
-          </div>
+          @if (userRole !== "ADMINISTRADOR" || selectedOwnerFilterId !== null) {
+            <div class="text-secondary small py-1">
+              No hay viajes en curso en este momento.
+            </div>
+          }
         }
       </div>
     </div>

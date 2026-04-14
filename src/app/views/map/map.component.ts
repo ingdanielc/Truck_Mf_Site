@@ -8,8 +8,10 @@ import { LocationService } from 'src/app/services/location.service';
 import { CommonService } from 'src/app/services/common.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { DriverService } from 'src/app/services/driver.service';
+import { FormsModule } from '@angular/forms';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { ModelTrip } from 'src/app/models/trip-model';
+import { ModelOwner } from 'src/app/models/owner-model';
 import {
   ModelFilterTable,
   Filter,
@@ -23,7 +25,7 @@ declare const google: any;
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss'],
 })
@@ -35,6 +37,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   loggedInUserId: number | null = null;
   isPanelCollapsed: boolean = false;
   fromParam: string | null = null;
+
+  owners: ModelOwner[] = [];
+  selectedOwnerFilterId: number | null = null;
 
   private markers: any[] = [];
   private polylines: any[] = [];
@@ -77,6 +82,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
         } else {
           // Admin or others (resolve as is)
           this.loggedInUserId = userId;
+          if (this.userRole === 'ADMINISTRADOR') {
+            this.loadOwners();
+          }
           if (this.map) this.loadActiveData();
         }
       }
@@ -110,7 +118,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.initMap();
     if (this.userRole) {
-      this.loadActiveData();
+      if (this.userRole === 'ADMINISTRADOR' || this.loggedInUserId) {
+        this.loadActiveData();
+      }
     }
   }
 
@@ -142,7 +152,28 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
           let vehiclesFilter: Filter[] = [];
 
           const roleUpper = this.userRole.toUpperCase();
-          if (roleUpper === 'PROPIETARIO' && this.loggedInUserId) {
+
+          if (
+            roleUpper === 'ADMINISTRADOR' &&
+            this.selectedOwnerFilterId === null
+          ) {
+            // No consultar vehículos hasta que el administrador haga una selección
+            return of({ data: { content: [] } });
+          }
+
+          if (
+            roleUpper === 'ADMINISTRADOR' &&
+            this.selectedOwnerFilterId &&
+            this.selectedOwnerFilterId !== -1
+          ) {
+            vehiclesFilter.push(
+              new Filter(
+                'owner.id',
+                '=',
+                this.selectedOwnerFilterId.toString(),
+              ),
+            );
+          } else if (roleUpper === 'PROPIETARIO' && this.loggedInUserId) {
             vehiclesFilter.push(
               new Filter('owner.id', '=', this.loggedInUserId.toString()),
             );
@@ -165,7 +196,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
             new Sort('id', true),
           );
 
-          if (roleUpper === 'PROPIETARIO') {
+          if (roleUpper === 'ADMINISTRADOR' || roleUpper === 'PROPIETARIO') {
             return this.vehicleService.getVehicleOwnerFilter(
               vehicleFilterTable,
             );
@@ -206,7 +237,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
           const tripFilterTable = new ModelFilterTable(
             tripFilters,
-            new Pagination(100, 0),
+            new Pagination(1000, 0),
             new Sort('startDate', false),
           );
 
@@ -439,7 +470,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     // Generate a consistent color based on plate
     let hash = 0;
     for (let i = 0; i < vehicle.plate.length; i++) {
-      hash = vehicle.plate.charCodeAt(i) + ((hash << 5) - hash);
+      hash = (vehicle.plate.codePointAt(i) ?? 0) + ((hash << 5) - hash);
     }
     const c = (hash & 0x00ffffff).toString(16).toUpperCase();
     return '#' + '00000'.substring(0, 6 - c.length) + c;
@@ -493,5 +524,21 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   togglePanel(): void {
     this.isPanelCollapsed = !this.isPanelCollapsed;
+  }
+
+  loadOwners(): void {
+    const filter = new ModelFilterTable(
+      [],
+      new Pagination(1000, 0),
+      new Sort('name', true),
+    );
+    this.ownerService.getOwnerFilter(filter).subscribe((res) => {
+      this.owners = res?.data?.content || [];
+    });
+  }
+
+  onOwnerFilterChange(): void {
+    this.selectedVehicleId = null;
+    this.loadActiveData();
   }
 }
