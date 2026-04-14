@@ -1520,7 +1520,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     const ab = new ArrayBuffer(byteString.length);
     const ia = new Uint8Array(ab);
     for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
+      ia[i] = byteString.codePointAt(i) ?? 0;
     }
     this.photoFile = new Blob([ab], { type: mimeType });
     this.photoPreview = dataUrl;
