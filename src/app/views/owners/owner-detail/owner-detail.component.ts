@@ -9,7 +9,6 @@ import { ToastService } from 'src/app/services/toast.service';
 import { CommonService } from 'src/app/services/common.service';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
-import { ModelDriver } from 'src/app/models/driver-model';
 import { DriverService } from 'src/app/services/driver.service';
 import { TripService } from 'src/app/services/trip.service';
 import { SecurityService } from 'src/app/services/security/security.service';
@@ -43,12 +42,12 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   ownerId: number | null = null;
   owner: ModelOwner | null = null;
   vehicles: ModelVehicle[] = [];
-  drivers: ModelDriver[] = [];
+
   cities: any[] = [];
   brands: any[] = [];
   loading: boolean = true;
   loadingVehicles: boolean = true;
-  loadingDrivers: boolean = true;
+
   loadingCities: boolean = true;
   loadingBrands: boolean = true;
   tripCount: number = 0;
@@ -225,11 +224,13 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
           this.vehicleService.getVehicleFilter(vehicleFilter).subscribe({
             next: (vResponse: any) => {
               this.vehicles = vResponse?.data?.content ?? [];
-              this.vehicles.forEach((v) => {
+              this.vehicles.forEach((v: any) => {
                 v.lastTripStatus = v.occupied ? 'En Curso' : 'Disponible';
+                if (v.driver?.name) {
+                  v.currentDriverName = v.driver.name;
+                }
               });
               this.mapBrandNames();
-              this.mapDriverNames();
               this.loadingVehicles = false;
 
               if (this.vehicles.length > 0) {
@@ -244,13 +245,8 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
               this.tripCount = 0;
             },
           });
-
-          // Drivers list (maybe show all drivers of the owner or just themselves? The request says "el listado de vehiculos se debe mostrar unicamente el vehiculo del conductor", it doesn't mention driver list filtering specifically but usually it's better to hide others)
-          this.drivers = [driver];
-          this.loadingDrivers = false;
         } else {
           this.loadingVehicles = false;
-          this.loadingDrivers = false;
           this.toastService.showError(
             'Error',
             'No se encontró información del conductor',
@@ -259,7 +255,6 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.loadingVehicles = false;
-        this.loadingDrivers = false;
       },
     });
   }
@@ -281,7 +276,6 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   loadAllData(ownerId: number): void {
     this.loadOwner(ownerId);
     this.loadVehicles(ownerId);
-    this.loadDrivers(ownerId);
     this.loadTripCount(ownerId);
   }
 
@@ -295,36 +289,18 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
       next: (response: any) => {
         this.vehicles = response?.data?.content ?? [];
-        this.vehicles.forEach((v) => {
+        this.vehicles.forEach((v: any) => {
           v.lastTripStatus = v.occupied ? 'En Curso' : 'Disponible';
+          if (v.driver?.name) {
+            v.currentDriverName = v.driver.name;
+          }
         });
         this.mapBrandNames();
-        this.mapDriverNames();
         this.loadingVehicles = false;
       },
       error: (err) => {
         console.error('Error loading vehicles:', err);
         this.loadingVehicles = false;
-      },
-    });
-  }
-
-  loadDrivers(ownerId: number): void {
-    this.loadingDrivers = true;
-    const filter = new ModelFilterTable(
-      [new Filter('ownerId', '=', ownerId.toString())],
-      new Pagination(50, 0),
-      new Sort('id', true),
-    );
-    this.driverService.getDriverFilter(filter).subscribe({
-      next: (response: any) => {
-        this.drivers = response?.data?.content ?? [];
-        this.mapDriverNames();
-        this.loadingDrivers = false;
-      },
-      error: (err) => {
-        console.error('Error loading drivers:', err);
-        this.loadingDrivers = false;
       },
     });
   }
@@ -395,17 +371,6 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
           );
           if (brand) v.vehicleBrandName = brand.name;
         }
-      });
-    }
-  }
-
-  mapDriverNames(): void {
-    if (this.drivers.length > 0 && this.vehicles.length > 0) {
-      this.vehicles.forEach((v) => {
-        const driver = this.drivers.find(
-          (d) => String(d.id) === String(v.currentDriverId),
-        );
-        if (driver) v.currentDriverName = driver.name;
       });
     }
   }

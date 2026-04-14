@@ -20,7 +20,6 @@ import { GExpensesTripComponent } from 'src/app/components/g-expenses-trip/g-exp
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { ModelExpense } from 'src/app/models/expense-model';
 import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
-import { ModelDriver } from 'src/app/models/driver-model';
 import {
   Filter,
   ModelFilterTable,
@@ -70,9 +69,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   brands: any[] = [];
   loadingBrands = false;
-
-  drivers: ModelDriver[] = [];
-  loadingDrivers = false;
 
   carouselIndex = 0;
   visibleCount = 1;
@@ -164,27 +160,9 @@ export class ExpensesComponent implements OnInit, OnDestroy {
                 this.mapBrandNames();
 
                 // Also load driver name if vehicle has a driver assigned
-                if (this.selectedVehicle?.currentDriverId) {
-                  const dFilter = new ModelFilterTable(
-                    [
-                      new Filter(
-                        'id',
-                        '=',
-                        this.selectedVehicle.currentDriverId.toString(),
-                      ),
-                    ],
-                    new Pagination(1, 0),
-                    new Sort('id', true),
-                  );
-                  this.driverService.getDriverFilter(dFilter).subscribe({
-                    next: (dResp: any) => {
-                      if (dResp?.data?.content?.length > 0) {
-                        const drv = dResp.data.content[0];
-                        if (this.selectedVehicle)
-                          this.selectedVehicle.currentDriverName = drv.name;
-                      }
-                    },
-                  });
+                if (resp.data.content[0].driver?.name) {
+                  this.selectedVehicle!.currentDriverName =
+                    resp.data.content[0].driver?.name;
                 }
               }
             },
@@ -414,10 +392,16 @@ export class ExpensesComponent implements OnInit, OnDestroy {
               a.plate.localeCompare(b.plate, 'es', { sensitivity: 'base' }),
             );
           if (this.vehicles.length > 0) {
+            this.vehicles.forEach((v: any) => {
+              if (v.driver?.name) {
+                v.currentDriverName = v.driver.name;
+              }
+            });
+
             const index = preselectedId
               ? this.vehicles.findIndex((v) => v.id === preselectedId)
               : -1;
-            const pre = index !== -1 ? this.vehicles[index] : null;
+            const pre = index === -1 ? null : this.vehicles[index];
             this.selectVehicle(pre || this.vehicles[0]);
 
             if (index !== -1) {
@@ -426,7 +410,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           }
           this.loadingVehicles = false;
           this.mapBrandNames();
-          this.loadDrivers(); // Admin: load all drivers
         },
         error: () => (this.loadingVehicles = false),
       });
@@ -450,10 +433,16 @@ export class ExpensesComponent implements OnInit, OnDestroy {
             a.plate.localeCompare(b.plate, 'es', { sensitivity: 'base' }),
           );
         if (this.vehicles.length > 0) {
+          this.vehicles.forEach((v: any) => {
+            if (v.driver?.name) {
+              v.currentDriverName = v.driver.name;
+            }
+          });
+
           const index = preselectedId
             ? this.vehicles.findIndex((v) => v.id === preselectedId)
             : -1;
-          const pre = index !== -1 ? this.vehicles[index] : null;
+          const pre = index === -1 ? null : this.vehicles[index];
           this.selectVehicle(pre || this.vehicles[0]);
 
           if (index !== -1) {
@@ -463,7 +452,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         this.carouselIndex = 0;
         this.loadingVehicles = false;
         this.mapBrandNames();
-        this.loadDrivers(ownerId); // Owner: load only their drivers
       },
       error: () => (this.loadingVehicles = false),
     });
@@ -495,10 +483,16 @@ export class ExpensesComponent implements OnInit, OnDestroy {
                   a.plate.localeCompare(b.plate, 'es', { sensitivity: 'base' }),
                 );
               if (this.vehicles.length > 0) {
+                this.vehicles.forEach((v: any) => {
+                  if (v.driver?.name) {
+                    v.currentDriverName = v.driver.name;
+                  }
+                });
+
                 const index = preselectedId
                   ? this.vehicles.findIndex((v) => v.id === preselectedId)
                   : -1;
-                const pre = index !== -1 ? this.vehicles[index] : null;
+                const pre = index === -1 ? null : this.vehicles[index];
                 this.selectVehicle(pre || this.vehicles[0]);
 
                 if (index !== -1) {
@@ -508,9 +502,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
               this.carouselIndex = 0;
               this.loadingVehicles = false;
               this.mapBrandNames();
-              // For conductor, they only see themselves as the driver
-              this.drivers = [driver];
-              this.mapDriverNames();
             },
             error: () => (this.loadingVehicles = false),
           });
@@ -585,44 +576,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     };
 
     if (this.brands.length > 0) {
-      this.vehicles.forEach(mapFn);
-      if (this.selectedVehicle) mapFn(this.selectedVehicle);
-    }
-  }
-
-  loadDrivers(ownerId?: number): void {
-    this.loadingDrivers = true;
-    const filters = ownerId
-      ? [new Filter('ownerId', '=', ownerId.toString())]
-      : [];
-    const filterPayload = new ModelFilterTable(
-      filters,
-      new Pagination(9999, 0),
-      new Sort('id', true),
-    );
-
-    this.driverService.getDriverFilter(filterPayload).subscribe({
-      next: (resp: any) => {
-        this.drivers = resp?.data?.content ?? [];
-        this.loadingDrivers = false;
-        this.mapDriverNames();
-      },
-      error: (err) => {
-        console.error('Error loading drivers:', err);
-        this.loadingDrivers = false;
-      },
-    });
-  }
-
-  mapDriverNames(): void {
-    const mapFn = (v: ModelVehicle) => {
-      const driver = this.drivers.find(
-        (d) => String(d.id) === String(v.currentDriverId),
-      );
-      if (driver) v.currentDriverName = `${driver.name}`;
-    };
-
-    if (this.drivers.length > 0) {
       this.vehicles.forEach(mapFn);
       if (this.selectedVehicle) mapFn(this.selectedVehicle);
     }
