@@ -350,6 +350,17 @@ export class TripsComponent implements OnInit, OnDestroy {
             }
           } else if (this.userRole === 'ADMINISTRADOR') {
             this.totalOwners = response.data.totalElements ?? 0;
+
+            // Handle auto-expansion if ownerIdFilter is present
+            if (this.ownerIdFilter && this.owners.length > 0) {
+              const matchedOwner = this.owners.find(
+                (o) => o.id === this.ownerIdFilter,
+              );
+              if (matchedOwner && !this.expandedOwnerId) {
+                this.toggleOwnerExpansion(matchedOwner);
+              }
+            }
+
             this.loading = false;
           }
         } else if (this.userRole === 'ADMINISTRADOR') this.loading = false;
@@ -369,7 +380,9 @@ export class TripsComponent implements OnInit, OnDestroy {
       );
     } else if (
       this.vehicleIdFilter &&
-      (this.userRole === 'PROPIETARIO' || this.userRole === 'CONDUCTOR')
+      (this.userRole === 'PROPIETARIO' ||
+        this.userRole === 'CONDUCTOR' ||
+        this.userRole === 'ADMINISTRADOR')
     ) {
       filtros.push(
         new Filter('vehicle.id', '=', this.vehicleIdFilter.toString()),

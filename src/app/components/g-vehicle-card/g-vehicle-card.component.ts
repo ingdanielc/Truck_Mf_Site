@@ -97,7 +97,14 @@ export class GVehicleCardComponent implements OnInit {
 
   onTripsClick(): void {
     const queryParams: any = {};
-    if (this.userRole === 'PROPIETARIO' || this.userRole === 'CONDUCTOR') {
+    if (this.userRole === 'ADMINISTRADOR') {
+      queryParams.vehicleId = this.vehicle.id;
+      const ownerId = this.vehicle.ownerId || this.vehicle.owners?.[0]?.ownerId;
+      if (ownerId) queryParams.ownerId = ownerId;
+    } else if (
+      this.userRole === 'PROPIETARIO' ||
+      this.userRole === 'CONDUCTOR'
+    ) {
       queryParams.vehicleId = this.vehicle.id;
     }
     this.router.navigate(['/site/trips'], { queryParams });
