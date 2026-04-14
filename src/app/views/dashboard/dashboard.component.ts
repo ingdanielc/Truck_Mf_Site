@@ -516,6 +516,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
         }
       }
 
+      // Filtros por año seleccionado para optimizar carga en servidor
+      const yearStart = `${this.selectedYear}-01-01T00:00:00`;
+      const yearEnd = `${this.selectedYear}-12-31T23:59:59`;
+
+      tripFilters.push(
+        new Filter('startDate', '>=', yearStart),
+        new Filter('startDate', '<=', yearEnd),
+      );
+
+      expenseFilters.push(
+        new Filter('expenseDate', '>=', yearStart),
+        new Filter('expenseDate', '<=', yearEnd),
+      );
+
       const vehicleFilterPayload = new ModelFilterTable(
         vehicleFilters,
         new Pagination(20000, 0),
@@ -532,17 +546,40 @@ export class DashboardComponent implements OnInit, OnDestroy {
         new Sort('id', false),
       );
 
-      const [tripsResp, expensesResp, vehiclesResp]: any[] = await Promise.all([
-        lastValueFrom(this.tripService.getTripFilter(tripFilterPayload)),
-        lastValueFrom(
-          this.expenseService.getExpenseFilter(expenseFilterPayload),
-        ),
-        lastValueFrom(
-          this.vehicleService.getVehicleFilter(vehicleFilterPayload),
-        ),
-      ]);
+      // Petición específica para viajes activos (evita que se filtren por fecha si vienen de otro año)
+      const activeTripFilters = tripFilters.filter(
+        (f) => f.fieldFilter !== 'startDate',
+      );
+      activeTripFilters.push(new Filter('status', '=', 'En Curso'));
+      const activeTripPayload = new ModelFilterTable(
+        activeTripFilters,
+        new Pagination(100, 0),
+        new Sort('id', false),
+      );
 
-      const trips: ModelTrip[] = tripsResp?.data?.content || [];
+      const [tripsResp, expensesResp, vehiclesResp, activeTripsResp]: any[] =
+        await Promise.all([
+          lastValueFrom(this.tripService.getTripFilter(tripFilterPayload)),
+          lastValueFrom(
+            this.expenseService.getExpenseFilter(expenseFilterPayload),
+          ),
+          lastValueFrom(
+            this.vehicleService.getVehicleFilter(vehicleFilterPayload),
+          ),
+          lastValueFrom(this.tripService.getTripFilter(activeTripPayload)),
+        ]);
+
+      const yearTrips: ModelTrip[] = tripsResp?.data?.content || [];
+      const currentActiveTrips: ModelTrip[] =
+        activeTripsResp?.data?.content || [];
+
+      // Combinar viajes del año y viajes activos sin duplicados
+      const tripsMap = new Map<string, ModelTrip>();
+      [...yearTrips, ...currentActiveTrips].forEach((t) => {
+        if (t.id) tripsMap.set(t.id.toString(), t);
+      });
+      const trips = Array.from(tripsMap.values());
+
       const expenses: ModelExpense[] = expensesResp?.data?.content || [];
       this.vehicles = vehiclesResp?.data?.content || [];
 
@@ -963,39 +1000,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private mapDriverNames(vehicles: ModelVehicle[]): void {
-    if (vehicles.length === 0) return;
-
-    const missingIds = [
-      ...new Set(
-        vehicles
-          .filter((v) => v.currentDriverId != null && !v.currentDriverName)
-          .map((v) => v.currentDriverId as number),
-      ),
-    ];
-
-    missingIds.forEach((id) => this.fetchDriverDetail(id, vehicles));
-  }
-
-  private fetchDriverDetail(driverId: number, vehicles: ModelVehicle[]): void {
-    const filter = new ModelFilterTable(
-      [new Filter('id', '=', driverId.toString())],
-      new Pagination(1, 0),
-      new Sort('id', true),
-    );
-
-    this.driverService.getDriverFilter(filter).subscribe({
-      next: (response: any) => {
-        const driver = response?.data?.content?.[0];
-        if (driver) {
-          vehicles.forEach((v) => {
-            if (v.currentDriverId === driverId) {
-              v.currentDriverName = driver.name;
-            }
-          });
-        }
-      },
-      error: (err: any) =>
-        console.error(`Error fetching driver ${driverId} details:`, err),
+    vehicles.forEach((v: any) => {
+      if (v.driver?.name) {
+        v.currentDriverName = v.driver.name;
+      }
     });
   }
 }
