@@ -343,7 +343,7 @@
                   [itemLabel]="'Vehículos'"
                   [disableClick]="true"
                   [from]="'trips'"
-                  (click)="toggleOwnerExpansion(owner)"
+                  (click)="toggleOwnerExpansion(owner, true)"
                   [class.expanded]="expandedOwnerId === owner.id"
                   onkeypress
                 >

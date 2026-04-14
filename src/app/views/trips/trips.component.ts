@@ -330,11 +330,16 @@ export class TripsComponent implements OnInit, OnDestroy {
     let filtros: Filter[] = [];
     if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId != null) {
       filtros.push(new Filter('user.id', '=', this.loggedInOwnerId.toString()));
+    } else if (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter) {
+      filtros.push(new Filter('id', '=', this.ownerIdFilter.toString()));
     }
+
+    const paginationRows =
+      this.userRole === 'ADMINISTRADOR' && !this.ownerIdFilter ? this.rows : 1;
 
     let filter = new ModelFilterTable(
       filtros,
-      new Pagination(this.rows, this.page),
+      new Pagination(paginationRows, this.page),
       new Sort('name', true),
     );
     this.ownerService.getOwnerFilter(filter).subscribe({
@@ -813,19 +818,33 @@ export class TripsComponent implements OnInit, OnDestroy {
     this.groupedTrips = groups;
   }
 
-  toggleOwnerExpansion(owner: ModelOwner): void {
+  toggleOwnerExpansion(owner: ModelOwner, isManual: boolean = false): void {
     if (this.userRole !== 'ADMINISTRADOR') return;
+
+    // If manual click, clear vehicle filter to show all owner's trips
+    if (isManual && this.vehicleIdFilter) {
+      this.vehicleIdFilter = null;
+      this.router.navigate([], {
+        queryParams: { vehicleId: null },
+        queryParamsHandling: 'merge',
+      });
+    }
 
     if (this.expandedOwnerId === owner.id) {
       this.expandedOwnerId = null;
       this.expandedOwnerPage = 0;
       this.ownerTrips = [];
       this.expandedOwnerVehiclesCount = 0;
-      // Restore global stats
-      this.totalTrips = this.globalStats.total;
-      this.inProgressTrips = this.globalStats.inProgress;
-      this.completedTrips = this.globalStats.completed;
-      this.pendingTrips = this.globalStats.pending;
+
+      // Restore global stats or refresh them if context changed
+      if (isManual) {
+        this.updateStatusCounts();
+      } else {
+        this.totalTrips = this.globalStats.total;
+        this.inProgressTrips = this.globalStats.inProgress;
+        this.completedTrips = this.globalStats.completed;
+        this.pendingTrips = this.globalStats.pending;
+      }
     } else {
       this.expandedOwnerId = owner.id ?? null;
       if (this.expandedOwnerId) {
@@ -850,10 +869,12 @@ export class TripsComponent implements OnInit, OnDestroy {
           (v: any) => v.status !== 'Vendido',
         );
         this.expandedOwnerVehiclesCount = vehicles.length;
-        const vehicleIds = vehicles
-          .map((v: any) => v.id)
-          .filter((id: any) => id != null)
-          .join(',');
+        const vehicleIds = this.vehicleIdFilter
+          ? this.vehicleIdFilter.toString()
+          : vehicles
+              .map((v: any) => v.id)
+              .filter((id: any) => id != null)
+              .join(',');
 
         if (!vehicleIds) {
           this.ownerTrips = [];
