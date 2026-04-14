@@ -10,6 +10,12 @@
   }
 }
 
+.search-wrapper {
+  @media (min-width: 576px) {
+    min-width: 300px;
+  }
+}
+
 // ── Carousel slide ────────────────────────────────────────────────
 
 .carousel-slide {

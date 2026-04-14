@@ -62,6 +62,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   hideSelectionSections = false;
   isMaintenance = false;
   userRole = '';
+  owners: any[] = [];
+  selectedOwnerId: number | null = null;
   hasBackContext = false;
   tripIdParam: string | null = null;
   vehicleIdParam: string | null = null;
@@ -141,6 +143,10 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           this.userRole = 'CONDUCTOR';
         } else {
           this.userRole = roles[0] || '';
+        }
+
+        if (this.userRole === 'ADMINISTRADOR') {
+          this.loadOwners();
         }
 
         // 1. Always load the list of vehicles for the user
@@ -379,12 +385,18 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     } else if (roles.has('CONDUCTOR')) {
       this.loadVehiclesByDriver(user.id, preselectedId);
     } else {
+      let filtros: Filter[] = [];
+      if (this.selectedOwnerId) {
+        filtros.push(
+          new Filter('owner.id', '=', this.selectedOwnerId.toString()),
+        );
+      }
       const filter = new ModelFilterTable(
-        [],
+        filtros,
         new Pagination(9999, 0),
         new Sort('id', true),
       );
-      this.vehicleService.getVehicleFilter(filter).subscribe({
+      this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
         next: (resp: any) => {
           this.vehicles = (resp?.data?.content ?? [])
             .filter((v: any) => v.status !== 'Vendido')
@@ -521,6 +533,34 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         Math.min(index, this.vehicles.length - this.visibleCount),
       );
     }
+  }
+
+  loadOwners(): void {
+    const filter = new ModelFilterTable(
+      [],
+      new Pagination(9999, 0),
+      new Sort('name', true),
+    );
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (resp: any) => {
+        this.owners = resp?.data?.content || [];
+      },
+      error: (err) => console.error('Error loading owners:', err),
+    });
+  }
+
+  onOwnerChange(event: any): void {
+    const val = event.target.value;
+    this.selectedOwnerId = val ? Number(val) : null;
+    this.selectedVehicle = null;
+    this.selectedTrip = null;
+    this.loadingVehicles = true;
+    this.vehicles = [];
+
+    // Trigger reload
+    this.securityService.userData$.pipe(take(1)).subscribe((user) => {
+      if (user) this.loadVehiclesForUser(user);
+    });
   }
 
   loadBrands(): void {
