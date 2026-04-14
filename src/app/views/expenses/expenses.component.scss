@@ -3,6 +3,7 @@
   padding-left: 0.8rem;
   padding-right: 0.8rem;
   transition: all 0.3s ease;
+  overflow-x: hidden;
 
   @media (min-width: 768px) {
     padding-left: 3rem;
@@ -11,6 +12,15 @@
 }
 
 .search-wrapper {
+  max-width: 100%;
+
+  select {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   @media (min-width: 576px) {
     min-width: 300px;
   }
