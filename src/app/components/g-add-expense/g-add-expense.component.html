@@ -98,6 +98,7 @@
                 [name]="category.name"
                 [colorClass]="category.colorClass"
                 [selected]="selectedCategoryId === category.id"
+                [disabled]="category.disabled || false"
                 (cardClick)="selectCategory(category.id)"
                 class="h-100"
               ></g-expense-category-card>
@@ -214,10 +215,7 @@
         [disabled]="!canSave || isSaving"
       >
         @if (isSaving) {
-          <output
-            class="spinner-border me-2"
-            aria-hidden="true"
-          ></output>
+          <output class="spinner-border me-2" aria-hidden="true"></output>
         } @else {
           <i class="fa-solid fa-check-circle me-2"></i>
           {{

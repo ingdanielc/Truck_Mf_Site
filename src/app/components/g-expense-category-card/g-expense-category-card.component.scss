@@ -47,7 +47,16 @@
     }
   }
 
-  &:hover:not(.is-selected):not(.is-new) {
+  &.is-disabled {
+    opacity: 0.5;
+    filter: grayscale(0.8);
+    cursor: not-allowed !important;
+    pointer-events: none;
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.02) !important;
+    border-color: rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
+  }
+
+  &:hover:not(.is-selected):not(.is-new):not(.is-disabled) {
     border-color: var(--bs-secondary-bg);
     background-color: var(--bs-secondary-bg) !important;
   }

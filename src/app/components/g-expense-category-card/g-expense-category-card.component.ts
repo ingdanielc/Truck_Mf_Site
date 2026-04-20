@@ -14,10 +14,13 @@ export class GExpenseCategoryCardComponent {
   @Input() colorClass: string = 'text-success bg-success';
   @Input() selected: boolean = false;
   @Input() isNew: boolean = false; // Styling for the "Nueva" category card
+  @Input() disabled: boolean = false;
 
   @Output() cardClick = new EventEmitter<void>();
 
   onClick(): void {
-    this.cardClick.emit();
+    if (!this.disabled) {
+      this.cardClick.emit();
+    }
   }
 }

@@ -3,7 +3,8 @@
   [ngClass]="{
     'is-selected': selected,
     'is-new': isNew,
-    'bg-body': !selected && !isNew,
+    'is-disabled': disabled,
+    'bg-body': !selected && !isNew && !disabled,
   }"
   (click)="onClick()"
   onkeypress

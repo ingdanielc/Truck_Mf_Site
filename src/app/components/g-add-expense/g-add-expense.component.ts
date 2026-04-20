@@ -23,6 +23,7 @@ import { OwnerService } from 'src/app/services/owner.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { VehicleService as VehicleRealService } from 'src/app/services/vehicle.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
+import { CommonService } from 'src/app/services/common.service';
 
 interface CategoryConfig {
   id: number;
@@ -30,6 +31,7 @@ interface CategoryConfig {
   icon: string;
   type: string;
   colorClass: string;
+  disabled?: boolean;
 }
 
 @Component({
@@ -65,6 +67,8 @@ export class GAddExpenseComponent implements OnInit {
   filteredCategories: CategoryConfig[] = [];
   selectedCategoryId: number | null = null;
   searchQuery: string = '';
+  salaryTypes: any[] = [];
+  currentDriverSalaryTypeId: number | null = null;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -74,11 +78,13 @@ export class GAddExpenseComponent implements OnInit {
     private readonly ownerService: OwnerService,
     private readonly driverService: DriverService,
     private readonly vehicleRealService: VehicleRealService,
+    private readonly commonService: CommonService,
   ) {}
 
   ngOnInit(): void {
     this.initForm();
     this.determineTargetOwnerId();
+    this.loadInitialData();
 
     if (this.isMaintenance) {
       this.selectedType = 4;
@@ -180,6 +186,34 @@ export class GAddExpenseComponent implements OnInit {
     }
   }
 
+  loadInitialData(): void {
+    // 1. Load Salary Types
+    this.commonService.getSalaryTypes().subscribe({
+      next: (resp: any) => {
+        if (resp?.data) this.salaryTypes = resp.data;
+      },
+    });
+
+    // 2. Load Vehicle and Driver info
+    if (this.vehicleId) {
+      const filter = new ModelFilterTable(
+        [new Filter('id', '=', this.vehicleId.toString())],
+        new Pagination(1, 0),
+        new Sort('id', true),
+      );
+      this.vehicleRealService.getVehicleFilter(filter).subscribe({
+        next: (resp: any) => {
+          const vehicle = resp?.data?.content?.[0];
+          if (vehicle) {
+            this.currentDriverSalaryTypeId =
+              vehicle.driver?.salaryTypeId || null;
+            this.filterCategories(); // Re-filter once we have driver info
+          }
+        },
+      });
+    }
+  }
+
   loadCategories(): void {
     this.loadingCategories = true;
     const pagination = new Pagination(500, 0);
@@ -277,6 +311,30 @@ export class GAddExpenseComponent implements OnInit {
     const query = this.searchQuery.toLowerCase();
     this.filteredCategories = this.categories
       .filter((cat) => {
+        const catName = cat.name.toUpperCase();
+        if (catName.includes('SALARIO')) {
+          const salaryType = this.salaryTypes.find(
+            (t) => t.id === Number(this.currentDriverSalaryTypeId),
+          );
+          if (this.isMaintenance) {
+            // Mantenimiento: hidden if Salary Type is NOT "Salario mensual"
+            if (
+              !salaryType ||
+              !salaryType.name.toUpperCase().includes('SALARIO MENSUAL')
+            ) {
+              return false;
+            }
+          } else {
+            // Gasto (Viaje/Conductor/Vehículo): hidden if Salary Type is NOT "Porcentaje"
+            if (
+              !salaryType ||
+              !salaryType.name.toUpperCase().includes('PORCENTAJE')
+            ) {
+              return false;
+            }
+          }
+        }
+
         const catType = Number(cat.type);
         const matchesType = catType === this.selectedType;
         const matchesSearch = cat.name.toLowerCase().includes(query);
