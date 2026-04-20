@@ -631,13 +631,19 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   selectVehicle(vehicle: ModelVehicle): void {
-    console.log('Selected vehicle:', vehicle);
     this.selectedVehicle = vehicle;
-    this.selectedTrip = null; // Clear selected trip when changing vehicle
+    if (
+      this.tripIdParam &&
+      this.vehicleIdParam === vehicle.id?.toString() &&
+      (!this.selectedTrip ||
+        this.selectedTrip.id?.toString() === this.tripIdParam)
+    ) {
+      // Do not clear selected trip when initially loading parameterized vehicle
+    } else {
+      this.selectedTrip = null; // Clear selected trip when changing vehicle
+    }
 
     if (this.isMaintenance) {
-      // For maintenance, we don't need a real trip, but g-expenses-trip needs a tripId
-      // and we use a dummy trip with id 0 which the service handles as "vehicle only"
       this.selectedTrip = { id: 0 } as ModelTrip;
       return;
     }
@@ -684,7 +690,24 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
           // Auto-select the first trip (prioritized active then newest)
           if (this.recentTrips.length > 0) {
-            this.selectedTrip = this.recentTrips[0];
+            if (
+              this.tripIdParam &&
+              vehicleId.toString() === this.vehicleIdParam
+            ) {
+              if (
+                !this.selectedTrip ||
+                this.selectedTrip.id?.toString() !== this.tripIdParam
+              ) {
+                const matchedTrip = this.recentTrips.find(
+                  (t) => t.id?.toString() === this.tripIdParam,
+                );
+                if (matchedTrip) {
+                  this.selectedTrip = matchedTrip;
+                }
+              }
+            } else {
+              this.selectedTrip = this.recentTrips[0];
+            }
           }
         }
         this.loadingTrips = false;
