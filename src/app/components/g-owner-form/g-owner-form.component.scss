@@ -73,3 +73,14 @@
   border-bottom: 2px solid rgba(var(--bs-primary-rgb), 0.1);
   padding-bottom: 0.5rem;
 }
+
+@media (max-width: 767.98px) {
+  input[type="date"] {
+    text-align: left !important;
+
+    &::-webkit-date-and-time-value {
+      text-align: left !important;
+      min-height: 1.5em; /* Ensure it stays visible */
+    }
+  }
+}
