@@ -43,6 +43,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   // State tracking for logistics
   originalStatus: string = '';
   originalPaidBalance: boolean = false;
+  arrivalDate: string = '';
+  originalArrivalDate: string = '';
 
   // UI State
   isOffcanvasOpen: boolean = false;
@@ -50,6 +52,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   showConfirmModal: boolean = false;
   isSavingLogistics: boolean = false;
   estimatedArrivalTime: string = '--:--';
+  currentTime: Date = new Date();
+  private durationInterval: any = null;
 
   // User context
   userRole: string = 'ROL';
@@ -85,6 +89,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.startDurationTimer();
     this.routeSub = this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
       if (id) {
@@ -113,6 +118,21 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
     this.userSub?.unsubscribe();
+    this.stopDurationTimer();
+  }
+
+  private startDurationTimer(): void {
+    this.stopDurationTimer();
+    this.durationInterval = setInterval(() => {
+      this.currentTime = new Date();
+    }, 10000);
+  }
+
+  private stopDurationTimer(): void {
+    if (this.durationInterval) {
+      clearInterval(this.durationInterval);
+      this.durationInterval = null;
+    }
   }
 
   loadCities(): void {
@@ -171,6 +191,18 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (this.trip) {
       this.originalStatus = this.trip.status;
       this.originalPaidBalance = this.trip.paidBalance ?? false;
+
+      if (this.trip.endDate) {
+        const dateObj = new Date(this.trip.endDate);
+        if (!Number.isNaN(dateObj.getTime())) {
+          this.arrivalDate = this.formatDateToYYYYMMDD(dateObj);
+        } else {
+          this.arrivalDate = this.maxArrivalDate;
+        }
+      } else {
+        this.arrivalDate = this.maxArrivalDate;
+      }
+      this.originalArrivalDate = this.arrivalDate;
       if (this.trip.id && this.trip.vehicleId) {
         this.loadExpenses(this.trip.id, this.trip.vehicleId);
         if (
@@ -347,11 +379,48 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return brand ? brand.name : '';
   }
 
+  get maxArrivalDate(): string {
+    return this.formatDateToYYYYMMDD(new Date());
+  }
+
+  formatDateToYYYYMMDD(date: Date): string {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  onArrivalDateChange(val: string): void {
+    if (!val) return;
+    if (val > this.maxArrivalDate) {
+      val = this.maxArrivalDate;
+      this.toastService.showError(
+        'Fecha no permitida',
+        'No se permiten fechas futuras para la fecha de llegada.',
+      );
+    }
+    this.arrivalDate = val;
+    if (this.trip) {
+      if (val === this.maxArrivalDate) {
+        this.trip.endDate = new Date().toISOString();
+      } else {
+        this.trip.endDate = new Date(val + 'T12:00:00').toISOString();
+      }
+    }
+  }
+
   get hasLogisticsChanges(): boolean {
     if (!this.trip) return false;
+    const isCompletedOrPending = ['Completado', 'Pendiente'].includes(
+      this.trip.status,
+    );
+    const dateChanged =
+      isCompletedOrPending && this.arrivalDate !== this.originalArrivalDate;
+
     return (
       this.trip.status !== this.originalStatus ||
-      this.trip.paidBalance !== this.originalPaidBalance
+      this.trip.paidBalance !== this.originalPaidBalance ||
+      dateChanged
     );
   }
 
@@ -371,6 +440,19 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       this.trip.paidBalance = true;
     } else if (newStatus === 'Pendiente') {
       this.trip.paidBalance = false;
+    }
+
+    if (['Completado', 'Pendiente'].includes(newStatus)) {
+      if (!this.arrivalDate) {
+        this.arrivalDate = this.maxArrivalDate;
+      }
+      if (this.arrivalDate === this.maxArrivalDate) {
+        this.trip.endDate = new Date().toISOString();
+      } else {
+        this.trip.endDate = new Date(
+          this.arrivalDate + 'T12:00:00',
+        ).toISOString();
+      }
     }
   }
 
@@ -396,10 +478,9 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   cancelLogisticsUpdate(): void {
     this.showConfirmModal = false;
-    // Rollback status if possible or just let the user change it back
-    // Since it's bound via (change), we might need to reset it to originalStatus if we want to be strict
     if (this.trip) {
       this.trip.status = this.originalStatus;
+      this.arrivalDate = this.originalArrivalDate;
     }
   }
 
@@ -407,12 +488,25 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (!this.trip) return;
 
     if (['Completado', 'Cancelado', 'Pendiente'].includes(this.trip.status)) {
-      this.trip.endDate = new Date().toISOString();
+      if (
+        ['Completado', 'Pendiente'].includes(this.trip.status) &&
+        this.arrivalDate
+      ) {
+        this.trip.endDate = new Date(
+          this.arrivalDate + 'T12:00:00',
+        ).toISOString();
+      } else if (!this.trip.endDate) {
+        this.trip.endDate = new Date().toISOString();
+      }
+
       if (this.trip.startDate && this.trip.endDate) {
         const start = new Date(this.trip.startDate);
         const end = new Date(this.trip.endDate);
         const diffTime = Math.abs(end.getTime() - start.getTime());
-        this.trip.numberOfDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        this.trip.numberOfDays = Math.max(
+          1,
+          Math.ceil(diffTime / (1000 * 60 * 60 * 24)),
+        );
       }
     }
 
@@ -567,9 +661,25 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   }
 
   get tripDurationInHours(): number {
-    if (!this.trip?.startDate || !this.trip?.endDate) return 0;
+    if (!this.trip?.startDate) return 0;
     const start = new Date(this.trip.startDate);
-    const end = new Date(this.trip.endDate);
+    let end: Date;
+    if (
+      ['Completado', 'Pendiente'].includes(this.trip?.status || '') &&
+      this.arrivalDate
+    ) {
+      if (this.trip?.endDate && this.arrivalDate === this.maxArrivalDate) {
+        end = new Date(this.trip.endDate);
+      } else if (this.arrivalDate === this.maxArrivalDate) {
+        end = this.currentTime || new Date();
+      } else {
+        end = new Date(this.arrivalDate + 'T12:00:00');
+      }
+    } else if (this.trip?.endDate) {
+      end = new Date(this.trip.endDate);
+    } else {
+      end = this.currentTime || new Date();
+    }
     const diffMs = end.getTime() - start.getTime();
     return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
   }

@@ -77,20 +77,22 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   private initialFormValue: string = '';
   private isPatching: boolean = false;
 
-  loadTypes: string[] = [
+  private readonly defaultLoadTypes: string[] = [
     'General',
     'Refrigerada',
     'Granel',
     'Peligrosa',
     'Contenedores',
   ];
-  companies: string[] = [
+  private readonly defaultCompanies: string[] = [
     'CashTruck Logistics',
     'Transportes Unidos',
     'Carga Segura S.A.',
     'Ruta Rápida',
     'Logística Avanzada',
   ];
+  loadTypes: string[] = [...this.defaultLoadTypes];
+  companies: string[] = [...this.defaultCompanies];
   tripStatuses: string[] = ['En Curso', 'Completado', 'Cancelado', 'Pendiente'];
 
   constructor(
@@ -142,6 +144,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.loadCustomOptions();
     this.loadCities();
     this.loadBrands();
     this.loadOwners();
@@ -151,6 +154,123 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     } else {
       this.resetForm();
     }
+  }
+
+  private loadCustomOptions(): void {
+    try {
+      const savedTypes = localStorage.getItem('cashtruck_custom_load_types');
+      const customTypes: string[] = savedTypes ? JSON.parse(savedTypes) : [];
+      this.loadTypes = this.mergeAndSortLists(
+        this.defaultLoadTypes,
+        customTypes,
+      );
+    } catch {
+      this.loadTypes = [...this.defaultLoadTypes];
+    }
+
+    try {
+      const savedCompanies = localStorage.getItem('cashtruck_custom_companies');
+      const customCompanies: string[] = savedCompanies
+        ? JSON.parse(savedCompanies)
+        : [];
+      this.companies = this.mergeAndSortLists(
+        this.defaultCompanies,
+        customCompanies,
+      );
+    } catch {
+      this.companies = [...this.defaultCompanies];
+    }
+  }
+
+  private mergeAndSortLists(defaults: string[], custom: string[]): string[] {
+    const map = new Map<string, string>();
+    for (const item of [...defaults, ...custom]) {
+      if (item && item.trim()) {
+        const key = item.trim().toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, item.trim());
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.localeCompare(b, 'es'));
+  }
+
+  addLoadTypeIfNew(rawType: string): void {
+    if (!rawType) return;
+    const trimmed = rawType.trim();
+    if (!trimmed) return;
+
+    const exists = this.loadTypes.some(
+      (t) => t.toLowerCase() === trimmed.toLowerCase(),
+    );
+
+    if (!exists) {
+      const formatted = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+      this.loadTypes.push(formatted);
+      this.loadTypes.sort((a, b) => a.localeCompare(b, 'es'));
+      this.saveCustomLoadTypes();
+    }
+  }
+
+  addCompanyIfNew(rawCompany: string): void {
+    if (!rawCompany) return;
+    const trimmed = rawCompany.trim();
+    if (!trimmed) return;
+
+    const exists = this.companies.some(
+      (c) => c.toLowerCase() === trimmed.toLowerCase(),
+    );
+
+    if (!exists) {
+      const formatted = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+      this.companies.push(formatted);
+      this.companies.sort((a, b) => a.localeCompare(b, 'es'));
+      this.saveCustomCompanies();
+    }
+  }
+
+  private saveCustomLoadTypes(): void {
+    try {
+      const customOnly = this.loadTypes.filter(
+        (t) =>
+          !this.defaultLoadTypes.some(
+            (d) => d.toLowerCase() === t.toLowerCase(),
+          ),
+      );
+      localStorage.setItem(
+        'cashtruck_custom_load_types',
+        JSON.stringify(customOnly),
+      );
+    } catch (e) {
+      console.error('Error saving custom load types:', e);
+    }
+  }
+
+  private saveCustomCompanies(): void {
+    try {
+      const customOnly = this.companies.filter(
+        (c) =>
+          !this.defaultCompanies.some(
+            (d) => d.toLowerCase() === c.toLowerCase(),
+          ),
+      );
+      localStorage.setItem(
+        'cashtruck_custom_companies',
+        JSON.stringify(customOnly),
+      );
+    } catch (e) {
+      console.error('Error saving custom companies:', e);
+    }
+  }
+
+  onLoadTypeBlur(): void {
+    const val = this.tripForm.get('loadType')?.value;
+    if (val) this.addLoadTypeIfNew(val);
+  }
+
+  onCompanyBlur(): void {
+    const val = this.tripForm.get('company')?.value;
+    if (val) this.addCompanyIfNew(val);
   }
 
   ngOnDestroy(): void {
@@ -262,6 +382,10 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     } else {
       this.tripForm.get('ownerId')?.enable({ emitEvent: false });
     }
+
+    // Register trip's loadType and company into autocomplete lists
+    if (trip.loadType) this.addLoadTypeIfNew(trip.loadType);
+    if (trip.company) this.addCompanyIfNew(trip.company);
 
     setTimeout(() => this.captureInitialState(), 0);
   }

@@ -211,12 +211,10 @@
               <div>
                 <p class="text-secondary small mb-0">Duración del Viaje</p>
                 <h6 class="fw-bold mb-0">
-                  @if (
-                    trip.status === "Completado" || trip.status === "Pendiente"
-                  ) {
+                  @if (trip.startDate) {
                     {{ tripDurationInHours }} Horas
                   } @else {
-                    {{ trip.numberOfDays }} Días
+                    {{ trip.numberOfDays || 0 }} Días
                   }
                 </h6>
               </div>
@@ -278,6 +276,33 @@
                 </select>
               </div>
             </div>
+
+            @if (trip.status === "Completado" || trip.status === "Pendiente") {
+              <div class="d-flex gap-3 mb-4">
+                <div
+                  class="icon-box bg-danger bg-opacity-10 rounded-3 p-3 flex-shrink-0 d-flex align-items-center justify-content-center"
+                  style="width: 50px; height: 50px"
+                >
+                  <i class="fa-solid fa-calendar-check text-danger"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <p class="text-secondary small mb-0">Fecha de Llegada</p>
+                  <input
+                    type="date"
+                    class="form-control bg-transparent border-0 p-0 shadow-none fw-bold text-body"
+                    style="font-size: 1rem; margin-top: -2px"
+                    [value]="arrivalDate"
+                    [max]="maxArrivalDate"
+                    (change)="onArrivalDateChange($any($event.target).value)"
+                    [disabled]="
+                      originalStatus === 'Completado' &&
+                      userRole !== 'ADMINISTRADOR'
+                    "
+                  />
+                </div>
+              </div>
+            }
+
             <div class="d-flex gap-3 align-items-center">
               <div
                 class="icon-box bg-indigo bg-opacity-10 rounded-3 p-3 flex-shrink-0 d-flex align-items-center justify-content-center"

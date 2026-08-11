@@ -330,36 +330,40 @@
           <label for="loadType" class="form-label small fw-bold mb-2"
             >Tipo de Carga</label
           >
-          <select
+          <input
             id="loadType"
-            class="form-select rounded-3 py-2 px-3"
+            type="text"
+            class="form-control rounded-3 py-2 px-3"
+            list="loadTypesDatalist"
+            placeholder="Selecciona o escribe..."
             formControlName="loadType"
-          >
-            <option value="">Selecciona</option>
+            (blur)="onLoadTypeBlur()"
+          />
+          <datalist id="loadTypesDatalist">
             @for (type of loadTypes; track type) {
-              <option [value]="type">
-                {{ type }}
-              </option>
+              <option [value]="type"></option>
             }
-          </select>
+          </datalist>
         </div>
 
         <div class="col-6 mb-3">
           <label for="company" class="form-label small fw-bold mb-2"
             >Empresa</label
           >
-          <select
+          <input
             id="company"
-            class="form-select rounded-3 py-2 px-3"
+            type="text"
+            class="form-control rounded-3 py-2 px-3"
+            list="companiesDatalist"
+            placeholder="Selecciona o escribe..."
             formControlName="company"
-          >
-            <option value="">Selecciona</option>
+            (blur)="onCompanyBlur()"
+          />
+          <datalist id="companiesDatalist">
             @for (corp of companies; track corp) {
-              <option [value]="corp">
-                {{ corp }}
-              </option>
+              <option [value]="corp"></option>
             }
-          </select>
+          </datalist>
         </div>
         <div class="col-6 mb-3 d-none">
           <label for="status" class="form-label small fw-bold mb-2"
