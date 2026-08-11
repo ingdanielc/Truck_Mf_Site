@@ -1,12 +1,20 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
+import { Observable, shareReplay } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CommonService {
   basePath: string = environment._APIUrl + '/common';
+
+  private typeDocumentCache$: Observable<any> | null = null;
+  private gendersCache$: Observable<any> | null = null;
+  private citiesCache$: Observable<any> | null = null;
+  private expenseTypesCache$: Observable<any> | null = null;
+  private vehicleBrandsCache$: Observable<any> | null = null;
+  private salaryTypesCache$: Observable<any> | null = null;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -34,27 +42,45 @@ export class CommonService {
   }
 
   getListTypeDocument() {
-    return this.http.get<any>(`${this.basePath}/getDocumentTypes`);
+    this.typeDocumentCache$ ??= this.http
+      .get<any>(`${this.basePath}/getDocumentTypes`)
+      .pipe(shareReplay(1));
+    return this.typeDocumentCache$;
   }
 
   getGenders() {
-    return this.http.get<any>(`${this.basePath}/getGenders`);
+    this.gendersCache$ ??= this.http
+      .get<any>(`${this.basePath}/getGenders`)
+      .pipe(shareReplay(1));
+    return this.gendersCache$;
   }
 
   getCities() {
-    return this.http.get<any>(`${this.basePath}/getCities`);
+    this.citiesCache$ ??= this.http
+      .get<any>(`${this.basePath}/getCities`)
+      .pipe(shareReplay(1));
+    return this.citiesCache$;
   }
 
   getExpenseTypes() {
-    return this.http.get<any>(`${this.basePath}/getExpenseTypes`);
+    this.expenseTypesCache$ ??= this.http
+      .get<any>(`${this.basePath}/getExpenseTypes`)
+      .pipe(shareReplay(1));
+    return this.expenseTypesCache$;
   }
 
   getVehicleBrands() {
-    return this.http.get<any>(`${this.basePath}/getVehicleBrands`);
+    this.vehicleBrandsCache$ ??= this.http
+      .get<any>(`${this.basePath}/getVehicleBrands`)
+      .pipe(shareReplay(1));
+    return this.vehicleBrandsCache$;
   }
 
   getSalaryTypes() {
-    return this.http.get<any>(`${this.basePath}/getSalaryTypes`);
+    this.salaryTypesCache$ ??= this.http
+      .get<any>(`${this.basePath}/getSalaryTypes`)
+      .pipe(shareReplay(1));
+    return this.salaryTypesCache$;
   }
 
   uploadPhoto(

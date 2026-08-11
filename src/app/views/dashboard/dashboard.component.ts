@@ -13,7 +13,7 @@ import {
   Pagination,
   Sort,
 } from '../../models/model-filter-table';
-import { lastValueFrom, Subscription } from 'rxjs';
+import { lastValueFrom, Subscription, distinctUntilChanged } from 'rxjs';
 import { BaseChartDirective } from 'ng2-charts';
 import {
   Chart,
@@ -281,17 +281,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.setupThemeObserver();
     this.loadBrands();
     this.updateCurrentMonthName();
-    this.userSub = this.securityService.userData$.subscribe((user) => {
-      if (user) {
-        this.currentUser = user;
-        const role = (user?.userRoles?.[0]?.role?.name ?? '').toUpperCase();
-        this.userRole = role;
-        if (role.includes('ADMINISTRADOR')) {
-          this.loadOwners();
+    this.userSub = this.securityService.userData$
+      .pipe(
+        distinctUntilChanged((prev: any, curr: any) => prev?.id === curr?.id),
+      )
+      .subscribe((user) => {
+        if (user) {
+          this.currentUser = user;
+          const role = (user?.userRoles?.[0]?.role?.name ?? '').toUpperCase();
+          this.userRole = role;
+          if (role.includes('ADMINISTRADOR')) {
+            this.loadOwners();
+          }
+          this.loadData(user);
         }
-        this.loadData(user);
-      }
-    });
+      });
   }
 
   ngOnDestroy(): void {
@@ -432,7 +436,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   async loadOwners() {
     const filter = new ModelFilterTable(
       [],
-      new Pagination(20000, 0),
+      new Pagination(500, 0),
       new Sort('name', true),
     );
     try {

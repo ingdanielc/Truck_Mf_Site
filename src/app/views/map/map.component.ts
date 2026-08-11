@@ -18,7 +18,7 @@ import {
   Pagination,
   Sort,
 } from 'src/app/models/model-filter-table';
-import { map, of, Subscription, switchMap } from 'rxjs';
+import { map, of, Subscription, switchMap, distinctUntilChanged } from 'rxjs';
 
 declare const google: any;
 
@@ -70,25 +70,29 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.fromParam = params['from'] || null;
     });
 
-    this.userSub = this.securityService.userData$.subscribe((user: any) => {
-      if (user) {
-        this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
-        const userId = user.id;
+    this.userSub = this.securityService.userData$
+      .pipe(
+        distinctUntilChanged((prev: any, curr: any) => prev?.id === curr?.id),
+      )
+      .subscribe((user: any) => {
+        if (user) {
+          this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+          const userId = user.id;
 
-        if (this.userRole === 'PROPIETARIO') {
-          this.resolveOwnerIdAndLoad(userId);
-        } else if (this.userRole === 'CONDUCTOR') {
-          this.resolveDriverIdAndLoad(userId);
-        } else {
-          // Admin or others (resolve as is)
-          this.loggedInUserId = userId;
-          if (this.userRole === 'ADMINISTRADOR') {
-            this.loadOwners();
+          if (this.userRole === 'PROPIETARIO') {
+            this.resolveOwnerIdAndLoad(userId);
+          } else if (this.userRole === 'CONDUCTOR') {
+            this.resolveDriverIdAndLoad(userId);
+          } else {
+            // Admin or others (resolve as is)
+            this.loggedInUserId = userId;
+            if (this.userRole === 'ADMINISTRADOR') {
+              this.loadOwners();
+            }
+            if (this.map) this.loadActiveData();
           }
-          if (this.map) this.loadActiveData();
         }
-      }
-    });
+      });
   }
 
   private resolveOwnerIdAndLoad(userId: number): void {

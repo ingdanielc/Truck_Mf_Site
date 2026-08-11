@@ -147,28 +147,12 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     this.tripService.getTripFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content && response.data.content.length > 0) {
-          this.trip = response.data.content[0];
-          if (this.trip) {
-            this.originalStatus = this.trip.status;
-            this.originalPaidBalance = this.trip.paidBalance ?? false;
-            if (this.trip.id && this.trip.vehicleId) {
-              this.loadExpenses(this.trip.id, this.trip.vehicleId);
-              if (
-                this.userRole === 'PROPIETARIO' ||
-                this.userRole === 'ADMINISTRADOR' ||
-                this.userRole === 'CONDUCTOR'
-              ) {
-                this.loadVehicleLocation(this.trip.vehicleId);
-              } else {
-                this.calculateETA();
-              }
-            }
-          }
+          this.processTripData(response.data.content[0]);
         } else {
           this.toastService.showError('Error', 'No se encontró el viaje');
           this.goBack();
+          this.loading = false;
         }
-        this.loading = false;
       },
       error: (error: any) => {
         console.error('Error loading trip:', error);
@@ -180,6 +164,27 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         this.goBack();
       },
     });
+  }
+
+  processTripData(tripData: any): void {
+    this.trip = tripData;
+    if (this.trip) {
+      this.originalStatus = this.trip.status;
+      this.originalPaidBalance = this.trip.paidBalance ?? false;
+      if (this.trip.id && this.trip.vehicleId) {
+        this.loadExpenses(this.trip.id, this.trip.vehicleId);
+        if (
+          this.userRole === 'PROPIETARIO' ||
+          this.userRole === 'ADMINISTRADOR' ||
+          this.userRole === 'CONDUCTOR'
+        ) {
+          this.loadVehicleLocation(this.trip.vehicleId);
+        } else {
+          this.calculateETA();
+        }
+      }
+    }
+    this.loading = false;
   }
 
   validateAccess(tripId: number, user: any): void {
@@ -235,6 +240,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
                   .pipe(
                     map((vResp: any) => ({
                       hasAccess: vResp?.data?.content?.length > 0,
+                      tripData,
                     })),
                   );
               }),
@@ -254,7 +260,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
                   (Number(driver.id) === Number(tripData.driverId) ||
                     Number(driver.id) === Number(tripData.driver?.id) ||
                     driver.vehicleId === vehicleId);
-                return { hasAccess };
+                return { hasAccess, tripData };
               }),
             );
           }
@@ -267,8 +273,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         }),
       )
       .subscribe((result: any) => {
-        if (result.hasAccess) {
-          this.loadTrip(tripId);
+        if (result.hasAccess && result.tripData) {
+          this.processTripData(result.tripData);
         } else {
           this.toastService.showError(
             'Acceso Denegado',

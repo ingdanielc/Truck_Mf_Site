@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 
 import { Router } from '@angular/router';
-import { Subscription, lastValueFrom } from 'rxjs';
+import { Subscription, lastValueFrom, distinctUntilChanged } from 'rxjs';
 import { SecurityService } from '../../services/security/security.service';
 import { TokenService } from '../../services/token.service';
 import { LocationService } from '../../services/location.service';
@@ -115,40 +115,44 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private subscribeToUserContext(): void {
-    this.userSub = this.securityService.userData$.subscribe({
-      next: (user: any) => {
-        if (user) {
-          const roles = (user.userRoles || []).map((ur: any) =>
-            (ur.role?.name || '').toUpperCase(),
-          );
-          const hasConductorRole = roles.some((r: string) =>
-            r.includes('CONDUCTOR'),
-          );
+    this.userSub = this.securityService.userData$
+      .pipe(
+        distinctUntilChanged((prev: any, curr: any) => prev?.id === curr?.id),
+      )
+      .subscribe({
+        next: (user: any) => {
+          if (user) {
+            const roles = (user.userRoles || []).map((ur: any) =>
+              (ur.role?.name || '').toUpperCase(),
+            );
+            const hasConductorRole = roles.some((r: string) =>
+              r.includes('CONDUCTOR'),
+            );
 
-          // For card filtering, prioritize roles: ADMIN > PROPIETARIO > CONDUCTOR
-          let displayRole = roles[0] || '';
-          if (roles.includes('ADMINISTRADOR')) {
-            displayRole = 'ADMINISTRADOR';
-          } else if (roles.includes('PROPIETARIO')) {
-            displayRole = 'PROPIETARIO';
-          } else if (roles.includes('CONDUCTOR')) {
-            displayRole = 'CONDUCTOR';
-          }
+            // For card filtering, prioritize roles: ADMIN > PROPIETARIO > CONDUCTOR
+            let displayRole = roles[0] || '';
+            if (roles.includes('ADMINISTRADOR')) {
+              displayRole = 'ADMINISTRADOR';
+            } else if (roles.includes('PROPIETARIO')) {
+              displayRole = 'PROPIETARIO';
+            } else if (roles.includes('CONDUCTOR')) {
+              displayRole = 'CONDUCTOR';
+            }
 
-          this.filterCards(displayRole);
+            this.filterCards(displayRole);
 
-          if (hasConductorRole && user.id) {
-            this.handleDriverLocation(user.id);
+            if (hasConductorRole && user.id) {
+              this.handleDriverLocation(user.id);
+            }
+          } else {
+            // If no user data yet, try to fetch it using token payload if available
+            const payload = this.tokenService.getPayload();
+            if (payload?.id) {
+              this.securityService.fetchUserData(payload.id);
+            }
           }
-        } else {
-          // If no user data yet, try to fetch it using token payload if available
-          const payload = this.tokenService.getPayload();
-          if (payload?.id) {
-            this.securityService.fetchUserData(payload.id);
-          }
-        }
-      },
-    });
+        },
+      });
   }
 
   ngOnDestroy(): void {

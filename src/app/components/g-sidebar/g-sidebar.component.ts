@@ -14,7 +14,7 @@ import { Router } from '@angular/router';
 import { SecurityService } from '../../services/security/security.service';
 import { OwnerService } from '../../services/owner.service';
 import { DriverService } from '../../services/driver.service';
-import { Subscription } from 'rxjs';
+import { Subscription, distinctUntilChanged } from 'rxjs';
 import { GNotificationsComponent } from '../g-notifications/g-notifications.component';
 import { NotificationsService } from '../../services/notifications.service';
 import { CommonModule } from '@angular/common';
@@ -66,20 +66,24 @@ export class GSidebarComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.userSub = this.securityService.userData$.subscribe({
-      next: (user) => {
-        if (user) {
-          this.userName = user.name || this.userName;
-          this.userRole = user.userRoles?.[0]?.role?.name || 'Sin Rol';
-          const roleName = this.userRole.toUpperCase();
-          if (roleName === 'PROPIETARIO' || roleName === 'CONDUCTOR') {
-            this.loadUserPhoto(roleName, user.id!.toString());
-          } else {
-            this.userPhoto = null;
+    this.userSub = this.securityService.userData$
+      .pipe(
+        distinctUntilChanged((prev: any, curr: any) => prev?.id === curr?.id),
+      )
+      .subscribe({
+        next: (user) => {
+          if (user) {
+            this.userName = user.name || this.userName;
+            this.userRole = user.userRoles?.[0]?.role?.name || 'Sin Rol';
+            const roleName = this.userRole.toUpperCase();
+            if (roleName === 'PROPIETARIO' || roleName === 'CONDUCTOR') {
+              this.loadUserPhoto(roleName, user.id!.toString());
+            } else {
+              this.userPhoto = null;
+            }
           }
-        }
-      },
-    });
+        },
+      });
 
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
     if (savedTheme) {

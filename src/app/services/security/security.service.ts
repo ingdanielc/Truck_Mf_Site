@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable, shareReplay } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { ModelUser } from 'src/app/models/user-model';
 import {
@@ -20,6 +20,7 @@ export class SecurityService {
   userData$ = this.userSubject.asObservable();
 
   private pendingUserId_?: string | number | null = null;
+  private allRolesCache$: Observable<any> | null = null;
 
   getUserData(): ModelUser | null {
     return this.userSubject.value;
@@ -53,7 +54,10 @@ export class SecurityService {
   }
 
   getAllRoles() {
-    return this.http.get<any>(`${this.basePath}/getAllRoles`);
+    this.allRolesCache$ ??= this.http
+      .get<any>(`${this.basePath}/getAllRoles`)
+      .pipe(shareReplay(1));
+    return this.allRolesCache$;
   }
 
   fetchUserData(userId: string | number): void {
