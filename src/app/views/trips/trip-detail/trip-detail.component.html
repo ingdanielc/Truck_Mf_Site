@@ -309,7 +309,12 @@
                   <option value="En Curso">En Curso</option>
                   <option value="Completado">Completado</option>
                   <option value="Cancelado">Cancelado</option>
-                  <option value="Pendiente">Pendiente</option>
+                  <!-- El viaje vacío no puede quedar Pendiente. Se conserva la
+                       opción si ya venía en ese estado, para no mostrar en el
+                       combo un estado distinto al real -->
+                  @if (!isEmptyTrip || trip.status === "Pendiente") {
+                    <option value="Pendiente">Pendiente</option>
+                  }
                 </select>
               </div>
             </div>
@@ -602,6 +607,8 @@
       [returnDestinationName]="returnDestinationName"
       [vehicleAxles]="trip.vehicle?.numberOfAxles || 2"
       (close)="closeTripInfo()"
+      (routeReady)="onRouteReady()"
+      (routeUnavailable)="onRouteUnavailable()"
     ></g-trip-info-card>
 
     <!-- Confirmation Backdrop -->

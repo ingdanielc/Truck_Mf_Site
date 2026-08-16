@@ -1122,7 +1122,6 @@ export class TripsComponent implements OnInit, OnDestroy {
     // Keep a reference to the trip being edited before the offcanvas closes
     const tripBeforeSave = this.editingTrip;
 
-    this.toggleOffcanvas();
     this.loadTrips();
 
     if (
@@ -1159,11 +1158,40 @@ export class TripsComponent implements OnInit, OnDestroy {
 
       this.latestTripAxles = fullVehicle?.numberOfAxles || 2;
 
-      this.isTripInfoOpen = true;
+      // Sin ciudades no hay ruta posible: se evita la consulta
+      if (originName !== 'N/A' && destName !== 'N/A') {
+        // El formulario se mantiene abierto mientras se calcula la ruta, para
+        // no dejar la pantalla vacía; lo cierra `onRouteReady`
+        this.isTripInfoOpen = true;
+        return;
+      }
     }
+
+    this.toggleOffcanvas();
   }
 
   closeTripInfo(): void {
     this.isTripInfoOpen = false;
+  }
+
+  /** La ruta ya está lista: recién ahora se cierra el formulario */
+  onRouteReady(): void {
+    this.closeTripForm();
+  }
+
+  /**
+   * No se pudo calcular la ruta: el panel no se abre y el viaje ya quedó
+   * guardado, así que no se informa nada adicional al usuario.
+   */
+  onRouteUnavailable(): void {
+    this.isTripInfoOpen = false;
+    this.closeTripForm();
+  }
+
+  /** El usuario pudo haber cerrado el formulario mientras se calculaba */
+  private closeTripForm(): void {
+    if (this.isOffcanvasOpen) {
+      this.toggleOffcanvas();
+    }
   }
 }

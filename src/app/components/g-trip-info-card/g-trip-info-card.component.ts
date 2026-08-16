@@ -33,10 +33,18 @@ export class GTripInfoCardComponent implements OnChanges {
   @Input() returnDestinationName: string = '';
   @Input() vehicleAxles: number = 2;
   @Output() close = new EventEmitter<void>();
+  /** Se emite cuando no hay ruta que mostrar, para que el padre cierre el panel */
+  @Output() routeUnavailable = new EventEmitter<void>();
+  /** Se emite al abrir el panel, para que el padre cierre lo que tenga encima */
+  @Output() routeReady = new EventEmitter<void>();
 
-  loading: boolean = false;
+  /**
+   * El panel solo se muestra cuando hay ruta. `isOpen` es la solicitud del
+   * padre; esta bandera es la visibilidad real. Mientras se calcula no se
+   * muestra nada: la espera es silenciosa.
+   */
+  isVisible: boolean = false;
   routeData: any = null;
-  errorMsg: string | null = null;
   distance: string = '';
   duration: string = '';
   durationInTraffic: string = '';
@@ -54,15 +62,21 @@ export class GTripInfoCardComponent implements OnChanges {
   readonly KM_PER_GALLON = 7; // More realistic average for loaded trucks in Colombia
   readonly DIESEL_PRICE_GALLON = 11001; // Estimated COP per gallon
   readonly CARGO_DURATION_FACTOR = 1.35; // 35% more time for heavy vehicles
+  readonly ROUTE_TIMEOUT_MS = 8000;
+
+  /** Descarta respuestas de un cálculo anterior si se cerró o se volvió a abrir */
+  private requestId: number = 0;
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (
-      changes['isOpen'] &&
-      this.isOpen &&
-      this.originName &&
-      this.destinationName
-    ) {
+    if (!changes['isOpen']) return;
+
+    if (this.isOpen) {
+      this.isVisible = false;
       this.calculateRoute();
+    } else {
+      this.requestId++;
+      this.isVisible = false;
+      this.clearRouteOverlays();
     }
   }
 
@@ -77,15 +91,15 @@ export class GTripInfoCardComponent implements OnChanges {
   }
 
   async calculateRoute(): Promise<void> {
-    this.loading = true;
-    this.errorMsg = null;
+    const currentRequest = ++this.requestId;
     this.routeData = null;
     this.tollsCount = 0;
     this.tollsList = [];
     this.tollsTotalCost = 0;
+    this.showTolls = false;
 
     if (!this.originName || !this.destinationName) {
-      this.loading = false;
+      this.markRouteUnavailable();
       return;
     }
 
@@ -113,10 +127,13 @@ export class GTripInfoCardComponent implements OnChanges {
     }
 
     try {
-      const route = await computeRoute(request);
+      const route = await this.withTimeout(computeRoute(request));
+
+      // Se cerró el panel o llegó otra solicitud mientras se calculaba
+      if (currentRequest !== this.requestId) return;
 
       if (!route) {
-        this.errorMsg = 'No se encontraron las rutas esperadas.';
+        this.markRouteUnavailable();
         return;
       }
 
@@ -142,13 +159,40 @@ export class GTripInfoCardComponent implements OnChanges {
       this.collectTolls(route);
 
       this.routeData = route;
+      this.isVisible = true;
+      this.routeReady.emit();
       this.renderRouteOnMap(route);
     } catch (error) {
       console.error('Error in computeRoutes:', error);
-      this.errorMsg = 'No se pudo calcular la ruta.';
-    } finally {
-      this.loading = false;
+      if (currentRequest === this.requestId) {
+        this.markRouteUnavailable();
+      }
     }
+  }
+
+  /**
+   * No hay nada que mostrar: el panel no se abre y se avisa al padre para que
+   * baje su bandera, si no quedaría en un estado "abierto" invisible.
+   */
+  private markRouteUnavailable(): void {
+    this.isVisible = false;
+    this.routeData = null;
+    this.clearRouteOverlays();
+    this.routeUnavailable.emit();
+  }
+
+  /**
+   * Sin esto, una llamada colgada dejaría al usuario esperando un panel que
+   * nunca abre, porque la espera no muestra ningún indicador.
+   */
+  private withTimeout<T>(promise: Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error('Tiempo de espera agotado al calcular la ruta')),
+        this.ROUTE_TIMEOUT_MS,
+      );
+      promise.then(resolve, reject).finally(() => clearTimeout(timer));
+    });
   }
 
   /**

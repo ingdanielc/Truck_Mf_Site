@@ -368,6 +368,11 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return !!this.returnDestinationName;
   }
 
+  /** El viaje vacío no tiene flete ni saldo, así que no puede quedar Pendiente */
+  get isEmptyTrip(): boolean {
+    return this.trip?.tripType === 'VACIO';
+  }
+
   get returnDestinationFullName(): string {
     if (this.trip?.tripType !== 'REDONDO' || !this.trip?.returnDestinationId) {
       return '';
@@ -954,13 +959,16 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   }
 
   onTripSaved(savedTrip?: ModelTrip): void {
-    this.toggleOffcanvas();
     if (this.tripId) {
       this.loadTrip(this.tripId);
     }
     if (this.originName !== 'N/A' && this.destinationName !== 'N/A') {
+      // El formulario se mantiene abierto mientras se calcula la ruta, para
+      // no dejar la pantalla vacía; lo cierra `onRouteReady`
       this.isTripInfoOpen = true;
+      return;
     }
+    this.toggleOffcanvas();
   }
 
   openTripInfo(): void {
@@ -976,6 +984,27 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   closeTripInfo(): void {
     this.isTripInfoOpen = false;
+  }
+
+  /** La ruta ya está lista: recién ahora se cierra el formulario */
+  onRouteReady(): void {
+    this.closeTripForm();
+  }
+
+  /**
+   * No se pudo calcular la ruta: el panel no se abre y no se muestra ningún
+   * mensaje, simplemente no hay información del trayecto que presentar.
+   */
+  onRouteUnavailable(): void {
+    this.isTripInfoOpen = false;
+    this.closeTripForm();
+  }
+
+  /** El usuario pudo haber cerrado el formulario mientras se calculaba */
+  private closeTripForm(): void {
+    if (this.isOffcanvasOpen) {
+      this.toggleOffcanvas();
+    }
   }
 
   calculateETA(): void {

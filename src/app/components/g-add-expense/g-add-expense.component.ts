@@ -11,6 +11,7 @@ import { Router } from '@angular/router';
 import { GExpenseCategoryCardComponent } from '../g-expense-category-card/g-expense-category-card.component';
 import { VehicleService } from '../../services/expense.service';
 import { ModelExpense } from 'src/app/models/expense-model';
+import { ModelTrip } from 'src/app/models/trip-model';
 import {
   Filter,
   ModelFilterTable,
@@ -44,6 +45,8 @@ interface CategoryConfig {
 export class GAddExpenseComponent implements OnInit {
   @Input() vehicleId: number | null = null;
   @Input() tripId: number | null = null;
+  /** Viaje del gasto: de su flete sale el monto sugerido del impuesto 4x1000 */
+  @Input() trip: ModelTrip | null = null;
   @Input() editingExpense: ModelExpense | null = null;
   @Input() preselectedTypeId?: number;
   @Input() isMaintenance = false;
@@ -69,6 +72,11 @@ export class GAddExpenseComponent implements OnInit {
   searchQuery: string = '';
   salaryTypes: any[] = [];
   currentDriverSalaryTypeId: number | null = null;
+
+  /** El 4x1000 son 4 pesos por cada 1000 del flete */
+  private readonly TAX_4X1000_RATE = 0.004;
+  /** Último monto precargado, para saber si el usuario lo cambió */
+  private suggestedAmount: string | null = null;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -318,18 +326,12 @@ export class GAddExpenseComponent implements OnInit {
           );
           if (this.isMaintenance) {
             // Mantenimiento: hidden if Salary Type is NOT "Salario mensual"
-            if (
-              !salaryType ||
-              !salaryType.name.toUpperCase().includes('SALARIO MENSUAL')
-            ) {
+            if (!salaryType?.name.toUpperCase().includes('SALARIO MENSUAL')) {
               return false;
             }
           } else {
             // Gasto (Viaje/Conductor/Vehículo): hidden if Salary Type is NOT "Porcentaje"
-            if (
-              !salaryType ||
-              !salaryType.name.toUpperCase().includes('PORCENTAJE')
-            ) {
+            if (!salaryType?.name.toUpperCase().includes('PORCENTAJE')) {
               return false;
             }
           }
@@ -366,6 +368,48 @@ export class GAddExpenseComponent implements OnInit {
     this.selectedCategoryId = id;
     this.expenseForm.patchValue({ categoryId: id });
     this.expenseForm.markAsDirty();
+    this.applySuggestedAmount(id);
+  }
+
+  /**
+   * Precarga el monto al elegir la categoría. No se pisa lo que haya escrito
+   * el usuario: solo se toca el campo si está vacío o si aún tiene la
+   * sugerencia anterior, que también se limpia al cambiar de categoría.
+   */
+  private applySuggestedAmount(categoryId: number): void {
+    const suggestion = this.suggestedAmountFor(categoryId);
+    const current = this.expenseForm.get('amount')?.value || '';
+
+    if (current && current !== this.suggestedAmount) return;
+    if (current === (suggestion ?? '')) return;
+
+    this.expenseForm.get('amount')?.setValue(suggestion ?? '');
+    this.expenseForm.get('amount')?.markAsDirty();
+    this.suggestedAmount = suggestion;
+  }
+
+  /**
+   * Solo el impuesto 4x1000 trae monto sugerido: el 0,4% del flete total del
+   * viaje. No aplica al viaje vacío, que no tiene flete.
+   */
+  private suggestedAmountFor(categoryId: number): string | null {
+    const category = this.categories.find((c) => c.id === categoryId);
+    if (!category || !this.isTax4x1000(category.name)) return null;
+
+    const tripType = this.trip?.tripType;
+    if (tripType !== 'CARGADO' && tripType !== 'REDONDO') return null;
+
+    const freight = Number(this.trip?.freight) || 0;
+    if (freight <= 0) return null;
+
+    return this.applyAmountMask(
+      String(Math.round(freight * this.TAX_4X1000_RATE)),
+    );
+  }
+
+  /** El nombre de la categoría viene del backend: se compara sin espacios */
+  private isTax4x1000(name: string): boolean {
+    return name.toLowerCase().replaceAll(/[\s.]/g, '').includes('4x1000');
   }
 
   onSave(): void {

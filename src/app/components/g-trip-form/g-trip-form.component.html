@@ -433,7 +433,7 @@
             class="form-select rounded-3 py-2 px-3"
             formControlName="status"
           >
-            @for (s of tripStatuses; track s) {
+            @for (s of availableStatuses; track s) {
               <option [value]="s">
                 {{ s }}
               </option>
@@ -444,10 +444,10 @@
 
       @if (isEmptyTrip) {
         <div
-          class="alert alert-info d-flex align-items-center mt-3 mb-0 border-0 rounded-4 shadow-sm small"
+          class="alert alert-warning d-flex align-items-center mt-3 mb-0 border-0 rounded-4 shadow-sm small"
           role="alert"
         >
-          <i class="fa-solid fa-circle-info me-2"></i>
+          <i class="fa-solid fa-circle-info fs-4 me-2"></i>
           Los gastos de este traslado los asume el propietario del vehículo.
         </div>
       }

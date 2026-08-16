@@ -713,7 +713,7 @@
   </button>
 
   <!-- Backdrop -->
-  @if (isOffcanvasOpen && !isTripInfoOpen) {
+  @if (isOffcanvasOpen) {
     <div
       class="offcanvas-backdrop transition-all d-none d-md-block"
       (click)="toggleOffcanvas()"
@@ -729,5 +729,7 @@
     [returnDestinationName]="latestTripReturnDestination"
     [vehicleAxles]="latestTripAxles"
     (close)="closeTripInfo()"
+    (routeReady)="onRouteReady()"
+    (routeUnavailable)="onRouteUnavailable()"
   ></g-trip-info-card>
 </div>

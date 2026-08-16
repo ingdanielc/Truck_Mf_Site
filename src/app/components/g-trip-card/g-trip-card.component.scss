@@ -106,9 +106,19 @@
   }
 }
 
+/* Nº de viaje: 26px en vez de los 28px del h3 de Bootstrap */
+.trip-id h3 {
+  font-size: 1.625rem;
+}
+
 .financials {
   .h1 {
     font-size: 1.85rem;
+  }
+
+  /* Flete: 26px en vez de los 28px del h3 de Bootstrap */
+  .h3 {
+    font-size: 1.625rem;
   }
 }
 

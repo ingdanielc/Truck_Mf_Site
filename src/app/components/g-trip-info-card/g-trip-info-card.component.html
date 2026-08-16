@@ -1,7 +1,7 @@
 <!-- Custom Offcanvas -->
 <div
   class="custom-offcanvas shadow-lg border-start transition-all offcanvas-above"
-  [class.open]="isOpen"
+  [class.open]="isVisible"
 >
   <div class="offcanvas-header p-4 pb-2 d-flex flex-column">
     <div class="d-flex justify-content-between align-items-start w-100">
@@ -28,19 +28,7 @@
   </div>
 
   <div class="offcanvas-body p-4">
-    @if (loading) {
-      <div
-        class="d-flex flex-column align-items-center justify-content-center py-5"
-      >
-        <output class="spinner-border text-primary mb-3"></output>
-        <p class="text-secondary fw-bold">Calculando ruta con Google Maps...</p>
-      </div>
-    } @else if (errorMsg) {
-      <div class="alert alert-danger" role="alert">
-        <i class="fa-solid fa-triangle-exclamation me-2"></i>
-        {{ errorMsg }}
-      </div>
-    } @else if (routeData) {
+    @if (routeData) {
       <div class="d-flex flex-column gap-3">
         <!-- Mapa de la Ruta -->
         <div id="tripMap" class="animate__animated animate__fadeIn"></div>
@@ -204,7 +192,7 @@
 </div>
 
 <!-- Backdrop -->
-@if (isOpen) {
+@if (isVisible) {
   <div
     class="offcanvas-backdrop transition-all d-none d-md-block"
     (click)="onClose()"

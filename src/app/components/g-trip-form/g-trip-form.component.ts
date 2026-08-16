@@ -165,6 +165,18 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * El viaje vacío no tiene flete ni saldo, así que no puede quedar Pendiente.
+   * Se conserva la opción si el viaje ya venía en ese estado, para no mostrar
+   * en el combo un estado distinto al real.
+   */
+  get availableStatuses(): string[] {
+    if (!this.isEmptyTrip || this.trip?.status === 'Pendiente') {
+      return this.tripStatuses;
+    }
+    return this.tripStatuses.filter((s) => s !== 'Pendiente');
+  }
+
+  /**
    * Un viaje ya finalizado no cambia de ruta ni de asignación: se bloquean
    * tipo de viaje, origen, destinos, vehículo y conductor.
    */

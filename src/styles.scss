@@ -293,3 +293,25 @@ button .spinner-border-sm {
   width: 1.49rem;
   height: 1.49rem;
 }
+
+/* Tarjetas de estadística (.stat-card) de todas las vistas
+
+   Escritorio: el contador conserva el valor fluido de Bootstrap
+   (`calc(1.375rem + 1.5vw)`) pero con tope en 2.3rem
+   Móvil: el texto no se toca, solo se achica el icono de 60px a 57px.
+*/
+.card.stat-card {
+  @media (min-width: 768px) {
+    .h1 {
+      font-size: min(calc(1.375rem + 1.5vw), 2.3rem);
+      line-height: 1;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .icon-shape {
+      width: 57px;
+      height: 57px;
+    }
+  }
+}
