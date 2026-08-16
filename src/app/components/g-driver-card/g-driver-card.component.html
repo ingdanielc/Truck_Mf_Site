@@ -95,7 +95,7 @@
       </div>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center mb-1">
+    <div class="d-flex justify-content-between align-items-center mb-0">
       <h5 class="card-title fw-bold mb-0 text-body hover-text-primary">
         {{ driver.name }}
       </h5>
@@ -104,7 +104,7 @@
       {{ driver.user?.email || driver.email }}
     </p>
 
-    <div class="d-flex flex-column gap-2 mb-3">
+    <div class="d-flex flex-column gap-1 mb-3">
       <div class="d-flex align-items-center text-body-secondary small">
         <i class="fa-solid fa-id-card me-2 opacity-50" style="width: 16px"></i>
         <span>{{ formatDocNumber(driver.documentNumber) }}</span>
@@ -128,9 +128,9 @@
     </div>
 
     <div
-      class="d-flex justify-content-between align-items-end mt-auto pt-3 border-top border-secondary-subtle"
+      class="d-flex justify-content-between align-items-end mt-auto pt-2 border-top border-secondary-subtle"
     >
-      <div class="d-flex flex-column gap-2 text-start">
+      <div class="d-flex flex-column gap-1 text-start">
         @if (driver.licenseCategory || driver.licenseExpiry) {
           <div class="text-secondary small d-flex align-items-center gap-2">
             <i
@@ -160,7 +160,7 @@
         <button
           type="button"
           (click)="onEditClick($event)"
-          class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
+          class="btn btn-outline-info btn-sm rounded-3 p-2 mt-0 shadow-none action-btn"
           style="width: 40px"
           onkeypress
           aria-label="Editar conductor"

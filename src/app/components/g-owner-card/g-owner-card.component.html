@@ -105,10 +105,10 @@
       </div>
     </div>
 
-    <h5 class="card-title fw-bold mb-1 text-body">{{ owner.name }}</h5>
+    <h5 class="card-title fw-bold mb-0 text-body">{{ owner.name }}</h5>
     <p class="card-text text-body-secondary small mb-3">{{ owner.email }}</p>
 
-    <div class="d-flex flex-column gap-2 mb-3">
+    <div class="d-flex flex-column gap-1 mb-3">
       <div class="d-flex align-items-center text-body-secondary small">
         <i class="fa-solid fa-id-card me-2 opacity-50" style="width: 16px"></i>
         <span>{{ formatDocNumber(owner.documentNumber) }}</span>
@@ -132,7 +132,7 @@
     </div>
 
     <div
-      class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top border-secondary-subtle"
+      class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top border-secondary-subtle"
     >
       <div class="d-flex align-items-center gap-3 text-primary fw-bold">
         <button
@@ -164,7 +164,7 @@
       <button
         type="button"
         (click)="onEditClick(); $event.stopPropagation()"
-        class="btn btn-outline-info btn-sm rounded-3 p-2 shadow-none action-btn"
+        class="btn btn-outline-info btn-sm rounded-3 p-2 mt-1 shadow-none action-btn"
         style="width: 40px"
         aria-label="Editar"
         onkeypress
