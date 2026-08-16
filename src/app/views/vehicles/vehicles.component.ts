@@ -110,6 +110,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
   isPatching: boolean = false;
   showingVehicleLimitWarning: boolean = false;
+  /**
+   * Vehículos activos por propietario, sin los filtros de búsqueda ni estado de
+   * la vista. Es el conteo que se compara contra `maxVehicles`; si no está
+   * cargado se conserva el comportamiento anterior (`totalVehicles`).
+   */
+  private readonly ownerVehicleCounts = new Map<number, number>();
   showCamera = false;
   photoFile: File | Blob | null = null;
   photoPreview: string = '';
@@ -385,6 +391,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             this.loggedInOwner = owners[0];
             this.loggedInOwnerId =
               this.loggedInOwner?.id ?? this.loggedInOwnerId;
+            this.loadOwnerVehicleCount(this.loggedInOwnerId);
 
             // Trigger data load/refresh for single-context roles
             this.updateStatusCounts();
@@ -522,6 +529,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           let content = (respVehicles?.data?.content ?? []).filter(
             (v: any) => v.status !== 'Vendido',
           );
+
+          // Antes de aplicar la búsqueda: este es el conteo real del propietario
+          this.ownerVehicleCounts.set(ownerId, content.length);
 
           if (this.searchTerm) {
             const term = this.searchTerm.toLowerCase();
@@ -662,14 +672,75 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   private checkVehicleLimit(owner: ModelOwner | null): boolean {
     if (!owner) return false;
     const max = owner.maxVehicles;
-    // We strictly use the current local total (which is already filtered for Non-Sold)
-    // or we should calculate it again to be absolutely sure
-    const current = this.totalVehicles;
+    // Conteo propio del propietario cuando ya se cargó; si no, el total local
+    // (que puede venir recortado por la búsqueda o el filtro de estado)
+    const known =
+      owner.id != null ? this.ownerVehicleCounts.get(owner.id) : undefined;
+    const current = known ?? this.totalVehicles;
     if (max != null && current >= max) {
       this.showingVehicleLimitWarning = true;
       return true;
     }
     return false;
+  }
+
+  /** Filtro del conteo de vehículos activos de un propietario */
+  private ownerVehicleCountFilter(ownerId: number): ModelFilterTable {
+    return new ModelFilterTable(
+      [
+        new Filter('ownerId', '=', ownerId.toString()),
+        new Filter('status', '!=', 'Vendido'),
+      ],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+  }
+
+  /** Refresca en segundo plano el conteo real de vehículos del propietario */
+  private loadOwnerVehicleCount(ownerId: number | null | undefined): void {
+    if (ownerId == null) return;
+    this.vehicleService
+      .getVehicleCount(this.ownerVehicleCountFilter(ownerId))
+      .subscribe({
+        next: (response: any) => {
+          const total = response?.data?.total;
+          if (total != null) this.ownerVehicleCounts.set(ownerId, total);
+        },
+        error: () => this.ownerVehicleCounts.delete(ownerId),
+      });
+  }
+
+  /**
+   * Verificación previa a crear. Cubre al administrador, que elige el
+   * propietario dentro del formulario y no pasa por `checkVehicleLimit`.
+   * Ante cualquier duda (sin propietario, sin límite o fallo de red) deja
+   * continuar, para no bloquear flujos que hoy funcionan.
+   */
+  private async isOwnerOverVehicleLimit(
+    ownerId: number | null | undefined,
+  ): Promise<boolean> {
+    if (ownerId == null) return false;
+
+    const owner =
+      this.owners.find((o) => o.id === ownerId) ??
+      (this.loggedInOwner?.id === ownerId ? this.loggedInOwner : null);
+    const max = owner?.maxVehicles;
+    if (max == null) return false;
+
+    try {
+      const response: any = await firstValueFrom(
+        this.vehicleService.getVehicleCount(
+          this.ownerVehicleCountFilter(ownerId),
+        ),
+      );
+      const current = response?.data?.total;
+      if (current == null) return false;
+      this.ownerVehicleCounts.set(ownerId, current);
+      return current >= max;
+    } catch (err) {
+      console.error('Error validating vehicle limit:', err);
+      return false;
+    }
   }
 
   dismissVehicleLimitWarning(): void {
@@ -767,6 +838,20 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           });
         } else {
           // CREATE MODE
+          const targetOwnerId =
+            this.userRole === 'ADMINISTRADOR'
+              ? Number(formValue.ownerId)
+              : this.loggedInOwnerId;
+
+          if (await this.isOwnerOverVehicleLimit(targetOwnerId)) {
+            this.showingVehicleLimitWarning = true;
+            this.toastService.showError(
+              'Límite de vehículos alcanzado',
+              'Este propietario alcanzó el máximo de vehículos de su plan. Para agregar más, contacta al administrador de CashTruck para ampliarlo.',
+            );
+            return;
+          }
+
           const vehicleToSave: ModelVehicle = {
             id: undefined,
             photo: '',
@@ -829,6 +914,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
                 'Gestión de Vehículos',
                 'Vehículo creado exitosamente!',
               );
+              this.loadOwnerVehicleCount(targetOwnerId);
               this.loadVehicles();
               this.toggleOffcanvas();
               this.isSaving = false;
@@ -1566,6 +1652,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   confirmSell(): void {
     if (!this.vehicleToSell?.id) return;
 
+    const sellOwnerId =
+      this.vehicleToSell.owners?.[0]?.ownerId ?? this.loggedInOwnerId;
     this.isSelling = true;
     this.vehicleService.sellVehicle(this.vehicleToSell.id).subscribe({
       next: () => {
@@ -1579,6 +1667,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         this.showSellConfirm = false;
         this.isSelling = false;
         this.vehicleToSell = null;
+        this.loadOwnerVehicleCount(sellOwnerId);
         this.updateStatusCounts();
       },
       error: (err) => {

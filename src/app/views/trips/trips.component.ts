@@ -86,6 +86,7 @@ export class TripsComponent implements OnInit, OnDestroy {
   isOffcanvasOpen: boolean = false;
   editingTrip: ModelTrip | null = null;
   showingActiveTripWarning: boolean = false;
+  showingNoVehiclesWarning: boolean = false;
 
   // Maps info card state
   isTripInfoOpen: boolean = false;
@@ -1046,7 +1047,26 @@ export class TripsComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Sin vehículos no hay cupo de viajes posible: el bloqueo no es por viaje
+   * activo sino porque falta registrar el vehículo.
+   */
+  get hasNoVehicles(): boolean {
+    if (this.userRole === 'ADMINISTRADOR') {
+      return !!this.expandedOwnerId && this.expandedOwnerVehiclesCount === 0;
+    }
+
+    if (this.userRole === 'PROPIETARIO') {
+      return this.vehicles.length === 0;
+    }
+
+    return false;
+  }
+
   get showActiveTripAlert(): boolean {
+    // El caso sin vehículos tiene su propio aviso
+    if (this.hasNoVehicles) return false;
+
     if (this.userRole === 'ADMINISTRADOR') {
       // For Admin, only show when an owner is expanded and has active trips equal or more than his vehicles count
       if (!this.expandedOwnerId) return false;
@@ -1092,12 +1112,22 @@ export class TripsComponent implements OnInit, OnDestroy {
   }
 
   toggleOffcanvas(trip?: ModelTrip): void {
-    // If opening for a NEW trip, check if there's already an active one
-    if (!this.isOffcanvasOpen && !trip && this.showActiveTripAlert) {
-      this.showingActiveTripWarning = true;
-      return;
+    if (!this.isOffcanvasOpen && !trip) {
+      // Sin vehículos registrados no hay viaje posible: se avisa antes de
+      // evaluar el bloqueo por viaje en curso
+      if (this.hasNoVehicles) {
+        this.showingNoVehiclesWarning = true;
+        this.showingActiveTripWarning = false;
+        return;
+      }
+      // If opening for a NEW trip, check if there's already an active one
+      if (this.showActiveTripAlert) {
+        this.showingActiveTripWarning = true;
+        return;
+      }
     }
     this.showingActiveTripWarning = false;
+    this.showingNoVehiclesWarning = false;
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
     if (this.isOffcanvasOpen) {
       this.editingTrip = trip ?? null;
@@ -1106,6 +1136,10 @@ export class TripsComponent implements OnInit, OnDestroy {
 
   dismissActiveTripWarning(): void {
     this.showingActiveTripWarning = false;
+  }
+
+  dismissNoVehiclesWarning(): void {
+    this.showingNoVehiclesWarning = false;
   }
 
   filterByStatus(status: string | null): void {

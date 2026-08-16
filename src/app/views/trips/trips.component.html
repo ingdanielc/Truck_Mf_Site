@@ -141,6 +141,40 @@
     </div>
   }
 
+  <!-- No Vehicles Alert -->
+  @if (showingNoVehiclesWarning) {
+    <div
+      class="alert alert-warning alert-dismissible d-flex align-items-center gap-3 rounded-4 shadow-sm mb-4"
+      role="alert"
+    >
+      <i class="fa-solid fa-truck fs-4 flex-shrink-0"></i>
+      <div class="flex-grow-1">
+        @if (userRole === "ADMINISTRADOR") {
+          <strong>Este propietario no tiene vehículos registrados.</strong>
+          Para crear un viaje, primero debes registrar al menos un vehículo a su
+          nombre.
+        } @else {
+          <strong>Sin vehículos registrados.</strong>
+          Para crear un viaje primero debes registrar al menos un vehículo.
+          Agrégalo en la sección Vehículos e inténtalo nuevamente.
+        }
+      </div>
+      <button
+        type="button"
+        class="btn btn-sm btn-warning rounded-3 flex-shrink-0 me-4 d-none d-md-inline-flex align-items-center"
+        (click)="goBackToVehicles()"
+      >
+        <i class="fa-solid fa-truck me-2"></i>Ir a Vehículos
+      </button>
+      <button
+        type="button"
+        class="btn-close"
+        aria-label="Cerrar"
+        (click)="dismissNoVehiclesWarning()"
+      ></button>
+    </div>
+  }
+
   <!-- Active Trip Alert -->
   @if (showingActiveTripWarning) {
     <div

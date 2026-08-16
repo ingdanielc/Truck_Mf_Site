@@ -1,4 +1,12 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import {
@@ -25,6 +33,7 @@ import { DriverService } from 'src/app/services/driver.service';
 import { VehicleService as VehicleRealService } from 'src/app/services/vehicle.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 import { CommonService } from 'src/app/services/common.service';
+import { normalizeCategoryName } from 'src/app/utils/expense-shortcuts';
 
 interface CategoryConfig {
   id: number;
@@ -49,12 +58,18 @@ export class GAddExpenseComponent implements OnInit {
   @Input() trip: ModelTrip | null = null;
   @Input() editingExpense: ModelExpense | null = null;
   @Input() preselectedTypeId?: number;
+  /** Acceso rápido: categoría a marcar al abrir (id del backend) */
+  @Input() preselectedCategoryId: number | null = null;
+  /** Respaldo del acceso rápido cuando la categoría aún no se ha usado */
+  @Input() preselectedCategoryName: string = '';
   @Input() isMaintenance = false;
   @Input() userRole = '';
   @Input() isSaving: boolean = false;
   @Output() close = new EventEmitter<ModelExpense | null>();
   private initialFormValue: string = '';
   private targetOwnerId: number | null = null;
+
+  @ViewChild('amountInput') amountInputRef?: ElementRef<HTMLInputElement>;
 
   expenseForm!: FormGroup;
   expenseTypes = [
@@ -272,6 +287,7 @@ export class GAddExpenseComponent implements OnInit {
             };
           });
           this.filterCategories();
+          this.applyPreselectedCategory();
         }
         this.loadingCategories = false;
       },
@@ -345,6 +361,38 @@ export class GAddExpenseComponent implements OnInit {
       .sort((a, b) =>
         a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }),
       );
+  }
+
+  /**
+   * Acceso rápido desde la vista de gastos: marca la categoría recibida (por id
+   * y, si no está, por nombre) y deja el cursor en el monto para solo escribir.
+   */
+  private applyPreselectedCategory(): void {
+    if (this.editingExpense) return;
+    if (!this.preselectedCategoryId && !this.preselectedCategoryName) return;
+
+    const wanted = normalizeCategoryName(this.preselectedCategoryName);
+    const target =
+      this.filteredCategories.find(
+        (cat) => cat.id === this.preselectedCategoryId,
+      ) ??
+      this.filteredCategories.find(
+        (cat) => normalizeCategoryName(cat.name) === wanted,
+      ) ??
+      // El backend puede ampliar el nombre (ej. "VARIOS CONDUCTOR"). Se compara
+      // por prefijo para no confundir categorías como CARGUE y DESCARGUE.
+      (wanted
+        ? this.filteredCategories.find((cat) =>
+            normalizeCategoryName(cat.name).startsWith(wanted),
+          )
+        : undefined);
+
+    if (target) this.selectCategory(target.id);
+    this.focusAmount();
+  }
+
+  private focusAmount(): void {
+    setTimeout(() => this.amountInputRef?.nativeElement.focus(), 0);
   }
 
   onSearchChange(event: any): void {

@@ -45,7 +45,25 @@
       color: white !important;
     }
 
-    .btn {
+    .btn:not(.shortcut-btn) {
+      background-color: var(--bs-primary);
+      border-color: var(--bs-primary);
+      color: white;
+    }
+  }
+
+  // Accesos rápidos: solo icono, para no estirar el alto del card
+  .shortcut-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    line-height: 1;
+
+    i {
+      font-size: 0.75rem;
+    }
+
+    &:hover {
       background-color: var(--bs-primary);
       border-color: var(--bs-primary);
       color: white;

@@ -50,7 +50,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       title: 'Vehículos',
       icon: 'fa-solid fa-truck-moving',
       descriptions:
-        'Administra tus vehículos, ubicación, documentos y mantenimientos.',
+        'Administra tus vehículos, ubicación y mantenimientos.',
     },
     {
       routing: '/site/trips',
@@ -64,7 +64,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       title: 'Gastos',
       icon: 'fa-solid fa-receipt',
       descriptions:
-        'Registra y consulta todos los gastos operativos relacionados con los vehículos y viajes.',
+        'Registra y consulta los gastos operativos relacionados con los vehículos y viajes.',
     },
     {
       routing: '/site/maintenance',
@@ -78,7 +78,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       title: 'Mapa',
       icon: 'fa-solid fa-map-location-dot',
       descriptions:
-        'Visualiza en tiempo real la ubicación de tus vehículos y las rutas de los viajes en curso.',
+        'Visualiza la ubicación de tus vehículos y las rutas de los viajes en curso.',
     },
     {
       routing: '/site/configuration',

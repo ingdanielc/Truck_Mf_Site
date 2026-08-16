@@ -16,7 +16,10 @@ import { CommonService } from 'src/app/services/common.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { TokenService } from 'src/app/services/token.service';
 import { GVehicleGoodCardComponent } from 'src/app/components/g-vehicle-good-card/g-vehicle-good-card.component';
-import { GExpensesTripComponent } from 'src/app/components/g-expenses-trip/g-expenses-trip.component';
+import {
+  ExpenseShortcutEvent,
+  GExpensesTripComponent,
+} from 'src/app/components/g-expenses-trip/g-expenses-trip.component';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { ModelExpense } from 'src/app/models/expense-model';
 import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
@@ -34,6 +37,10 @@ import { GVehicleTripCardComponent } from 'src/app/components/g-vehicle-trip-car
 import { NotificationsService } from 'src/app/services/notifications.service';
 import { LocationService } from 'src/app/services/location.service';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
+import {
+  ExpenseShortcut,
+  buildExpenseShortcuts,
+} from 'src/app/utils/expense-shortcuts';
 
 @Component({
   selector: 'app-expenses',
@@ -58,6 +65,14 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   showAddExpense = false;
   editingExpense: ModelExpense | null = null;
   preselectedExpenseTypeId: number | null = null;
+  preselectedCategoryId: number | null = null;
+  preselectedCategoryName: string = '';
+  /** Categorías más usadas por tipo de gasto, para los accesos rápidos */
+  expenseShortcuts: Record<number, ExpenseShortcut[]> = this.buildShortcuts([]);
+  /** Meses de historial que alimentan el ranking de categorías */
+  private readonly SHORTCUTS_HISTORY_MONTHS = 6;
+  /** Vehículos con los que se calculó el ranking vigente */
+  private shortcutsScope = '';
   loadingVehicles = true;
   hideSelectionSections = false;
   isMaintenance = false;
@@ -630,7 +645,59 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     );
   }
 
+  // ── Accesos rápidos de categorías ────────────────────────────────
+
+  private buildShortcuts(
+    history: ModelExpense[],
+  ): Record<number, ExpenseShortcut[]> {
+    return {
+      1: buildExpenseShortcuts(history, 1),
+      2: buildExpenseShortcuts(history, 2),
+      3: buildExpenseShortcuts(history, 3),
+      4: buildExpenseShortcuts(history, 4),
+    };
+  }
+
+  /**
+   * El ranking se calcula sobre los gastos recientes de todos los vehículos
+   * visibles (los del propietario), así los accesos rápidos reflejan lo que esa
+   * operación realmente registra y no una lista fija.
+   */
+  private loadExpenseShortcuts(force: boolean = false): void {
+    const vehicleIds = this.vehicles
+      .map((v) => v.id)
+      .filter((id) => id != null)
+      .join(',');
+
+    if (!vehicleIds) return;
+    if (!force && vehicleIds === this.shortcutsScope) return;
+    this.shortcutsScope = vehicleIds;
+
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - this.SHORTCUTS_HISTORY_MONTHS);
+
+    const payload = new ModelFilterTable(
+      [
+        new Filter('vehicleId', 'in', vehicleIds),
+        new Filter('expenseDate', '>=', startDate.toISOString().split('T')[0]),
+      ],
+      new Pagination(300, 0),
+      new Sort('id', false),
+    );
+
+    this.expenseService.getExpenseFilter(payload).subscribe({
+      next: (resp: any) => {
+        this.expenseShortcuts = this.buildShortcuts(resp?.data?.content ?? []);
+      },
+      error: (err) => {
+        console.error('Error loading expense shortcuts:', err);
+        this.expenseShortcuts = this.buildShortcuts([]);
+      },
+    });
+  }
+
   selectVehicle(vehicle: ModelVehicle): void {
+    this.loadExpenseShortcuts();
     this.selectedVehicle = vehicle;
     if (
       this.tripIdParam &&
@@ -775,7 +842,19 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   // ── Add Expense Offcanvas ──────────────────────────────────────────
 
-  openAddExpense(typeId?: number): void {
+  onShortcutClick(shortcut: ExpenseShortcutEvent): void {
+    this.openAddExpense(
+      shortcut.typeId,
+      shortcut.categoryId,
+      shortcut.categoryName,
+    );
+  }
+
+  openAddExpense(
+    typeId?: number,
+    categoryId: number | null = null,
+    categoryName: string = '',
+  ): void {
     const tripRequired = !this.isMaintenance;
     const canOpen =
       this.selectedVehicle && (!tripRequired || this.selectedTrip);
@@ -790,6 +869,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       }
       this.editingExpense = null;
       this.preselectedExpenseTypeId = typeId || null;
+      this.preselectedCategoryId = categoryId;
+      this.preselectedCategoryName = categoryName;
       this.showAddExpense = true;
     } else {
       this.toastService.showError(
@@ -799,6 +880,12 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           : 'Selecciona un vehículo y un viaje primero',
       );
     }
+  }
+
+  private resetPreselection(): void {
+    this.preselectedExpenseTypeId = null;
+    this.preselectedCategoryId = null;
+    this.preselectedCategoryName = '';
   }
 
   onEditExpense(expense: ModelExpense): void {
@@ -838,9 +925,11 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           this.expensesTripComponent?.loadExpenses();
           this.notificationsService.refreshNotifications();
           this.reportLocationIfDriver();
+          // El nuevo gasto puede cambiar el ranking de categorías
+          this.loadExpenseShortcuts(true);
           // Reset states AFTER potential usage
           this.editingExpense = null;
-          this.preselectedExpenseTypeId = null;
+          this.resetPreselection();
           this.isSavingExpense = false;
         },
         error: (err) => {
@@ -852,7 +941,7 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     } else {
       this.showAddExpense = false;
       this.editingExpense = null;
-      this.preselectedExpenseTypeId = null;
+      this.resetPreselection();
     }
   }
 

@@ -268,8 +268,10 @@
             [vehicleId]="selectedVehicle.id!"
             [budget]="selectedTrip.advancePayment"
             [isMaintenance]="isMaintenance"
+            [shortcuts]="expenseShortcuts"
             (editExpense)="onEditExpense($event)"
             (addExpenseType)="openAddExpense($event)"
+            (addExpenseShortcut)="onShortcutClick($event)"
           ></g-expenses-trip>
         </div>
       }
@@ -310,6 +312,8 @@
       [trip]="selectedTrip"
       [editingExpense]="editingExpense"
       [preselectedTypeId]="preselectedExpenseTypeId || undefined"
+      [preselectedCategoryId]="preselectedCategoryId"
+      [preselectedCategoryName]="preselectedCategoryName"
       [isMaintenance]="isMaintenance"
       [userRole]="userRole"
       [isSaving]="isSavingExpense"

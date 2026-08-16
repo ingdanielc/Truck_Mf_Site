@@ -209,12 +209,29 @@
                 </p>
               </div>
             </div>
-            <div class="flex-shrink-0">
+            <div
+              class="flex-shrink-0 d-flex flex-column align-items-center gap-2"
+            >
               <button
                 class="btn btn-sm btn-outline-secondary rounded-pill fw-medium px-3 text-nowrap"
               >
                 Agregar
               </button>
+              @if (shortcutsFor(3).length > 0) {
+                <div class="shortcut-row d-flex gap-1">
+                  @for (shortcut of shortcutsFor(3); track $index) {
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary shortcut-btn rounded-circle d-flex align-items-center justify-content-center p-0"
+                      [title]="shortcut.name"
+                      [attr.aria-label]="shortcut.name"
+                      (click)="onShortcutClick($event, 3, shortcut)"
+                    >
+                      <i [class]="shortcut.icon"></i>
+                    </button>
+                  }
+                </div>
+              }
             </div>
           </div>
         </div>
@@ -262,12 +279,29 @@
                 </p>
               </div>
             </div>
-            <div class="flex-shrink-0">
+            <div
+              class="flex-shrink-0 d-flex flex-column align-items-center gap-2"
+            >
               <button
                 class="btn btn-sm btn-outline-secondary rounded-pill fw-medium px-3 text-nowrap"
               >
                 Agregar
               </button>
+              @if (shortcutsFor(1).length > 0) {
+                <div class="shortcut-row d-flex gap-1">
+                  @for (shortcut of shortcutsFor(1); track $index) {
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary shortcut-btn rounded-circle d-flex align-items-center justify-content-center p-0"
+                      [title]="shortcut.name"
+                      [attr.aria-label]="shortcut.name"
+                      (click)="onShortcutClick($event, 1, shortcut)"
+                    >
+                      <i [class]="shortcut.icon"></i>
+                    </button>
+                  }
+                </div>
+              }
             </div>
           </div>
         </div>
@@ -315,12 +349,29 @@
                 </p>
               </div>
             </div>
-            <div class="flex-shrink-0">
+            <div
+              class="flex-shrink-0 d-flex flex-column align-items-center gap-2"
+            >
               <button
                 class="btn btn-sm btn-outline-secondary rounded-pill fw-medium px-3 text-nowrap"
               >
                 Agregar
               </button>
+              @if (shortcutsFor(2).length > 0) {
+                <div class="shortcut-row d-flex gap-1">
+                  @for (shortcut of shortcutsFor(2); track $index) {
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary shortcut-btn rounded-circle d-flex align-items-center justify-content-center p-0"
+                      [title]="shortcut.name"
+                      [attr.aria-label]="shortcut.name"
+                      (click)="onShortcutClick($event, 2, shortcut)"
+                    >
+                      <i [class]="shortcut.icon"></i>
+                    </button>
+                  }
+                </div>
+              }
             </div>
           </div>
         </div>
@@ -371,12 +422,29 @@
                   <p class="small text-secondary mb-0">Registra un servicio</p>
                 </div>
               </div>
-              <div class="flex-shrink-0">
+              <div
+                class="flex-shrink-0 d-flex flex-column align-items-center gap-2"
+              >
                 <button
                   class="btn btn-sm btn-outline-secondary rounded-pill fw-medium px-3 text-nowrap"
                 >
                   Agregar
                 </button>
+                @if (shortcutsFor(4).length > 0) {
+                  <div class="shortcut-row d-flex gap-1">
+                    @for (shortcut of shortcutsFor(4); track $index) {
+                      <button
+                        type="button"
+                        class="btn btn-outline-secondary shortcut-btn rounded-circle d-flex align-items-center justify-content-center p-0"
+                        [title]="shortcut.name"
+                        [attr.aria-label]="shortcut.name"
+                        (click)="onShortcutClick($event, 4, shortcut)"
+                      >
+                        <i [class]="shortcut.icon"></i>
+                      </button>
+                    }
+                  </div>
+                }
               </div>
             </div>
           </div>

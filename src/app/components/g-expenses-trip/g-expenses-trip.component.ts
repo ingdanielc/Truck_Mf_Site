@@ -18,6 +18,13 @@ import {
   Pagination,
   Sort,
 } from '../../models/model-filter-table';
+import { ExpenseShortcut } from '../../utils/expense-shortcuts';
+
+export interface ExpenseShortcutEvent {
+  typeId: number;
+  categoryId: number | null;
+  categoryName: string;
+}
 
 @Component({
   selector: 'g-expenses-trip',
@@ -31,8 +38,12 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
   @Input({ required: true }) vehicleId!: number;
   @Output() editExpense = new EventEmitter<ModelExpense>();
   @Output() addExpenseType = new EventEmitter<number>();
+  /** Acceso rápido: abre el formulario con tipo y categoría ya elegidos */
+  @Output() addExpenseShortcut = new EventEmitter<ExpenseShortcutEvent>();
   @Input() isMaintenance = false;
   @Input() monthsToQuery = 2;
+  /** Categorías más usadas por tipo de gasto, calculadas en la vista padre */
+  @Input() shortcuts: Record<number, ExpenseShortcut[]> = {};
 
   expenses: ModelExpense[] = [];
   loading = false;
@@ -58,6 +69,27 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
       this.loadExpenses();
       this.loadPreviousTripTotal();
     }
+  }
+
+  /** Referencia estable: se llama en cada ciclo de detección de cambios */
+  private static readonly NO_SHORTCUTS: ExpenseShortcut[] = [];
+
+  shortcutsFor(typeId: number): ExpenseShortcut[] {
+    return this.shortcuts?.[typeId] ?? GExpensesTripComponent.NO_SHORTCUTS;
+  }
+
+  /** El card completo ya abre el formulario: el acceso rápido no debe propagar */
+  onShortcutClick(
+    event: Event,
+    typeId: number,
+    shortcut: ExpenseShortcut,
+  ): void {
+    event.stopPropagation();
+    this.addExpenseShortcut.emit({
+      typeId,
+      categoryId: shortcut.categoryId,
+      categoryName: shortcut.name,
+    });
   }
 
   loadExpenses(): void {
