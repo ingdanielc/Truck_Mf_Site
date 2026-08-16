@@ -27,6 +27,6 @@ export interface ModelTrip {
   creationDate?: string | Date;
   updateDate?: string | Date;
 
-  tripType?: string;           
+  tripType?: string;
   currentLeg?: 'IDA' | 'REGRESO';
 }
