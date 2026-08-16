@@ -65,6 +65,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   public readonly systemMonth: number = new Date().getMonth();
   public readonly systemYear: number = new Date().getFullYear();
 
+  /** Series del desglose por tipo de viaje (solo propietario y conductor) */
+  private readonly TRIP_TYPE_SERIES = [
+    { id: 'CARGADO', label: 'Cargado', color: '#3b82f6' },
+    { id: 'REDONDO', label: 'Redondo', color: '#10b981' },
+    { id: 'VACIO', label: 'Vacío', color: '#f59e0b' },
+  ];
+
   // Chart 1: Trips por Vehículo
   public tripsByVehicleOptions: ChartConfiguration['options'] = {
     responsive: true,
@@ -669,11 +676,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private clearChartData() {
     this.tripsByVehicleData.labels = [];
-    this.tripsByVehicleData.datasets[0].data = [];
+    // Puede tener una o tres series según el rol
+    this.tripsByVehicleData.datasets.forEach((d) => (d.data = []));
     this.financialData.labels = [];
     this.financialData.datasets[0].data = [];
     this.financialData.datasets[1].data = [];
-    this.currentMonthTripsData.datasets[0].data = [];
+    this.currentMonthTripsData.labels = [];
+    this.currentMonthTripsData.datasets.forEach((d) => (d.data = []));
     this.monthTripFinData.labels = [];
     this.monthTripFinData.datasets[0].data = [];
     this.monthTripFinData.datasets[1].data = [];
@@ -689,7 +698,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private processMonthTripFin(trips: ModelTrip[], expenses: ModelExpense[]) {
     const monthTrips = trips
       .filter((t) => {
-        if (!t.startDate) return false;
+        if (!t.startDate || this.isEmptyTrip(t)) return false;
         const d = new Date(t.startDate);
         return (
           d.getMonth() === this.selectedMonth &&
@@ -723,21 +732,63 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
   }
 
+  /** Propietario y conductor ven una barra por tipo de viaje; el admin, el total */
+  get showTripTypeBreakdown(): boolean {
+    return this.userRole === 'PROPIETARIO' || this.userRole === 'CONDUCTOR';
+  }
+
+  /** Los viajes sin tipo (anteriores a la funcionalidad) cuentan como cargados */
+  private resolveTripType(trip: ModelTrip): string {
+    const type = (trip.tripType || '').toUpperCase();
+    return this.TRIP_TYPE_SERIES.some((s) => s.id === type) ? type : 'CARGADO';
+  }
+
+  /** El viaje vacío no genera flete: se excluye de rendimiento y finanzas */
+  private isEmptyTrip(trip: ModelTrip): boolean {
+    return this.resolveTripType(trip) === 'VACIO';
+  }
+
+  private buildTripTypeDatasets(
+    labels: string[],
+    countsByType: Record<string, Record<string, number>>,
+  ) {
+    return this.TRIP_TYPE_SERIES.map((serie) => ({
+      label: serie.label,
+      backgroundColor: serie.color,
+      data: labels.map((l) => countsByType[l]?.[serie.id] ?? 0),
+    }));
+  }
+
   private processTripsByVehicle(trips: ModelTrip[], vehicles: ModelVehicle[]) {
     const counts: Record<string, number> = {};
-    vehicles.forEach((v) => (counts[v.plate.toUpperCase()] = 0));
+    const countsByType: Record<string, Record<string, number>> = {};
+    vehicles.forEach((v) => {
+      const plate = v.plate.toUpperCase();
+      counts[plate] = 0;
+      countsByType[plate] = {};
+    });
     trips.forEach((t) => {
-      const plate = t.vehicle?.plate || t.vehiclePlate;
-      if (plate)
-        counts[plate.toUpperCase()] = (counts[plate.toUpperCase()] || 0) + 1;
+      const plate = (t.vehicle?.plate || t.vehiclePlate)?.toUpperCase();
+      if (!plate) return;
+      counts[plate] = (counts[plate] || 0) + 1;
+      countsByType[plate] ??= {};
+      const type = this.resolveTripType(t);
+      countsByType[plate][type] = (countsByType[plate][type] || 0) + 1;
     });
 
     const labels = Object.keys(counts).sort((a, b) => a.localeCompare(b));
-    const data = labels.map((l) => counts[l]);
 
     this.tripsByVehicleData = {
       labels: labels,
-      datasets: [{ ...this.tripsByVehicleData.datasets[0], data: data }],
+      datasets: this.showTripTypeBreakdown
+        ? this.buildTripTypeDatasets(labels, countsByType)
+        : [
+            {
+              data: labels.map((l) => counts[l]),
+              label: 'Cantidad de Viajes',
+              backgroundColor: '#3b82f6',
+            },
+          ],
     };
   }
 
@@ -746,7 +797,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     vehicles: ModelVehicle[],
   ) {
     const counts: Record<string, number> = {};
-    vehicles.forEach((v) => (counts[v.plate.toUpperCase()] = 0));
+    const countsByType: Record<string, Record<string, number>> = {};
+    vehicles.forEach((v) => {
+      const plate = v.plate.toUpperCase();
+      counts[plate] = 0;
+      countsByType[plate] = {};
+    });
 
     trips.forEach((t) => {
       if (!t.startDate) return;
@@ -755,24 +811,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
         tripDate.getMonth() === this.selectedMonth &&
         tripDate.getFullYear() === this.selectedYear
       ) {
-        const plate = t.vehicle?.plate || t.vehiclePlate;
-        if (plate) {
-          counts[plate.toUpperCase()] = (counts[plate.toUpperCase()] || 0) + 1;
-        }
+        const plate = (t.vehicle?.plate || t.vehiclePlate)?.toUpperCase();
+        if (!plate) return;
+        counts[plate] = (counts[plate] || 0) + 1;
+        countsByType[plate] ??= {};
+        const type = this.resolveTripType(t);
+        countsByType[plate][type] = (countsByType[plate][type] || 0) + 1;
       }
     });
 
     const labels = Object.keys(counts).sort((a, b) => a.localeCompare(b));
-    const data = labels.map((l) => counts[l]);
 
     this.currentMonthTripsData = {
       labels: labels,
-      datasets: [
-        {
-          ...this.currentMonthTripsData.datasets[0],
-          data: data,
-        },
-      ],
+      datasets: this.showTripTypeBreakdown
+        ? this.buildTripTypeDatasets(labels, countsByType)
+        : [
+            {
+              data: labels.map((l) => counts[l]),
+              label: 'Viajes este Mes',
+              backgroundColor: '#8b5cf6',
+            },
+          ],
     };
   }
 
@@ -830,13 +890,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private processFinancialData(trips: ModelTrip[], expenses: ModelExpense[]) {
     // Top 10 most recent trips
     // Top 10 most recent trips, grouped by vehicle for visualization
-    const recentTrips = trips.slice(0, 10).sort((a, b) => {
-      const plateA = (a.vehiclePlate || a.vehicle?.plate || '').toUpperCase();
-      const plateB = (b.vehiclePlate || b.vehicle?.plate || '').toUpperCase();
-      if (plateA < plateB) return -1;
-      if (plateA > plateB) return 1;
-      return Number(a.numberTrip ?? 0) - Number(b.numberTrip ?? 0);
-    });
+    const recentTrips = trips
+      .filter((t) => !this.isEmptyTrip(t))
+      .slice(0, 10)
+      .sort((a, b) => {
+        const plateA = (a.vehiclePlate || a.vehicle?.plate || '').toUpperCase();
+        const plateB = (b.vehiclePlate || b.vehicle?.plate || '').toUpperCase();
+        if (plateA < plateB) return -1;
+        if (plateA > plateB) return 1;
+        return Number(a.numberTrip ?? 0) - Number(b.numberTrip ?? 0);
+      });
     const labels = recentTrips.map(
       (t) =>
         `${(t.vehiclePlate || t.vehicle?.plate || 'S/P').toUpperCase()} - #${t.numberTrip}`,
@@ -911,6 +974,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     vehicles.forEach((v, index) => {
       const vehicleTrips = trips.filter((t) => {
+        if (this.isEmptyTrip(t)) return false;
         const plate = t.vehicle?.plate || t.vehiclePlate;
         const tripDate = t.startDate ? new Date(t.startDate) : null;
         return (

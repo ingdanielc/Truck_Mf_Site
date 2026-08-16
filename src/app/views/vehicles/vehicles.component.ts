@@ -844,11 +844,15 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               : this.loggedInOwnerId;
 
           if (await this.isOwnerOverVehicleLimit(targetOwnerId)) {
-            this.showingVehicleLimitWarning = true;
             this.toastService.showError(
-              'Límite de vehículos alcanzado',
-              'Este propietario alcanzó el máximo de vehículos de su plan. Para agregar más, contacta al administrador de CashTruck para ampliarlo.',
+              'No se puede crear vehículo',
+              'Este propietario alcanzó el máximo de vehículos permitidos en su plan.',
             );
+            if (this.userRole === 'ADMINISTRADOR') {
+              // Cerrar primero: `toggleOffcanvas` apaga la alerta al cerrar
+              this.toggleOffcanvas();
+            }
+            this.showingVehicleLimitWarning = true;
             return;
           }
 

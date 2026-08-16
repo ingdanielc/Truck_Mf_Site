@@ -375,9 +375,14 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Los vendidos no ocupan cupo del plan: se excluyen del conteo */
+  get activeVehicles(): ModelVehicle[] {
+    return this.vehicles.filter((v) => v.status !== 'Vendido');
+  }
+
   get stats() {
     return {
-      total: this.vehicles.length,
+      total: this.activeVehicles.length,
       trips: this.tripCount,
       maintenance: this.vehicles.filter((v) => v.status === 'Maintenance')
         .length,

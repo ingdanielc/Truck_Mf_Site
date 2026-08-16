@@ -250,7 +250,12 @@
               >Total</span
             >
           </div>
-          <h2 class="display-5 fw-bold mb-1">{{ stats.total }}</h2>
+          <h2 class="display-5 fw-bold mb-1">
+            {{ stats.total }}
+            @if (owner.maxVehicles != null) {
+              / {{ owner.maxVehicles }}
+            }
+          </h2>
           <p class="text-secondary mb-0">Vehículos Registrados</p>
         </div>
       </div>
