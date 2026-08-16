@@ -55,7 +55,6 @@
               tripForm.get('vehicleId')?.touched &&
               tripForm.get('vehicleId')?.invalid
             "
-            [disabled]="!tripForm.get('ownerId')?.value"
           >
             <option [ngValue]="null">
               {{
@@ -88,7 +87,6 @@
               tripForm.get('driverId')?.touched &&
               tripForm.get('driverId')?.invalid
             "
-            [disabled]="!tripForm.get('ownerId')?.value"
           >
             <option [ngValue]="null">
               {{
@@ -118,6 +116,30 @@
         <i class="fa-solid fa-info-circle me-2"></i>Información del Viaje
       </h6>
       <div class="row g-3">
+        <div class="col-12 mb-3">
+          <label for="" class="form-label small fw-bold mb-2"
+            >Tipo de Viaje*</label
+          >
+          <div
+            class="d-flex gap-2 justify-content-center flex-nowrap overflow-auto"
+          >
+            @for (type of tripTypes; track type.id) {
+              <button
+                type="button"
+                class="btn rounded-pill px-3 px-sm-4 fw-medium text-nowrap"
+                [ngClass]="
+                  type.id === tripForm.get('tripType')?.value
+                    ? 'btn-primary'
+                    : 'btn-white border bg-white text-secondary'
+                "
+                (click)="selectTripType(type.id)"
+                [disabled]="isStatusLocked"
+              >
+                {{ type.label }}
+              </button>
+            }
+          </div>
+        </div>
         <div class="col-6 mb-3">
           <label for="numberTrip" class="form-label small fw-bold mb-2"
             >Nro. de viaje*</label
@@ -138,25 +160,27 @@
             Este campo es obligatorio para continuar
           </div>
         </div>
-        <div class="col-6 mb-3">
-          <label for="manifestNumber" class="form-label small fw-bold mb-2"
-            >Manifiesto*</label
-          >
-          <input
-            id="manifestNumber"
-            type="text"
-            class="form-control rounded-3 py-2 px-3"
-            formControlName="manifestNumber"
-            placeholder="Ej: MF-8892"
-            [class.is-invalid]="
-              tripForm.get('manifestNumber')?.touched &&
-              tripForm.get('manifestNumber')?.invalid
-            "
-          />
-          <div class="invalid-feedback small">
-            Este campo es obligatorio para continuar
+        @if (!isEmptyTrip) {
+          <div class="col-6 mb-3">
+            <label for="manifestNumber" class="form-label small fw-bold mb-2"
+              >Manifiesto*</label
+            >
+            <input
+              id="manifestNumber"
+              type="text"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="manifestNumber"
+              placeholder="Ej: MF-8892"
+              [class.is-invalid]="
+                tripForm.get('manifestNumber')?.touched &&
+                tripForm.get('manifestNumber')?.invalid
+              "
+            />
+            <div class="invalid-feedback small">
+              Este campo es obligatorio para continuar
+            </div>
           </div>
-        </div>
+        }
 
         <div class="col-6 mb-3">
           <label for="origin" class="form-label small fw-bold mb-2"
@@ -187,9 +211,9 @@
           </div>
         </div>
         <div class="col-6 mb-3">
-          <label for="destination" class="form-label small fw-bold mb-2"
-            >Destino*</label
-          >
+          <label for="destination" class="form-label small fw-bold mb-2">{{
+            isRoundTrip ? "Destino de Ida*" : "Destino*"
+          }}</label>
           <select
             id="destination"
             class="form-select rounded-3 py-2 px-3"
@@ -215,97 +239,130 @@
           </div>
         </div>
 
-        <div class="col-6 mb-3">
-          <label for="freight" class="form-label small fw-bold mb-2"
-            >Flete Total*</label
-          >
-          <div class="input-group has-validation">
-            <span class="input-group-text">$</span>
-            <input
-              id="freight"
-              type="text"
-              inputmode="numeric"
-              class="form-control py-2 px-3"
-              [value]="getFormattedValue('freight')"
-              (input)="formatCurrencyInput('freight', $event)"
-              (keypress)="allowOnlyNumbers($event)"
+        @if (isRoundTrip) {
+          <div class="col-6 mb-3">
+            <label for="returnDestination" class="form-label small fw-bold mb-2"
+              >Destino de Regreso*</label
+            >
+            <select
+              id="returnDestination"
+              class="form-select rounded-3 py-2 px-3"
+              formControlName="returnDestinationId"
               [class.is-invalid]="
-                (tripForm.get('freight')?.invalid &&
-                  (tripForm.get('freight')?.touched ||
-                    tripForm.get('freight')?.dirty)) ||
-                (tripForm.hasError('advanceLimitExceeded') &&
-                  (tripForm.touched || tripForm.dirty))
+                tripForm.get('returnDestinationId')?.touched &&
+                tripForm.get('returnDestinationId')?.invalid
               "
-            />
-            @if (tripForm.hasError("advanceLimitExceeded")) {
-              <div class="invalid-feedback d-block small">
-                El flete debe ser mayor o igual al anticipo
-              </div>
-            } @else if (
-              tripForm.get("freight")?.invalid &&
-              (tripForm.get("freight")?.touched ||
-                tripForm.get("freight")?.dirty)
-            ) {
-              <div class="invalid-feedback d-block small">
-                Este campo es obligatorio para continuar
-              </div>
-            }
+            >
+              <option [ngValue]="null">Selecciona</option>
+              @for (group of groupedCities; track group) {
+                <optgroup [label]="group.state">
+                  @for (city of group.cities; track city) {
+                    <option [value]="city.id">
+                      {{ city.name }}
+                    </option>
+                  }
+                </optgroup>
+              }
+            </select>
+            <div class="invalid-feedback small">
+              Este campo es obligatorio para continuar
+            </div>
           </div>
-        </div>
-        <div class="col-6 mb-3">
-          <label for="advancePayment" class="form-label small fw-bold mb-2"
-            >Anticipo*</label
-          >
-          <div class="input-group has-validation">
-            <span class="input-group-text">$</span>
-            <input
-              id="advancePayment"
-              type="text"
-              inputmode="numeric"
-              class="form-control py-2 px-3"
-              [value]="getFormattedValue('advancePayment')"
-              (input)="formatCurrencyInput('advancePayment', $event)"
-              (keypress)="allowOnlyNumbers($event)"
-              [class.is-invalid]="
-                (tripForm.get('advancePayment')?.invalid &&
-                  (tripForm.get('advancePayment')?.touched ||
-                    tripForm.get('advancePayment')?.dirty)) ||
-                (tripForm.hasError('advanceLimitExceeded') &&
-                  (tripForm.touched || tripForm.dirty))
-              "
-            />
-            @if (tripForm.hasError("advanceLimitExceeded")) {
-              <div class="invalid-feedback d-block small">
-                El anticipo no puede ser mayor que el flete
-              </div>
-            } @else if (
-              tripForm.get("advancePayment")?.invalid &&
-              (tripForm.get("advancePayment")?.touched ||
-                tripForm.get("advancePayment")?.dirty)
-            ) {
-              <div class="invalid-feedback d-block small">
-                Este campo es obligatorio para continuar
-              </div>
-            }
-          </div>
-        </div>
+        }
 
-        <div class="col-6 mb-3">
-          <label for="balance" class="form-label small fw-bold mb-2"
-            >Saldo</label
-          >
-          <div class="input-group">
-            <span class="input-group-text">$</span>
-            <input
-              id="balance"
-              type="text"
-              inputmode="numeric"
-              class="form-control py-2 px-3 fw-bold"
-              [value]="getFormattedValue('balance')"
-              readonly
-            />
+        @if (!isEmptyTrip) {
+          <div class="col-6 mb-3">
+            <label for="freight" class="form-label small fw-bold mb-2"
+              >Flete Total*</label
+            >
+            <div class="input-group has-validation">
+              <span class="input-group-text">$</span>
+              <input
+                id="freight"
+                type="text"
+                inputmode="numeric"
+                class="form-control py-2 px-3"
+                [value]="getFormattedValue('freight')"
+                (input)="formatCurrencyInput('freight', $event)"
+                (keypress)="allowOnlyNumbers($event)"
+                [class.is-invalid]="
+                  (tripForm.get('freight')?.invalid &&
+                    (tripForm.get('freight')?.touched ||
+                      tripForm.get('freight')?.dirty)) ||
+                  (tripForm.hasError('advanceLimitExceeded') &&
+                    (tripForm.touched || tripForm.dirty))
+                "
+              />
+              @if (tripForm.hasError("advanceLimitExceeded")) {
+                <div class="invalid-feedback d-block small">
+                  El flete debe ser mayor o igual al anticipo
+                </div>
+              } @else if (
+                tripForm.get("freight")?.invalid &&
+                (tripForm.get("freight")?.touched ||
+                  tripForm.get("freight")?.dirty)
+              ) {
+                <div class="invalid-feedback d-block small">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
+            </div>
           </div>
-        </div>
+          <div class="col-6 mb-3">
+            <label for="advancePayment" class="form-label small fw-bold mb-2"
+              >Anticipo*</label
+            >
+            <div class="input-group has-validation">
+              <span class="input-group-text">$</span>
+              <input
+                id="advancePayment"
+                type="text"
+                inputmode="numeric"
+                class="form-control py-2 px-3"
+                [value]="getFormattedValue('advancePayment')"
+                (input)="formatCurrencyInput('advancePayment', $event)"
+                (keypress)="allowOnlyNumbers($event)"
+                [class.is-invalid]="
+                  (tripForm.get('advancePayment')?.invalid &&
+                    (tripForm.get('advancePayment')?.touched ||
+                      tripForm.get('advancePayment')?.dirty)) ||
+                  (tripForm.hasError('advanceLimitExceeded') &&
+                    (tripForm.touched || tripForm.dirty))
+                "
+              />
+              @if (tripForm.hasError("advanceLimitExceeded")) {
+                <div class="invalid-feedback d-block small">
+                  El anticipo no puede ser mayor que el flete
+                </div>
+              } @else if (
+                tripForm.get("advancePayment")?.invalid &&
+                (tripForm.get("advancePayment")?.touched ||
+                  tripForm.get("advancePayment")?.dirty)
+              ) {
+                <div class="invalid-feedback d-block small">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="col-6 mb-3">
+            <label for="balance" class="form-label small fw-bold mb-2"
+              >Saldo</label
+            >
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input
+                id="balance"
+                type="text"
+                inputmode="numeric"
+                class="form-control py-2 px-3 fw-bold"
+                [value]="getFormattedValue('balance')"
+                readonly
+              />
+            </div>
+          </div>
+        }
 
         <div class="col-6 mb-3">
           <label for="startDate" class="form-label small fw-bold mb-2"
@@ -326,45 +383,47 @@
           </div>
         </div>
 
-        <div class="col-6 mb-3">
-          <label for="loadType" class="form-label small fw-bold mb-2"
-            >Tipo de Carga</label
-          >
-          <input
-            id="loadType"
-            type="text"
-            class="form-control rounded-3 py-2 px-3"
-            list="loadTypesDatalist"
-            placeholder="Selecciona o escribe..."
-            formControlName="loadType"
-            (blur)="onLoadTypeBlur()"
-          />
-          <datalist id="loadTypesDatalist">
-            @for (type of loadTypes; track type) {
-              <option [value]="type"></option>
-            }
-          </datalist>
-        </div>
+        @if (!isEmptyTrip) {
+          <div class="col-6 mb-3">
+            <label for="loadType" class="form-label small fw-bold mb-2"
+              >Tipo de Carga</label
+            >
+            <input
+              id="loadType"
+              type="text"
+              class="form-control rounded-3 py-2 px-3"
+              list="loadTypesDatalist"
+              placeholder="Selecciona o escribe..."
+              formControlName="loadType"
+              (blur)="onLoadTypeBlur()"
+            />
+            <datalist id="loadTypesDatalist">
+              @for (type of loadTypes; track type) {
+                <option [value]="type"></option>
+              }
+            </datalist>
+          </div>
 
-        <div class="col-6 mb-3">
-          <label for="company" class="form-label small fw-bold mb-2"
-            >Empresa</label
-          >
-          <input
-            id="company"
-            type="text"
-            class="form-control rounded-3 py-2 px-3"
-            list="companiesDatalist"
-            placeholder="Selecciona o escribe..."
-            formControlName="company"
-            (blur)="onCompanyBlur()"
-          />
-          <datalist id="companiesDatalist">
-            @for (corp of companies; track corp) {
-              <option [value]="corp"></option>
-            }
-          </datalist>
-        </div>
+          <div class="col-6 mb-3">
+            <label for="company" class="form-label small fw-bold mb-2"
+              >Empresa</label
+            >
+            <input
+              id="company"
+              type="text"
+              class="form-control rounded-3 py-2 px-3"
+              list="companiesDatalist"
+              placeholder="Selecciona o escribe..."
+              formControlName="company"
+              (blur)="onCompanyBlur()"
+            />
+            <datalist id="companiesDatalist">
+              @for (corp of companies; track corp) {
+                <option [value]="corp"></option>
+              }
+            </datalist>
+          </div>
+        }
         <div class="col-6 mb-3 d-none">
           <label for="status" class="form-label small fw-bold mb-2"
             >Estado*</label
@@ -382,6 +441,16 @@
           </select>
         </div>
       </div>
+
+      @if (isEmptyTrip) {
+        <div
+          class="alert alert-info d-flex align-items-center mt-3 mb-0 border-0 rounded-4 shadow-sm small"
+          role="alert"
+        >
+          <i class="fa-solid fa-circle-info me-2"></i>
+          Los gastos de este traslado los asume el propietario del vehículo.
+        </div>
+      }
 
       <div
         class="offcanvas-footer border-top pt-4 mt-2 d-flex gap-3 align-items-center"

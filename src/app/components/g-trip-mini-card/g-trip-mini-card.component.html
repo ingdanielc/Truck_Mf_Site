@@ -15,10 +15,27 @@
     class="d-flex justify-content-between align-items-start position-relative z-1"
   >
     <div class="route-info flex-grow-1 overflow-hidden">
-      <div class="d-flex align-items-center gap-2">
-        <span class="location-text text-truncate">{{ origin }}</span>
+      <!-- En el viaje redondo la ruta pasa a tres puntos:
+           origen → destino de ida → destino de regreso -->
+      <div
+        class="d-flex align-items-center gap-2"
+        [class.route-round-trip]="isRoundTrip"
+      >
+        <span class="location-text text-truncate" [title]="origin">{{
+          origin
+        }}</span>
         <i class="fa-solid fa-arrow-right arrow-icon flex-shrink-0"></i>
-        <span class="location-text text-truncate">{{ destination }}</span>
+        <span class="location-text text-truncate" [title]="destination">{{
+          destination
+        }}</span>
+        @if (isRoundTrip) {
+          <i class="fa-solid fa-arrow-right arrow-icon flex-shrink-0"></i>
+          <span
+            class="location-text text-truncate"
+            [title]="returnDestination"
+            >{{ returnDestination }}</span
+          >
+        }
       </div>
       @if (numberTrip) {
         <p class="text-secondary small mb-0 mt-1 trip-number">

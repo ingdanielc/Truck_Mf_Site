@@ -16,8 +16,14 @@
       </button>
     </div>
     <p class="text-secondary small mb-0 mt-1">
-      Detalles y ruta de <strong>{{ originName }}</strong> a
-      <strong>{{ destinationName }}</strong>
+      @if (isRoundTrip) {
+        Detalles y ruta: <strong>{{ originName }}</strong> →
+        <strong>{{ destinationName }}</strong> →
+        <strong>{{ returnDestinationName }}</strong>
+      } @else {
+        Detalles y ruta de <strong>{{ originName }}</strong> a
+        <strong>{{ destinationName }}</strong>
+      }
     </p>
   </div>
 

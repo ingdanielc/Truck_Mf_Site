@@ -7,6 +7,7 @@ export interface ModelTrip {
   status: string;
   originId: string;
   destinationId: string;
+  returnDestinationId?: string;
   freight: number;
   manifestNumber: string;
   advancePayment: number;
@@ -25,4 +26,7 @@ export interface ModelTrip {
   paidBalance?: boolean;
   creationDate?: string | Date;
   updateDate?: string | Date;
+
+  tripType?: string;           
+  currentLeg?: 'IDA' | 'REGRESO';
 }

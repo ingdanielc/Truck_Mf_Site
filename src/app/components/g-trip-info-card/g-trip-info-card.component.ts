@@ -7,6 +7,14 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {
+  computeRoute,
+  routeDistanceKm,
+  routeDurationSeconds,
+  routeTollCost,
+} from 'src/app/utils/google-routes';
+import { createPinMarker, removeMarker } from 'src/app/utils/google-markers';
+import { environment } from 'src/environments/environment';
 
 declare var globalThis: any;
 
@@ -21,6 +29,8 @@ export class GTripInfoCardComponent implements OnChanges {
   @Input() isOpen: boolean = false;
   @Input() originName: string = '';
   @Input() destinationName: string = '';
+  /** Solo se informa en viajes redondos: convierte la ruta en Origen → Ida → Regreso */
+  @Input() returnDestinationName: string = '';
   @Input() vehicleAxles: number = 2;
   @Output() close = new EventEmitter<void>();
 
@@ -32,7 +42,8 @@ export class GTripInfoCardComponent implements OnChanges {
   durationInTraffic: string = '';
   tollsCount: number = 0;
   mapInstance: any = null;
-  directionsRenderer: any = null;
+  private routePolylines: any[] = [];
+  private routeMarkers: any[] = [];
 
   // New features
   tollsList: { name: string; price: number }[] = [];
@@ -55,122 +66,130 @@ export class GTripInfoCardComponent implements OnChanges {
     }
   }
 
-  calculateRoute(): void {
+  /** Un viaje redondo se distingue por tener destino de regreso */
+  get isRoundTrip(): boolean {
+    return !!this.returnDestinationName;
+  }
+
+  /** Punto final de la ruta: el destino de regreso en los viajes redondos */
+  get finalDestinationName(): string {
+    return this.isRoundTrip ? this.returnDestinationName : this.destinationName;
+  }
+
+  async calculateRoute(): Promise<void> {
     this.loading = true;
     this.errorMsg = null;
     this.routeData = null;
     this.tollsCount = 0;
+    this.tollsList = [];
+    this.tollsTotalCost = 0;
 
     if (!this.originName || !this.destinationName) {
       this.loading = false;
       return;
     }
 
-    if (globalThis.google === 'undefined' || !globalThis.google?.maps?.routes) {
-      // Fallback to old directions service if modern routes not available in SDK version
-      this.fallbackToDirectionsService();
-      return;
-    }
-
-    // Using the modern computeRoutes API as suggested by warning
-    globalThis.google.maps.routes.Route.computeRoutes({
-      origin: { address: `${this.originName}, Colombia` },
-      destination: { address: `${this.destinationName}, Colombia` },
+    const request: any = {
+      origin: `${this.originName}, Colombia`,
+      destination: `${this.finalDestinationName}, Colombia`,
       travelMode: 'DRIVING',
       routingPreference: 'TRAFFIC_AWARE',
-    })
-      .then((response: any) => {
-        if (response.routes && response.routes.length > 0) {
-          const route = response.routes[0];
-          // The new API structure returns distanceMeters and duration natively
-          const km = route.distanceMeters ? route.distanceMeters / 1000 : 0;
-          this.distance = km ? `${km.toFixed(1)} km` : 'N/A';
-          this.fuelEstimatedGals = km
-            ? (km / this.KM_PER_GALLON).toFixed(1)
-            : '0';
-          this.fuelEstimatedCost =
-            Number.parseFloat(this.fuelEstimatedGals) *
-            this.DIESEL_PRICE_GALLON;
+      extraComputations: ['TOLLS'],
+      fields: [
+        'path',
+        'legs',
+        'distanceMeters',
+        'durationMillis',
+        'staticDurationMillis',
+        'viewport',
+        'travelAdvisory',
+      ],
+    };
 
-          // Standard duration
-          if (route.duration) {
-            const durationSec = Number.parseInt(
-              route.duration.replace('s', ''),
-              10,
-            );
-            this.duration = this.formatDuration(
-              Math.floor(durationSec * this.CARGO_DURATION_FACTOR),
-            );
-          } else {
-            this.duration = 'N/A';
-          }
+    // En el viaje redondo el destino de ida es una parada intermedia,
+    // así que distancia, tiempo, combustible y peajes cubren los dos tramos
+    if (this.isRoundTrip) {
+      request.intermediates = [`${this.destinationName}, Colombia`];
+    }
 
-          // Traffic duration
-          if (route.staticDuration) {
-            const sDurationSec = Number.parseInt(
-              route.staticDuration.replace('s', ''),
-              10,
-            );
-            this.durationInTraffic = this.duration; // 'duration' field is traffic aware when pref is TRAFFIC_AWARE
-            this.duration = this.formatDuration(
-              Math.floor(sDurationSec * this.CARGO_DURATION_FACTOR),
-            );
-          } else {
-            this.durationInTraffic = this.duration;
-          }
+    try {
+      const route = await computeRoute(request);
 
-          this.tollsList = [];
-          if (route.legs) {
-            for (const leg of route.legs) {
-              if (leg.steps) {
-                for (const step of leg.steps) {
-                  if (step.navigationInstruction?.instructions) {
-                    const ins = step.navigationInstruction.instructions;
-                    if (
-                      ins.toLowerCase().includes('peaje') ||
-                      ins.toLowerCase().includes('toll')
-                    ) {
-                      const tollName = this.cleanInstructionString(ins);
-                      const price = this.mockTollPrice();
-                      this.tollsList.push({ name: tollName, price: price });
-                      this.tollsTotalCost += price;
-                    }
-                  }
-                }
-              }
-            }
-          }
-          this.tollsCount = this.tollsList.length;
+      if (!route) {
+        this.errorMsg = 'No se encontraron las rutas esperadas.';
+        return;
+      }
 
-          // If no tolls found in instructions but travelAdvisory says there are tolls, add a generic message
-          if (
-            this.tollsCount === 0 &&
-            route.travelAdvisory?.tollInfo?.estimatedPrice
-          ) {
-            this.tollsCount = 1;
-            const fallbackPrice =
-              route.travelAdvisory.tollInfo.estimatedPrice.units ||
-              this.mockTollPrice();
-            this.tollsList.push({
-              name: 'Peajes detectados en la ruta',
-              price: fallbackPrice,
-            });
-            this.tollsTotalCost += fallbackPrice;
-          }
+      const km = routeDistanceKm(route);
+      this.distance = km ? `${km.toFixed(1)} km` : 'N/A';
+      this.fuelEstimatedGals = km ? (km / this.KM_PER_GALLON).toFixed(1) : '0';
+      this.fuelEstimatedCost =
+        Number.parseFloat(this.fuelEstimatedGals) * this.DIESEL_PRICE_GALLON;
 
-          this.routeData = route;
-          this.renderRouteOnMap(route);
-          this.loading = false;
-        } else {
-          this.errorMsg = 'No se encontraron las rutas esperadas.';
-          this.loading = false;
+      this.durationInTraffic = this.formatDuration(
+        Math.floor(
+          routeDurationSeconds(route, { withTraffic: true }) *
+            this.CARGO_DURATION_FACTOR,
+        ),
+      );
+      this.duration = this.formatDuration(
+        Math.floor(
+          routeDurationSeconds(route, { withTraffic: false }) *
+            this.CARGO_DURATION_FACTOR,
+        ),
+      );
+
+      this.collectTolls(route);
+
+      this.routeData = route;
+      this.renderRouteOnMap(route);
+    } catch (error) {
+      console.error('Error in computeRoutes:', error);
+      this.errorMsg = 'No se pudo calcular la ruta.';
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  /**
+   * Los peajes se toman de las instrucciones de cada tramo, que es lo único
+   * que los nombra. Si no aparecen ahí, se usa el estimado que reporta la
+   * propia API (`extraComputations: ['TOLLS']`) y, como último recurso, la
+   * tarifa por número de ejes.
+   */
+  private collectTolls(route: any): void {
+    this.tollsList = [];
+    this.tollsTotalCost = 0;
+
+    for (const leg of route.legs ?? []) {
+      for (const step of leg.steps ?? []) {
+        const instructions = step.instructions || '';
+        if (
+          instructions.toLowerCase().includes('peaje') ||
+          instructions.toLowerCase().includes('toll')
+        ) {
+          const price = this.mockTollPrice();
+          this.tollsList.push({
+            name: this.cleanInstructionString(instructions),
+            price: price,
+          });
+          this.tollsTotalCost += price;
         }
-      })
-      .catch((error: any) => {
-        console.error('Error in computeRoutes:', error);
-        // Try fallback
-        this.fallbackToDirectionsService();
-      });
+      }
+    }
+
+    if (this.tollsList.length === 0) {
+      const estimated = routeTollCost(route);
+      if (estimated > 0) {
+        this.tollsList.push({
+          name: 'Peajes detectados en la ruta',
+          price: estimated,
+        });
+        this.tollsTotalCost = estimated;
+      }
+    }
+
+    this.tollsCount = this.tollsList.length;
   }
 
   toggleTolls(): void {
@@ -232,126 +251,127 @@ export class GTripInfoCardComponent implements OnChanges {
     return `${minutes} min`;
   }
 
-  private fallbackToDirectionsService(): void {
-    const directionsService = new globalThis.google.maps.DirectionsService();
-
-    directionsService.route(
-      {
-        origin: `${this.originName}, Colombia`,
-        destination: `${this.destinationName}, Colombia`,
-        travelMode: globalThis.google.maps.TravelMode.DRIVING,
-        drivingOptions: {
-          departureTime: new Date(), // for traffic info
-          trafficModel: 'bestguess',
-        },
-        provideRouteAlternatives: false,
-      },
-      (response: any, status: any) => {
-        if (status === 'OK') {
-          const route = response.routes[0];
-          if (route?.legs && route.legs.length > 0) {
-            const leg = route.legs[0];
-            const km = leg.distance?.value ? leg.distance.value / 1000 : 0;
-            this.distance = leg.distance?.text || 'N/A';
-            this.fuelEstimatedGals = km
-              ? (km / this.KM_PER_GALLON).toFixed(1)
-              : '0';
-            this.fuelEstimatedCost =
-              Number.parseFloat(this.fuelEstimatedGals) *
-              this.DIESEL_PRICE_GALLON;
-
-            this.duration = this.formatDuration(
-              Math.floor(
-                (leg.duration?.value || 0) * this.CARGO_DURATION_FACTOR,
-              ),
-            );
-            this.durationInTraffic = this.formatDuration(
-              Math.floor(
-                (leg.duration_in_traffic?.value || leg.duration?.value || 0) *
-                  this.CARGO_DURATION_FACTOR,
-              ),
-            );
-
-            // Calculate tolls
-            this.tollsList = [];
-            this.tollsTotalCost = 0;
-            if (leg.steps) {
-              for (const step of leg.steps) {
-                const instructions = step.instructions || '';
-                if (
-                  instructions.toLowerCase().includes('peaje') ||
-                  instructions.toLowerCase().includes('toll')
-                ) {
-                  const tollName = this.cleanInstructionString(instructions);
-                  const price = this.mockTollPrice();
-                  this.tollsList.push({ name: tollName, price: price });
-                  this.tollsTotalCost += price;
-                }
-              }
-            }
-            this.tollsCount = this.tollsList.length;
-            this.routeData = route;
-            this.renderRouteOnMap(response); // DirectionsService returns the full response for renderer
-          } else {
-            this.errorMsg = 'No se encontraron las rutas esperadas.';
-          }
-        } else {
-          this.errorMsg = 'No se pudo calcular la ruta (' + status + ').';
-        }
-        this.loading = false;
-      },
-    );
-  }
-
   onClose(): void {
     this.close.emit();
   }
 
-  private initMap(): void {
-    const mapElement = document.getElementById('tripMap');
-    if (
-      mapElement &&
-      globalThis.google !== 'undefined' &&
-      globalThis.google?.maps?.Map
-    ) {
-      // Force reset to handle Angular re-render of tripMap div
-      this.mapInstance = null;
-      this.directionsRenderer = null;
-
-      if (!this.mapInstance) {
-        this.mapInstance = new globalThis.google.maps.Map(mapElement, {
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-        });
-      }
-
-      if (!this.directionsRenderer) {
-        this.directionsRenderer = new globalThis.google.maps.DirectionsRenderer(
-          {
-            map: this.mapInstance,
-            suppressMarkers: false,
-            polylineOptions: {
-              strokeColor: '#0d6efd',
-              strokeWeight: 5,
-              strokeOpacity: 0.8,
-            },
-          },
-        );
-      }
-    }
+  private clearRouteOverlays(): void {
+    this.routePolylines.forEach((polyline) => polyline.setMap(null));
+    this.routePolylines = [];
+    this.routeMarkers.forEach((marker) => removeMarker(marker));
+    this.routeMarkers = [];
   }
 
-  private renderRouteOnMap(data: any): void {
-    setTimeout(() => {
-      this.initMap();
-      if (this.directionsRenderer && data) {
-        // DirectionsRenderer expects a DirectionsResult object.
-        // If data has 'routes', we assume it's compatible.
-        if (data.routes) {
-          this.directionsRenderer.setDirections(data);
-        }
+  /** Normaliza cualquier forma de ubicación que devuelva la API a `{lat, lng}`. */
+  private toLatLng(location: any): { lat: number; lng: number } | null {
+    const point = location?.latLng ?? location;
+    if (!point) return null;
+
+    const lat = typeof point.lat === 'function' ? point.lat() : point.lat;
+    const lng = typeof point.lng === 'function' ? point.lng() : point.lng;
+    const latitude = lat ?? point.latitude;
+    const longitude = lng ?? point.longitude;
+
+    if (latitude === null || latitude === undefined) return null;
+    if (longitude === null || longitude === undefined) return null;
+    return { lat: Number(latitude), lng: Number(longitude) };
+  }
+
+  /**
+   * Puntos donde va un globo: origen y el final de cada tramo. En el viaje
+   * redondo son tres (A origen, B destino de ida, C destino de regreso).
+   */
+  private waypointPositions(route: any): { lat: number; lng: number }[] {
+    const legs = route?.legs ?? [];
+    const positions: ({ lat: number; lng: number } | null)[] = [];
+
+    if (legs.length > 0) {
+      positions.push(this.toLatLng(legs[0].startLocation));
+      for (const leg of legs) positions.push(this.toLatLng(leg.endLocation));
+    }
+
+    let resolved = positions.filter((p) => p !== null) as {
+      lat: number;
+      lng: number;
+    }[];
+
+    // Si los tramos no traen ubicaciones, se usan los extremos del trazado
+    if (resolved.length < 2 && route?.path?.length > 1) {
+      const first = this.toLatLng(route.path[0]);
+      const last = this.toLatLng(route.path.at(-1));
+      resolved = [first, last].filter((p) => p !== null) as {
+        lat: number;
+        lng: number;
+      }[];
+    }
+
+    return resolved;
+  }
+
+  /**
+   * Globos rojos con letra blanca (A, B, C), como los que dibujaba el
+   * DirectionsRenderer anterior.
+   *
+   * Se construyen con `PinElement` en vez de `createWaypointAdvancedMarkers`
+   * porque las opciones de estilo de ese método (`CreateWaypointMarkersOptions`)
+   * solo existen en el canal `v=alpha`.
+   */
+  private async renderRouteMarkers(route: any): Promise<void> {
+    const positions = this.waypointPositions(route);
+    if (positions.length === 0) return;
+
+    const labels = 'ABCDEFGHIJ';
+    const markers = await Promise.all(
+      positions.map((position, index) =>
+        createPinMarker({
+          map: this.mapInstance,
+          position: position,
+          glyphText: labels[index] ?? String(index + 1),
+          background: '#dc3545',
+          glyphColor: '#ffffff',
+        }),
+      ),
+    );
+
+    this.routeMarkers = markers.filter((marker) => marker !== null);
+  }
+
+  /**
+   * Dibuja la ruta con `createPolylines`, que reemplaza al `DirectionsRenderer`
+   * anterior. El `div` del mapa se vuelve a crear en cada apertura, así que el
+   * mapa se instancia de nuevo cada vez.
+   */
+  private renderRouteOnMap(route: any): void {
+    setTimeout(async () => {
+      const mapElement = document.getElementById('tripMap');
+      if (!mapElement || !globalThis.google?.maps?.Map || !route) return;
+
+      this.clearRouteOverlays();
+
+      this.mapInstance = new globalThis.google.maps.Map(mapElement, {
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        // Sin `mapId` los marcadores avanzados no se dibujan
+        mapId: environment.googleMapsMapId,
+      });
+
+      // Mismo trazo azul que dibujaba el DirectionsRenderer anterior
+      this.routePolylines = route.createPolylines?.() ?? [];
+      this.routePolylines.forEach((polyline) => {
+        polyline.setOptions({
+          strokeColor: '#0d6efd',
+          strokeWeight: 5,
+          strokeOpacity: 0.8,
+        });
+        polyline.setMap(this.mapInstance);
+      });
+
+      if (route.viewport) {
+        this.mapInstance.fitBounds(route.viewport, 50);
       }
+
+      await this.renderRouteMarkers(route);
     }, 100);
   }
 }

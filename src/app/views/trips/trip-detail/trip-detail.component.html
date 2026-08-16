@@ -20,7 +20,12 @@
           </h1>
         </div>
         <p class="text-secondary mb-0 small">
-          {{ originFullName }} - {{ destinationFullName }}
+          @if (isRoundTrip) {
+            {{ originFullName }} - {{ destinationFullName }} -
+            {{ returnDestinationFullName }}
+          } @else {
+            {{ originFullName }} - {{ destinationFullName }}
+          }
         </p>
       </div>
       <div class="col-12 col-md-auto">
@@ -123,6 +128,38 @@
               </div>
             </div>
 
+            <!-- Destino de Ida (solo en viaje redondo: queda al centro) -->
+            @if (isRoundTrip) {
+              <div class="step-point text-center" style="width: 120px">
+                <div
+                  class="icon-circle rounded-3 mb-2 mx-auto d-flex align-items-center justify-content-center transition-all"
+                  [ngClass]="
+                    trip.status === 'Completado' || trip.status === 'Pendiente'
+                      ? 'bg-primary text-white shadow-primary'
+                      : 'bg-secondary bg-opacity-25 text-secondary'
+                  "
+                  style="width: 40px; height: 40px"
+                >
+                  <i class="fa-solid fa-box-open"></i>
+                </div>
+                <div class="fw-bold small pt-3 d-md-none">
+                  {{ destinationName }}
+                </div>
+                <div class="fw-bold small pt-3 d-none d-md-block">
+                  {{ destinationFullName }}
+                </div>
+                <div class="text-secondary" style="font-size: 0.7rem">
+                  @if (
+                    trip.status === "Completado" || trip.status === "Pendiente"
+                  ) {
+                    Finalizado: {{ tripDurationInHours }}h
+                  } @else {
+                    Est: {{ estimatedArrivalTime }}
+                  }
+                </div>
+              </div>
+            }
+
             <!-- Destination -->
             <div
               class="step-point text-center"
@@ -140,10 +177,10 @@
                 <i class="fa-solid fa-flag-checkered"></i>
               </div>
               <div class="fw-bold small pt-3 d-md-none">
-                {{ destinationName }}
+                {{ finalStopName }}
               </div>
               <div class="fw-bold small pt-3 d-none d-md-block">
-                {{ destinationFullName }}
+                {{ finalStopFullName }}
               </div>
               <div class="text-secondary" style="font-size: 0.7rem">
                 @if (
@@ -151,7 +188,7 @@
                 ) {
                   Finalizado: {{ tripDurationInHours }}h
                 } @else {
-                  Est: {{ estimatedArrivalTime }}
+                  Est: {{ finalStopEta }}
                 }
               </div>
             </div>
@@ -562,6 +599,7 @@
       [isOpen]="isTripInfoOpen"
       [originName]="originName"
       [destinationName]="destinationName"
+      [returnDestinationName]="returnDestinationName"
       [vehicleAxles]="trip.vehicle?.numberOfAxles || 2"
       (close)="closeTripInfo()"
     ></g-trip-info-card>

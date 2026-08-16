@@ -34,7 +34,7 @@ import {
   Pagination,
   Sort,
 } from 'src/app/models/model-filter-table';
-import { UpperCasePipe } from '@angular/common';
+import { NgClass, UpperCasePipe } from '@angular/common';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 
 @Component({
@@ -45,6 +45,7 @@ import { CustomValidators } from 'src/app/utils/custom-validators';
     ReactiveFormsModule,
     DocumentNumberPipe,
     UpperCasePipe,
+    NgClass,
   ],
   templateUrl: './g-trip-form.component.html',
   styleUrls: ['./g-trip-form.component.scss'],
@@ -74,6 +75,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   private readonly userSub?: Subscription;
   private ownerChangeSub?: Subscription;
   private vehicleChangeSub?: Subscription;
+  private tripTypeChangeSub?: Subscription;
   private initialFormValue: string = '';
   private isPatching: boolean = false;
 
@@ -94,6 +96,11 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   loadTypes: string[] = [...this.defaultLoadTypes];
   companies: string[] = [...this.defaultCompanies];
   tripStatuses: string[] = ['En Curso', 'Completado', 'Cancelado', 'Pendiente'];
+  tripTypes: { id: string; label: string }[] = [
+    { id: 'CARGADO', label: 'Cargado' },
+    { id: 'REDONDO', label: 'Redondo' },
+    { id: 'VACIO', label: 'Vacío' },
+  ];
 
   constructor(
     private readonly fb: FormBuilder,
@@ -130,6 +137,9 @@ export class GTripFormComponent implements OnInit, OnDestroy {
         loadType: [''],
         company: [''],
         status: ['En Curso'],
+        tripType: ['CARGADO', [Validators.required]],
+        returnDestinationId: [null],
+        currentLeg: ['IDA'],
       },
       { validators: this.advancePaymentValidator },
     );
@@ -138,9 +148,98 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   }
 
   private advancePaymentValidator(group: FormGroup) {
+    // El viaje vacío no maneja flete ni anticipo
+    if (group.get('tripType')?.value === 'VACIO') return null;
+
     const freight = Number(group.get('freight')?.value) || 0;
     const advance = Number(group.get('advancePayment')?.value) || 0;
     return advance <= freight ? null : { advanceLimitExceeded: true };
+  }
+
+  get isEmptyTrip(): boolean {
+    return this.tripForm.get('tripType')?.value === 'VACIO';
+  }
+
+  get isRoundTrip(): boolean {
+    return this.tripForm.get('tripType')?.value === 'REDONDO';
+  }
+
+  /**
+   * Un viaje ya finalizado no cambia de ruta ni de asignación: se bloquean
+   * tipo de viaje, origen, destinos, vehículo y conductor.
+   */
+  get isStatusLocked(): boolean {
+    const status = this.trip?.status;
+    return status === 'Completado' || status === 'Pendiente';
+  }
+
+  /**
+   * Bloquea los campos de ruta y asignación de un viaje ya finalizado.
+   * Va por la API del FormControl y no por `[disabled]`.
+   */
+  private applyStatusLock(): void {
+    if (!this.isStatusLocked) return;
+
+    const lockedControls = [
+      'tripType',
+      'originId',
+      'destinationId',
+      'returnDestinationId',
+      'vehicleId',
+      'driverId',
+    ];
+
+    for (const name of lockedControls) {
+      this.tripForm.get(name)?.disable({ emitEvent: false });
+    }
+  }
+
+  /**
+   * Ajusta validaciones y valores según el tipo de viaje.
+   * Todos los cambios van con `emitEvent: false` para no disparar ciclos
+   * de `valueChanges` ni marcar el formulario como modificado al abrirlo.
+   */
+  private applyTripTypeRules(type: string): void {
+    const isEmpty = type === 'VACIO';
+    const isRound = type === 'REDONDO';
+
+    // Manifiesto: obligatorio en todos los tipos menos el vacío
+    const manifest = this.tripForm.get('manifestNumber');
+    if (isEmpty) {
+      manifest?.clearValidators();
+      manifest?.setValue('', { emitEvent: false });
+    } else {
+      manifest?.setValidators([Validators.required]);
+    }
+    manifest?.updateValueAndValidity({ emitEvent: false });
+
+    // Bloque financiero y datos de carga: no aplican al viaje vacío
+    if (isEmpty) {
+      this.tripForm.get('freight')?.setValue(0, { emitEvent: false });
+      this.tripForm.get('advancePayment')?.setValue(0, { emitEvent: false });
+      this.tripForm.get('balance')?.setValue(0, { emitEvent: false });
+      this.tripForm.get('loadType')?.setValue('', { emitEvent: false });
+      this.tripForm.get('company')?.setValue('', { emitEvent: false });
+    }
+
+    // Destino de regreso: solo existe en el viaje redondo
+    const returnDestination = this.tripForm.get('returnDestinationId');
+    if (isRound) {
+      returnDestination?.setValidators([Validators.required]);
+      // El viaje redondo arranca en el tramo de ida. No se pisa el valor de
+      // un viaje que ya venga en regreso.
+      const currentLeg = this.tripForm.get('currentLeg');
+      if (!currentLeg?.value) {
+        currentLeg?.setValue('IDA', { emitEvent: false });
+      }
+    } else {
+      returnDestination?.clearValidators();
+      returnDestination?.setValue(null, { emitEvent: false });
+      this.tripForm.get('currentLeg')?.setValue(null, { emitEvent: false });
+    }
+    returnDestination?.updateValueAndValidity({ emitEvent: false });
+
+    this.tripForm.updateValueAndValidity({ emitEvent: false });
   }
 
   ngOnInit(): void {
@@ -185,7 +284,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   private mergeAndSortLists(defaults: string[], custom: string[]): string[] {
     const map = new Map<string, string>();
     for (const item of [...defaults, ...custom]) {
-      if (item && item.trim()) {
+      if (item?.trim()) {
         const key = item.trim().toLowerCase();
         if (!map.has(key)) {
           map.set(key, item.trim());
@@ -263,6 +362,16 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     }
   }
 
+  selectTripType(typeId: string): void {
+    if (this.isStatusLocked) return;
+
+    const control = this.tripForm.get('tripType');
+    if (control?.value === typeId) return;
+
+    control?.setValue(typeId);
+    control?.markAsDirty();
+  }
+
   onLoadTypeBlur(): void {
     const val = this.tripForm.get('loadType')?.value;
     if (val) this.addLoadTypeIfNew(val);
@@ -277,6 +386,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     this.userSub?.unsubscribe();
     this.ownerChangeSub?.unsubscribe();
     this.vehicleChangeSub?.unsubscribe();
+    this.tripTypeChangeSub?.unsubscribe();
   }
 
   private setupFormSubscriptions(): void {
@@ -319,6 +429,13 @@ export class GTripFormComponent implements OnInit, OnDestroy {
           this.tripForm.get('driverId')?.setValue(null);
           this.tripForm.get('numberTrip')?.setValue('');
         }
+      });
+
+    this.tripTypeChangeSub = this.tripForm
+      .get('tripType')!
+      .valueChanges.subscribe((type) => {
+        if (this.isPatching) return;
+        this.applyTripTypeRules(type);
       });
 
     this.tripForm.valueChanges.subscribe((values) => {
@@ -371,21 +488,31 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       status: trip.status || 'En Curso',
       vehicleId: trip.vehicleId ?? null,
       driverId: trip.driverId ?? null,
+      tripType: trip.tripType ?? 'CARGADO',
+      returnDestinationId: trip.returnDestinationId
+        ? Number(trip.returnDestinationId)
+        : null,
+      currentLeg: trip.currentLeg ?? 'IDA',
     });
     this.isPatching = false;
 
     if (this.userRole === 'PROPIETARIO') {
-      this.tripForm.get('ownerId')?.disable({ emitEvent: false });
       this.tripForm
         .get('ownerId')
         ?.setValue(this.loggedInOwnerId, { emitEvent: false });
-    } else {
-      this.tripForm.get('ownerId')?.enable({ emitEvent: false });
     }
+
+    // El propietario no se cambia al editar: el vehículo y el conductor del
+    // viaje ya están asignados a él. Aplica a todos los roles, incluido el
+    // administrador, que es el único que ve el campo.
+    this.tripForm.get('ownerId')?.disable({ emitEvent: false });
 
     // Register trip's loadType and company into autocomplete lists
     if (trip.loadType) this.addLoadTypeIfNew(trip.loadType);
     if (trip.company) this.addCompanyIfNew(trip.company);
+
+    this.applyTripTypeRules(this.tripForm.get('tripType')?.value);
+    this.applyStatusLock();
 
     setTimeout(() => this.captureInitialState(), 0);
   }
@@ -400,6 +527,9 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       driverId: null,
       loadType: '',
       company: '',
+      tripType: 'CARGADO',
+      returnDestinationId: null,
+      currentLeg: 'IDA',
     });
     this.isPatching = false;
 
@@ -416,6 +546,8 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       this.tripForm.get('driverId')?.setValue(this.loggedInDriverId);
       this.tripForm.get('driverId')?.disable();
     }
+
+    this.applyTripTypeRules(this.tripForm.get('tripType')?.value);
 
     setTimeout(() => this.captureInitialState(), 0);
   }
@@ -675,6 +807,9 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   }
 
   formatCurrencyInput(controlName: string, event: any): void {
+    // El viaje vacío no maneja montos: los campos están ocultos
+    if (this.isEmptyTrip) return;
+
     const MAX = 999_999_999;
     const input = event.target as HTMLInputElement;
     const value = input.value;
@@ -701,7 +836,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   }
 
   allowOnlyNumbers(event: any): void {
-    const pattern = /[0-9]/;
+    const pattern = /\d/;
     const inputChar = String.fromCodePoint(event.charCode);
 
     if (!pattern.test(inputChar)) {

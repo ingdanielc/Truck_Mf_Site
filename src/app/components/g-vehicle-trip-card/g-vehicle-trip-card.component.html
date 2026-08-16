@@ -40,14 +40,30 @@
           >
             Ruta del Viaje
           </p>
+          <!-- En el viaje redondo la ruta pasa a tres puntos:
+               origen → destino de ida → destino de regreso -->
           <div class="d-flex align-items-center gap-2">
-            <span class="fw-bold text-body text-truncate">{{
-              originName
-            }}</span>
+            <span
+              class="fw-bold text-body text-truncate"
+              [title]="originName"
+              >{{ originName }}</span
+            >
             <i class="fa-solid fa-arrow-right-long text-primary opacity-50"></i>
-            <span class="fw-bold text-body text-truncate">{{
-              destinationName
-            }}</span>
+            <span
+              class="fw-bold text-body text-truncate"
+              [title]="destinationName"
+              >{{ destinationName }}</span
+            >
+            @if (isRoundTrip) {
+              <i
+                class="fa-solid fa-arrow-right-long text-primary opacity-50"
+              ></i>
+              <span
+                class="fw-bold text-body text-truncate"
+                [title]="returnDestinationName"
+                >{{ returnDestinationName }}</span
+              >
+            }
           </div>
           <p class="text-secondary small mb-0 mt-1">
             Viaje Nº {{ trip.numberTrip || trip.manifestNumber }}

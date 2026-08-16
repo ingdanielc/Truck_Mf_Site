@@ -19,6 +19,7 @@ import {
   Sort,
 } from 'src/app/models/model-filter-table';
 import { map, of, Subscription, switchMap, distinctUntilChanged } from 'rxjs';
+import { computeRoute } from 'src/app/utils/google-routes';
 
 declare const google: any;
 
@@ -44,7 +45,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   private markers: any[] = [];
   private polylines: any[] = [];
   private geocoder: any;
-  private readonly directionsService = new google.maps.DirectionsService();
   private userSub?: Subscription;
   private readonly coordCache: Map<string, any> = new Map();
 
@@ -332,29 +332,51 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       ? `${destCity.name}, ${destCity.state}, Colombia`
       : 'Colombia';
 
-    const request = {
-      origin: originName,
-      destination: destName,
-      travelMode: google.maps.TravelMode.DRIVING,
+    const drawStraightLineFallback = (): void => {
+      Promise.all([
+        this.getCoordinates(originName),
+        this.getCoordinates(destName),
+      ]).then(([originPos, destPos]) => {
+        this.addMarker(originPos, 'O', `Origen`, '#28a745');
+        this.addMarker(destPos, 'D', `Destino`, '#dc3545');
+        const polyline = new google.maps.Polyline({
+          path: [originPos, destPos],
+          strokeColor: vehicleColor,
+          strokeWeight: 4,
+          map: this.map,
+        });
+        this.polylines.push(polyline);
+      });
     };
 
-    this.directionsService.route(request, (result: any, status: any) => {
-      if (status === 'OK' && result.routes.length > 0) {
-        const route = result.routes[0];
-        const pathPoints = route.overview_path;
+    computeRoute({
+      origin: originName,
+      destination: destName,
+      travelMode: 'DRIVING',
+      fields: ['path'],
+    })
+      .then((route: any) => {
+        // `path` reemplaza a `overview_path` del servicio anterior
+        const pathPoints = (route?.path ?? []).map((point: any) => ({
+          lat: typeof point.lat === 'function' ? point.lat() : point.lat,
+          lng: typeof point.lng === 'function' ? point.lng() : point.lng,
+        }));
 
-        // Origin and Destination markers (extracting directly from directions result for precision)
-        const originPos = route.legs[0].start_location;
-        const destPos = route.legs[0].end_location;
+        if (pathPoints.length === 0) {
+          console.warn(`Route request returned no path for ${vehicle.plate}`);
+          drawStraightLineFallback();
+          return;
+        }
 
+        // Origin and Destination markers (taken from the route path for precision)
         this.addMarker(
-          originPos,
+          pathPoints[0],
           'O',
           `Origen: ${originCity?.name || trip.originId}`,
           '#28a745',
         );
         this.addMarker(
-          destPos,
+          pathPoints.at(-1),
           'D',
           `Destino: ${destCity?.name || trip.destinationId}`,
           '#dc3545',
@@ -394,27 +416,12 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
           pathPoints.forEach((p: any) => bounds.extend(p));
           this.map.fitBounds(bounds);
         }
-      } else {
-        console.warn(
-          `Directions request failed for ${vehicle.plate}: ${status}`,
-        );
-        // Fallback to straight line if directions fail
-        Promise.all([
-          this.getCoordinates(originName),
-          this.getCoordinates(destName),
-        ]).then(([originPos, destPos]) => {
-          this.addMarker(originPos, 'O', `Origen`, '#28a745');
-          this.addMarker(destPos, 'D', `Destino`, '#dc3545');
-          const polyline = new google.maps.Polyline({
-            path: [originPos, destPos],
-            strokeColor: vehicleColor,
-            strokeWeight: 4,
-            map: this.map,
-          });
-          this.polylines.push(polyline);
-        });
-      }
-    });
+      })
+      .catch((error: any) => {
+        console.warn(`Route request failed for ${vehicle.plate}:`, error);
+        // Fallback to straight line if the route cannot be computed
+        drawStraightLineFallback();
+      });
   }
 
   private getCoordinates(address: string): Promise<any> {

@@ -46,6 +46,15 @@ export class GVehicleTripCardComponent implements OnInit {
     return this.getCityName(this.trip?.destinationId);
   }
 
+  /** El viaje redondo suma un destino de regreso a la ruta */
+  get isRoundTrip(): boolean {
+    return this.trip?.tripType === 'REDONDO';
+  }
+
+  get returnDestinationName(): string {
+    return this.getCityName(this.trip?.returnDestinationId);
+  }
+
   private getCityName(cityId: any): string {
     if (!cityId) return 'N/A';
     const city = this.cities.find((c) => String(c.id) === String(cityId));

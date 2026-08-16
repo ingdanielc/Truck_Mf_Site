@@ -292,6 +292,7 @@
                     [trip]="trip"
                     [cities]="cities"
                     [userRole]="userRole"
+                    [tripExpenses]="expensesByTripId[trip.id ?? 0] ?? 0"
                     (edit)="toggleOffcanvas(trip)"
                     class="hover-scale cursor-pointer"
                     onkeypress
@@ -396,6 +397,9 @@
                               [trip]="trip"
                               [cities]="cities"
                               [userRole]="userRole"
+                              [tripExpenses]="
+                                expensesByTripId[trip.id ?? 0] ?? 0
+                              "
                               (edit)="toggleOffcanvas(trip)"
                               class="hover-scale cursor-pointer"
                               onkeypress
@@ -722,6 +726,7 @@
     [isOpen]="isTripInfoOpen"
     [originName]="latestTripOrigin"
     [destinationName]="latestTripDestination"
+    [returnDestinationName]="latestTripReturnDestination"
     [vehicleAxles]="latestTripAxles"
     (close)="closeTripInfo()"
   ></g-trip-info-card>

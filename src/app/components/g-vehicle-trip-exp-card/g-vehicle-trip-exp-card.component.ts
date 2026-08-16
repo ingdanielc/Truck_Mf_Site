@@ -4,6 +4,7 @@ import { ModelVehicle } from '../../models/vehicle-model';
 import { ModelTrip } from '../../models/trip-model';
 import { ModelExpense } from '../../models/expense-model';
 import { CommonService } from '../../services/common.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'g-vehicle-trip-exp-card',
@@ -18,7 +19,31 @@ export class GVehicleTripExpCardComponent implements OnInit {
   @Input({ required: true }) expenses: ModelExpense[] = [];
   @Input() cities: any[] = [];
 
-  constructor(private readonly commonService: CommonService) {}
+  constructor(
+    private readonly commonService: CommonService,
+    private readonly router: Router,
+  ) {}
+
+  /**
+   * Abre el detalle del viaje. `from: 'dashboard'` hace que la flecha de
+   * regresar del detalle vuelva al dashboard y no al listado de viajes.
+   */
+  navigateToDetail(): void {
+    if (this.trip?.id) {
+      this.router.navigate(['/site/trips', this.trip.id], {
+        queryParams: { from: 'dashboard' },
+      });
+    }
+  }
+
+  /** El viaje redondo suma un destino de regreso a la ruta */
+  get isRoundTrip(): boolean {
+    return this.trip?.tripType === 'REDONDO';
+  }
+
+  get returnDestinationName(): string {
+    return this.getCityName(this.trip?.returnDestinationId);
+  }
 
   ngOnInit(): void {
     if (this.cities.length === 0) {

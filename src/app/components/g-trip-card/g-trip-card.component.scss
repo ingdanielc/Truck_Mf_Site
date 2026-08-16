@@ -148,3 +148,14 @@
 .trip-date {
   line-height: 1.2;
 }
+
+/* En móvil el manifiesto se recorta con puntos suspensivos en vez de
+   pasar a una segunda línea. Bootstrap no trae variante responsive de
+   .text-truncate, por eso va aquí. */
+.manifest-number {
+  @media (max-width: 767.98px) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

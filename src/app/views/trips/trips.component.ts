@@ -19,6 +19,7 @@ import { OwnerService } from 'src/app/services/owner.service';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { DriverService } from 'src/app/services/driver.service';
+import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
 import { GTripFormComponent } from '../../components/g-trip-form/g-trip-form.component';
 import { GTripInfoCardComponent } from '../../components/g-trip-info-card/g-trip-info-card.component';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
@@ -78,6 +79,9 @@ export class TripsComponent implements OnInit, OnDestroy {
   // Grouped display
   groupedTrips: TripOwnerGroup[] = [];
 
+  /** Total de gastos por viaje, solo para los viajes vacíos del listado */
+  expensesByTripId: Record<number, number | undefined> = {};
+
   // Offcanvas state
   isOffcanvasOpen: boolean = false;
   editingTrip: ModelTrip | null = null;
@@ -87,6 +91,8 @@ export class TripsComponent implements OnInit, OnDestroy {
   isTripInfoOpen: boolean = false;
   latestTripOrigin: string = '';
   latestTripDestination: string = '';
+  /** Vacío salvo en viajes redondos: alimenta la ruta de tres puntos del trayecto */
+  latestTripReturnDestination: string = '';
   latestTripAxles: number = 2;
 
   // Selection Lists for parent context
@@ -130,6 +136,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     private readonly ownerService: OwnerService,
     private readonly vehicleService: VehicleService,
     private readonly driverService: DriverService,
+    private readonly expenseService: ExpenseService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
   ) {}
@@ -489,6 +496,50 @@ export class TripsComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Los viajes vacíos muestran en la tarjeta lo que costaron en vez del flete.
+   * Se resuelve en una sola consulta con `tripId in (...)` para no disparar
+   * una petición por tarjeta.
+   */
+  private loadEmptyTripExpenses(): void {
+    const emptyTripIds = this.allTrips
+      .filter((t) => t.tripType === 'VACIO' && t.id != null)
+      .map((t) => t.id as number);
+
+    if (emptyTripIds.length === 0) {
+      this.expensesByTripId = {};
+      return;
+    }
+
+    const filter = new ModelFilterTable(
+      [new Filter('tripId', 'in', emptyTripIds.join(','))],
+      new Pagination(500, 0),
+      new Sort('id', false),
+    );
+
+    this.expenseService.getExpenseFilter(filter).subscribe({
+      next: (resp: any) => {
+        const expenses = resp?.data?.content ?? [];
+        const totals: Record<number, number> = {};
+
+        for (const expense of expenses) {
+          // Categorías 1 (Vehículo), 2 (Conductor), 3 (Viaje). Se exceptúa 4 (Mantenimiento).
+          const typeId = expense.category?.expenseTypeId;
+          if (typeId !== 1 && typeId !== 2 && typeId !== 3) continue;
+
+          const tripId = Number(expense.tripId);
+          totals[tripId] = (totals[tripId] ?? 0) + (expense.amount || 0);
+        }
+
+        this.expensesByTripId = totals;
+      },
+      error: (err: any) => {
+        console.error('Error loading expenses for empty trips:', err);
+        this.expensesByTripId = {};
+      },
+    });
+  }
+
   loadTrips(): void {
     const filtros = this.getBaseFilters();
 
@@ -527,6 +578,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     this.tripService.getTripFilter(filter).subscribe({
       next: (response: any) => {
         this.allTrips = response?.data?.content ?? [];
+        this.loadEmptyTripExpenses();
 
         // Identify missing owners needed for grouping
         const getOwnerId = (t: ModelTrip): number | undefined => {
@@ -1089,6 +1141,12 @@ export class TripsComponent implements OnInit, OnDestroy {
 
       this.latestTripOrigin = originName;
       this.latestTripDestination = destName;
+      this.latestTripReturnDestination =
+        savedTrip.tripType === 'REDONDO' && savedTrip.returnDestinationId
+          ? this.cities.find(
+              (c) => String(c.id) === String(savedTrip.returnDestinationId),
+            )?.name || 'N/A'
+          : '';
 
       // Find the full vehicle object to get the correct number of axles
       // Try the vehicles list first, then fallback to the nested object in the trip being edited

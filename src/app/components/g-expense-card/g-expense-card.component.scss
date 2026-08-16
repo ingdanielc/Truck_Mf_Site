@@ -1,3 +1,11 @@
+/* El componente se usa dentro de contenedores flex. Sin `min-width: 0` el
+   anfitrión crece más allá del contenedor (los flex items traen
+   `min-width: auto`) y el texto sin wrap se desborda en lugar de recortarse. */
+:host {
+  display: block;
+  min-width: 0;
+}
+
 .expense-card {
   cursor: default;
 

@@ -11,7 +11,13 @@ import { CommonModule } from '@angular/common';
 export class GTripMiniCardComponent {
   @Input() origin: string = 'Bogotá';
   @Input() destination: string = 'Medellín';
+  /** Solo se informa en viajes redondos: convierte la ruta en tres puntos */
+  @Input() returnDestination: string = '';
   @Input() status: string = 'En ruta';
+
+  get isRoundTrip(): boolean {
+    return !!this.returnDestination;
+  }
   @Input() numberTrip: string | number = '';
   @Input() isSelected: boolean = false;
 

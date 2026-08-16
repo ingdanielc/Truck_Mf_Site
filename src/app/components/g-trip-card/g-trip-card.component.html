@@ -67,24 +67,101 @@
           <p class="text-body fw-bold mb-0 text-truncate">{{ originName }}</p>
         </div>
       </div>
-      <div class="timeline-item d-flex gap-3">
-        <div class="timeline-visual">
-          <div
-            class="dot dot-destination border border-primary border-2"
-            [class.dot-filled]="
-              trip.status === 'Completado' || trip.status === 'Pendiente'
-            "
-          ></div>
+      @if (isRoundTrip) {
+        <!-- Móvil: los dos destinos apilados, cada uno con su punto -->
+        <div class="timeline-item d-flex d-md-none gap-3 pb-3">
+          <div class="timeline-visual position-relative">
+            <div class="dot dot-origin bg-primary border-0"></div>
+            <div
+              class="line dashed-line position-absolute h-100"
+              [class.solid-line]="
+                trip.status === 'Completado' || trip.status === 'Pendiente'
+              "
+            ></div>
+          </div>
+          <div class="timeline-content overflow-hidden">
+            <p class="text-body-secondary small fw-bold mb-0 text-uppercase">
+              Destino Ida
+            </p>
+            <p class="text-body fw-bold mb-0 text-truncate">
+              {{ destinationName }}
+            </p>
+          </div>
         </div>
-        <div class="timeline-content overflow-hidden">
-          <p class="text-body-secondary small fw-bold mb-0 text-uppercase">
-            Destino
-          </p>
-          <p class="text-body fw-bold mb-0 text-truncate">
-            {{ destinationName }}
-          </p>
+        <div class="timeline-item d-flex d-md-none gap-3">
+          <div class="timeline-visual">
+            <div
+              class="dot dot-destination border border-primary border-2"
+              [class.dot-filled]="
+                trip.status === 'Completado' || trip.status === 'Pendiente'
+              "
+            ></div>
+          </div>
+          <div class="timeline-content overflow-hidden">
+            <p class="text-body-secondary small fw-bold mb-0 text-uppercase">
+              Destino Regreso
+            </p>
+            <p class="text-body fw-bold mb-0 text-truncate">
+              {{ returnDestinationName }}
+            </p>
+          </div>
         </div>
-      </div>
+
+        <!-- Escritorio: lado a lado para no crecer el alto de la tarjeta -->
+        <div class="timeline-item d-none d-md-flex gap-3">
+          <div class="timeline-visual">
+            <div
+              class="dot dot-destination border border-primary border-2"
+              [class.dot-filled]="
+                trip.status === 'Completado' || trip.status === 'Pendiente'
+              "
+            ></div>
+          </div>
+          <div class="timeline-content overflow-hidden flex-grow-1">
+            <div class="row g-2">
+              <div class="col-6 overflow-hidden">
+                <p
+                  class="text-body-secondary small fw-bold mb-0 text-uppercase text-truncate"
+                >
+                  Destino Ida
+                </p>
+                <p class="text-body fw-bold mb-0 text-truncate">
+                  {{ destinationName }}
+                </p>
+              </div>
+              <div class="col-6 overflow-hidden">
+                <p
+                  class="text-body-secondary small fw-bold mb-0 text-uppercase text-truncate"
+                >
+                  Destino Regreso
+                </p>
+                <p class="text-body fw-bold mb-0 text-truncate">
+                  {{ returnDestinationName }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="timeline-item d-flex gap-3">
+          <div class="timeline-visual">
+            <div
+              class="dot dot-destination border border-primary border-2"
+              [class.dot-filled]="
+                trip.status === 'Completado' || trip.status === 'Pendiente'
+              "
+            ></div>
+          </div>
+          <div class="timeline-content overflow-hidden">
+            <p class="text-body-secondary small fw-bold mb-0 text-uppercase">
+              Destino
+            </p>
+            <p class="text-body fw-bold mb-0 text-truncate">
+              {{ destinationName }}
+            </p>
+          </div>
+        </div>
+      }
     </div>
 
     <hr class="op-10 mb-3" />
@@ -94,34 +171,55 @@
       <div class="row align-items-end mb-3">
         <div class="col-7">
           <p class="text-body-secondary small fw-bold mb-1 text-uppercase">
-            Flete
+            {{ isEmptyTrip ? "Gastos" : "Flete" }}
           </p>
           <h2 class="h3 fw-bold mb-0 text-body">
-            {{ displayFreight | currency: "COP" : "symbol" : "1.0-0" }}
+            @if (isEmptyTrip) {
+              {{ tripExpenses | currency: "COP" : "symbol" : "1.0-0" }}
+            } @else {
+              {{ displayFreight | currency: "COP" : "symbol" : "1.0-0" }}
+            }
           </h2>
         </div>
+        <!-- El viaje vacío no tiene manifiesto: la columna se mantiene vacía
+             para que la tarjeta conserve el mismo alto -->
         <div class="col-5 text-end">
-          <p
-            class="text-body-secondary small fw-bold mb-1 text-uppercase tracking-wider"
-          >
-            Manifiesto
-          </p>
-          <p class="fw-bold mb-0 text-body op-80">{{ trip.manifestNumber }}</p>
+          @if (!isEmptyTrip) {
+            <p
+              class="text-body-secondary small fw-bold mb-1 text-uppercase tracking-wider"
+            >
+              Manifiesto
+            </p>
+            <p
+              class="fw-bold mb-0 text-body op-80 manifest-number"
+              [title]="trip.manifestNumber"
+            >
+              {{ trip.manifestNumber }}
+            </p>
+          }
         </div>
       </div>
 
       <!-- Payment Progress -->
       <div class="payment-progress">
         <div class="d-flex justify-content-between mb-2">
-          <span class="small text-body-secondary fw-bold op-70"
-            >Anticipo:
-            {{ displayAdvance | currency: "COP" : "symbol" : "1.0-0" }}</span
-          >
-          @if (!trip.paidBalance) {
-            <span class="small text-danger fw-bold"
-              >Saldo:
-              {{ displayBalance | currency: "COP" : "symbol" : "1.0-0" }}</span
+          @if (isEmptyTrip) {
+            <span class="small text-body-secondary fw-bold op-70"
+              >Asumido por el propietario</span
             >
+          } @else {
+            <span class="small text-body-secondary fw-bold op-70"
+              >Anticipo:
+              {{ displayAdvance | currency: "COP" : "symbol" : "1.0-0" }}</span
+            >
+            @if (!trip.paidBalance) {
+              <span class="small text-danger fw-bold"
+                >Saldo:
+                {{
+                  displayBalance | currency: "COP" : "symbol" : "1.0-0"
+                }}</span
+              >
+            }
           }
         </div>
         <div
@@ -130,10 +228,16 @@
         >
           <div
             class="progress-bar rounded-pill"
-            [ngClass]="trip.paidBalance ? 'bg-success' : 'bg-primary'"
+            [ngClass]="
+              isEmptyTrip
+                ? 'bg-danger'
+                : trip.paidBalance
+                  ? 'bg-success'
+                  : 'bg-primary'
+            "
             role="progressbar"
-            [style.width.%]="progressPercentage"
-            [attr.aria-valuenow]="progressPercentage"
+            [style.width.%]="isEmptyTrip ? 100 : progressPercentage"
+            [attr.aria-valuenow]="isEmptyTrip ? 100 : progressPercentage"
             aria-valuemin="0"
             aria-valuemax="100"
             aria-label="progress"

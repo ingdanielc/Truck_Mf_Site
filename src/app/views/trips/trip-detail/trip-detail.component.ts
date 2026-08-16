@@ -22,6 +22,10 @@ import {
   Sort,
 } from 'src/app/models/model-filter-table';
 import { ModelDriverLocation } from 'src/app/models/location-model';
+import {
+  computeRoute,
+  routeDurationSeconds,
+} from 'src/app/utils/google-routes';
 
 declare var globalThis: any;
 
@@ -52,6 +56,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   showConfirmModal: boolean = false;
   isSavingLogistics: boolean = false;
   estimatedArrivalTime: string = '--:--';
+  /** Solo en viajes redondos: tiempo hasta el destino de regreso */
+  estimatedReturnArrivalTime: string = '--:--';
   currentTime: Date = new Date();
   private durationInterval: any = null;
 
@@ -71,7 +77,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   routePolyline: any = null;
 
   private routeSub?: Subscription;
-  private readonly userSub?: Subscription;
+  private userSub?: Subscription;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -98,7 +104,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         this.loadCities();
         this.loadVehicleBrands();
         // Wait for user data to be available before validating access
-        this.securityService.userData$.subscribe({
+        this.userSub?.unsubscribe();
+        this.userSub = this.securityService.userData$.subscribe({
           next: (user) => {
             if (user && this.tripId) {
               this.userRole = (
@@ -344,6 +351,51 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return city.name.split('-')[0].split(',')[0].trim();
   }
 
+  /** Vacío salvo en viajes redondos: alimenta la ruta de tres puntos del trayecto */
+  get returnDestinationName(): string {
+    if (this.trip?.tripType !== 'REDONDO' || !this.trip?.returnDestinationId) {
+      return '';
+    }
+    const city = this.cities.find(
+      (c) => String(c.id) === String(this.trip?.returnDestinationId),
+    );
+    if (!city) return String(this.trip.returnDestinationId);
+    return city.name.split('-')[0].split(',')[0].trim();
+  }
+
+  /** Un viaje redondo se distingue por tener destino de regreso */
+  get isRoundTrip(): boolean {
+    return !!this.returnDestinationName;
+  }
+
+  get returnDestinationFullName(): string {
+    if (this.trip?.tripType !== 'REDONDO' || !this.trip?.returnDestinationId) {
+      return '';
+    }
+    const city = this.cities.find(
+      (c) => String(c.id) === String(this.trip?.returnDestinationId),
+    );
+    if (!city) return String(this.trip.returnDestinationId);
+    return this.formatCityName(city);
+  }
+
+  /** Última parada del recorrido: el destino de regreso en los redondos */
+  get finalStopName(): string {
+    return this.isRoundTrip ? this.returnDestinationName : this.destinationName;
+  }
+
+  get finalStopFullName(): string {
+    return this.isRoundTrip
+      ? this.returnDestinationFullName
+      : this.destinationFullName;
+  }
+
+  get finalStopEta(): string {
+    return this.isRoundTrip
+      ? this.estimatedReturnArrivalTime
+      : this.estimatedArrivalTime;
+  }
+
   get destinationFullName(): string {
     if (!this.trip?.destinationId) return 'N/A';
     const city = this.cities.find(
@@ -354,7 +406,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   }
 
   private formatCityName(cityObj: any): string {
-    if (!cityObj || !cityObj.name) return '';
+    if (!cityObj?.name) return '';
     let name = cityObj.name.trim();
 
     if (name.includes('-')) {
@@ -552,20 +604,11 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (globalThis.google === 'undefined' || !globalThis.google?.maps?.routes) {
-      this.fallbackToDirectionsServiceProgress();
-      return;
-    }
-
     const currentLoc =
       this.lastLocation?.latitude && this.lastLocation?.longitude
         ? {
-            location: {
-              latLng: {
-                latitude: this.lastLocation.latitude,
-                longitude: this.lastLocation.longitude,
-              },
-            },
+            lat: Number(this.lastLocation.latitude),
+            lng: Number(this.lastLocation.longitude),
           }
         : null;
 
@@ -574,25 +617,27 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       return; // No location reported = 0%
     }
 
-    const routesApi = globalThis.google.maps.routes.Route;
+    const destination = `${this.destinationName}, Colombia`;
 
     // We do two concurrent calls to get total distance, and distance left
     Promise.all([
-      routesApi.computeRoutes({
-        origin: { address: `${this.originName}, Colombia` },
-        destination: { address: `${this.destinationName}, Colombia` },
+      computeRoute({
+        origin: `${this.originName}, Colombia`,
+        destination: destination,
         travelMode: 'DRIVING',
+        fields: ['distanceMeters'],
       }),
-      routesApi.computeRoutes({
+      computeRoute({
         origin: currentLoc,
-        destination: { address: `${this.destinationName}, Colombia` },
+        destination: destination,
         travelMode: 'DRIVING',
+        fields: ['distanceMeters'],
       }),
     ])
-      .then(([totalResponse, remainingResponse]) => {
-        const totalDistance = totalResponse.routes?.[0]?.distanceMeters || 1;
+      .then(([totalRoute, remainingRoute]) => {
+        const totalDistance = totalRoute?.distanceMeters || 1;
         const remainingDistance =
-          remainingResponse.routes?.[0]?.distanceMeters || totalDistance;
+          remainingRoute?.distanceMeters || totalDistance;
 
         let progress =
           ((totalDistance - remainingDistance) / totalDistance) * 100;
@@ -603,61 +648,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       })
       .catch((e) => {
         console.error('Error computing progress distance:', e);
-        this.fallbackToDirectionsServiceProgress();
       });
-  }
-
-  private fallbackToDirectionsServiceProgress(): void {
-    if (
-      globalThis.google === 'undefined' ||
-      !globalThis.google?.maps?.DirectionsService
-    ) {
-      return;
-    }
-    const currentLoc =
-      this.lastLocation?.latitude && this.lastLocation?.longitude
-        ? { lat: this.lastLocation.latitude, lng: this.lastLocation.longitude }
-        : null;
-
-    if (!currentLoc) {
-      this.calculatedProgressPercentage = 0;
-      return;
-    }
-
-    // Geometry logic as fallback
-    const directionsService = new globalThis.google.maps.DirectionsService();
-
-    // Call 1: Total Route
-    directionsService.route(
-      {
-        origin: `${this.originName}, Colombia`,
-        destination: `${this.destinationName}, Colombia`,
-        travelMode: globalThis.google.maps.TravelMode.DRIVING,
-      },
-      (totalRes: any, totalStatus: any) => {
-        if (totalStatus === 'OK' && totalRes.routes.length > 0) {
-          const totalDist = totalRes.routes[0].legs[0].distance.value || 1;
-
-          directionsService.route(
-            {
-              origin: currentLoc,
-              destination: `${this.destinationName}, Colombia`,
-              travelMode: globalThis.google.maps.TravelMode.DRIVING,
-            },
-            (remRes: any, remStatus: any) => {
-              if (remStatus === 'OK' && remRes.routes.length > 0) {
-                const remDist =
-                  remRes.routes[0].legs[0].distance.value || totalDist;
-                let progress = ((totalDist - remDist) / totalDist) * 100;
-                if (progress < 0) progress = 0;
-                if (progress > 100) progress = 100;
-                this.calculatedProgressPercentage = Math.round(progress);
-              }
-            },
-          );
-        }
-      },
-    );
   }
 
   get tripDurationInHours(): number {
@@ -788,6 +779,68 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Ajusta el histórico de ubicaciones a las vías reales usando
+   * `computeRoutes`. Si la API no responde, cae a la línea recta entre puntos.
+   */
+  private drawTraveledRoute(pathCoordinates: any[]): void {
+    const maxIntermediates = 23;
+    const origin = pathCoordinates[0];
+    const destination = pathCoordinates.at(-1);
+
+    const intermediateCoords = pathCoordinates.slice(1, -1);
+    const intermediates: any[] = [];
+    if (intermediateCoords.length > 0) {
+      const step = Math.max(
+        1,
+        Math.floor(intermediateCoords.length / maxIntermediates),
+      );
+      for (
+        let i = 0;
+        i < intermediateCoords.length &&
+        intermediates.length < maxIntermediates;
+        i += step
+      ) {
+        // `via` es el equivalente al antiguo `stopover: false`
+        intermediates.push({ location: intermediateCoords[i], via: true });
+      }
+    }
+
+    computeRoute({
+      origin: origin,
+      destination: destination,
+      intermediates: intermediates,
+      travelMode: 'DRIVING',
+      fields: ['path'],
+    })
+      .then((route: any) => {
+        const polylines = route?.createPolylines?.() ?? [];
+        if (polylines.length === 0) {
+          this.drawSimplePolyline(pathCoordinates);
+          return;
+        }
+        polylines.forEach((polyline: any) => {
+          polyline.setOptions({
+            strokeColor: '#0d6efd',
+            strokeOpacity: 0.8,
+            strokeWeight: 4,
+          });
+          polyline.setMap(this.mapInstance);
+        });
+        this.routePolyline = polylines[0];
+        // El DirectionsRenderer anterior encuadraba solo; createPolylines no
+        this.fitBoundsTo(pathCoordinates);
+      })
+      .catch(() => this.drawSimplePolyline(pathCoordinates));
+  }
+
+  private fitBoundsTo(coordinates: any[]): void {
+    if (!this.mapInstance || coordinates.length === 0) return;
+    const bounds = new globalThis.google.maps.LatLngBounds();
+    coordinates.forEach((coord: any) => bounds.extend(coord));
+    this.mapInstance.fitBounds(bounds);
+  }
+
   private drawSimplePolyline(pathCoordinates: any[]): void {
     if (!this.mapInstance) return;
     this.routePolyline = new globalThis.google.maps.Polyline({
@@ -835,68 +888,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
               lng: loc.longitude,
             }));
 
-          if (
-            globalThis.google?.maps?.DirectionsService &&
-            globalThis.google?.maps?.DirectionsRenderer
-          ) {
-            const directionsService =
-              new globalThis.google.maps.DirectionsService();
-            const directionsRenderer =
-              new globalThis.google.maps.DirectionsRenderer({
-                map: this.mapInstance,
-                suppressMarkers: true,
-                polylineOptions: {
-                  strokeColor: '#0d6efd',
-                  strokeOpacity: 0.8,
-                  strokeWeight: 4,
-                },
-              });
-
-            const maxWaypoints = 23;
-            const waypoints = [];
-            const origin = pathCoordinates[0];
-            const destination = pathCoordinates[pathCoordinates.length - 1];
-
-            const intermediateCoords = pathCoordinates.slice(
-              1,
-              pathCoordinates.length - 1,
-            );
-            if (intermediateCoords.length > 0) {
-              const step = Math.max(
-                1,
-                Math.floor(intermediateCoords.length / maxWaypoints),
-              );
-              for (
-                let i = 0;
-                i < intermediateCoords.length &&
-                waypoints.length < maxWaypoints;
-                i += step
-              ) {
-                waypoints.push({
-                  location: intermediateCoords[i],
-                  stopover: false,
-                });
-              }
-            }
-
-            directionsService.route(
-              {
-                origin: origin,
-                destination: destination,
-                waypoints: waypoints,
-                travelMode: globalThis.google.maps.TravelMode.DRIVING,
-              },
-              (response: any, status: string) => {
-                if (status === 'OK') {
-                  directionsRenderer.setDirections(response);
-                } else {
-                  this.drawSimplePolyline(pathCoordinates);
-                }
-              },
-            );
-          } else {
-            this.drawSimplePolyline(pathCoordinates);
-          }
+          this.drawTraveledRoute(pathCoordinates);
         }
 
         // Draw final location marker distinctively
@@ -934,6 +926,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   goBack(): void {
     if (this.originView === 'vehicles') {
       this.router.navigate(['/site/vehicles']);
+    } else if (this.originView === 'dashboard') {
+      this.router.navigate(['/site/dashboard']);
     } else {
       this.router.navigate(['/site/trips']);
     }
@@ -989,57 +983,58 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (globalThis.google === 'undefined' || !globalThis.google?.maps?.routes) {
-      this.fallbackToDirectionsServiceETA();
-      return;
-    }
-
     const originQuery =
       this.lastLocation?.latitude && this.lastLocation?.longitude
         ? {
-            location: {
-              latLng: {
-                latitude: this.lastLocation.latitude,
-                longitude: this.lastLocation.longitude,
-              },
-            },
+            lat: Number(this.lastLocation.latitude),
+            lng: Number(this.lastLocation.longitude),
           }
-        : { address: `${this.originName}, Colombia` };
+        : `${this.originName}, Colombia`;
 
-    globalThis.google.maps.routes.Route.computeRoutes({
+    // Tiempo hasta el destino de ida (el destino a secas si no es redondo)
+    computeRoute({
       origin: originQuery,
-      destination: { address: `${this.destinationName}, Colombia` },
+      destination: `${this.destinationName}, Colombia`,
       travelMode: 'DRIVING',
       routingPreference: 'TRAFFIC_AWARE',
+      fields: ['durationMillis', 'staticDurationMillis'],
     })
-      .then((response: any) => {
-        if (response.routes && response.routes.length > 0) {
-          const route = response.routes[0];
-          let duration = '';
-          if (route.staticDuration) {
-            const sDurationSec = Number.parseInt(
-              route.staticDuration.replace('s', ''),
-              10,
-            );
-            duration = this.formatDuration(
-              Math.floor(sDurationSec * this.CARGO_DURATION_FACTOR),
-            );
-          } else if (route.duration) {
-            const durationSec = Number.parseInt(
-              route.duration.replace('s', ''),
-              10,
-            );
-            duration = this.formatDuration(
-              Math.floor(durationSec * this.CARGO_DURATION_FACTOR),
-            );
-          }
-          this.estimatedArrivalTime = duration || '--:--';
-        }
+      .then((route: any) => {
+        this.estimatedArrivalTime = this.formatRouteEta(route);
       })
       .catch((error: any) => {
         console.error('Error in computeRoutes ETA:', error);
-        this.fallbackToDirectionsServiceETA();
       });
+
+    if (!this.isRoundTrip) {
+      this.estimatedReturnArrivalTime = '--:--';
+      return;
+    }
+
+    // Tiempo hasta el destino de regreso: cubre los dos tramos
+    computeRoute({
+      origin: originQuery,
+      intermediates: [`${this.destinationName}, Colombia`],
+      destination: `${this.returnDestinationName}, Colombia`,
+      travelMode: 'DRIVING',
+      routingPreference: 'TRAFFIC_AWARE',
+      fields: ['durationMillis', 'staticDurationMillis'],
+    })
+      .then((route: any) => {
+        this.estimatedReturnArrivalTime = this.formatRouteEta(route);
+      })
+      .catch((error: any) => {
+        console.error('Error in computeRoutes ETA de regreso:', error);
+      });
+  }
+
+  private formatRouteEta(route: any): string {
+    const seconds = route
+      ? routeDurationSeconds(route, { withTraffic: true })
+      : 0;
+    return seconds
+      ? this.formatDuration(Math.floor(seconds * this.CARGO_DURATION_FACTOR))
+      : '--:--';
   }
 
   private formatDuration(seconds: number): string {
@@ -1049,42 +1044,5 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       return `${hours} h ${minutes} min`;
     }
     return `${minutes} min`;
-  }
-
-  private fallbackToDirectionsServiceETA(): void {
-    if (
-      globalThis.google === 'undefined' ||
-      !globalThis.google?.maps?.DirectionsService
-    ) {
-      return;
-    }
-
-    const directionsService = new globalThis.google.maps.DirectionsService();
-    const originQuery =
-      this.lastLocation?.latitude && this.lastLocation?.longitude
-        ? { lat: this.lastLocation.latitude, lng: this.lastLocation.longitude }
-        : `${this.originName}, Colombia`;
-
-    directionsService.route(
-      {
-        origin: originQuery,
-        destination: `${this.destinationName}, Colombia`,
-        travelMode: globalThis.google.maps.TravelMode.DRIVING,
-        drivingOptions: {
-          departureTime: new Date(),
-          trafficModel: 'bestguess',
-        },
-      },
-      (response: any, status: any) => {
-        if (status === 'OK' && response.routes && response.routes.length > 0) {
-          const leg = response.routes[0].legs[0];
-          const durationSec =
-            leg.duration_in_traffic?.value || leg.duration?.value || 0;
-          this.estimatedArrivalTime = this.formatDuration(
-            Math.floor(durationSec * this.CARGO_DURATION_FACTOR),
-          );
-        }
-      },
-    );
   }
 }

@@ -14,7 +14,19 @@ export class GTripCardComponent {
   @Input({ required: true }) trip!: ModelTrip;
   @Input() cities: any[] = [];
   @Input() userRole: string = 'ROL';
+  /** Solo se usa en viajes vacíos: reemplaza al flete en la tarjeta */
+  @Input() tripExpenses: number = 0;
   @Output() edit = new EventEmitter<ModelTrip>();
+
+  /** El viaje vacío no tiene flete, manifiesto ni anticipo */
+  get isEmptyTrip(): boolean {
+    return this.trip.tripType === 'VACIO';
+  }
+
+  /** El viaje redondo suma un destino de regreso a la ruta */
+  get isRoundTrip(): boolean {
+    return this.trip.tripType === 'REDONDO';
+  }
 
   constructor(private readonly router: Router) {}
 
@@ -78,6 +90,16 @@ export class GTripCardComponent {
     );
     return city ? city.name + ' (' + city.state + ')' : this.trip.destinationId;
   }
+  get returnDestinationName(): string {
+    if (!this.trip.returnDestinationId) return 'N/A';
+    const city = this.cities.find(
+      (c) => String(c.id) === String(this.trip.returnDestinationId),
+    );
+    return city
+      ? city.name + ' (' + city.state + ')'
+      : this.trip.returnDestinationId;
+  }
+
   getStatusClass(status: string): string {
     switch ((status || '').toUpperCase()) {
       case 'COMPLETADO':
