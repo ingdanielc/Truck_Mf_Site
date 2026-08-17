@@ -26,8 +26,12 @@
         @if (isLogoMenuBar) {
           <div
             class="logo-container d-flex align-items-center justify-content-center bg-primary rounded p-2 me-2"
+            style="height: 36px"
           >
-            <i class="fa-solid fa-truck-fast text-white"></i>
+            <app-truck-logo
+              class="text-white"
+              style="--truck-logo-size: 1.3rem"
+            ></app-truck-logo>
           </div>
         }
         @if (!isCollapsed) {

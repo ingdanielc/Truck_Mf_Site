@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { TokenService } from '../../services/token.service';
 import { SecurityService } from '../../services/security/security.service';
 import { Subscription } from 'rxjs';
+import { TruckLogoComponent } from '../truck-logo/truck-logo.component';
 
 interface MenuItem {
   label: string;
@@ -14,7 +15,7 @@ interface MenuItem {
 @Component({
   selector: 'g-menu',
   standalone: true,
-  imports: [RouterModule],
+  imports: [RouterModule, TruckLogoComponent],
   templateUrl: './g-menu.component.html',
   styleUrls: ['./g-menu.component.scss'],
 })
