@@ -474,9 +474,12 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
           if (index !== -1) {
             this.ensureVehicleIsVisible(index);
+          } else {
+            this.carouselIndex = 0;
           }
+        } else {
+          this.carouselIndex = 0;
         }
-        this.carouselIndex = 0;
         this.loadingVehicles = false;
         this.mapBrandNames();
       },
@@ -524,9 +527,12 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
                 if (index !== -1) {
                   this.ensureVehicleIsVisible(index);
+                } else {
+                  this.carouselIndex = 0;
                 }
+              } else {
+                this.carouselIndex = 0;
               }
-              this.carouselIndex = 0;
               this.loadingVehicles = false;
               this.mapBrandNames();
             },
