@@ -120,12 +120,19 @@
                 class="text-center text-secondary mt-2 mb-1 px-2 pt-2 border-top"
                 style="font-size: 0.75rem; line-height: 1.3"
               >
-                <div class="fw-bold mb-0">CashTruck</div>
+                <div class="fw-bold mb-0">Cash<span class="text-primary">Truck</span></div>
                 <div class="opacity-75 mb-2">Menos gastos, más camino.</div>
                 <div class="opacity-75 text-nowrap">
                   Ing. Daniel Castro S.<br />
-                  <i class="fa-brands fa-whatsapp text-success"></i> 314 723
-                  5739
+                  <a
+                    class="text-success text-decoration-none"
+                    [href]="whatsappUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Escribir por WhatsApp"
+                  >
+                    <i class="fa-brands fa-whatsapp"></i> 314 723 5739
+                  </a>
                 </div>
               </div>
             </li>

@@ -1,10 +1,10 @@
 <div class="home-container py-4">
   <div class="container">
-    <div class="row mb-4 text-center">
+    <div class="row mb-3 text-center">
       <div class="col-12">
-        <h1 class="display-4 fw-bold mb-3 gradient-text">Panel de Control</h1>
+        <h1 class="display-4 fw-bold mb-2 gradient-text">Panel de Control</h1>
         <p class="lead text-secondary opacity-75">
-          Bienvenido al ecosistema logístico de CashTruck.
+          Bienvenido al ecosistema logístico de Cash<span class="text-primary">Truck</span>.
         </p>
       </div>
     </div>
@@ -35,12 +35,19 @@
     <!-- Developer Info Footer -->
     <div class="row mt-4">
       <div class="col-12 text-center text-secondary opacity-75">
-        <p class="mb-0 fw-bold">CashTruck</p>
+        <p class="mb-0 fw-bold" style="margin-bottom: -2px !important">Cash<span class="text-primary">Truck</span></p>
         <p class="mb-1 small">Menos gastos, más camino.</p>
         <p class="mb-0 small">
           Ing. Daniel Castro S.
-          <i class="fa-brands fa-whatsapp text-success ms-1 me-1"></i>314 723
-          5739
+          <a
+            class="text-success text-decoration-none ms-1"
+            [href]="whatsappUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Escribir por WhatsApp"
+          >
+            <i class="fa-brands fa-whatsapp me-1"></i>314 723 5739
+          </a>
         </p>
       </div>
     </div>

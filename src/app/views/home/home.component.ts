@@ -23,6 +23,12 @@ import {
   imports: [],
 })
 export class HomeComponent implements OnInit, OnDestroy {
+  readonly whatsappUrl: string =
+    'https://wa.me/573147235739?text=' +
+    encodeURIComponent(
+      'Hola Ing. Daniel, te escribo desde la app CashTruck. Necesito soporte.',
+    );
+
   private readonly allCards: any = [
     {
       routing: '/site/dashboard',
@@ -49,8 +55,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       routing: '/site/vehicles',
       title: 'Vehículos',
       icon: 'fa-solid fa-truck-moving',
-      descriptions:
-        'Administra tus vehículos, ubicación y mantenimientos.',
+      descriptions: 'Administra tus vehículos, ubicación y mantenimientos.',
     },
     {
       routing: '/site/trips',

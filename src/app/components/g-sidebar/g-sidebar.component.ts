@@ -37,6 +37,12 @@ export class GSidebarComponent implements OnInit, OnDestroy {
   @Input() userRole: string = 'Administrador';
   @Output() toggleMenu = new EventEmitter<void>();
 
+  readonly whatsappUrl: string =
+    'https://wa.me/573147235739?text=' +
+    encodeURIComponent(
+      'Hola Ing. Daniel, te escribo desde la app CashTruck. Necesito soporte.',
+    );
+
   isNotificationsOpen = false;
   unreadCount$ = this.notificationsService.unreadCount$;
 
