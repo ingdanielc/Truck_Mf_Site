@@ -5,23 +5,22 @@
 .trip-card {
   --card-bg: var(--bs-body-bg);
   --card-hover-bg: rgba(var(--bs-primary-rgb), 0.02);
+  --card-border: rgba(var(--bs-emphasis-color-rgb), 0.05);
 
   [data-bs-theme="dark"] & {
     --card-bg: #1a1d21;
   }
 
   background-color: var(--card-bg);
-  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
-  transition:
-    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    background-color 0.3s ease,
-    box-shadow 0.3s ease;
+  border: 1px solid var(--card-border) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 
   &:hover {
     transform: translateY(-5px);
     background-color: var(--card-hover-bg);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+    border-color: rgba(var(--bs-primary-rgb), 0.2) !important;
   }
 }
 
@@ -133,14 +132,6 @@
 
 // Dark mode adjustments if needed for native high-contrast
 [data-bs-theme="dark"] {
-  .trip-card {
-    border-color: rgba(255, 255, 255, 0.05) !important;
-
-    &:hover {
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
-    }
-  }
-
   .dashed-line {
     border-left-color: rgba(var(--bs-primary-rgb), 0.5);
   }

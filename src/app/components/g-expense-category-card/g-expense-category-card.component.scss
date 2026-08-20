@@ -4,8 +4,11 @@
 }
 
 .category-card {
+  --card-hover-bg: rgba(var(--bs-primary-rgb), 0.02);
+
   cursor: pointer;
   min-height: 100px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-width: 1px;
   border-style: solid;
   border-color: var(--bs-border-color);
@@ -56,8 +59,11 @@
     border-color: rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
   }
 
+  /* Mismo hover que las tarjetas de conductores */
   &:hover:not(.is-selected):not(.is-new):not(.is-disabled) {
-    border-color: var(--bs-secondary-bg);
-    background-color: var(--bs-secondary-bg) !important;
+    transform: translateY(-5px);
+    background-color: var(--card-hover-bg) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+    border-color: rgba(var(--bs-primary-rgb), 0.2) !important;
   }
 }

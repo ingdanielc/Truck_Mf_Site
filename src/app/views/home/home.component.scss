@@ -11,8 +11,16 @@
 }
 
 .hub-card {
-  background: var(--bs-body-bg);
-  border: 1px solid rgba(var(--bs-primary-rgb), 0.1);
+  /* Mismos tokens que las tarjetas de viajes, propietarios, etc.
+     El valor oscuro se inyecta desde src/styles.scss: un selector
+     [data-bs-theme] dentro de un componente Angular nunca coincide,
+     porque la encapsulacion emulada le agrega [_ngcontent] y el
+     atributo vive en <html>. */
+  --card-bg: var(--bs-body-bg);
+  --card-border: rgba(var(--bs-primary-rgb), 0.1);
+
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 20px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -72,18 +80,6 @@
   transition: transform 0.3s ease;
   display: flex;
   justify-content: flex-end;
-}
-
-[data-bs-theme="dark"] {
-  .hub-card {
-    background: #1e1e2d;
-    border-color: rgba(255, 255, 255, 0.05);
-
-    &:hover {
-      background: #252538;
-      border-color: rgba(var(--bs-primary-rgb), 0.3);
-    }
-  }
 }
 
 /* Mobile adjustments */

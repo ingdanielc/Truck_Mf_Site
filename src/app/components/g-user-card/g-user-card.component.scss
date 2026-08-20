@@ -6,6 +6,7 @@
 .user-card {
   --card-bg: var(--bs-body-bg);
   --card-hover-bg: rgba(var(--bs-primary-rgb), 0.02);
+  --card-border: rgba(var(--bs-emphasis-color-rgb), 0.05);
 
   [data-bs-theme="dark"] & {
     --card-bg: #1a1d21;
@@ -13,13 +14,14 @@
 
   background-color: var(--card-bg);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
+  border: 1px solid var(--card-border) !important;
   animation: fadeIn 0.4s ease-out backwards;
 
   &:hover {
     transform: translateY(-5px);
     background-color: var(--card-hover-bg);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+    border-color: rgba(var(--bs-primary-rgb), 0.2) !important;
   }
 }
 

@@ -1,6 +1,16 @@
 .summary-card {
-  border-color: rgba(var(--bs-emphasis-color-rgb), 0.08) !important;
-  transition: all 0.3s ease;
+  /* Mismo borde, sombra y hover que las tarjetas de contadores
+     (.stat-card). Los valores, claros y oscuros, estan en
+     src/styles.scss. */
+  border: 1px solid var(--stat-card-border) !important;
+  box-shadow: var(--stat-card-shadow) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--stat-card-shadow-hover) !important;
+    border-color: var(--bs-primary) !important;
+  }
 
   .plate-badge {
     background-color: rgba(var(--bs-primary-rgb), 0.1);

@@ -7,10 +7,16 @@
 }
 
 .expense-card {
-  cursor: default;
+  --card-hover-bg: rgba(var(--bs-primary-rgb), 0.02);
 
+  cursor: default;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Mismo hover que las tarjetas de conductores */
   &:hover {
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+    transform: translateY(-5px);
+    background-color: var(--card-hover-bg) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
     border-color: rgba(var(--bs-primary-rgb), 0.2) !important;
   }
 }
