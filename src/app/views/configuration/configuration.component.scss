@@ -22,39 +22,8 @@
   }
 }
 
-.stat-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
-  }
-
-  &.cursor-pointer {
-    cursor: pointer;
-  }
-
-  &.border-primary {
-    border: 2px solid var(--bs-primary) !important;
-  }
-
-  &.border-success {
-    border: 2px solid var(--bs-success) !important;
-  }
-
-  &.border-info {
-    border: 2px solid var(--bs-info) !important;
-  }
-
-  &.border-warning {
-    border: 2px solid var(--bs-warning) !important;
-  }
-
-  &.border-danger {
-    border: 2px solid var(--bs-danger) !important;
-  }
-}
+/* .stat-card: el estilo (sombra, borde, hover y giro del icono) esta
+   unificado de forma transversal en src/styles.scss. No redefinir aqui. */
 
 .search-wrapper {
   @media (min-width: 576px) {

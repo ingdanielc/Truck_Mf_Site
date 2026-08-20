@@ -294,13 +294,76 @@ button .spinner-border-sm {
   height: 1.49rem;
 }
 
-/* Tarjetas de estadística (.stat-card) de todas las vistas
+/* ==========================================================================
+   Tarjetas de estadística (.stat-card) — estilo transversal
+   Definición única para todas las vistas (viajes, vehículos, conductores,
+   propietarios, seguridad, configuración). 
 
-   Escritorio: el contador conserva el valor fluido de Bootstrap
-   (`calc(1.375rem + 1.5vw)`) pero con tope en 2.3rem
-   Móvil: el texto no se toca, solo se achica el icono de 60px a 57px.
-*/
+   - Sombra y borde unificados en tema claro y oscuro.
+   - Hover: elevación, sombra más marcada, borde resaltado y giro del icono
+     (mismo gesto que las tarjetas de Inicio).
+   - Tarjeta seleccionada (.border-primary/.border-success/...): conserva su
+     color de borde también durante el hover.
+   - El borde mide siempre 2px (transparente-sutil en reposo) para que
+     seleccionar una tarjeta no desplace el layout.
+
+   Tipografía: en escritorio el contador conserva el valor fluido de Bootstrap
+   (`calc(1.375rem + 1.5vw)`) con tope en 2.3rem. En móvil el texto no se toca,
+   solo se achica el icono de 60px a 57px.
+   ========================================================================== */
 .card.stat-card {
+  --stat-card-border: rgba(var(--bs-emphasis-color-rgb), 0.08);
+  --stat-card-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+  --stat-card-shadow-hover: 0 6px 14px rgba(0, 0, 0, 0.2);
+
+  border: 1px solid var(--stat-card-border) !important;
+  box-shadow: var(--stat-card-shadow) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  .icon-shape {
+    transition: transform 0.3s ease;
+  }
+
+  &.cursor-pointer {
+    cursor: pointer;
+  }
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--stat-card-shadow-hover) !important;
+    border-color: var(--bs-primary) !important;
+
+    .icon-shape {
+      transform: scale(1.1) rotate(5deg);
+    }
+  }
+
+  /* Estado seleccionado: el color se mantiene en reposo y en hover */
+  &.border-primary,
+  &.border-primary:hover {
+    border-color: var(--bs-primary) !important;
+  }
+
+  &.border-success,
+  &.border-success:hover {
+    border-color: var(--bs-success) !important;
+  }
+
+  &.border-info,
+  &.border-info:hover {
+    border-color: var(--bs-info) !important;
+  }
+
+  &.border-warning,
+  &.border-warning:hover {
+    border-color: var(--bs-warning) !important;
+  }
+
+  &.border-danger,
+  &.border-danger:hover {
+    border-color: var(--bs-danger) !important;
+  }
+
   @media (min-width: 768px) {
     .h1 {
       font-size: min(calc(1.375rem + 1.5vw), 2.3rem);
@@ -313,5 +376,52 @@ button .spinner-border-sm {
       width: 57px;
       height: 57px;
     }
+  }
+}
+
+[data-bs-theme="dark"] .card.stat-card {
+  --stat-card-border: rgba(255, 255, 255, 0.22);
+  --stat-card-shadow: 0 2px 5px rgba(0, 0, 0, 0.55);
+  --stat-card-shadow-hover: 0 6px 14px rgba(0, 0, 0, 0.75);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card.stat-card,
+  .card.stat-card .icon-shape {
+    transition: none;
+  }
+
+  .card.stat-card:hover {
+    transform: none;
+
+    .icon-shape {
+      transform: none;
+    }
+  }
+}
+
+/* ==========================================================================
+   Borde de las tarjetas de listado en tema oscuro
+   (propietarios, conductores, vehiculos, viajes, usuarios)
+
+   Se usa el mismo color que las tarjetas de gastos y configuracion, que
+   toman el `border` de Bootstrap: var(--bs-border-color).
+
+   Va aqui y no en el .scss de cada componente porque la encapsulacion
+   emulada de Angular reescribe `[data-bs-theme="dark"] .owner-card` como
+   `[data-bs-theme=dark][_ngcontent-x] .owner-card[_ngcontent-x]`, y el
+   atributo data-bs-theme esta en <html>, que no lleva [_ngcontent]: la
+   regla nunca coincide.
+
+   Solo se redefine la variable --card-border (no `border-color`), para no
+   competir con el `border-color` de los estados :hover de cada tarjeta.
+   ========================================================================== */
+[data-bs-theme="dark"] {
+  .card.owner-card,
+  .card.driver-card,
+  .card.user-card,
+  .card.vehicle-card,
+  .card.trip-card {
+    --card-border: var(--bs-border-color);
   }
 }
