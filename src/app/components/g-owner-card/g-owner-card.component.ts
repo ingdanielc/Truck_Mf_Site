@@ -90,7 +90,9 @@ export class GOwnerCardComponent {
     return SubscriptionUtils.toDateOnly(this.owner.subscriptionEndDate);
   }
 
+  /** Rojo si la suscripcion vencio; si no, verde activo / gris inactivo. */
   get statusClass(): string {
+    if (this.isSubscriptionExpired) return 'bg-danger';
     return this.owner.user?.status === 'Activo' ? 'bg-success' : 'bg-secondary';
   }
 

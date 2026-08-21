@@ -1,6 +1,7 @@
 <!-- Owner Header Card - fully Bootstrap theming (light/dark support) -->
 <div
   class="card owner-header-card border rounded-4 shadow-sm mb-3 cursor-pointer hover-scale"
+  [ngClass]="accentClass"
   (click)="goToDetail()"
   onkeypress
 >
@@ -50,7 +51,7 @@
         {{ itemLabel }}
       </span>
       <span
-        class="fw-black text-primary"
+        class="fw-black owner-count"
         style="font-size: 1.6rem; line-height: 1"
       >
         {{ itemCount | number: "2.0-0" }}

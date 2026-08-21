@@ -1,23 +1,44 @@
 // All theming is handled by Bootstrap CSS variables.
 // Only custom structural styles that can't be done with utilities go here.
 
+// Color de acento segun el estado del propietario. Se usan las mismas
+// variables semanticas de Bootstrap que las tarjetas de contadores
+// (.stat-card): verde activo, amarillo inactivo, rojo suscripcion vencida.
+// El acento se declara en la tarjeta y lo heredan el avatar y el contador.
 .owner-header-card {
+  --owner-accent: var(--bs-primary);
+
+  &.accent-success {
+    --owner-accent: var(--bs-success);
+  }
+
+  &.accent-warning {
+    --owner-accent: var(--bs-warning);
+  }
+
+  &.accent-danger {
+    --owner-accent: var(--bs-danger);
+  }
+
   // Use Bootstrap's body-tertiary background so the card adapts to dark/light
   background-color: var(--bs-tertiary-bg);
   border-color: var(--bs-border-color) !important;
+  // Misma sombra que las tarjetas de contadores (.stat-card); las variables
+  // se declaran en styles.scss porque el tema oscuro cuelga de <html>.
+  box-shadow: var(--stat-card-shadow) !important;
   transition:
     transform 0.22s ease,
     box-shadow 0.22s ease,
     background-color 0.22s ease,
     border-color 0.22s ease;
 
-  // Accent left border using the primary theme colour
-  border-left: 4px solid var(--bs-primary) !important;
+  // Accent left border driven by the owner status
+  border-left: 4px solid var(--owner-accent) !important;
 
   &:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(var(--bs-primary-rgb), 0.15) !important;
-    border-color: var(--bs-primary) !important;
+    box-shadow: var(--stat-card-shadow-hover) !important;
+    border-color: var(--owner-accent) !important;
     background-color: var(--bs-secondary-bg);
     cursor: pointer;
   }
@@ -28,7 +49,7 @@
   height: 48px;
   border-radius: 50%;
   background-color: var(--bs-secondary-bg);
-  border: 2px solid var(--bs-primary);
+  border: 2px solid var(--owner-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -43,4 +64,9 @@
   &:hover {
     opacity: 0.8;
   }
+}
+
+// Contador de vehiculos/conductores: mismo color que el borde izquierdo.
+.owner-count {
+  color: var(--owner-accent);
 }

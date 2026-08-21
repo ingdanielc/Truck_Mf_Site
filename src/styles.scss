@@ -316,7 +316,8 @@ button .spinner-border-sm {
    .summary-card consume los tokens desde su propio .scss, donde su
    especificidad le gana a las utilidades de Bootstrap. */
 .card.stat-card,
-.summary-card {
+.summary-card,
+.owner-header-card {
   --stat-card-border: rgba(var(--bs-emphasis-color-rgb), 0.08);
   --stat-card-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
   --stat-card-shadow-hover: 0 6px 14px rgba(0, 0, 0, 0.2);
@@ -387,7 +388,8 @@ button .spinner-border-sm {
 }
 
 [data-bs-theme="dark"] .card.stat-card,
-[data-bs-theme="dark"] .summary-card {
+[data-bs-theme="dark"] .summary-card,
+[data-bs-theme="dark"] .owner-header-card {
   --stat-card-border: rgba(255, 255, 255, 0.22);
   --stat-card-shadow: 0 2px 5px rgba(0, 0, 0, 0.55);
   --stat-card-shadow-hover: 0 6px 14px rgba(0, 0, 0, 0.75);

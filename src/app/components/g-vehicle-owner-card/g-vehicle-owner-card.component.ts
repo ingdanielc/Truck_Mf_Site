@@ -11,6 +11,7 @@ import { Router } from '@angular/router';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { Formatters } from '../../utils/formatters';
+import { SubscriptionUtils } from '../../utils/subscription';
 
 @Component({
   selector: 'g-vehicle-owner-card',
@@ -40,6 +41,23 @@ export class GVehicleOwnerCardComponent implements OnInit {
 
   private checkIsMobile(): void {
     this.isMobile = window.innerWidth < 768; // Standard Bootstrap md breakpoint
+  }
+
+  /**
+   * Color de acento de la tarjeta (borde izquierdo, borde en hover, borde del
+   * avatar y contador): verde si esta activo, amarillo si esta inactivo y rojo
+   * si la suscripcion ya vencio. El rojo manda sobre los otros dos por ser el
+   * bloqueo mas severo; son controles independientes y pueden coincidir.
+   */
+  get accentClass(): string {
+    if (SubscriptionUtils.isExpired(this.owner?.subscriptionEndDate)) {
+      return 'accent-danger';
+    }
+
+    // Las tarjetas sinteticas de los listados traen el estado en `status`,
+    // las que vienen de la API lo traen en `user.status`.
+    const status = this.owner?.user?.status ?? this.owner?.status;
+    return status && status !== 'Activo' ? 'accent-warning' : 'accent-success';
   }
 
   get displayName(): string {
