@@ -15,6 +15,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
 import { Formatters } from '../../../utils/formatters';
+import { SubscriptionUtils } from '../../../utils/subscription';
 import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
 import { GOwnerFormComponent } from 'src/app/components/g-owner-form/g-owner-form.component';
 import {
@@ -56,6 +57,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   showCamera: boolean = false;
   isAdmin: boolean = false;
   isConductor: boolean = false;
+  userRole: string = '';
   now: Date = new Date();
 
   // Offcanvas variables
@@ -136,8 +138,31 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Fecha fin de suscripcion normalizada a YYYY-MM-DD. Se pinta con el pipe
+   * date en 'UTC' para que no se corra un dia contra la zona del navegador.
+   */
+  get subscriptionEndDateOnly(): string | null {
+    return SubscriptionUtils.toDateOnly(this.owner?.subscriptionEndDate);
+  }
+
+  /** true cuando la fecha ya paso: el propietario y sus conductores no entran. */
+  get isSubscriptionExpired(): boolean {
+    return SubscriptionUtils.isExpired(this.owner?.subscriptionEndDate);
+  }
+
+  /** true cuando vence dentro de los proximos 30 dias y aun no ha vencido. */
+  get isSubscriptionExpiringSoon(): boolean {
+    return SubscriptionUtils.isExpiringSoon(this.owner?.subscriptionEndDate);
+  }
+
+  get subscriptionLabel(): string {
+    return SubscriptionUtils.label(this.owner?.subscriptionEndDate);
+  }
+
   validateAccess(ownerId: number, user: any): void {
     const roleName = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
+    this.userRole = roleName;
     this.isAdmin = roleName === 'ADMINISTRADOR';
     this.isConductor = roleName === 'CONDUCTOR';
 

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { Formatters } from '../../utils/formatters';
+import { SubscriptionUtils } from '../../utils/subscription';
 
 @Component({
   selector: 'app-g-owner-card',
@@ -65,6 +66,28 @@ export class GOwnerCardComponent {
 
   get badgeClass(): string {
     return 'badge-primary';
+  }
+
+  /** true cuando la fecha fin de suscripcion ya paso (acceso bloqueado). */
+  get isSubscriptionExpired(): boolean {
+    return SubscriptionUtils.isExpired(this.owner.subscriptionEndDate);
+  }
+
+  /** true cuando vence dentro de los proximos 30 dias y aun no ha vencido. */
+  get isSubscriptionExpiringSoon(): boolean {
+    return SubscriptionUtils.isExpiringSoon(this.owner.subscriptionEndDate);
+  }
+
+  get subscriptionLabel(): string {
+    return SubscriptionUtils.label(this.owner.subscriptionEndDate);
+  }
+
+  /**
+   * Fecha normalizada a YYYY-MM-DD. Se pinta con el pipe date en 'UTC' para
+   * que no se corra un dia al convertir a la zona horaria del navegador.
+   */
+  get subscriptionEndDateOnly(): string | null {
+    return SubscriptionUtils.toDateOnly(this.owner.subscriptionEndDate);
   }
 
   get statusClass(): string {

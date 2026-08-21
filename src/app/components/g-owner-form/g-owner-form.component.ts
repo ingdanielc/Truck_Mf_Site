@@ -29,6 +29,7 @@ import { DriverService } from 'src/app/services/driver.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 import { SecurityService } from 'src/app/services/security/security.service';
+import { SubscriptionUtils } from 'src/app/utils/subscription';
 
 @Component({
   selector: 'g-owner-form',
@@ -40,6 +41,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
 export class GOwnerFormComponent implements OnInit, OnChanges {
   @Input() owner: ModelOwner | null = null;
   @Input() isOpen: boolean = false;
+  @Input() userRole: string = '';
   @Output() saved = new EventEmitter<void>();
   @Output() closed = new EventEmitter<void>();
 
@@ -53,6 +55,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
 
   maxDate: string = '';
   defaultBirthdate: string = '';
+  defaultSubscriptionEndDate: string = '';
 
   showPassword = false;
   showConfirmPassword = false;
@@ -109,6 +112,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
         isDriver: [false],
         licenseCategory: [null],
         licenseExpiry: [''],
+        subscriptionEndDate: ['', [Validators.required]],
       },
       {
         validators: [CustomValidators.passwordMatchValidator],
@@ -149,6 +153,11 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
         this.resetForm();
       }
     }
+
+    // El rol puede resolverse despues de abrir el formulario.
+    if (changes['userRole'] && !changes['userRole'].firstChange) {
+      this.applySubscriptionAccess();
+    }
   }
 
   private calculateDates(): void {
@@ -158,6 +167,27 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     const eighteenYearsAgo = new Date();
     eighteenYearsAgo.setFullYear(today.getFullYear() - 18);
     this.defaultBirthdate = eighteenYearsAgo.toISOString().split('T')[0];
+
+    this.defaultSubscriptionEndDate = SubscriptionUtils.defaultEndDate();
+  }
+
+  /** Solo el administrador puede fijar la fecha fin de suscripcion. */
+  get isAdmin(): boolean {
+    return (this.userRole || '').toUpperCase() === 'ADMINISTRADOR';
+  }
+
+  /**
+   * Habilita el campo de suscripcion solo para el administrador. El control
+   * definitivo esta en el backend (descarta el campo si el llamante no es
+   * admin); esto es unicamente para que el propietario lo vea y no lo edite.
+   */
+  private applySubscriptionAccess(): void {
+    const control = this.ownerForm.get('subscriptionEndDate');
+    if (this.isAdmin) {
+      control?.enable({ emitEvent: false });
+    } else {
+      control?.disable({ emitEvent: false });
+    }
   }
 
   get strength(): number {
@@ -261,7 +291,10 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
       licenseExpiry: owner.licenseExpiry
         ? owner.licenseExpiry.split('T')[0]
         : '',
+      subscriptionEndDate:
+        SubscriptionUtils.toDateOnly(owner.subscriptionEndDate) ?? '',
     });
+    this.applySubscriptionAccess();
     this.photoPreview = owner.photo || '';
 
     this.ownerForm
@@ -315,7 +348,9 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
       isDriver: false,
       licenseCategory: null,
       licenseExpiry: '',
+      subscriptionEndDate: this.defaultSubscriptionEndDate,
     });
+    this.applySubscriptionAccess();
     this.ownerForm.get('documentType')?.enable();
     this.ownerForm
       .get('documentNumber')
@@ -423,6 +458,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
             isDriver: formValue.isDriver,
             licenseCategory: formValue.licenseCategory,
             licenseExpiry: formValue.licenseExpiry,
+            subscriptionEndDate: formValue.subscriptionEndDate || undefined,
             licenseNumber: formValue.isDriver ? documentNumber : undefined,
             password: password || undefined,
             status: this.owner.status || 'Activo',
@@ -466,6 +502,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
             isDriver: formValue.isDriver,
             licenseCategory: formValue.licenseCategory,
             licenseExpiry: formValue.licenseExpiry,
+            subscriptionEndDate: formValue.subscriptionEndDate || undefined,
             licenseNumber: formValue.isDriver ? documentNumber : undefined,
             password: password || undefined,
             status: 'Activo',

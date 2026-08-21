@@ -22,6 +22,7 @@ export class ModelOwner {
     public licenseCategory?: string,
     public licenseNumber?: string,
     public licenseExpiry?: any,
+    public subscriptionEndDate?: any,
     public user?: {
       id?: number;
       name?: string;

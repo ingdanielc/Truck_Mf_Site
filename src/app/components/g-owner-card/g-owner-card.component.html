@@ -25,7 +25,24 @@
           [ngClass]="statusClass"
         ></span>
       </div>
-      <div class="d-flex align-items-center gap-2">
+      <div
+        class="d-flex align-items-center gap-2 flex-wrap justify-content-end"
+      >
+        @if (isSubscriptionExpired || isSubscriptionExpiringSoon) {
+          <span
+            class="badge status-badge shadow-sm"
+            [ngClass]="
+              isSubscriptionExpired
+                ? 'badge-subscription-expired'
+                : 'badge-subscription-warning'
+            "
+            [title]="subscriptionLabel"
+          >
+            <i class="fa-regular fa-clock me-1"></i>
+            {{ subscriptionLabel }}
+          </span>
+        }
+
         @if (owner.isDriver) {
           <span class="badge status-badge badge-driver shadow-sm">
             Es Conductor
@@ -128,6 +145,29 @@
           }}
           años)</span
         >
+      </div>
+      <div class="d-flex align-items-center small">
+        <i
+          class="fa-regular fa-calendar-check me-2 opacity-50"
+          style="width: 16px"
+          [ngClass]="
+            isSubscriptionExpired ? 'text-danger' : 'text-body-secondary'
+          "
+        ></i>
+        <span
+          [ngClass]="
+            isSubscriptionExpired
+              ? 'text-danger fw-semibold'
+              : 'text-body-secondary'
+          "
+        >
+          @if (subscriptionEndDateOnly) {
+            Suscripción hasta
+            {{ subscriptionEndDateOnly | date: "d MMM, yyyy" : "UTC" }}
+          } @else {
+            Suscripción sin vencimiento
+          }
+        </span>
       </div>
     </div>
 

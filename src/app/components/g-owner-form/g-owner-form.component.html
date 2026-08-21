@@ -300,10 +300,11 @@
             }
           </div>
 
-          <div class="col-12 mb-3">
-            <label for="maxVehicles" class="form-label small fw-bold mb-2"
-              >Máximo de Vehículos*</label
-            >
+          <div class="col-6 mb-3">
+            <label for="maxVehicles" class="form-label small fw-bold mb-2">
+              <span class="d-inline d-md-none">Máx. Vehículos*</span>
+              <span class="d-none d-md-inline">Máximo de Vehículos*</span>
+            </label>
             <input
               id="maxVehicles"
               type="number"
@@ -330,6 +331,36 @@
                   Este campo es obligatorio para continuar
                 }
               </div>
+            }
+          </div>
+
+          <div class="col-6 mb-3">
+            <label
+              for="subscriptionEndDate"
+              class="form-label small fw-bold mb-2"
+            >
+              <span class="d-inline d-md-none">Fin suscripción*</span>
+              <span class="d-none d-md-inline">Fecha fin de suscripción*</span>
+            </label>
+            <input
+              id="subscriptionEndDate"
+              type="date"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="subscriptionEndDate"
+              [class.is-invalid]="
+                ownerForm.get('subscriptionEndDate')?.invalid &&
+                ownerForm.get('subscriptionEndDate')?.touched
+              "
+            />
+            @if (isAdmin) {
+              @if (
+                ownerForm.get("subscriptionEndDate")?.invalid &&
+                ownerForm.get("subscriptionEndDate")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
             }
           </div>
         </div>

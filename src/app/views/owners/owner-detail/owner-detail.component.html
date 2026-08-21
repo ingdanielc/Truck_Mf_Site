@@ -192,39 +192,89 @@
             </div>
           </div>
           <div class="col-12 col-lg-auto ms-lg-auto">
-            <div class="d-flex gap-3">
-              <div
-                class="card bg-dark bg-opacity-50 border-0 rounded-4 p-3 text-center"
-                style="min-width: 120px"
-              >
-                <p
-                  class="text-white text-opacity-50 small fw-bold mb-0 text-uppercase tracking-wider"
+            <div class="row g-2 justify-content-center justify-content-lg-end">
+              <div class="col-6 col-sm-auto order-1">
+                <div
+                  class="card h-100 bg-dark bg-opacity-50 border-0 rounded-4 p-3 px-4 text-center"
+                  style="min-width: 120px"
                 >
-                  Estado
-                </p>
-                <h5
-                  class="fw-bold mb-0"
-                  [ngClass]="
-                    owner.user?.status === 'Activo'
-                      ? 'text-success'
-                      : 'text-warning'
-                  "
-                >
-                  {{ owner.user?.status || "Inactivo" }}
-                </h5>
+                  <p
+                    class="text-white text-opacity-50 small fw-bold mb-0 text-uppercase tracking-wider"
+                  >
+                    Estado
+                  </p>
+                  <h5
+                    class="fw-bold mb-0"
+                    [ngClass]="
+                      owner.user?.status === 'Activo'
+                        ? 'text-success'
+                        : 'text-warning'
+                    "
+                  >
+                    {{ owner.user?.status || "Inactivo" }}
+                  </h5>
+                </div>
               </div>
-              <div
-                class="card bg-dark bg-opacity-50 border-0 rounded-4 py-3 px-2 px-md-3 text-center"
-                style="min-width: 100px"
-              >
-                <p
-                  class="text-white text-opacity-50 small fw-bold mb-0 text-uppercase tracking-wider"
+              <div class="col-12 col-sm-auto order-3 order-sm-2">
+                <div
+                  class="card h-100 bg-dark bg-opacity-50 border-0 rounded-4 py-3 px-2 text-center"
+                  style="min-width: 150px"
+                  [title]="subscriptionLabel"
                 >
-                  Calificación
-                </p>
-                <h5 class="fw-bold mb-0 text-warning">
-                  4.8 <i class="fa-solid fa-star fs-6"></i>
-                </h5>
+                  <p
+                    class="text-white text-opacity-50 small fw-bold mb-0 text-uppercase tracking-wider"
+                  >
+                    Suscripción
+                  </p>
+                  <h5
+                    class="fw-bold mb-0"
+                    [ngClass]="
+                      isSubscriptionExpired
+                        ? 'text-danger'
+                        : isSubscriptionExpiringSoon
+                          ? 'text-warning'
+                          : 'text-success'
+                    "
+                  >
+                    @if (subscriptionEndDateOnly) {
+                      {{
+                        subscriptionEndDateOnly | date: "d MMM, yyyy" : "UTC"
+                      }}
+                    } @else {
+                      Sin vencimiento
+                    }
+                  </h5>
+                  @if (subscriptionEndDateOnly) {
+                    <small
+                      class="fw-regular"
+                      style="font-size: 0.7rem"
+                      [ngClass]="
+                        isSubscriptionExpired
+                          ? 'text-danger'
+                          : isSubscriptionExpiringSoon
+                            ? 'text-warning'
+                            : 'text-white text-opacity-50'
+                      "
+                    >
+                      {{ subscriptionLabel }}
+                    </small>
+                  }
+                </div>
+              </div>
+              <div class="col-6 col-sm-auto order-2 order-sm-3">
+                <div
+                  class="card h-100 bg-dark bg-opacity-50 border-0 rounded-4 py-3 px-2 px-md-3 text-center"
+                  style="min-width: 100px"
+                >
+                  <p
+                    class="text-white text-opacity-50 small fw-bold mb-0 text-uppercase tracking-wider"
+                  >
+                    Calificación
+                  </p>
+                  <h5 class="fw-bold mb-0 text-warning">
+                    4.8 <i class="fa-solid fa-star fs-6"></i>
+                  </h5>
+                </div>
               </div>
             </div>
           </div>
@@ -458,6 +508,7 @@
 <g-owner-form
   [isOpen]="isOffcanvasOpen"
   [owner]="owner"
+  [userRole]="userRole"
   (closed)="closeOffcanvas()"
   (saved)="onOwnerSaved()"
 >
