@@ -13,11 +13,33 @@
   letter-spacing: 1px;
 }
 
+/* Mismo gesto de hover para las tarjetas de contadores, la tarjeta
+   principal (nombre), la de Informacion Personal y la del listado de
+   vehiculos. */
 .hover-scale {
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   &:hover {
     transform: scale(1.02);
+  }
+
+  /* El menu contextual de la tarjeta principal usa un backdrop `fixed`:
+     un `transform` en el ancestro lo convertiria en el contenedor de
+     posicionamiento y el backdrop dejaria de cubrir la pantalla. Mientras
+     el menu esta abierto no se aplica la transformacion. */
+  &:has(.dropdown-backdrop):hover {
+    transform: none;
+  }
+
+  /* Giro del icono en el hover, igual que las tarjetas .stat-card de los
+     listados (Propietarios, Conductores). Solo las tarjetas de contadores
+     llevan .icon-box. */
+  .icon-box {
+    transition: transform 0.3s ease;
+  }
+
+  &:hover .icon-box {
+    transform: scale(1.1) rotate(5deg);
   }
 }
 
