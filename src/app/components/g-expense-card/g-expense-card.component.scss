@@ -64,3 +64,77 @@
     width: auto !important;
   }
 }
+
+/* La cabecera es el area clicable cuando la categoria esta agrupada */
+.expense-card-head[role="button"]:focus-visible {
+  outline: 2px solid rgba(var(--bs-primary-rgb), 0.5);
+  outline-offset: 4px;
+  border-radius: 0.75rem;
+}
+
+.count-badge {
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+}
+
+.chevron {
+  width: 32px;
+  height: 32px;
+  transition: transform 0.3s ease;
+
+  &.open {
+    transform: rotate(180deg);
+  }
+}
+
+/* Detalle de los gastos que forman el total del grupo */
+.group-detail {
+  animation: detail-in 0.18s ease-out;
+}
+
+.group-detail-row {
+  padding-block: 0.4rem;
+
+  & + & {
+    border-top: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.06);
+  }
+}
+
+/* Ancho fijo para que las fechas queden alineadas en columna */
+.detail-date {
+  width: 5.75rem;
+}
+
+.detail-edit {
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+  }
+}
+
+@keyframes detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron,
+  .detail-edit {
+    transition: none;
+  }
+
+  .group-detail {
+    animation: none;
+  }
+}

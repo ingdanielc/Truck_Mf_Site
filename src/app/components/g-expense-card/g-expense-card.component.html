@@ -1,58 +1,122 @@
 <div
-  class="expense-card p-3 rounded-4 bg-body border shadow-sm transition-all mb-3 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2"
+  class="expense-card p-3 rounded-4 bg-body border shadow-sm transition-all mb-3"
 >
-  <!-- Left: Icon & Details -->
-  <!-- `w-100` en móvil: la tarjeta es flex-column con align-items-start, así
-       que sin ancho fijo el bloque se mide por su contenido y se desborda -->
+  <!-- Cabecera: en un grupo despliega el detalle; en un gasto suelto es informativa -->
   <div
-    class="d-flex align-items-center gap-3 flex-grow-1 min-width-0 w-100 w-sm-auto"
+    class="expense-card-head d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2"
+    [class.cursor-pointer]="isGroup"
+    [attr.role]="isGroup ? 'button' : null"
+    [attr.tabindex]="isGroup ? 0 : null"
+    [attr.aria-expanded]="isGroup ? expanded : null"
+    (click)="toggle()"
+    (keydown.enter)="onHeaderKeydown($event)"
+    (keydown.space)="onHeaderKeydown($event)"
+    onkeypress
   >
-    <!-- Icon Container -->
+    <!-- Left: Icon & Details -->
+    <!-- `w-100` en móvil: la tarjeta es flex-column con align-items-start, así
+         que sin ancho fijo el bloque se mide por su contenido y se desborda -->
     <div
-      class="icon-wrapper flex-shrink-0 rounded-3 d-flex align-items-center justify-content-center bg-opacity-10"
-      [ngClass]="config.colorClass"
+      class="d-flex align-items-center gap-3 flex-grow-1 min-width-0 w-100 w-sm-auto"
     >
-      <i [class]="config.icon" [ngClass]="config.colorClass.split(' ')[0]"></i>
+      <!-- Icon Container -->
+      <div
+        class="icon-wrapper flex-shrink-0 rounded-3 d-flex align-items-center justify-content-center bg-opacity-10"
+        [ngClass]="config.colorClass"
+      >
+        <i
+          [class]="config.icon"
+          [ngClass]="config.colorClass.split(' ')[0]"
+        ></i>
+      </div>
+
+      <!-- Text details -->
+      <div class="min-width-0">
+        <h6
+          class="fw-bold mb-1 text-body d-flex align-items-center gap-2 min-width-0"
+        >
+          <!-- Mobile: truncated to 24 chars -->
+          <span class="d-sm-none text-truncate">{{ mobileDisplayName }}</span>
+          <!-- Desktop: full name with CSS truncation -->
+          <span class="d-none d-sm-inline text-truncate">{{
+            config.name
+          }}</span>
+          @if (isGroup) {
+            <span
+              class="count-badge badge rounded-pill bg-primary bg-opacity-10 text-primary flex-shrink-0"
+              >×{{ group.items.length }}</span
+            >
+          }
+        </h6>
+        <p class="small text-secondary mb-0 text-truncate" [title]="detailText">
+          {{ detailText }}
+        </p>
+      </div>
     </div>
 
-    <!-- Text details -->
-    <div class="min-width-0">
-      <h6 class="fw-bold mb-1 text-body text-truncate">
-        <!-- Mobile: truncated to 24 chars -->
-        <span class="d-sm-none">{{ mobileDisplayName }}</span>
-        <!-- Desktop: full name with CSS truncation -->
-        <span class="d-none d-sm-inline text-truncate">{{ config.name }}</span>
-      </h6>
-      <p
-        class="small text-secondary mb-0 text-truncate"
-        [title]="expense.description"
-      >
-        {{ expense.description }}
-      </p>
+    <!-- Right: Value, Percentage & Edit/Chevron -->
+    <div
+      class="text-sm-end text-start min-width-0 mt-2 mt-sm-0 w-100 w-sm-auto d-flex flex-sm-column flex-row justify-content-between align-items-center align-items-sm-end gap-2"
+    >
+      <div class="min-width-0">
+        <h5 class="fw-bold mb-1 text-body text-truncate">
+          {{ group.total | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+        </h5>
+        <p
+          class="small text-secondary mb-0 fw-semibold tracking-wider text-uppercase text-truncate"
+        >
+          <span class="text-primary">{{ percentage }}%</span> del total
+        </p>
+      </div>
+      @if (isGroup) {
+        <span
+          class="chevron text-primary d-flex align-items-center justify-content-center flex-shrink-0"
+          [class.open]="expanded"
+          aria-hidden="true"
+        >
+          <i class="fa-solid fa-chevron-down"></i>
+        </span>
+      } @else {
+        <button
+          class="btn btn-link text-primary p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2 transition-all edit-btn"
+          (click)="edit.emit(single)"
+          aria-label="Editar gasto"
+        >
+          <span class="small fw-bold">Editar</span>
+          <i class="fa-solid fa-pen-to-square"></i>
+        </button>
+      }
     </div>
   </div>
 
-  <!-- Right: Value, Percentage & Edit -->
-  <div
-    class="text-sm-end text-start min-width-0 mt-2 mt-sm-0 w-100 w-sm-auto d-flex flex-sm-column flex-row justify-content-between align-items-center align-items-sm-end gap-2"
-  >
-    <div class="min-width-0">
-      <h5 class="fw-bold mb-1 text-body text-truncate">
-        {{ expense.amount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
-      </h5>
-      <p
-        class="small text-secondary mb-0 fw-semibold tracking-wider text-uppercase text-truncate"
-      >
-        <span class="text-primary">{{ percentage }}%</span> del total
-      </p>
-    </div>
-    <button
-      class="btn btn-link text-primary p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2 transition-all edit-btn"
-      (click)="edit.emit(expense)"
-      aria-label="Editar gasto"
-    >
-      <span class="small fw-bold">Editar</span>
-      <i class="fa-solid fa-pen-to-square"></i>
-    </button>
-  </div>
+  <!-- Detalle del grupo: los valores que forman el total -->
+  @if (isGroup && expanded) {
+    <ul class="group-detail list-unstyled mt-3 pt-3 border-top mb-0">
+      @for (item of group.items; track item.id) {
+        <li class="group-detail-row d-flex align-items-center gap-2 gap-sm-3">
+          <span class="detail-date small text-secondary flex-shrink-0">
+            {{ item.expenseDate | date: "d MMM, y" }}
+          </span>
+          <span
+            class="small text-secondary text-truncate flex-grow-1 min-width-0"
+            [title]="item.description"
+          >
+            {{ item.description || "Sin descripción" }}
+          </span>
+          <span class="small fw-bold text-body flex-shrink-0">
+            {{ item.amount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+          </span>
+          <button
+            class="btn btn-link text-primary p-0 text-decoration-none flex-shrink-0 detail-edit"
+            (click)="edit.emit(item)"
+            [attr.aria-label]="
+              'Editar gasto del ' + (item.expenseDate | date: 'd MMM, y')
+            "
+          >
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+        </li>
+      }
+    </ul>
+  }
 </div>

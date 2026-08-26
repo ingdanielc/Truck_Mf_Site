@@ -8,7 +8,10 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { GExpenseCardComponent } from '../g-expense-card/g-expense-card.component';
+import {
+  ExpenseGroup,
+  GExpenseCardComponent,
+} from '../g-expense-card/g-expense-card.component';
 import { ModelExpense } from '../../models/expense-model';
 import { VehicleService as ExpenseService } from '../../services/expense.service';
 import { TripService } from '../../services/trip.service';
@@ -46,6 +49,14 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
   @Input() shortcuts: Record<number, ExpenseShortcut[]> = {};
 
   expenses: ModelExpense[] = [];
+  /* Los gastos se muestran agrupados por categoria: una categoria con un solo
+     gasto es un grupo de un item y la tarjeta se ve igual que antes. Se
+     calculan al cargar y no en un getter, para no rearmar los grupos (ni
+     cambiar la referencia del @Input) en cada ciclo de deteccion de cambios. */
+  tripGroups: ExpenseGroup[] = [];
+  driverGroups: ExpenseGroup[] = [];
+  vehicleGroups: ExpenseGroup[] = [];
+  maintenanceGroups: ExpenseGroup[] = [];
   loading = false;
   totalPreviousTrip: number = 0;
   @Input() budget: number = 0;
@@ -123,10 +134,13 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
     this.expenseService.getExpenseFilter(filterPayload).subscribe({
       next: (resp: any) => {
         this.expenses = resp?.data?.content || [];
+        this.buildGroups();
         this.loading = false;
       },
       error: (err) => {
         console.error('Error loading expenses:', err);
+        this.expenses = [];
+        this.buildGroups();
         this.loading = false;
       },
     });
@@ -214,6 +228,53 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
   get maintenanceExpenses(): ModelExpense[] {
     // Type 4 is Maintenance
     return this.expenses.filter((e) => e.category?.expenseTypeId === 4);
+  }
+
+  /** Rearma los cuatro listados agrupados a partir de `expenses` */
+  private buildGroups(): void {
+    this.tripGroups = this.groupByCategory(this.tripExpenses);
+    this.driverGroups = this.groupByCategory(this.driverExpenses);
+    this.vehicleGroups = this.groupByCategory(this.vehicleExpenses);
+    this.maintenanceGroups = this.groupByCategory(this.maintenanceExpenses);
+  }
+
+  /**
+   * Agrupa por categoria: mismo `categoryId` (o mismo nombre cuando el id no
+   * viene) suma en una sola tarjeta. Los grupos quedan de mayor a menor monto
+   * y sus gastos ordenados por fecha ascendente.
+   */
+  private groupByCategory(expenses: ModelExpense[]): ExpenseGroup[] {
+    const groups = new Map<string, ExpenseGroup>();
+
+    for (const expense of expenses) {
+      const name = expense.category?.name || expense.categoryName || '';
+      const key = expense.categoryId
+        ? `id:${expense.categoryId}`
+        : `name:${name.trim().toLowerCase()}`;
+      const group = groups.get(key);
+
+      if (group) {
+        group.items.push(expense);
+        group.total += expense.amount;
+      } else {
+        groups.set(key, {
+          key,
+          categoryId: expense.categoryId,
+          categoryName: name,
+          total: expense.amount,
+          items: [expense],
+        });
+      }
+    }
+
+    const result = [...groups.values()];
+    for (const group of result) {
+      group.items.sort(
+        (a, b) =>
+          new Date(a.expenseDate).getTime() - new Date(b.expenseDate).getTime(),
+      );
+    }
+    return result.sort((a, b) => b.total - a.total);
   }
 
   get totalCurrentMonth(): number {

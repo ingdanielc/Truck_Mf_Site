@@ -179,9 +179,9 @@
         </div>
 
         <div class="d-flex flex-column gap-2 mb-0">
-          @for (expense of tripExpenses; track expense.id) {
+          @for (group of tripGroups; track group.key) {
             <g-expense-card
-              [expense]="expense"
+              [group]="group"
               [totalAmount]="totalAmount"
               (edit)="editExpense.emit($event)"
             ></g-expense-card>
@@ -249,9 +249,9 @@
         </div>
 
         <div class="d-flex flex-column gap-2 mb-0">
-          @for (expense of vehicleExpenses; track expense.id) {
+          @for (group of vehicleGroups; track group.key) {
             <g-expense-card
-              [expense]="expense"
+              [group]="group"
               [totalAmount]="totalAmount"
               (edit)="editExpense.emit($event)"
             ></g-expense-card>
@@ -319,9 +319,9 @@
         </div>
 
         <div class="d-flex flex-column gap-2 mb-2">
-          @for (expense of driverExpenses; track expense.id) {
+          @for (group of driverGroups; track group.key) {
             <g-expense-card
-              [expense]="expense"
+              [group]="group"
               [totalAmount]="totalAmount"
               (edit)="editExpense.emit($event)"
             ></g-expense-card>
@@ -391,10 +391,10 @@
         </div>
 
         <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-2 gx-4 mb-3">
-          @for (expense of maintenanceExpenses; track expense.id) {
+          @for (group of maintenanceGroups; track group.key) {
             <div class="col">
               <g-expense-card
-                [expense]="expense"
+                [group]="group"
                 [totalAmount]="totalAmount"
                 (edit)="editExpense.emit($event)"
               ></g-expense-card>
