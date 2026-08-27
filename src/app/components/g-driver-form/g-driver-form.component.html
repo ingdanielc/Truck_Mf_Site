@@ -193,6 +193,11 @@
               @if (driverForm.get("cellPhone")?.errors?.["invalidLength"]) {
                 <div class="text-danger small mt-1">Debe tener 10 dígitos</div>
               }
+              @if (driverForm.get("cellPhone")?.errors?.["duplicate"]) {
+                <div class="text-danger small mt-1">
+                  Este número de celular ya se encuentra registrado
+                </div>
+              }
             }
           </div>
           <div class="col-6 mb-3">

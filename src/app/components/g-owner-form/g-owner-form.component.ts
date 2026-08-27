@@ -18,16 +18,15 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 import { ModelOwner } from 'src/app/models/owner-model';
-import {
-  ModelFilterTable,
-  Pagination,
-  Sort,
-} from 'src/app/models/model-filter-table';
 import { CommonService } from 'src/app/services/common.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { ToastService } from 'src/app/services/toast.service';
-import { CustomValidators } from 'src/app/utils/custom-validators';
+import {
+  CustomValidators,
+  UniquenessContext,
+  UniquenessField,
+} from 'src/app/utils/custom-validators';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { SubscriptionUtils } from 'src/app/utils/subscription';
 
@@ -50,7 +49,6 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
   genders: any[] = [];
   cities: any[] = [];
   groupedCities: { state: string; cities: any[] }[] = [];
-  allOwners: ModelOwner[] = [];
   isSaving: boolean = false;
 
   maxDate: string = '';
@@ -125,6 +123,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     this.loadReferenceData();
     this.ownerForm.get('isDriver')?.valueChanges.subscribe((isDriver) => {
       this.updateLicenseValidators(isDriver);
+      this.revalidateUniqueness();
     });
   }
 
@@ -243,22 +242,6 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
         }
       },
     });
-
-    this.ownerService
-      .getOwnerFilter(
-        new ModelFilterTable(
-          [],
-          new Pagination(10000, 0),
-          new Sort('id', true),
-        ),
-      )
-      .subscribe({
-        next: (res: any) => {
-          if (res?.data?.content) {
-            this.allOwners = res.data.content;
-          }
-        },
-      });
   }
 
   private buildGroupedCities(): { state: string; cities: any[] }[] {
@@ -299,39 +282,12 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
 
     this.ownerForm
       .get('documentNumber')
-      ?.setValidators([
-        Validators.required,
-        Validators.maxLength(13),
-        CustomValidators.duplicateValueValidator(
-          this.allOwners,
-          'documentNumber',
-          owner.id,
-        ),
-      ]);
+      ?.setValidators([Validators.required, Validators.maxLength(13)]);
     this.ownerForm
       .get('email')
-      ?.setValidators([
-        Validators.required,
-        Validators.email,
-        CustomValidators.duplicateValueValidator(
-          this.allOwners,
-          'email',
-          owner.id,
-        ),
-      ]);
-    this.ownerForm
-      .get('email')
-      ?.setAsyncValidators([
-        CustomValidators.emailGlobalUniquenessValidator(
-          this.securityService,
-          this.driverService,
-          owner.user?.id,
-          owner.id,
-          owner.email,
-        ),
-      ]);
+      ?.setValidators([Validators.required, Validators.email]);
+    this.applyUniquenessValidators();
 
-    this.ownerForm.get('documentNumber')?.updateValueAndValidity();
     this.ownerForm.get('documentType')?.disable();
 
     this.ownerForm.get('password')?.clearValidators();
@@ -354,34 +310,11 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     this.ownerForm.get('documentType')?.enable();
     this.ownerForm
       .get('documentNumber')
-      ?.setValidators([
-        Validators.required,
-        Validators.maxLength(13),
-        CustomValidators.duplicateValueValidator(
-          this.allOwners,
-          'documentNumber',
-          null,
-        ),
-      ]);
+      ?.setValidators([Validators.required, Validators.maxLength(13)]);
     this.ownerForm
       .get('email')
-      ?.setValidators([
-        Validators.required,
-        Validators.email,
-        CustomValidators.duplicateValueValidator(this.allOwners, 'email', null),
-      ]);
-    this.ownerForm
-      .get('email')
-      ?.setAsyncValidators([
-        CustomValidators.emailGlobalUniquenessValidator(
-          this.securityService,
-          this.driverService,
-          null,
-          null,
-          null,
-        ),
-      ]);
-    this.ownerForm.get('documentNumber')?.updateValueAndValidity();
+      ?.setValidators([Validators.required, Validators.email]);
+    this.applyUniquenessValidators();
 
     this.ownerForm
       .get('password')
@@ -410,6 +343,67 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
     this.photoFile = null;
 
     this.captureInitialState();
+  }
+
+  /** Campos cuya existencia se verifica contra propietarios y conductores. */
+  private static readonly UNIQUE_FIELDS: UniquenessField[] = [
+    'documentNumber',
+    'email',
+    'cellPhone',
+  ];
+
+  /**
+   * El contexto se lee en cada validacion porque el check "Es conductor" puede
+   * cambiar mientras el formulario sigue abierto.
+   */
+  private uniquenessContext(field: UniquenessField): UniquenessContext {
+    const savedValues: Record<UniquenessField, string | undefined> = {
+      documentNumber: this.owner?.documentNumber,
+      email: this.owner?.email,
+      cellPhone: this.owner?.cellPhone,
+    };
+
+    return {
+      ownerId: this.owner?.id ?? null,
+      userId: this.owner?.user?.id ?? null,
+      isDriver: !!this.ownerForm.get('isDriver')?.value,
+      initialValue: savedValues[field] ?? null,
+    };
+  }
+
+  /**
+   * Verifica documento, correo y celular contra las tablas de propietarios y
+   * conductores con un filtro por valor, sin traerse los registros.
+   */
+  private applyUniquenessValidators(): void {
+    const services = {
+      owner: this.ownerService,
+      driver: this.driverService,
+      security: this.securityService,
+    };
+
+    GOwnerFormComponent.UNIQUE_FIELDS.forEach((field) => {
+      const control = this.ownerForm.get(field);
+      control?.setAsyncValidators([
+        CustomValidators.ownerDriverUniquenessValidator(services, {
+          field,
+          scope: 'owner',
+          context: () => this.uniquenessContext(field),
+        }),
+      ]);
+      control?.updateValueAndValidity({ emitEvent: false });
+    });
+  }
+
+  /**
+   * Marcar o desmarcar "Es conductor" cambia si los datos pueden repetirse en
+   * la tabla de conductores, asi que hay que volver a validarlos.
+   */
+  private revalidateUniqueness(): void {
+    GOwnerFormComponent.UNIQUE_FIELDS.forEach((field) => {
+      const control = this.ownerForm.get(field);
+      if (control?.value) control.updateValueAndValidity({ emitEvent: false });
+    });
   }
 
   closeOffcanvas(): void {

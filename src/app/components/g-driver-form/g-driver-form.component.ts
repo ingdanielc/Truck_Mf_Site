@@ -20,9 +20,14 @@ import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component
 import { ModelDriver } from 'src/app/models/driver-model';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { DriverService } from 'src/app/services/driver.service';
+import { OwnerService } from 'src/app/services/owner.service';
 import { CommonService } from 'src/app/services/common.service';
 import { ToastService } from 'src/app/services/toast.service';
-import { CustomValidators } from 'src/app/utils/custom-validators';
+import {
+  CustomValidators,
+  UniquenessContext,
+  UniquenessField,
+} from 'src/app/utils/custom-validators';
 import { SecurityService } from 'src/app/services/security/security.service';
 
 @Component({
@@ -35,7 +40,6 @@ import { SecurityService } from 'src/app/services/security/security.service';
 export class GDriverFormComponent implements OnInit, OnChanges {
   @Input() isOpen = false;
   @Input() driver: ModelDriver | null = null;
-  @Input() allDrivers: ModelDriver[] = [];
   @Input() userRole: string = '';
   @Input() loggedInOwnerId: number | null = null;
   @Input() owners: ModelOwner[] = [];
@@ -74,6 +78,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
   constructor(
     private readonly fb: FormBuilder,
     private readonly driverService: DriverService,
+    private readonly ownerService: OwnerService,
     private readonly commonService: CommonService,
     private readonly toastService: ToastService,
     private readonly securityService: SecurityService,
@@ -85,6 +90,9 @@ export class GDriverFormComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     this.driverForm.get('salaryTypeId')?.valueChanges.subscribe((value) => {
       this.updateSalaryValidators(value);
+    });
+    this.driverForm.get('ownerId')?.valueChanges.subscribe(() => {
+      this.revalidateUniqueness();
     });
   }
 
@@ -178,36 +186,8 @@ export class GDriverFormComponent implements OnInit, OnChanges {
       // Update validators for edit mode
       this.driverForm
         .get('documentNumber')
-        ?.setValidators([
-          Validators.required,
-          Validators.maxLength(13),
-          CustomValidators.duplicateValueValidator(
-            this.allDrivers,
-            'documentNumber',
-            this.driver.id,
-          ),
-        ]);
-      this.driverForm
-        .get('email')
-        ?.setValidators([
-          Validators.email,
-          CustomValidators.duplicateValueValidator(
-            this.allDrivers,
-            'email',
-            this.driver.id,
-          ),
-        ]);
-      this.driverForm
-        .get('email')
-        ?.setAsyncValidators([
-          CustomValidators.emailGlobalUniquenessValidator(
-            this.securityService,
-            this.driverService,
-            this.driver.user?.id,
-            this.driver.id,
-            this.driver.email,
-          ),
-        ]);
+        ?.setValidators([Validators.required, Validators.maxLength(13)]);
+      this.driverForm.get('email')?.setValidators([Validators.email]);
 
       this.updateSalaryValidators(this.driver.salaryTypeId || null);
       this.captureInitialState();
@@ -246,40 +226,12 @@ export class GDriverFormComponent implements OnInit, OnChanges {
       // Reset validators for create mode
       this.driverForm
         .get('documentNumber')
-        ?.setValidators([
-          Validators.required,
-          Validators.maxLength(13),
-          CustomValidators.duplicateValueValidator(
-            this.allDrivers,
-            'documentNumber',
-            null,
-          ),
-        ]);
-      this.driverForm
-        .get('email')
-        ?.setValidators([
-          Validators.email,
-          CustomValidators.duplicateValueValidator(
-            this.allDrivers,
-            'email',
-            null,
-          ),
-        ]);
-      this.driverForm
-        .get('email')
-        ?.setAsyncValidators([
-          CustomValidators.emailGlobalUniquenessValidator(
-            this.securityService,
-            this.driverService,
-            null,
-            null,
-            null,
-          ),
-        ]);
+        ?.setValidators([Validators.required, Validators.maxLength(13)]);
+      this.driverForm.get('email')?.setValidators([Validators.email]);
       this.updateSalaryValidators(null);
     }
 
-    this.driverForm.get('documentNumber')?.updateValueAndValidity();
+    this.applyUniquenessValidators();
     this.driverForm.get('password')?.updateValueAndValidity();
     this.driverForm.get('confirmPassword')?.updateValueAndValidity();
 
@@ -291,6 +243,74 @@ export class GDriverFormComponent implements OnInit, OnChanges {
       this.driverForm.get('salary')?.enable({ emitEvent: false });
     }
     this.captureInitialState();
+  }
+
+  /** Campos cuya existencia se verifica contra propietarios y conductores. */
+  private static readonly UNIQUE_FIELDS: UniquenessField[] = [
+    'documentNumber',
+    'email',
+    'cellPhone',
+  ];
+
+  private get selectedOwnerId(): number | null {
+    const raw = this.driverForm.get('ownerId')?.value;
+    if (raw === null || raw === undefined || raw === '') return null;
+    const id = Number(raw);
+    return Number.isFinite(id) ? id : null;
+  }
+
+  /**
+   * El contexto se lee en cada validacion porque el propietario seleccionado
+   * puede cambiar mientras el formulario sigue abierto.
+   */
+  private uniquenessContext(field: UniquenessField): UniquenessContext {
+    const savedValues: Record<UniquenessField, string | undefined> = {
+      documentNumber: this.driver?.documentNumber,
+      email: this.driver?.email,
+      cellPhone: this.driver?.cellPhone,
+    };
+
+    return {
+      driverId: this.driver?.id ?? null,
+      userId: this.driver?.user?.id ?? null,
+      linkedOwnerId: this.selectedOwnerId,
+      initialValue: savedValues[field] ?? null,
+    };
+  }
+
+  /**
+   * Verifica documento, correo y celular contra las tablas de conductores y
+   * propietarios con un filtro por valor, sin traerse los registros.
+   */
+  private applyUniquenessValidators(): void {
+    const services = {
+      owner: this.ownerService,
+      driver: this.driverService,
+      security: this.securityService,
+    };
+
+    GDriverFormComponent.UNIQUE_FIELDS.forEach((field) => {
+      const control = this.driverForm.get(field);
+      control?.setAsyncValidators([
+        CustomValidators.ownerDriverUniquenessValidator(services, {
+          field,
+          scope: 'driver',
+          context: () => this.uniquenessContext(field),
+        }),
+      ]);
+      control?.updateValueAndValidity({ emitEvent: false });
+    });
+  }
+
+  /**
+   * Cambiar de propietario cambia si los datos pueden coincidir con los de un
+   * propietario-conductor, asi que hay que volver a validarlos.
+   */
+  private revalidateUniqueness(): void {
+    GDriverFormComponent.UNIQUE_FIELDS.forEach((field) => {
+      const control = this.driverForm.get(field);
+      if (control?.value) control.updateValueAndValidity({ emitEvent: false });
+    });
   }
 
   updateSalaryValidators(salaryTypeId: number | null): void {
@@ -403,25 +423,8 @@ export class GDriverFormComponent implements OnInit, OnChanges {
     const passwordControl = this.driverForm.get('password');
     const confirmPasswordControl = this.driverForm.get('confirmPassword');
 
+    emailControl?.setValidators([Validators.required, Validators.email]);
     if (this.showAccessData) {
-      emailControl?.setValidators([
-        Validators.required,
-        Validators.email,
-        CustomValidators.duplicateValueValidator(
-          this.allDrivers,
-          'email',
-          this.driver?.id,
-        ),
-      ]);
-      emailControl?.setAsyncValidators([
-        CustomValidators.emailGlobalUniquenessValidator(
-          this.securityService,
-          this.driverService,
-          this.driver?.user?.id,
-          this.driver?.id,
-          this.driver?.email,
-        ),
-      ]);
       if (!this.driver?.id) {
         passwordControl?.setValidators([
           Validators.required,
@@ -430,18 +433,10 @@ export class GDriverFormComponent implements OnInit, OnChanges {
         confirmPasswordControl?.setValidators([Validators.required]);
       }
     } else {
-      emailControl?.setValidators([
-        Validators.required,
-        Validators.email,
-        CustomValidators.duplicateValueValidator(
-          this.allDrivers,
-          'email',
-          this.driver?.id,
-        ),
-      ]);
       passwordControl?.clearValidators();
       confirmPasswordControl?.clearValidators();
     }
+    this.applyUniquenessValidators();
     passwordControl?.updateValueAndValidity();
     confirmPasswordControl?.updateValueAndValidity();
   }

@@ -214,6 +214,8 @@
                   ownerForm.get("cellPhone")?.hasError("invalidLength")
                 ) {
                   El número de celular debe tener exactamente 10 dígitos
+                } @else if (ownerForm.get("cellPhone")?.hasError("duplicate")) {
+                  Este número de celular ya se encuentra registrado
                 }
               </div>
             }
