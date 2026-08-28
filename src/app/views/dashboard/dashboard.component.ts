@@ -32,6 +32,12 @@ import { GVehicleTripExpCardComponent } from '../../components/g-vehicle-trip-ex
 
 Chart.register(...registerables);
 
+/** Mes y año ya resueltos de un registro; `null` si no tiene fecha usable. */
+interface Periodo {
+  mes: number;
+  anio: number;
+}
+
 /** Resumen de una serie de utilidad, para el pie de los detalles. */
 interface ProfitStats {
   max: number;
@@ -112,13 +118,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   public tripsByVehicleType: ChartType = 'bar';
 
   /** Total de viajes pintados. Suma las tres series del desglose por tipo
-   *  (cargado, redondo, vacío) o la única del administrador, según el rol. */
-  get tripsByVehicleTotal(): number {
-    return this.tripsByVehicleData.datasets.reduce(
-      (acc, _, i) => acc + this.sumSerie(this.tripsByVehicleData, i),
-      0,
-    );
-  }
+   *  (cargado, redondo, vacío) o la única del administrador, según el rol.
+   *  Lo fija el builder: la plantilla lo lee en cada ciclo. */
+  public tripsByVehicleTotal = 0;
 
   public tripsByVehicleData: ChartData<'bar'> = {
     labels: [],
@@ -158,13 +160,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ];
 
   /** Totales de las dos series, tal como están pintadas. */
-  get financialIncomeTotal(): number {
-    return this.sumSerie(this.financialData, 0);
-  }
-
-  get financialExpenseTotal(): number {
-    return this.sumSerie(this.financialData, 1);
-  }
+  public financialIncomeTotal = 0;
+  public financialExpenseTotal = 0;
 
   /** Gastos del periodo que no cuelgan de ningún viaje del periodo. No están
    *  en las barras — no pertenecen a ningún viaje —, pero sí en la utilidad. */
@@ -225,13 +222,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.barValueLabels((v) => this.formatMoneyLabel(v)),
   ];
 
-  get monthVehicleFinIncomeTotal(): number {
-    return this.sumSerie(this.monthVehicleFinData, 0);
-  }
-
-  get monthVehicleFinExpenseTotal(): number {
-    return this.sumSerie(this.monthVehicleFinData, 1);
-  }
+  public monthVehicleFinIncomeTotal = 0;
+  public monthVehicleFinExpenseTotal = 0;
 
   /** Ver `financialHeight`. */
   get monthVehicleFinHeight(): number {
@@ -281,6 +273,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * `ROW_H2` es para las gráficas de dos series (ingresos y egresos): la fila
    * tiene que alojar dos barras del mismo grosor más su separación.
    */
+  /** Estadísticos en cero, para cuando no hay ningún detalle abierto. */
+  private static readonly STATS_VACIO: ProfitStats = {
+    max: 0,
+    min: 0,
+    avg: 0,
+    maxLabel: '—',
+    minLabel: '—',
+    n: 0,
+  };
+
   public static readonly BAR_THICKNESS = 26;
   private static readonly ROW_H = 44;
   private static readonly ROW_H2 = 72;
@@ -348,10 +350,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   /** Utilidad total de los vehículos que se están mostrando. Para el
    *  propietario en sesión son los suyos: la carga ya filtra por sus placas. */
-  get vehicleProfitTotal(): number {
-    const data = (this.vehicleProfitData.datasets[0]?.data ?? []) as number[];
-    return data.reduce((acc, v) => acc + (v || 0), 0);
-  }
+  public vehicleProfitTotal = 0;
 
   /** Tinta vigente del tema, para lo que se dibuja a mano en el canvas. */
   private chartTextColor = '#475569';
@@ -592,13 +591,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return Math.max(200, n * DashboardComponent.ROW_H + 64);
   }
 
-  /** Suma de la utilidad de los viajes, sin los gastos que no son de viaje. */
-  get tripProfitTripsTotal(): number {
-    const data = (this.tripProfitDetailData.datasets[0]?.data ??
-      []) as number[];
-    return data.reduce((acc, v) => acc + (v || 0), 0);
-  }
-
   /** Utilidad del mes ya con todo: coincide con la barra que se tocó. Es la
    *  resta de las tres líneas del pie, de ahí que cuadren a la vista. */
   get tripProfitMonthTotal(): number {
@@ -642,19 +634,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * promedio, que es justo lo contrario de lo que la cifra debe contar. Por
    * eso `max` y `min` vienen con el mes al que pertenecen.
    */
-  get monthProfitStats(): ProfitStats {
-    const data = (this.monthProfitDetailData.datasets[0]?.data ??
-      []) as number[];
-    return this.computeStats(data, this.MESES_CORTOS, this.monthProfitActive);
-  }
-
-  /** Los viajes son todos puntos válidos: no hay máscara que aplicar. */
-  get tripProfitStats(): ProfitStats {
-    const data = (this.tripProfitDetailData.datasets[0]?.data ??
-      []) as number[];
-    const labels = (this.tripProfitDetailData.labels ?? []) as string[];
-    return this.computeStats(data, labels, null);
-  }
+  /* Los fija el builder de cada detalle. Antes eran getters, y la plantilla
+     los referencia diez veces cada uno: sin `OnPush` eso significaba veinte
+     recorridos de la serie por ciclo de detección de cambios. */
+  public monthProfitStats: ProfitStats = DashboardComponent.STATS_VACIO;
+  public tripProfitStats: ProfitStats = DashboardComponent.STATS_VACIO;
 
   /**
    * Máximo, mínimo y promedio de una serie, con la etiqueta del punto extremo.
@@ -767,6 +751,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.monthProfitFreight = filas.reduce((a, f) => a + f.freight, 0);
     this.monthProfitTripExpenses = filas.reduce((a, f) => a + f.gasto, 0);
     this.monthProfitOtherExpenses = otros;
+
+    this.monthProfitStats = this.computeStats(
+      data,
+      this.MESES_CORTOS,
+      this.monthProfitActive,
+    );
   }
 
   /**
@@ -801,24 +791,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (!key) return { filas: [], otros: 0 };
 
     const porPropietario = this.groupByOwner;
-    const enRango = (d: Date) =>
-      d.getFullYear() === this.selectedYear &&
-      (!esMes || d.getMonth() === this.selectedMonth);
+    const enRango = (p: Periodo | null) =>
+      !!p &&
+      p.anio === this.selectedYear &&
+      (!esMes || p.mes === this.selectedMonth);
 
     const viajes = this.loadedTrips.filter((t) => {
-      if (!t.startDate) return false;
-      if (!enRango(new Date(t.startDate))) return false;
+      if (!enRango(this.tripPeriodo(t))) return false;
       return this.tripGroupKey(t, porPropietario) === key;
     });
 
     const ids = new Set(viajes.map((t) => t.id));
     const gastoPorViaje: Record<string, number> = {};
+    const porId = this.vehicleById(this.vehicles);
     let otros = 0;
 
     this.loadedExpenses.forEach((e) => {
-      const d = e.creationDate ? new Date(e.creationDate) : null;
-      if (!d || !enRango(d)) return;
-      const vehicle = this.vehicles.find((v) => v.id === e.vehicleId);
+      if (!enRango(this.expensePeriodo(e))) return;
+      const vehicle = porId.get(e.vehicleId);
       if (this.vehicleGroupKey(vehicle, porPropietario) !== key) return;
 
       if (e.tripId != null && ids.has(e.tripId)) {
@@ -833,7 +823,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       label: `${(t.vehiclePlate || t.vehicle?.plate || 'S/P').toUpperCase()} #${t.numberTrip ?? t.id}`,
       freight: t.freight || 0,
       gasto: gastoPorViaje[String(t.id)] || 0,
-      mes: new Date(t.startDate as string).getMonth(),
+      mes: this.tripPeriodo(t)!.mes,
     }));
 
     return { filas, otros };
@@ -858,6 +848,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (this.tripProfitDetailOptions?.plugins?.title) {
         this.tripProfitDetailOptions.plugins.title.text = `Utilidad por Viaje (${this.currentMonthName})`;
       }
+      // Sin máscara: cada viaje es un punto válido por sí mismo.
+      this.tripProfitStats = this.computeStats(data, labels, null);
     };
 
     if (!this.selectedProfitGroup || this.scope !== 'mes') {
@@ -933,10 +925,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   /** Inversión total en mantenimiento de los vehículos que se muestran. Para
    *  el propietario en sesión son los suyos: la carga ya filtra por sus placas. */
-  get maintenanceTotal(): number {
-    const data = (this.maintenanceData.datasets[0]?.data ?? []) as number[];
-    return data.reduce((acc, v) => acc + (v || 0), 0);
-  }
+  public maintenanceTotal = 0;
 
   // Chart 4: Viajes por Mes y Vehículo
   /**
@@ -1205,13 +1194,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     else if (p.length >= 4) corto = `${p[0]} ${p[2]}`;
 
     return corto.length <= 16 ? corto : corto.slice(0, 15) + '…';
-  }
-
-  /** Suma de una serie ya pintada: los totales del pie siempre cuadran con las
-   *  barras porque salen de los mismos datos, no de un recálculo. */
-  private sumSerie(data: ChartData<'bar'>, index: number): number {
-    const serie = (data.datasets[index]?.data ?? []) as number[];
-    return serie.reduce((acc, v) => acc + (v || 0), 0);
   }
 
   private formatMobileValue(value: number): string {
@@ -1618,6 +1600,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.tripProfitFreight = 0;
     this.tripProfitTripExpenses = 0;
     this.tripProfitOtherExpenses = 0;
+
+    /* Los totales y estadísticos son campos, no getters: este es el único
+       camino que vacía las gráficas sin pasar por sus builders, así que aquí
+       hay que devolverlos a cero o el pie mostraría cifras del lote anterior. */
+    this.tripsByVehicleTotal = 0;
+    this.financialIncomeTotal = 0;
+    this.financialExpenseTotal = 0;
+    this.financialOtherExpenses = 0;
+    this.monthVehicleFinIncomeTotal = 0;
+    this.monthVehicleFinExpenseTotal = 0;
+    this.vehicleProfitTotal = 0;
+    this.maintenanceTotal = 0;
+    this.monthProfitFreight = 0;
+    this.monthProfitTripExpenses = 0;
+    this.monthProfitOtherExpenses = 0;
+    this.monthProfitStats = DashboardComponent.STATS_VACIO;
+    this.tripProfitStats = DashboardComponent.STATS_VACIO;
   }
 
   /** Propietario y conductor ven una barra por tipo de viaje; el admin, el total */
@@ -1665,11 +1664,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
     trips.forEach((t) => {
       if (esMes) {
-        if (!t.startDate) return;
-        const d = new Date(t.startDate);
+        const p = this.tripPeriodo(t);
         if (
-          d.getMonth() !== this.selectedMonth ||
-          d.getFullYear() !== this.selectedYear
+          !p ||
+          p.mes !== this.selectedMonth ||
+          p.anio !== this.selectedYear
         ) {
           return;
         }
@@ -1685,6 +1684,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
 
     const labels = Object.keys(counts).sort((a, b) => a.localeCompare(b));
+
+    this.tripsByVehicleTotal = Object.values(counts).reduce(
+      (a, v) => a + (v || 0),
+      0,
+    );
 
     this.tripsByVehicleData = {
       labels: labels,
@@ -1731,10 +1735,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
 
     trips.forEach((t) => {
-      if (!t.startDate) return;
-      const d = new Date(t.startDate);
-      if (d.getFullYear() !== this.selectedYear) return;
-      if (esMes && d.getMonth() !== this.selectedMonth) return;
+      const p = this.tripPeriodo(t);
+      if (!p || p.anio !== this.selectedYear) return;
+      if (esMes && p.mes !== this.selectedMonth) return;
 
       if (porPropietario) {
         /* El propietario se resuelve por el conductor y, si no, por el
@@ -1750,13 +1753,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (plate && stats[plate]) stats[plate].income += t.freight || 0;
     });
 
+    const porId = this.vehicleById(vehicles);
     expenses.forEach((e) => {
-      const d = e.creationDate ? new Date(e.creationDate) : null;
-      if (!d || d.getFullYear() !== this.selectedYear) return;
-      if (esMes && d.getMonth() !== this.selectedMonth) return;
+      const p = this.expensePeriodo(e);
+      if (!p || p.anio !== this.selectedYear) return;
+      if (esMes && p.mes !== this.selectedMonth) return;
       /* El gasto solo trae `vehicleId`: sin el vehículo en el lote no hay
          forma de saber de quién es, así que se descarta. */
-      const vehicle = vehicles.find((v) => v.id === e.vehicleId);
+      const vehicle = porId.get(e.vehicleId);
       const key = this.vehicleGroupKey(vehicle, porPropietario);
       if (key && stats[key]) stats[key].expense += e.amount || 0;
     });
@@ -1780,6 +1784,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const labels = Object.keys(stats).sort((a, b) => a.localeCompare(b));
     const incomeData = labels.map((l) => stats[l].income);
     const expenseData = labels.map((l) => stats[l].expense);
+
+    this.monthVehicleFinIncomeTotal = incomeData.reduce(
+      (a, v) => a + (v || 0),
+      0,
+    );
+    this.monthVehicleFinExpenseTotal = expenseData.reduce(
+      (a, v) => a + (v || 0),
+      0,
+    );
 
     this.monthVehicleFinData = {
       labels: labels,
@@ -1837,6 +1850,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
 
     this.vehicleProfitDetail = detail;
+    this.vehicleProfitTotal = data.reduce((a, v) => a + (v || 0), 0);
     /* La selección solo vive mientras exista su barra: al cambiar de periodo un
        grupo puede desaparecer del eje. */
     if (
@@ -1902,13 +1916,93 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return this.groupByOwner ? 'Propietario' : 'Vehículo';
   }
 
+  /* Índices por id. Los gastos solo traen `vehicleId`, así que resolver el
+     vehículo con `find` dentro del bucle costaba O(gastos × flota) en cada
+     reconstrucción, con lotes de hasta 20.000 registros.
+
+     El índice se rehace cuando cambia la IDENTIDAD del arreglo — que es lo que
+     ocurre al recargar datos o al llegar el catálogo de propietarios —, no en
+     cada llamada. Se guarda también el arreglo de origen para que un builder
+     que reciba otra lista no lea el índice de la anterior.
+
+     Dos detalles que mantienen el comportamiento idéntico al de `find`:
+     la clave se guarda tal cual, sin convertir tipos —una comparación que hoy
+     falla por tipos distintos debe seguir fallando—, y con ids repetidos gana
+     el primero, como haría `find`. */
+  private vehicleIndexSource: ModelVehicle[] | null = null;
+  private vehicleIndex = new Map<number, ModelVehicle>();
+  private ownerIndexSource: ModelOwner[] | null = null;
+  private ownerIndex = new Map<number, ModelOwner>();
+
+  private vehicleById(vehicles: ModelVehicle[]): Map<number, ModelVehicle> {
+    if (this.vehicleIndexSource === vehicles) return this.vehicleIndex;
+    const index = new Map<number, ModelVehicle>();
+    /* El vehículo sin id se omite: `vehicleId` siempre llega con valor, así
+       que `find` nunca lo habría emparejado. */
+    vehicles.forEach((v) => {
+      if (v.id != null && !index.has(v.id)) index.set(v.id, v);
+    });
+    this.vehicleIndexSource = vehicles;
+    this.vehicleIndex = index;
+    return index;
+  }
+
+  private ownerById(): Map<number, ModelOwner> {
+    if (this.ownerIndexSource === this.owners) return this.ownerIndex;
+    const index = new Map<number, ModelOwner>();
+    this.owners.forEach((o) => {
+      if (o.id != null && !index.has(o.id)) index.set(o.id, o);
+    });
+    this.ownerIndexSource = this.owners;
+    this.ownerIndex = index;
+    return index;
+  }
+
+  /* Mes y año de cada registro, resueltos una sola vez.
+
+     Construir un `Date` dentro de los bucles costaba decenas de miles de
+     parseos por reconstrucción: cada gráfica recorre el lote entero y hay
+     nueve. El `WeakMap` se indexa por el propio objeto, así que un lote nuevo
+     —objetos nuevos— empieza vacío sin necesidad de invalidar nada.
+
+     Se sigue usando `new Date(cadena)` con `getMonth`/`getFullYear`, no un
+     recorte de la cadena ISO: interpretar en hora local o en UTC cambia de mes
+     los registros de fin de mes, y el resto del tablero razona en hora local.
+     Una fecha ausente o inválida devuelve `null` y el registro se descarta,
+     igual que hoy hace la comparación contra `NaN`. */
+  private readonly tripPeriod = new WeakMap<ModelTrip, Periodo | null>();
+  private readonly expensePeriod = new WeakMap<ModelExpense, Periodo | null>();
+
+  private parsePeriodo(fecha?: string | null): Periodo | null {
+    if (!fecha) return null;
+    const d = new Date(fecha);
+    const anio = d.getFullYear();
+    if (Number.isNaN(anio)) return null;
+    return { mes: d.getMonth(), anio };
+  }
+
+  private tripPeriodo(t: ModelTrip): Periodo | null {
+    let p = this.tripPeriod.get(t);
+    if (p === undefined) {
+      p = this.parsePeriodo(t.startDate as string | undefined);
+      this.tripPeriod.set(t, p);
+    }
+    return p;
+  }
+
+  private expensePeriodo(e: ModelExpense): Periodo | null {
+    let p = this.expensePeriod.get(e);
+    if (p === undefined) {
+      p = this.parsePeriodo(e.creationDate as string | undefined);
+      this.expensePeriod.set(e, p);
+    }
+    return p;
+  }
+
   /** Nombre del propietario, o un marcador si aún no cargó el catálogo. */
   private ownerLabel(ownerId?: number): string | undefined {
     if (ownerId == null) return undefined;
-    return (
-      this.owners.find((o) => o.id === ownerId)?.name ??
-      `Propietario ${ownerId}`
-    );
+    return this.ownerById().get(ownerId)?.name ?? `Propietario ${ownerId}`;
   }
 
   /** Etiqueta con la que agrupar un viaje: la placa, o su propietario. */
@@ -1949,6 +2043,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
           { ...this.financialData.datasets[1], data: gas },
         ],
       };
+      this.financialIncomeTotal = ing.reduce((a, v) => a + (v || 0), 0);
+      this.financialExpenseTotal = gas.reduce((a, v) => a + (v || 0), 0);
     };
 
     if (!this.selectedProfitGroup) {
@@ -2002,13 +2098,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Type 4 is Maintenance
     const maintenanceExpenses = expenses.filter((e) => {
       if (e.category?.expenseTypeId !== 4) return false;
-      const d = e.creationDate ? new Date(e.creationDate) : null;
-      if (!d || d.getFullYear() !== this.selectedYear) return false;
-      return !esMes || d.getMonth() === this.selectedMonth;
+      const p = this.expensePeriodo(e);
+      if (!p || p.anio !== this.selectedYear) return false;
+      return !esMes || p.mes === this.selectedMonth;
     });
 
+    const porId = this.vehicleById(vehicles);
     maintenanceExpenses.forEach((e) => {
-      const vehicle = vehicles.find((v) => v.id === e.vehicleId);
+      const vehicle = porId.get(e.vehicleId);
       const key = this.vehicleGroupKey(vehicle, porPropietario);
       /* El gasto de un vehículo fuera de la lista visible se descarta, igual
          que en el resto de gráficas: antes caía en una barra "Desconocido".
@@ -2020,6 +2117,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     const labels = Object.keys(maintCounts).sort((a, b) => a.localeCompare(b));
     const data = labels.map((l) => maintCounts[l]);
+
+    this.maintenanceTotal = data.reduce((a, v) => a + (v || 0), 0);
 
     this.maintenanceData = {
       labels,
@@ -2059,13 +2158,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     grupos.forEach((g) => (porMes[g] = new Array(12).fill(0)));
 
     trips.forEach((t) => {
-      if (this.isEmptyTrip(t) || !t.startDate) return;
-      const d = new Date(t.startDate);
-      if (d.getFullYear() !== this.selectedYear) return;
+      if (this.isEmptyTrip(t)) return;
+      const p = this.tripPeriodo(t);
+      if (!p || p.anio !== this.selectedYear) return;
       const key = this.tripGroupKey(t, porPropietario);
       if (!key) return;
       porMes[key] ??= new Array(12).fill(0);
-      porMes[key][d.getMonth()]++;
+      porMes[key][p.mes]++;
     });
 
     /* Mismo listado en los dos alcances: se arma sobre el año completo, así el
@@ -2143,25 +2242,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
 
     trips.forEach((t) => {
-      if (!t.startDate) return;
-      const d = new Date(t.startDate);
-      if (d.getFullYear() !== this.selectedYear) return;
+      const p = this.tripPeriodo(t);
+      if (!p || p.anio !== this.selectedYear) return;
       const key = this.tripGroupKey(t, porPropietario);
       if (!key) return;
-      bucket(key)[d.getMonth()] += t.freight || 0;
-      marcar(key, d.getMonth());
+      bucket(key)[p.mes] += t.freight || 0;
+      marcar(key, p.mes);
     });
 
+    const porId = this.vehicleById(vehicles);
     expenses.forEach((e) => {
-      const d = e.creationDate ? new Date(e.creationDate) : null;
-      if (!d || d.getFullYear() !== this.selectedYear) return;
+      const p = this.expensePeriodo(e);
+      if (!p || p.anio !== this.selectedYear) return;
       /* El gasto solo trae `vehicleId`: sin el vehículo en el lote no hay
          forma de saber a qué grupo va, así que se descarta. */
-      const vehicle = vehicles.find((v) => v.id === e.vehicleId);
+      const vehicle = porId.get(e.vehicleId);
       const key = this.vehicleGroupKey(vehicle, porPropietario);
       if (!key || !porMes[key]) return;
-      porMes[key][d.getMonth()] -= e.amount || 0;
-      marcar(key, d.getMonth());
+      porMes[key][p.mes] -= e.amount || 0;
+      marcar(key, p.mes);
     });
 
     /* Mismo listado en los dos alcances: se arma sobre el año completo, así el
