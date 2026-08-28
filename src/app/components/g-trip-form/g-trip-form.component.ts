@@ -79,6 +79,17 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   private initialFormValue: string = '';
   private isPatching: boolean = false;
 
+  /**
+   * Disponibilidad ya resuelta, por propietario. Evita repetir las dos
+   * consultas cuando el ADMINISTRADOR alterna entre propietarios en el
+   * desplegable. Se limpia al guardar: el viaje nuevo cambia que vehiculos
+   * quedan ocupados.
+   */
+  private readonly vehiclesByOwnerCache = new Map<
+    number,
+    { allVehicles: ModelVehicle[]; activeTrips: any[] }
+  >();
+
   private readonly defaultLoadTypes: string[] = [
     'General',
     'Refrigerada',
@@ -547,14 +558,14 @@ export class GTripFormComponent implements OnInit, OnDestroy {
 
     if (this.userRole === 'PROPIETARIO' && this.loggedInOwnerId) {
       this.tripForm.get('ownerId')?.setValue(this.loggedInOwnerId);
-      this.tripForm.get('ownerId')?.disable();
+      this.tripForm.get('ownerId')?.disable({ emitEvent: false });
     } else if (this.preselectedOwnerId) {
       this.tripForm.get('ownerId')?.setValue(this.preselectedOwnerId);
     }
 
     if (this.userRole === 'CONDUCTOR' && this.loggedInDriverId) {
       this.tripForm.get('ownerId')?.setValue(this.loggedInOwnerId);
-      this.tripForm.get('ownerId')?.disable();
+      this.tripForm.get('ownerId')?.disable({ emitEvent: false });
       this.tripForm.get('driverId')?.setValue(this.loggedInDriverId);
       this.tripForm.get('driverId')?.disable();
     }
@@ -612,6 +623,12 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   }
 
   loadVehiclesByOwner(ownerId: number): void {
+    const cached = this.vehiclesByOwnerCache.get(ownerId);
+    if (cached) {
+      this.applyVehiclesResult(cached);
+      return;
+    }
+
     this.loadingVehicles = true;
     const vehicleFilter = new ModelFilterTable(
       [new Filter('owner.id', '=', ownerId.toString())],
@@ -648,55 +665,62 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (resps: any) => {
-          const { allVehicles, activeTrips } = resps;
-
-          // Identify vehicle IDs that have active trips
-          const busyVehicleIds = new Set(
-            activeTrips.map((t: any) => t.vehicleId),
-          );
-
-          // Filter: Keep vehicles that are NOT busy,
-          // AND are NOT sold,
-          // OR is the vehicle of the trip we are currently editing
-          this.vehicles = allVehicles.filter((v: any) => {
-            const isBusy = busyVehicleIds.has(v.id);
-            const isSold = v.status === 'Vendido';
-            const isSameAsEditing = this.trip && v.id === this.trip.vehicleId;
-            return (!isBusy && !isSold) || isSameAsEditing;
-          });
-
-          this.mapBrandNames();
-          this.loadingVehicles = false;
-
-          // NEW: If CONDUCTOR, auto-select their vehicle
-          if (
-            !this.trip &&
-            this.userRole === 'CONDUCTOR' &&
-            this.loggedInDriverId
-          ) {
-            const driverVehicle = allVehicles.find(
-              (v: any) => v.currentDriverId === this.loggedInDriverId,
-            );
-            if (driverVehicle) {
-              this.tripForm.get('vehicleId')?.setValue(driverVehicle.id);
-            }
-          } else if (!this.trip && this.vehicles.length === 1) {
-            // Pre-select if only one vehicle is available (New trip)
-            this.tripForm.get('vehicleId')?.setValue(this.vehicles[0].id);
-          }
-
-          if (this._pendingVehicleId != null) {
-            this.tripForm
-              .get('vehicleId')
-              ?.setValue(this._pendingVehicleId, { emitEvent: true });
-            this._pendingVehicleId = null;
-          }
-          if (this.trip) {
-            setTimeout(() => this.captureInitialState(), 0);
-          }
+          this.vehiclesByOwnerCache.set(ownerId, resps);
+          this.applyVehiclesResult(resps);
         },
         error: () => (this.loadingVehicles = false),
       });
+  }
+
+  /**
+   * Vuelca en el formulario la disponibilidad resuelta. Se extrajo del
+   * `subscribe` para poder reutilizarlo cuando el dato sale de
+   * `vehiclesByOwnerCache` en vez de la red.
+   */
+  private applyVehiclesResult(resps: {
+    allVehicles: ModelVehicle[];
+    activeTrips: any[];
+  }): void {
+    const { allVehicles, activeTrips } = resps;
+
+    // Identify vehicle IDs that have active trips
+    const busyVehicleIds = new Set(activeTrips.map((t: any) => t.vehicleId));
+
+    // Filter: Keep vehicles that are NOT busy,
+    // AND are NOT sold,
+    // OR is the vehicle of the trip we are currently editing
+    this.vehicles = allVehicles.filter((v: any) => {
+      const isBusy = busyVehicleIds.has(v.id);
+      const isSold = v.status === 'Vendido';
+      const isSameAsEditing = this.trip && v.id === this.trip.vehicleId;
+      return (!isBusy && !isSold) || isSameAsEditing;
+    });
+
+    this.mapBrandNames();
+    this.loadingVehicles = false;
+
+    // NEW: If CONDUCTOR, auto-select their vehicle
+    if (!this.trip && this.userRole === 'CONDUCTOR' && this.loggedInDriverId) {
+      const driverVehicle = allVehicles.find(
+        (v: any) => v.currentDriverId === this.loggedInDriverId,
+      );
+      if (driverVehicle) {
+        this.tripForm.get('vehicleId')?.setValue(driverVehicle.id);
+      }
+    } else if (!this.trip && this.vehicles.length === 1) {
+      // Pre-select if only one vehicle is available (New trip)
+      this.tripForm.get('vehicleId')?.setValue(this.vehicles[0].id);
+    }
+
+    if (this._pendingVehicleId != null) {
+      this.tripForm
+        .get('vehicleId')
+        ?.setValue(this._pendingVehicleId, { emitEvent: true });
+      this._pendingVehicleId = null;
+    }
+    if (this.trip) {
+      setTimeout(() => this.captureInitialState(), 0);
+    }
   }
 
   fetchNextTripNumber(vehicleId: number): void {
@@ -801,6 +825,8 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       this.isSaving = true;
       this.tripService.createTrip(tripData).subscribe({
         next: () => {
+          // Guardar cambia la disponibilidad: la cache deja de ser valida.
+          this.vehiclesByOwnerCache.clear();
           this.toastService.showSuccess(
             'Gestión de Viajes',
             `Viaje ${this.trip ? 'actualizado' : 'creado'} exitosamente!`,
