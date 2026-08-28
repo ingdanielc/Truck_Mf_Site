@@ -110,6 +110,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     },
   };
   public tripsByVehicleType: ChartType = 'bar';
+
+  /** Total de viajes pintados. Suma las tres series del desglose por tipo
+   *  (cargado, redondo, vacío) o la única del administrador, según el rol. */
+  get tripsByVehicleTotal(): number {
+    return this.tripsByVehicleData.datasets.reduce(
+      (acc, _, i) => acc + this.sumSerie(this.tripsByVehicleData, i),
+      0,
+    );
+  }
+
   public tripsByVehicleData: ChartData<'bar'> = {
     labels: [],
     datasets: [{ data: [], label: 'Viajes', backgroundColor: '#3b82f6' }],
@@ -142,11 +152,58 @@ export class DashboardComponent implements OnInit, OnDestroy {
     },
   };
   public financialType: ChartType = 'bar';
+
+  public financialPlugins: Plugin<'bar'>[] = [
+    this.barValueLabels((v) => this.formatMoneyLabel(v)),
+  ];
+
+  /** Totales de las dos series, tal como están pintadas. */
+  get financialIncomeTotal(): number {
+    return this.sumSerie(this.financialData, 0);
+  }
+
+  get financialExpenseTotal(): number {
+    return this.sumSerie(this.financialData, 1);
+  }
+
+  /** Gastos del periodo que no cuelgan de ningún viaje del periodo. No están
+   *  en las barras — no pertenecen a ningún viaje —, pero sí en la utilidad. */
+  public financialOtherExpenses = 0;
+
+  /** Ingresos menos los dos tipos de gasto: coincide con la utilidad de
+   *  "Utilidad por Viaje", que parte de las mismas filas. */
+  get financialProfitTotal(): number {
+    return (
+      this.financialIncomeTotal -
+      this.financialExpenseTotal -
+      this.financialOtherExpenses
+    );
+  }
+
+  /** El alto lo manda la cantidad de categorías: cada una aloja sus dos barras
+   *  —ingresos y egresos— con el grosor común. */
+  get financialHeight(): number {
+    const n = this.financialData.labels?.length ?? 0;
+    return Math.max(250, n * DashboardComponent.ROW_H2 + 64);
+  }
+
   public financialData: ChartData<'bar'> = {
     labels: [],
     datasets: [
-      { data: [], label: 'Ingresos (Flete)', backgroundColor: '#10b981' },
-      { data: [], label: 'Egresos (Gastos)', backgroundColor: '#ef4444' },
+      {
+        data: [],
+        label: 'Ingresos (Flete)',
+        backgroundColor: '#10b981',
+        barThickness: DashboardComponent.BAR_THICKNESS,
+        maxBarThickness: DashboardComponent.BAR_THICKNESS,
+      },
+      {
+        data: [],
+        label: 'Egresos (Gastos)',
+        backgroundColor: '#ef4444',
+        barThickness: DashboardComponent.BAR_THICKNESS,
+        maxBarThickness: DashboardComponent.BAR_THICKNESS,
+      },
     ],
   };
 
@@ -163,11 +220,42 @@ export class DashboardComponent implements OnInit, OnDestroy {
     },
   };
   public monthVehicleFinType: ChartType = 'bar';
+
+  public monthVehicleFinPlugins: Plugin<'bar'>[] = [
+    this.barValueLabels((v) => this.formatMoneyLabel(v)),
+  ];
+
+  get monthVehicleFinIncomeTotal(): number {
+    return this.sumSerie(this.monthVehicleFinData, 0);
+  }
+
+  get monthVehicleFinExpenseTotal(): number {
+    return this.sumSerie(this.monthVehicleFinData, 1);
+  }
+
+  /** Ver `financialHeight`. */
+  get monthVehicleFinHeight(): number {
+    const n = this.monthVehicleFinData.labels?.length ?? 0;
+    return Math.max(250, n * DashboardComponent.ROW_H2 + 64);
+  }
+
   public monthVehicleFinData: ChartData<'bar'> = {
     labels: [],
     datasets: [
-      { data: [], label: 'Ingresos (Flete)', backgroundColor: '#10b981' },
-      { data: [], label: 'Egresos (Gastos)', backgroundColor: '#f43f5e' },
+      {
+        data: [],
+        label: 'Ingresos (Flete)',
+        backgroundColor: '#10b981',
+        barThickness: DashboardComponent.BAR_THICKNESS,
+        maxBarThickness: DashboardComponent.BAR_THICKNESS,
+      },
+      {
+        data: [],
+        label: 'Egresos (Gastos)',
+        backgroundColor: '#f43f5e',
+        barThickness: DashboardComponent.BAR_THICKNESS,
+        maxBarThickness: DashboardComponent.BAR_THICKNESS,
+      },
     ],
   };
 
@@ -185,6 +273,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * tres canales — el lado de la barra respecto al cero, el color y el propio
    * número del tooltip — así que la lectura nunca depende del color.
    */
+  /**
+   * Grosor único de las barras horizontales, en píxeles, y alto de la fila que
+   * las contiene. Todas las gráficas horizontales lo comparten para que una
+   * barra mida lo mismo en cualquier tarjeta.
+   *
+   * `ROW_H2` es para las gráficas de dos series (ingresos y egresos): la fila
+   * tiene que alojar dos barras del mismo grosor más su separación.
+   */
+  public static readonly BAR_THICKNESS = 26;
+  private static readonly ROW_H = 44;
+  private static readonly ROW_H2 = 72;
+
   public static readonly PROFIT_POS = '#2a78d6';
   public static readonly PROFIT_NEG = '#e34948';
 
@@ -234,8 +334,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
         // Punta redondeada y borde recto sobre el cero.
         borderRadius: 4,
         borderSkipped: 'start',
-        barThickness: 22,
-        maxBarThickness: 24,
+        barThickness: DashboardComponent.BAR_THICKNESS,
+        maxBarThickness: DashboardComponent.BAR_THICKNESS,
       },
     ],
   };
@@ -243,7 +343,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   /** El alto crece con la flota: una fila por vehículo, nunca comprimidas. */
   get vehicleProfitHeight(): number {
     const n = this.vehicleProfitData.labels?.length ?? 0;
-    return Math.max(200, n * 44 + 64);
+    return Math.max(200, n * DashboardComponent.ROW_H + 64);
   }
 
   /** Utilidad total de los vehículos que se están mostrando. Para el
@@ -273,71 +373,105 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * lado del cero (donde siempre sobra sitio en una escala asimétrica);
    * y como último recurso dentro de la barra en blanco. Nunca se recorta.
    */
-  private barValueLabels = (format: (v: number) => string): Plugin<'bar'> => ({
-    id: 'barValueLabels',
-    afterDatasetsDraw: (chart) => {
-      const meta = chart.getDatasetMeta(0);
-      const values = chart.data.datasets?.[0]?.data as (number | null)[];
-      if (!meta?.data?.length || !values) return;
+  /* Método y no propiedad: los `*Plugins` que lo invocan se declaran antes
+     en la clase, y una propiedad todavía no estaría inicializada. */
+  private barValueLabels(format: (v: number) => string): Plugin<'bar'> {
+    return {
+      id: 'barValueLabels',
+      afterDatasetsDraw: (chart) => {
+        const ctx = chart.ctx;
+        const area = chart.chartArea;
+        const GAP = 6;
+        // Con `indexAxis: 'y'` la barra crece en X; si no, en Y.
+        const horizontal = (chart.options as any)?.indexAxis === 'y';
 
-      const ctx = chart.ctx;
-      const area = chart.chartArea;
-      const GAP = 6;
+        ctx.save();
+        ctx.font = "600 11px 'Inter', sans-serif";
 
-      ctx.save();
-      ctx.font = "600 11px 'Inter', sans-serif";
-      ctx.textBaseline = 'middle';
+        chart.data.datasets?.forEach((ds: any, di: number) => {
+          const meta = chart.getDatasetMeta(di);
+          if (meta.hidden || !meta.data?.length) return;
+          const values = ds.data as (number | null)[];
 
-      meta.data.forEach((bar: any, i: number) => {
-        const v = values[i];
-        if (v == null) return;
+          meta.data.forEach((bar: any, i: number) => {
+            const v = values[i];
+            if (v == null) return;
 
-        // El formateador puede devolver vacío para omitir la etiqueta.
-        const text = format(v);
-        if (!text) return;
-        const w = ctx.measureText(text).width;
-        const tip = bar.x; // punta de la barra
-        const base = bar.base; // el cero
-        const positivo = v >= 0;
-        const cabe = (px: number) => px >= area.left && px + w <= area.right;
+            // El formateador puede devolver vacío para omitir la etiqueta.
+            const text = format(v);
+            if (!text) return;
 
-        let dentro = false;
+            const w = ctx.measureText(text).width;
+            const positivo = v >= 0;
+            const base = bar.base; // el cero
+            let dentro = false;
 
-        // 1) Fuera de la punta: la posición natural.
-        let x = positivo ? tip + GAP : tip - GAP - w;
+            if (horizontal) {
+              const tip = bar.x;
+              const cabe = (px: number) =>
+                px >= area.left && px + w <= area.right;
 
-        // 2) Si se sale, al otro lado del cero. En una escala asimétrica el
-        //    lado corto no tiene sitio, pero el largo siempre sí.
-        if (!cabe(x)) x = positivo ? base - GAP - w : base + GAP;
+              // 1) Fuera de la punta: la posición natural.
+              let x = positivo ? tip + GAP : tip - GAP - w;
 
-        // 3) Último recurso: dentro de la barra, y solo si el texto cabe.
-        if (!cabe(x)) {
-          if (Math.abs(tip - base) < w + GAP * 2) return;
-          x = positivo ? tip - GAP - w : tip + GAP;
-          dentro = true;
-        }
+              // 2) Si se sale, al otro lado del cero. En una escala asimétrica el
+              //    lado corto no tiene sitio, pero el largo siempre sí.
+              if (!cabe(x)) x = positivo ? base - GAP - w : base + GAP;
 
-        ctx.fillStyle = dentro ? '#ffffff' : this.chartTextColor;
-        ctx.fillText(text, x, bar.y);
-      });
+              // 3) Último recurso: dentro de la barra, y solo si el texto cabe.
+              if (!cabe(x)) {
+                if (Math.abs(tip - base) < w + GAP * 2) return;
+                x = positivo ? tip - GAP - w : tip + GAP;
+                dentro = true;
+              }
 
-      ctx.restore();
-    },
-  });
+              ctx.textAlign = 'left';
+              ctx.textBaseline = 'middle';
+              ctx.fillStyle = dentro ? '#ffffff' : this.chartTextColor;
+              ctx.fillText(text, x, bar.y);
+              return;
+            }
+
+            /* Vertical: la etiqueta va centrada sobre la punta. El alto del texto
+               se aproxima con el tamaño de fuente; no hace falta más precisión
+               para decidir si cabe. */
+            const H = 11;
+            const tip = bar.y;
+            const cabe = (py: number) =>
+              py - H >= area.top && py <= area.bottom;
+
+            let y = positivo ? tip - GAP : tip + GAP + H;
+            if (!cabe(y)) {
+              if (Math.abs(tip - base) < H + GAP * 2) return;
+              y = positivo ? tip + GAP + H : tip - GAP;
+              dentro = true;
+            }
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillStyle = dentro ? '#ffffff' : this.chartTextColor;
+            ctx.fillText(text, bar.x, y);
+          });
+        });
+
+        ctx.restore();
+      },
+    };
+  }
 
   public vehicleProfitPlugins: Plugin<'bar'>[] = [
     this.barValueLabels((v) => this.formatProfitLabel(v)),
   ];
 
-  /** En mantenimiento no hay signo y el cero no se rotula: con media flota sin
-   *  taller en el mes, una fila de "$0" sería solo ruido. */
-  private formatMaintenanceLabel(v: number): string {
+  /** Monto sin signo. El cero no se rotula: con media flota sin taller en el
+   *  mes, o sin gastos en un viaje, una fila de "$0" sería solo ruido. */
+  private formatMoneyLabel(v: number): string {
     if (Math.round(v) === 0) return '';
     return '$' + this.formatMobileValue(v);
   }
 
   public maintenancePlugins: Plugin<'bar'>[] = [
-    this.barValueLabels((v) => this.formatMaintenanceLabel(v)),
+    this.barValueLabels((v) => this.formatMoneyLabel(v)),
   ];
 
   /* Detalle: Utilidad Mensual del grupo seleccionado ------------------------
@@ -386,8 +520,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
         backgroundColor: [],
         borderRadius: 4,
         borderSkipped: 'start',
-        barThickness: 18,
-        maxBarThickness: 22,
+        barThickness: DashboardComponent.BAR_THICKNESS,
+        maxBarThickness: DashboardComponent.BAR_THICKNESS,
       },
     ],
   };
@@ -432,8 +566,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
         backgroundColor: [],
         borderRadius: 4,
         borderSkipped: 'start',
-        barThickness: 18,
-        maxBarThickness: 22,
+        barThickness: DashboardComponent.BAR_THICKNESS,
+        maxBarThickness: DashboardComponent.BAR_THICKNESS,
       },
     ],
   };
@@ -448,14 +582,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   /** Gastos imputados a esos viajes por `tripId`. */
   public tripProfitTripExpenses = 0;
 
-  /** Gastos del grupo en el mes que no cuelgan de ningún viaje del mes: sobre
-   *  todo mantenimiento, y por eso así se rotula en el pie de la tarjeta. */
+  /** Gastos del grupo en el mes que no cuelgan de ningún viaje del mes:
+   *  mantenimiento, y por eso así se rotula en el pie de la tarjeta. */
   public tripProfitOtherExpenses = 0;
 
   /** Una fila por viaje; el alto crece con la cantidad. */
   get tripProfitDetailHeight(): number {
     const n = this.tripProfitDetailData.labels?.length ?? 0;
-    return Math.max(200, n * 36 + 64);
+    return Math.max(200, n * DashboardComponent.ROW_H + 64);
   }
 
   /** Suma de la utilidad de los viajes, sin los gastos que no son de viaje. */
@@ -477,14 +611,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   /** Doce filas fijas: el alto no depende de los datos, solo de los meses. */
   get monthProfitDetailHeight(): number {
-    return 12 * 36 + 64;
+    return 12 * DashboardComponent.ROW_H + 64;
   }
 
-  /** Utilidad del grupo en el año: la suma de los doce meses. */
+  /** Flete facturado por el grupo en el año. */
+  public monthProfitFreight = 0;
+
+  /** Gastos imputados a los viajes del año por `tripId`. */
+  public monthProfitTripExpenses = 0;
+
+  /** El resto de gastos del grupo en el año: sobre todo mantenimiento. */
+  public monthProfitOtherExpenses = 0;
+
+  /** Utilidad del grupo en el año. Sale de los tres componentes del pie —y no
+   *  de sumar las doce barras— para que la resta se pueda verificar a ojo. Da
+   *  lo mismo: las barras parten de los mismos viajes y gastos. */
   get monthProfitDetailTotal(): number {
-    const data = (this.monthProfitDetailData.datasets[0]?.data ??
-      []) as number[];
-    return data.reduce((acc, v) => acc + (v || 0), 0);
+    return (
+      this.monthProfitFreight -
+      this.monthProfitTripExpenses -
+      this.monthProfitOtherExpenses
+    );
   }
 
   /**
@@ -554,14 +701,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * barra ya abierta la cierra: sin eso no habría forma de ocultar la tarjeta.
    */
   public onVehicleProfitClick(e: { event?: any; active?: any[] }): void {
+    this.selectGroupFromClick(e, this.vehicleProfitData.labels as string[]);
+  }
+
+  /** El mismo detalle se abre desde "Ingresos vs Egresos por Vehículo": sus
+   *  categorías son los mismos grupos, así que las dos gráficas son
+   *  disparadores intercambiables de la misma selección. */
+  public onMonthVehicleFinClick(e: { event?: any; active?: any[] }): void {
+    this.selectGroupFromClick(e, this.monthVehicleFinData.labels as string[]);
+  }
+
+  private selectGroupFromClick(
+    e: { event?: any; active?: any[] },
+    labels: string[],
+  ): void {
     const index = e?.active?.[0]?.index;
     if (index == null) return;
-    const label = this.vehicleProfitData.labels?.[index] as string;
+    const label = labels?.[index];
     if (!label) return;
     this.selectedProfitGroup =
       this.selectedProfitGroup === label ? null : label;
     this.buildMonthProfitDetail();
     this.buildTripProfitDetail();
+    this.processFinancialData();
+    this.updateCurrentMonthName();
   }
 
   /** Vuelca en la gráfica los doce meses del grupo seleccionado. */
@@ -594,6 +757,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (this.monthProfitDetailOptions?.plugins?.title) {
       this.monthProfitDetailOptions.plugins.title.text = `Utilidad por Mes (${this.selectedYear})`;
     }
+
+    /* Los tres componentes del pie salen de la misma fuente que alimenta a las
+       tarjetas del alcance de mes, así que las cifras se leen igual en los dos
+       alcances y suman exactamente la utilidad del año. */
+    const { filas, otros } = this.selectedProfitGroup
+      ? this.selectedGroupRows(false)
+      : { filas: [], otros: 0 };
+    this.monthProfitFreight = filas.reduce((a, f) => a + f.freight, 0);
+    this.monthProfitTripExpenses = filas.reduce((a, f) => a + f.gasto, 0);
+    this.monthProfitOtherExpenses = otros;
   }
 
   /**
@@ -606,12 +779,67 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * total no cuadraría con la barra que se tocó y no habría forma de saber por
    * qué.
    */
-  private buildTripProfitDetail(): void {
+  /**
+   * Filas viaje a viaje del grupo abierto, dentro del mes o del año.
+   *
+   * Es la fuente común de las dos tarjetas de detalle — "Utilidad por Viaje" e
+   * "Ingresos vs Egresos por Viaje" —, y por eso sus totales cuadran por
+   * construcción y no por coincidencia.
+   *
+   * El gasto se imputa por `tripId` y acotado al periodo; lo que no cae en
+   * ningún viaje del periodo (mantenimiento, gastos sueltos, o gastos de un
+   * viaje de otro periodo) se devuelve aparte en `otros`.
+   *
+   * No se excluye el viaje vacío: no factura, pero sí puede generar gasto, y
+   * dejarlo fuera descuadraría el total contra la barra de origen.
+   */
+  private selectedGroupRows(esMes: boolean): {
+    filas: { label: string; freight: number; gasto: number; mes: number }[];
+    otros: number;
+  } {
     const key = this.selectedProfitGroup;
-    this.tripProfitFreight = 0;
-    this.tripProfitTripExpenses = 0;
-    this.tripProfitOtherExpenses = 0;
+    if (!key) return { filas: [], otros: 0 };
 
+    const porPropietario = this.groupByOwner;
+    const enRango = (d: Date) =>
+      d.getFullYear() === this.selectedYear &&
+      (!esMes || d.getMonth() === this.selectedMonth);
+
+    const viajes = this.loadedTrips.filter((t) => {
+      if (!t.startDate) return false;
+      if (!enRango(new Date(t.startDate))) return false;
+      return this.tripGroupKey(t, porPropietario) === key;
+    });
+
+    const ids = new Set(viajes.map((t) => t.id));
+    const gastoPorViaje: Record<string, number> = {};
+    let otros = 0;
+
+    this.loadedExpenses.forEach((e) => {
+      const d = e.creationDate ? new Date(e.creationDate) : null;
+      if (!d || !enRango(d)) return;
+      const vehicle = this.vehicles.find((v) => v.id === e.vehicleId);
+      if (this.vehicleGroupKey(vehicle, porPropietario) !== key) return;
+
+      if (e.tripId != null && ids.has(e.tripId)) {
+        gastoPorViaje[e.tripId] =
+          (gastoPorViaje[e.tripId] || 0) + (e.amount || 0);
+      } else {
+        otros += e.amount || 0;
+      }
+    });
+
+    const filas = viajes.map((t) => ({
+      label: `${(t.vehiclePlate || t.vehicle?.plate || 'S/P').toUpperCase()} #${t.numberTrip ?? t.id}`,
+      freight: t.freight || 0,
+      gasto: gastoPorViaje[String(t.id)] || 0,
+      mes: new Date(t.startDate as string).getMonth(),
+    }));
+
+    return { filas, otros };
+  }
+
+  private buildTripProfitDetail(): void {
     const pintar = (labels: string[], data: number[]) => {
       this.tripProfitDetailData = {
         labels,
@@ -632,58 +860,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
     };
 
-    if (!key || this.scope !== 'mes') {
+    if (!this.selectedProfitGroup || this.scope !== 'mes') {
+      this.tripProfitFreight = 0;
+      this.tripProfitTripExpenses = 0;
+      this.tripProfitOtherExpenses = 0;
       pintar([], []);
       return;
     }
 
-    const porPropietario = this.groupByOwner;
-    const enMes = (d: Date) =>
-      d.getMonth() === this.selectedMonth &&
-      d.getFullYear() === this.selectedYear;
-
-    const delGrupo = this.loadedTrips.filter((t) => {
-      if (!t.startDate) return false;
-      if (!enMes(new Date(t.startDate))) return false;
-      const k = porPropietario
-        ? this.ownerLabel(this.resolveOwnerId(t))
-        : (t.vehicle?.plate || t.vehiclePlate)?.toUpperCase();
-      return k === key;
-    });
-
-    const ids = new Set(delGrupo.map((t) => t.id));
-    const gastoPorViaje: Record<string, number> = {};
-
-    this.loadedExpenses.forEach((e) => {
-      const d = e.creationDate ? new Date(e.creationDate) : null;
-      if (!d || !enMes(d)) return;
-      const vehicle = this.vehicles.find((v) => v.id === e.vehicleId);
-      if (this.vehicleGroupKey(vehicle, porPropietario) !== key) return;
-
-      if (e.tripId != null && ids.has(e.tripId)) {
-        gastoPorViaje[e.tripId] =
-          (gastoPorViaje[e.tripId] || 0) + (e.amount || 0);
-        this.tripProfitTripExpenses += e.amount || 0;
-      } else {
-        this.tripProfitOtherExpenses += e.amount || 0;
-      }
-    });
+    const { filas, otros } = this.selectedGroupRows(true);
+    this.tripProfitFreight = filas.reduce((a, f) => a + f.freight, 0);
+    this.tripProfitTripExpenses = filas.reduce((a, f) => a + f.gasto, 0);
+    this.tripProfitOtherExpenses = otros;
 
     /* De mayor a menor: con `indexAxis: 'y'` la primera etiqueta va arriba, así
        que el viaje más rentable encabeza y los que perdieron quedan al pie. */
-    const filas = delGrupo
-      .map((t) => {
-        this.tripProfitFreight += t.freight || 0;
-        return {
-          label: `${(t.vehiclePlate || t.vehicle?.plate || 'S/P').toUpperCase()} #${t.numberTrip ?? t.id}`,
-          valor: (t.freight || 0) - (gastoPorViaje[String(t.id)] || 0),
-        };
-      })
+    const ordenadas = filas
+      .map((f) => ({ label: f.label, valor: f.freight - f.gasto }))
       .sort((a, b) => b.valor - a.valor);
 
     pintar(
-      filas.map((f) => f.label),
-      filas.map((f) => f.valor),
+      ordenadas.map((f) => f.label),
+      ordenadas.map((f) => f.valor),
     );
   }
 
@@ -721,8 +919,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
         label: 'Costo ($)',
         backgroundColor: '#f59e0b',
         borderRadius: 4,
-        barThickness: 22,
-        maxBarThickness: 24,
+        barThickness: DashboardComponent.BAR_THICKNESS,
+        maxBarThickness: DashboardComponent.BAR_THICKNESS,
       },
     ],
   };
@@ -730,7 +928,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   /** El alto crece con la flota: una fila por vehiculo, nunca comprimidas. */
   get maintenanceHeight(): number {
     const n = this.maintenanceData.labels?.length ?? 0;
-    return Math.max(200, n * 44 + 64);
+    return Math.max(200, n * DashboardComponent.ROW_H + 64);
   }
 
   /** Inversión total en mantenimiento de los vehículos que se muestran. Para
@@ -968,7 +1166,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const trips = this.loadedTrips;
     const expenses = this.loadedExpenses;
     this.processTripsByVehicle(trips, this.vehicles);
-    this.processFinancialData(trips, expenses);
+    this.processFinancialData();
     this.processMonthVehicleFin(trips, expenses, this.vehicles);
     this.processVehicleProfit(trips, expenses, this.vehicles);
     this.processMaintenanceData(expenses, this.vehicles);
@@ -1009,6 +1207,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return corto.length <= 16 ? corto : corto.slice(0, 15) + '…';
   }
 
+  /** Suma de una serie ya pintada: los totales del pie siempre cuadran con las
+   *  barras porque salen de los mismos datos, no de un recálculo. */
+  private sumSerie(data: ChartData<'bar'>, index: number): number {
+    const serie = (data.datasets[index]?.data ?? []) as number[];
+    return serie.reduce((acc, v) => acc + (v || 0), 0);
+  }
+
   private formatMobileValue(value: number): string {
     if (window.innerWidth >= 768) return value.toLocaleString();
 
@@ -1033,10 +1238,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private updateChartTheme() {
     const isDark =
       document.documentElement.getAttribute('data-bs-theme') === 'dark';
-    const textColor = isDark ? '#94a3b8' : '#475569';
+    /* En oscuro el gris del texto era casi tan apagado como el fondo y la
+       rejilla al 5 % apenas se adivinaba. Se sube el contraste de lo que se
+       lee y de lo que orienta la vista — título del gráfico, etiquetas de los
+       ejes, rejilla y borde —, nunca de los datos: los colores de barras y
+       líneas viven en los datasets y no pasan por aquí. */
+    const textColor = isDark ? '#cbd5e1' : '#475569';
     this.chartTextColor = textColor;
     const gridColor = isDark
-      ? 'rgba(255, 255, 255, 0.05)'
+      ? 'rgba(255, 255, 255, 0.14)'
       : 'rgba(0, 0, 0, 0.05)';
 
     const applyTheme = (options: any) => {
@@ -1065,6 +1275,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       };
       options.scales.x.grid = { color: gridColor, drawBorder: false };
       options.scales.y.grid = { color: gridColor, drawBorder: false };
+      /* En Chart.js 4 el borde del eje ya no se controla desde `grid`. */
+      options.scales.x.border = { color: gridColor };
+      options.scales.y.border = { color: gridColor };
       /* Ninguna grafica declara `legend.labels`, asi que el objeto se crea
          aqui: sin el, Chart.js pinta las etiquetas de la leyenda ("Cargado",
          "Redondo", "Vacio", ...) con su color por defecto (#666), ilegible
@@ -1094,6 +1307,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
           size: 14,
           weight: 'bold',
         };
+        /* Sin `padding` Chart.js reserva 10 px arriba, que sumados al del
+           cuerpo de la tarjeta separaban demasiado el título del subtítulo. */
+        options.plugins.title.padding = { top: 0, bottom: 8 };
       }
     };
 
@@ -1107,16 +1323,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
     applyTheme(this.monthProfitDetailOptions);
     applyTheme(this.tripProfitDetailOptions);
 
+    /* Las dos gráficas de ingresos vs egresos van siempre en horizontal. Sus
+       categorías son etiquetas largas —viajes, placas o nombres de
+       propietario— que en vertical se apilan giradas. */
+    (this.financialOptions as any).indexAxis = 'y';
+    (this.monthVehicleFinOptions as any).indexAxis = 'y';
+
     /* Barras horizontales: los ejes van al revés que en el resto de gráficas.
        Aquí el eje de valores es X (pesos) y el de categorías es Y (placas),
        así que el formateador de moneda se mueve a X y se deja que Y use su
        propia etiqueta — si no, `formatMobileValue` destroza las placas. */
-    [
+    const horizontales: any[] = [
       this.vehicleProfitOptions,
       this.maintenanceOptions,
       this.monthProfitDetailOptions,
       this.tripProfitDetailOptions,
-    ].forEach((o: any) => {
+      this.financialOptions,
+      this.monthVehicleFinOptions,
+    ];
+
+    horizontales.forEach((o: any) => {
       const categoryTick = o.scales.x.ticks.callback;
       o.scales.x.ticks = {
         ...o.scales.x.ticks,
@@ -1153,6 +1379,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     try {
       const role = (user?.userRoles?.[0]?.role?.name ?? '').toUpperCase();
       this.userRole = role;
+      /* La orientación de las gráficas financieras depende del rol, que hasta
+         aquí no se conocía: el tema se reaplica ya sabiéndolo. */
+      this.updateChartTheme();
 
       if (
         (role.includes('ADMINISTRADOR') || role.includes('PROPIETARIO')) &&
@@ -1325,7 +1554,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.processActiveTrips(trips, expenses);
 
       this.processTripsByVehicle(trips, this.vehicles);
-      this.processFinancialData(trips, expenses);
+      this.processFinancialData();
       this.processMonthVehicleFin(trips, expenses, this.vehicles);
       this.loadedTrips = trips;
       this.loadedExpenses = expenses;
@@ -1447,9 +1676,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
       /* El administrador agrupa por propietario — ver `groupByOwner` —, que se
          resuelve por el conductor y, si no, por el vehículo del viaje. */
-      const key = porPropietario
-        ? this.ownerLabel(this.resolveOwnerId(t))
-        : (t.vehicle?.plate || t.vehiclePlate)?.toUpperCase();
+      const key = this.tripGroupKey(t, porPropietario);
       if (!key) return;
       counts[key] = (counts[key] || 0) + 1;
       countsByType[key] ??= {};
@@ -1637,11 +1864,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   /** El título nombra la dimensión del eje X, que cambia con el alcance. */
   private financialTitle(): string {
-    if (this.scope === 'anio') {
-      return `Ingresos vs Egresos por Mes (${this.selectedYear})`;
-    }
-    const dimension = this.groupByOwner ? 'Propietario' : 'Viaje';
-    return `Ingresos vs Egresos por ${dimension} (${this.currentMonthName})`;
+    return this.scope === 'anio'
+      ? `Ingresos vs Egresos por Mes (${this.selectedYear})`
+      : `Ingresos vs Egresos por Viaje (${this.currentMonthName})`;
   }
 
   /** Propietario del viaje: por el conductor, o por la relación del vehículo. */
@@ -1662,6 +1887,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return this.userRole.includes('ADMINISTRADOR');
   }
 
+  /**
+   * Pista de que las barras se pueden tocar. En escritorio va como texto en el
+   * encabezado; en móvil no cabe junto al título, así que se reduce a un ícono
+   * y el texto se despliega al tocarlo. Un `title` a secas no serviría: el
+   * tooltip nativo depende del hover, que en una pantalla táctil no existe.
+   */
+  public hintCard: string | null = null;
+
+  public readonly scopeHint = 'Toca una barra para ver el detalle';
+
   /** Dimensión del eje de categorías, para titular las gráficas. */
   get groupDimension(): string {
     return this.groupByOwner ? 'Propietario' : 'Vehículo';
@@ -1676,6 +1911,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     );
   }
 
+  /** Etiqueta con la que agrupar un viaje: la placa, o su propietario. */
+  private tripGroupKey(
+    trip: ModelTrip,
+    porPropietario: boolean,
+  ): string | undefined {
+    return porPropietario
+      ? this.ownerLabel(this.resolveOwnerId(trip))
+      : (trip.vehicle?.plate || trip.vehiclePlate)?.toUpperCase();
+  }
+
   /** Etiqueta con la que agrupar un vehículo: su placa, o su propietario. */
   private vehicleGroupKey(
     vehicle: ModelVehicle | undefined,
@@ -1687,23 +1932,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Ingresos (flete) contra egresos (gastos). La dimensión del eje X depende
-   * del alcance y del rol — ver el comentario de `scope`.
+   * Ingresos (flete) contra egresos del grupo abierto en "Utilidad por
+   * Vehículo/Propietario". Es un detalle de esa gráfica: sin barra tocada no
+   * hay nada que pintar.
    *
-   * El gasto de un viaje se resuelve por `tripId`, no por fecha, así que la
-   * atribución no depende de `creationDate` ni de `expenseDate`. Los gastos
-   * sin viaje asociado (mantenimiento, por ejemplo) quedan fuera, igual que
-   * antes de unificar.
+   * En alcance de mes el eje es el VIAJE y en el de año, el MES. Comparte la
+   * fuente con "Utilidad por Viaje" — ver `selectedGroupRows` —, de modo que
+   * las dos tarjetas cierran con la misma utilidad.
    */
-  private processFinancialData(trips: ModelTrip[], expenses: ModelExpense[]) {
-    const gastoDe = (t: ModelTrip) =>
-      expenses
-        .filter((e) => e.tripId === t.id)
-        .reduce((sum, e) => sum + (e.amount || 0), 0);
-
-    // El viaje vacío no genera flete: queda fuera, como en la versión previa.
-    const utiles = trips.filter((t) => !this.isEmptyTrip(t) && !!t.startDate);
-
+  private processFinancialData() {
     const pintar = (labels: string[], ing: number[], gas: number[]) => {
       this.financialData = {
         labels,
@@ -1714,86 +1951,34 @@ export class DashboardComponent implements OnInit, OnDestroy {
       };
     };
 
+    if (!this.selectedProfitGroup) {
+      this.financialOtherExpenses = 0;
+      pintar([], [], []);
+      return;
+    }
+
+    const esMes = this.scope === 'mes';
+    const { filas, otros } = this.selectedGroupRows(esMes);
+    this.financialOtherExpenses = otros;
+
     // --- Año: un grupo por mes. Como máximo 12 barras dobles. ---
-    if (this.scope === 'anio') {
+    if (!esMes) {
       const ing = new Array(12).fill(0);
       const gas = new Array(12).fill(0);
-      utiles.forEach((t) => {
-        const d = new Date(t.startDate as string);
-        if (d.getFullYear() !== this.selectedYear) return;
-        ing[d.getMonth()] += t.freight || 0;
-        gas[d.getMonth()] += gastoDe(t);
+      filas.forEach((f) => {
+        ing[f.mes] += f.freight;
+        gas[f.mes] += f.gasto;
       });
       pintar([...this.MESES_CORTOS], ing, gas);
       return;
     }
 
-    // --- Mes ---
-    const delMes = utiles.filter((t) => {
-      const d = new Date(t.startDate as string);
-      return (
-        d.getMonth() === this.selectedMonth &&
-        d.getFullYear() === this.selectedYear
-      );
-    });
-
-    /* Administrador: un grupo por propietario. Con muchos vehículos en juego,
-       una barra por viaje sería ilegible.
-
-       Se decide con `groupByOwner`, igual que el resto de las gráficas: la
-       comparación estricta que había aquí (`userRole === 'ADMINISTRADOR'`)
-       fallaba si el nombre del rol traía sufijos, y entonces el administrador
-       veía una barra por viaje. */
-    if (this.groupByOwner) {
-      const porOwner: Record<string, { ing: number; gas: number }> = {};
-      let sinPropietario = 0;
-
-      delMes.forEach((t) => {
-        const nombre = this.ownerLabel(this.resolveOwnerId(t));
-        if (!nombre) {
-          sinPropietario++;
-          return;
-        }
-        porOwner[nombre] ??= { ing: 0, gas: 0 };
-        porOwner[nombre].ing += t.freight || 0;
-        porOwner[nombre].gas += gastoDe(t);
-      });
-
-      /* No se pinta una barra "Sin propietario", pero tampoco se descartan en
-         silencio: si aparece alguno son datos inconsistentes y conviene verlo. */
-      if (sinPropietario > 0) {
-        console.warn(
-          `[Reportes] ${sinPropietario} viaje(s) del mes sin propietario resoluble; quedan fuera de "Ingresos vs Egresos".`,
-        );
-      }
-
-      const labels = Object.keys(porOwner).sort((a, b) =>
-        a.localeCompare(b, 'es'),
-      );
-      pintar(
-        labels,
-        labels.map((l) => porOwner[l].ing),
-        labels.map((l) => porOwner[l].gas),
-      );
-      return;
-    }
-
-    // Propietario y conductor: un grupo por viaje, como antes.
-    const ordenados = [...delMes].sort((a, b) => {
-      const plateA = (a.vehiclePlate || a.vehicle?.plate || '').toUpperCase();
-      const plateB = (b.vehiclePlate || b.vehicle?.plate || '').toUpperCase();
-      if (plateA < plateB) return -1;
-      if (plateA > plateB) return 1;
-      return Number(a.numberTrip ?? 0) - Number(b.numberTrip ?? 0);
-    });
-
+    // --- Mes: un grupo por viaje, en orden de placa y número. ---
+    const ordenadas = [...filas].sort((a, b) => a.label.localeCompare(b.label));
     pintar(
-      ordenados.map(
-        (t) =>
-          `${(t.vehiclePlate || t.vehicle?.plate || 'S/P').toUpperCase()} - #${t.numberTrip}`,
-      ),
-      ordenados.map((t) => t.freight || 0),
-      ordenados.map((t) => gastoDe(t)),
+      ordenadas.map((f) => f.label),
+      ordenadas.map((f) => f.freight),
+      ordenadas.map((f) => f.gasto),
     );
   }
 
@@ -1877,9 +2062,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (this.isEmptyTrip(t) || !t.startDate) return;
       const d = new Date(t.startDate);
       if (d.getFullYear() !== this.selectedYear) return;
-      const key = porPropietario
-        ? this.ownerLabel(this.resolveOwnerId(t))
-        : (t.vehicle?.plate || t.vehiclePlate)?.toUpperCase();
+      const key = this.tripGroupKey(t, porPropietario);
       if (!key) return;
       porMes[key] ??= new Array(12).fill(0);
       porMes[key][d.getMonth()]++;
@@ -1963,9 +2146,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       if (!t.startDate) return;
       const d = new Date(t.startDate);
       if (d.getFullYear() !== this.selectedYear) return;
-      const key = porPropietario
-        ? this.ownerLabel(this.resolveOwnerId(t))
-        : (t.vehicle?.plate || t.vehiclePlate)?.toUpperCase();
+      const key = this.tripGroupKey(t, porPropietario);
       if (!key) return;
       bucket(key)[d.getMonth()] += t.freight || 0;
       marcar(key, d.getMonth());

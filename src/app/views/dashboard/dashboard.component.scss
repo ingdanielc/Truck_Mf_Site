@@ -150,3 +150,15 @@
 .rotated {
   transform: rotate(180deg);
 }
+
+/* Espacio entre el titulo de la tarjeta y el subtitulo del grafico. Va aqui y
+   no con utilidades de Bootstrap porque su escala no tiene un paso de 10 px:
+   salta de 8 (`pt-2`) a 16 (`pt-3`). La doble clase gana en especificidad al
+   `p-2` / `p-md-4` del mismo elemento. */
+.card-body.chart-body {
+  padding-top: 10px;
+
+  @media (min-width: 768px) {
+    padding-top: 1rem;
+  }
+}
