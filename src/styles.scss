@@ -445,3 +445,47 @@ button .spinner-border-sm {
     --card-border: var(--bs-border-color);
   }
 }
+
+/* ==========================================================================
+   Legibilidad de textos apagados en tema oscuro (ajuste transversal)
+   ========================================================================== */
+[data-bs-theme="dark"],
+.sidebar.bg-dark {
+  --gtk-text-secondary-rgb: 173, 181, 189; /* gray-500 */
+  --gtk-text-black: var(--bs-body-color);
+  --gtk-text-indigo: #a370f7; /* indigo tint 40%, igual que Bootstrap en dark */
+
+  /* Islas de fondo claro dentro del tema oscuro: vuelven al tono original */
+  .bg-white,
+  .bg-light {
+    --gtk-text-secondary-rgb: 108, 117, 125;
+    --gtk-text-black: #000;
+    --gtk-text-indigo: #6610f2;
+  }
+}
+
+[data-bs-theme="dark"] .text-secondary,
+.sidebar.bg-dark .text-secondary {
+  color: rgba(
+    var(--gtk-text-secondary-rgb),
+    var(--bs-text-opacity, 1)
+  ) !important;
+}
+
+[data-bs-theme="dark"] .text-black,
+.sidebar.bg-dark .text-black {
+  color: var(--gtk-text-black) !important;
+}
+
+/* Cualificado con `html` para ganarle a la regla `!important` encapsulada de
+   los componentes que definen .text-indigo (g-expense-card, trip-detail). */
+html[data-bs-theme="dark"] .text-indigo {
+  color: var(--gtk-text-indigo) !important;
+}
+
+/* Respaldo para .text-muted si el shell sirviera Bootstrap < 5.3, donde la
+   utilidad es #6c757d fijo en lugar de un token dependiente del tema. */
+[data-bs-theme="dark"] .text-muted,
+.sidebar.bg-dark .text-muted {
+  color: rgba(var(--bs-body-color-rgb), 0.75) !important;
+}

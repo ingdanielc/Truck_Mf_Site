@@ -413,11 +413,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
       };
       options.scales.x.grid = { color: gridColor, drawBorder: false };
       options.scales.y.grid = { color: gridColor, drawBorder: false };
-      if (options.plugins?.legend?.labels) {
-        options.plugins.legend.labels.color = textColor;
-        options.plugins.legend.labels.font = {
-          family: "'Inter', sans-serif",
-          size: 12,
+      /* Ninguna grafica declara `legend.labels`, asi que el objeto se crea
+         aqui: sin el, Chart.js pinta las etiquetas de la leyenda ("Cargado",
+         "Redondo", "Vacio", ...) con su color por defecto (#666), ilegible
+         sobre el fondo del tema oscuro. */
+      if (options.plugins?.legend) {
+        options.plugins.legend.labels = {
+          ...options.plugins.legend.labels,
+          color: textColor,
+          font: { family: "'Inter', sans-serif", size: 12 },
         };
       }
       if (options.plugins?.title) {
