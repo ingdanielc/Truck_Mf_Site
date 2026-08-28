@@ -4,15 +4,46 @@
     <div class="col">
       <div class="d-flex justify-content-between align-items-center mb-1">
         <h1 class="h2 fw-bold mb-0 text-body tracking-tight">Reportes</h1>
-        <button
-          type="button"
-          class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center shadow-sm"
-          style="width: 40px; height: 40px"
-          (click)="showHistoryPanel = true"
-          title="Ver historial"
-        >
-          <i class="fa-solid fa-ellipsis-vertical fs-5 text-secondary"></i>
-        </button>
+        <div class="d-flex align-items-center gap-2">
+          <!-- Alcance de TODAS las graficas. Un solo control: con un selector
+               por tarjeta era posible dejar una en el mes y la de al lado en
+               el ano, invitando a comparar periodos distintos. -->
+          <div
+            class="btn-group btn-group-sm flex-shrink-0"
+            role="group"
+            aria-label="Alcance de los gráficos"
+          >
+            <button
+              type="button"
+              class="btn"
+              [class.btn-primary]="scope === 'mes'"
+              [class.btn-outline-secondary]="scope !== 'mes'"
+              [attr.aria-pressed]="scope === 'mes'"
+              (click)="setScope('mes')"
+            >
+              Mes
+            </button>
+            <button
+              type="button"
+              class="btn"
+              [class.btn-primary]="scope === 'anio'"
+              [class.btn-outline-secondary]="scope !== 'anio'"
+              [attr.aria-pressed]="scope === 'anio'"
+              (click)="setScope('anio')"
+            >
+              Año
+            </button>
+          </div>
+          <button
+            type="button"
+            class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center shadow-sm"
+            style="width: 40px; height: 40px"
+            (click)="showHistoryPanel = true"
+            title="Ver historial"
+          >
+            <i class="fa-solid fa-ellipsis-vertical fs-5 text-secondary"></i>
+          </button>
+        </div>
       </div>
       <p class="text-secondary mb-0">
         Visualiza el rendimiento y métricas de tus vehículos.
@@ -108,33 +139,7 @@
           <div
             class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
           >
-            <h5 class="fw-bold mb-0">Viajes por Vehículo</h5>
-            <div
-              class="btn-group btn-group-sm flex-shrink-0"
-              role="group"
-              aria-label="Alcance del gráfico de viajes"
-            >
-              <button
-                type="button"
-                class="btn"
-                [class.btn-primary]="tripsScope === 'mes'"
-                [class.btn-outline-secondary]="tripsScope !== 'mes'"
-                [attr.aria-pressed]="tripsScope === 'mes'"
-                (click)="setTripsScope('mes')"
-              >
-                Mes
-              </button>
-              <button
-                type="button"
-                class="btn"
-                [class.btn-primary]="tripsScope === 'anio'"
-                [class.btn-outline-secondary]="tripsScope !== 'anio'"
-                [attr.aria-pressed]="tripsScope === 'anio'"
-                (click)="setTripsScope('anio')"
-              >
-                Año
-              </button>
-            </div>
+            <h5 class="fw-bold mb-0">Viajes por {{ groupDimension }}</h5>
           </div>
           <div class="card-body p-2 p-md-4 pt-2">
             <div class="chart-container" style="height: 300px">
@@ -150,16 +155,18 @@
         </div>
       </div>
 
-      <!-- Chart 3 -->
+      <!-- Chart 3: Viajes Mensuales por Vehiculo. Selector Mes/Ano: en Ano el
+           eje X son los 12 meses (lineas por vehiculo) y en Mes pasa a ser la
+           placa (una barra por vehiculo). -->
       <div class="col-12">
         <div
           class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
         >
           <div
-            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center"
+            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
           >
             <h5 class="fw-bold mb-0">
-              Rendimiento: Viajes Mensuales por Vehículo
+              Rendimiento: Viajes Mensuales por {{ groupDimension }}
             </h5>
             <i class="fa-solid fa-chart-line text-info opacity-50 fs-4"></i>
           </div>
@@ -188,32 +195,6 @@
             class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
           >
             <h5 class="fw-bold mb-0">Finanzas: Ingresos vs Egresos</h5>
-            <div
-              class="btn-group btn-group-sm flex-shrink-0"
-              role="group"
-              aria-label="Alcance del gráfico de ingresos y egresos"
-            >
-              <button
-                type="button"
-                class="btn"
-                [class.btn-primary]="financialScope === 'mes'"
-                [class.btn-outline-secondary]="financialScope !== 'mes'"
-                [attr.aria-pressed]="financialScope === 'mes'"
-                (click)="setFinancialScope('mes')"
-              >
-                Mes
-              </button>
-              <button
-                type="button"
-                class="btn"
-                [class.btn-primary]="financialScope === 'anio'"
-                [class.btn-outline-secondary]="financialScope !== 'anio'"
-                [attr.aria-pressed]="financialScope === 'anio'"
-                (click)="setFinancialScope('anio')"
-              >
-                Año
-              </button>
-            </div>
           </div>
           <div class="card-body p-2 p-md-4 pt-2">
             <div class="chart-container" style="height: 300px">
@@ -229,18 +210,18 @@
         </div>
       </div>
 
-      <!-- New Chart: Ingresos vs Gastos por Vehículo (Mes Actual) -->
+      <!-- Ingresos vs Egresos por Vehiculo. Selector Mes/Ano: el eje X es
+           siempre la placa, el alcance solo cambia la ventana acumulada. El
+           periodo se nombra en el titulo del canvas, no en el encabezado. -->
       <div class="col-12">
         <div
           class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
         >
           <div
-            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center"
+            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
           >
             <h5 class="fw-bold mb-0">
-              Finanzas: Ingresos vs Egresos por Vehículo ({{
-                currentMonthName
-              }})
+              Finanzas: Ingresos vs Egresos por {{ groupDimension }}
             </h5>
             <i
               class="fa-solid fa-file-invoice-dollar text-success opacity-50 fs-4"
@@ -270,33 +251,16 @@
           <div
             class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
           >
-            <h5 class="fw-bold mb-0">Finanzas: Utilidad por Vehículo</h5>
-            <div
-              class="btn-group btn-group-sm flex-shrink-0"
-              role="group"
-              aria-label="Alcance del gráfico de utilidad"
-            >
-              <button
-                type="button"
-                class="btn"
-                [class.btn-primary]="profitScope === 'mes'"
-                [class.btn-outline-secondary]="profitScope !== 'mes'"
-                [attr.aria-pressed]="profitScope === 'mes'"
-                (click)="setProfitScope('mes')"
-              >
-                Mes
-              </button>
-              <button
-                type="button"
-                class="btn"
-                [class.btn-primary]="profitScope === 'anio'"
-                [class.btn-outline-secondary]="profitScope !== 'anio'"
-                [attr.aria-pressed]="profitScope === 'anio'"
-                (click)="setProfitScope('anio')"
-              >
-                Año
-              </button>
-            </div>
+            <h5 class="fw-bold mb-0">
+              Finanzas: Utilidad por {{ groupDimension }}
+            </h5>
+            <span class="text-body-secondary small text-end">
+              {{
+                scope === "anio"
+                  ? "Toca una barra para ver el detalle mensual"
+                  : "Toca una barra para ver el detalle por viaje"
+              }}
+            </span>
           </div>
           <div class="card-body p-2 p-md-4 pt-2">
             <div
@@ -309,6 +273,8 @@
                 [options]="vehicleProfitOptions"
                 [type]="vehicleProfitType"
                 [plugins]="vehicleProfitPlugins"
+                style="cursor: pointer"
+                (chartClick)="onVehicleProfitClick($event)"
               >
               </canvas>
             </div>
@@ -317,7 +283,7 @@
             >
               <span class="text-body-secondary small">
                 {{
-                  profitScope === "mes"
+                  scope === "mes"
                     ? "Utilidad de la flota en el mes"
                     : "Utilidad de la flota en el año"
                 }}
@@ -336,16 +302,276 @@
         </div>
       </div>
 
+      <!-- Detalle: Utilidad Mensual del grupo seleccionado. Solo existe en el
+           alcance de ano y solo tras tocar una barra de la grafica anterior;
+           volver a tocar esa misma barra la cierra. -->
+      @if (scope === "anio" && selectedProfitGroup) {
+        <div class="col-12">
+          <div
+            class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+          >
+            <div
+              class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
+            >
+              <h5 class="fw-bold mb-0">
+                Finanzas: Utilidad Mensual del {{ groupDimension }}
+                {{ selectedProfitGroup }}
+              </h5>
+              <button
+                type="button"
+                class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
+                style="width: 32px; height: 32px"
+                (click)="selectedProfitGroup = null"
+                title="Cerrar detalle"
+              >
+                <i class="fa-solid fa-xmark text-secondary"></i>
+              </button>
+            </div>
+            <div class="card-body p-2 p-md-4 pt-2">
+              <div
+                class="chart-container"
+                [style.height.px]="monthProfitDetailHeight"
+              >
+                <canvas
+                  baseChart
+                  [data]="monthProfitDetailData"
+                  [options]="monthProfitDetailOptions"
+                  [type]="monthProfitDetailType"
+                  [plugins]="monthProfitDetailPlugins"
+                >
+                </canvas>
+              </div>
+              <div
+                class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
+              >
+                <span class="text-body-secondary small">
+                  Utilidad del año
+                </span>
+                <span
+                  class="fw-bold fs-6"
+                  [class.text-danger]="monthProfitDetailTotal < 0"
+                >
+                  {{
+                    monthProfitDetailTotal
+                      | currency: "COP" : "symbol-narrow" : "1.0-0"
+                  }}
+                </span>
+              </div>
+              <!-- Maximo, minimo y promedio sobre los meses CON movimiento:
+                   contar los meses parados dejaria el minimo en cero y hundiria
+                   el promedio. -->
+              <div class="row g-2 mt-1 pt-3 border-top">
+                <div class="col-12 col-sm-4">
+                  <div class="text-body-secondary small">
+                    Utilidad máxima ({{ monthProfitStats.maxLabel }})
+                  </div>
+                  <div
+                    class="fw-bold"
+                    [class.text-danger]="monthProfitStats.max < 0"
+                  >
+                    {{
+                      monthProfitStats.max
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </div>
+                </div>
+                <div class="col-12 col-sm-4">
+                  <div class="text-body-secondary small">
+                    Utilidad mínima ({{ monthProfitStats.minLabel }})
+                  </div>
+                  <div
+                    class="fw-bold"
+                    [class.text-danger]="monthProfitStats.min < 0"
+                  >
+                    {{
+                      monthProfitStats.min
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </div>
+                </div>
+                <div class="col-12 col-sm-4">
+                  <div class="text-body-secondary small">
+                    Utilidad promedio ({{ monthProfitStats.n }}
+                    {{ monthProfitStats.n === 1 ? "mes" : "meses" }})
+                  </div>
+                  <div
+                    class="fw-bold"
+                    [class.text-danger]="monthProfitStats.avg < 0"
+                  >
+                    {{
+                      monthProfitStats.avg
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Detalle: Utilidad por Viaje. El gemelo del anterior para el alcance
+           de mes; se abre y se cierra con la misma barra. -->
+      @if (scope === "mes" && selectedProfitGroup) {
+        <div class="col-12">
+          <div
+            class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+          >
+            <div
+              class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
+            >
+              <h5 class="fw-bold mb-0">
+                Finanzas: Utilidad por Viaje del {{ groupDimension }}
+                {{ selectedProfitGroup }}
+              </h5>
+              <button
+                type="button"
+                class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
+                style="width: 32px; height: 32px"
+                (click)="selectedProfitGroup = null"
+                title="Cerrar detalle"
+              >
+                <i class="fa-solid fa-xmark text-secondary"></i>
+              </button>
+            </div>
+            <div class="card-body p-2 p-md-4 pt-2">
+              @if (tripProfitDetailData.labels?.length) {
+                <div
+                  class="chart-container"
+                  [style.height.px]="tripProfitDetailHeight"
+                >
+                  <canvas
+                    baseChart
+                    [data]="tripProfitDetailData"
+                    [options]="tripProfitDetailOptions"
+                    [type]="tripProfitDetailType"
+                    [plugins]="tripProfitDetailPlugins"
+                  >
+                  </canvas>
+                </div>
+              } @else {
+                <p class="text-body-secondary small mb-0">
+                  Sin viajes en {{ currentMonthName }}.
+                </p>
+              }
+              <!-- Ingresos menos los dos tipos de gasto. Las tres lineas
+                   restan exactamente hasta "Utilidad del mes", que a su vez es
+                   la barra desde la que se abrio el detalle. -->
+              <div
+                class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
+              >
+                <span class="text-body-secondary small">
+                  Ingresos (flete)
+                </span>
+                <span class="fw-bold">
+                  {{
+                    tripProfitFreight
+                      | currency: "COP" : "symbol-narrow" : "1.0-0"
+                  }}
+                </span>
+              </div>
+              <div
+                class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
+              >
+                <span class="text-body-secondary small">
+                  Gastos de viajes
+                </span>
+                <span class="fw-bold text-danger">
+                  -{{
+                    tripProfitTripExpenses
+                      | currency: "COP" : "symbol-narrow" : "1.0-0"
+                  }}
+                </span>
+              </div>
+              <div
+                class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
+              >
+                <span class="text-body-secondary small">
+                  Gastos de mantenimiento
+                </span>
+                <span class="fw-bold text-danger">
+                  -{{
+                    tripProfitOtherExpenses
+                      | currency: "COP" : "symbol-narrow" : "1.0-0"
+                  }}
+                </span>
+              </div>
+              <div
+                class="d-flex justify-content-between align-items-baseline gap-2 mt-1 pt-3 border-top"
+              >
+                <span class="text-body-secondary small">
+                  Utilidad del mes
+                </span>
+                <span
+                  class="fw-bold fs-6"
+                  [class.text-danger]="tripProfitMonthTotal < 0"
+                >
+                  {{
+                    tripProfitMonthTotal
+                      | currency: "COP" : "symbol-narrow" : "1.0-0"
+                  }}
+                </span>
+              </div>
+              <div class="row g-2 mt-1 pt-3 border-top">
+                <div class="col-12 col-sm-4">
+                  <div class="text-body-secondary small">
+                    Utilidad máxima ({{ tripProfitStats.maxLabel }})
+                  </div>
+                  <div
+                    class="fw-bold"
+                    [class.text-danger]="tripProfitStats.max < 0"
+                  >
+                    {{
+                      tripProfitStats.max
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </div>
+                </div>
+                <div class="col-12 col-sm-4">
+                  <div class="text-body-secondary small">
+                    Utilidad mínima ({{ tripProfitStats.minLabel }})
+                  </div>
+                  <div
+                    class="fw-bold"
+                    [class.text-danger]="tripProfitStats.min < 0"
+                  >
+                    {{
+                      tripProfitStats.min
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </div>
+                </div>
+                <div class="col-12 col-sm-4">
+                  <div class="text-body-secondary small">
+                    Utilidad promedio ({{ tripProfitStats.n }}
+                    {{ tripProfitStats.n === 1 ? "viaje" : "viajes" }})
+                  </div>
+                  <div
+                    class="fw-bold"
+                    [class.text-danger]="tripProfitStats.avg < 0"
+                  >
+                    {{
+                      tripProfitStats.avg
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Chart 4 -->
       <div class="col-12">
         <div
           class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
         >
           <div
-            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center"
+            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
           >
             <h5 class="fw-bold mb-0">
-              Finanzas: Utilidad Mensual por Vehículo
+              Finanzas: Utilidad Mensual por {{ groupDimension }}
             </h5>
             <i class="fa-solid fa-chart-area text-success opacity-50 fs-4"></i>
           </div>
@@ -363,28 +589,46 @@
         </div>
       </div>
 
-      <!-- Chart 4 -->
+      <!-- Chart 4: Mantenimiento por Vehiculo. Barras horizontales con
+           selector Mes/Ano; el periodo se nombra en el titulo del canvas. -->
       <div class="col-12">
         <div
           class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
         >
           <div
-            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center"
+            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
           >
             <h5 class="fw-bold mb-0">
-              Mantenimiento: Inversión por Vehículo ({{ currentMonthName }})
+              Mantenimiento: Inversión por {{ groupDimension }}
             </h5>
             <i class="fa-solid fa-wrench text-warning opacity-50 fs-4"></i>
           </div>
           <div class="card-body p-2 p-md-4 pt-2">
-            <div class="chart-container" style="height: 350px">
+            <div class="chart-container" [style.height.px]="maintenanceHeight">
               <canvas
                 baseChart
                 [data]="maintenanceData"
                 [options]="maintenanceOptions"
                 [type]="maintenanceType"
+                [plugins]="maintenancePlugins"
               >
               </canvas>
+            </div>
+            <div
+              class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
+            >
+              <span class="text-body-secondary small">
+                {{
+                  scope === "mes"
+                    ? "Inversión de la flota en el mes"
+                    : "Inversión de la flota en el año"
+                }}
+              </span>
+              <span class="fw-bold fs-6">
+                {{
+                  maintenanceTotal | currency: "COP" : "symbol-narrow" : "1.0-0"
+                }}
+              </span>
             </div>
           </div>
         </div>
