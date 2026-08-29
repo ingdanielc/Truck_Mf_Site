@@ -158,6 +158,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   public financialPlugins: Plugin<'bar'>[] = [
     this.barValueLabels((v) => this.formatMoneyLabel(v)),
+    this.ownerAvatarTicks('viaje'),
   ];
 
   /** Totales de las dos series, tal como están pintadas. */
@@ -581,6 +582,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   public tripProfitDetailPlugins: Plugin<'bar'>[] = [
     this.barValueLabels((v) => this.formatProfitLabel(v)),
+    this.ownerAvatarTicks('viaje'),
   ];
 
   /** Flete facturado por los viajes del grupo en el mes. */
@@ -827,12 +829,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
     });
 
-    const filas = viajes.map((t) => ({
-      label: `${(t.vehiclePlate || t.vehicle?.plate || 'S/P').toUpperCase()} #${t.numberTrip ?? t.id}`,
-      freight: t.freight || 0,
-      gasto: gastoPorViaje[String(t.id)] || 0,
-      mes: this.tripPeriodo(t)!.mes,
-    }));
+    /* La placa solo entra en la etiqueta cuando el grupo es un propietario: sus
+       viajes pueden repartirse entre varios vehículos. Con el grupo siendo un
+       vehículo, la placa ya está en el título de la tarjeta y repetirla en cada
+       fila solo roba ancho al eje. */
+    const filas = viajes.map((t) => {
+      const numero = `#${t.numberTrip ?? t.id}`;
+      const placa = (
+        t.vehiclePlate ||
+        t.vehicle?.plate ||
+        'S/P'
+      ).toUpperCase();
+      return {
+        label: porPropietario ? `${placa} ${numero}` : numero,
+        freight: t.freight || 0,
+        gasto: gastoPorViaje[String(t.id)] || 0,
+        mes: this.tripPeriodo(t)!.mes,
+      };
+    });
 
     return { filas, otros };
   }
@@ -1202,7 +1216,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * teléfono o cambiar de rol lo activa y desactiva solo.
    */
   get avatarTicks(): boolean {
-    return this.groupByOwner && window.innerWidth < 768;
+    return this.tickMode('grupo') === 'avatar';
+  }
+
+  /**
+   * Cómo se dibuja el rótulo del eje de categorías. En escritorio siempre lo
+   * escribe Chart.js; en móvil se dibuja a mano cuando la etiqueta es larga:
+   *
+   *   grupo + administrador  → nombre del propietario  → avatar de iniciales
+   *   grupo + propietario/conductor → placa            → girado 90°
+   *   viaje + administrador  → "HTM123 #45"            → girado 90°
+   *   viaje + propietario/conductor → "#45"            → cabe, no se toca
+   *
+   * En el alcance de año el eje de las tarjetas de viaje son los meses, que
+   * también caben.
+   */
+  private tickMode(modo: 'grupo' | 'viaje'): 'avatar' | 'girado' | 'normal' {
+    if (window.innerWidth >= 768) return 'normal';
+    if (modo === 'grupo') return this.groupByOwner ? 'avatar' : 'girado';
+    return this.groupByOwner && this.scope === 'mes' ? 'girado' : 'normal';
   }
 
   /**
@@ -1214,7 +1246,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * abreviatura: recortarla a dos letras no identificaría nada.
    */
   get rotatedPlateTicks(): boolean {
-    return !this.groupByOwner && window.innerWidth < 768;
+    return this.tickMode('grupo') === 'girado';
   }
 
   /** Dos letras en mayúscula: la inicial del nombre y la del apellido. */
@@ -1236,16 +1268,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * texto negro se lea sobre él, y con suficiente cuerpo para separarse del
    * fondo oscuro.
    */
-  private ownerAvatarTicks(): Plugin<'bar'> {
+  private ownerAvatarTicks(modo: 'grupo' | 'viaje' = 'grupo'): Plugin<'bar'> {
     return {
       id: 'ownerAvatarTicks',
       afterDraw: (chart) => {
         /* El eje de categorías es Y en las barras horizontales y X en las
            verticales; el rótulo se coloca a un lado o debajo según cuál sea. */
         const horizontal = (chart.options as any)?.indexAxis === 'y';
-        const avatar = this.avatarTicks;
-        const placa = this.rotatedPlateTicks && horizontal;
-        if (!avatar && !placa) return;
+        const forma = this.tickMode(modo);
+        const avatar = forma === 'avatar';
+        // Girado solo en horizontal: bajo las barras costaría más alto del que ahorra.
+        const girado = forma === 'girado' && horizontal;
+        if (!avatar && !girado) return;
 
         const scale: any = (chart as any).scales?.[horizontal ? 'y' : 'x'];
         const labels = (chart.data.labels ?? []) as string[];
@@ -1262,8 +1296,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
           const tick = scale.getPixelForTick(i);
           if (tick == null || Number.isNaN(tick)) return;
 
-          // Placa girada: el eje solo reserva 22 px, así que el texto va vertical.
-          if (placa) {
+          // Girado: el eje solo reserva 22 px, así que el texto va vertical.
+          if (girado) {
             ctx.save();
             ctx.translate(scale.right - 11, tick);
             ctx.rotate(-Math.PI / 2);
@@ -1456,28 +1490,46 @@ export class DashboardComponent implements OnInit, OnDestroy {
        por propietario el eje deja de escribir el nombre —lo dibuja el plugin
        como avatar— y se le fija el tamaño: sin eso Chart.js lo colapsa al no
        haber texto que medir. El nombre completo sigue en el tooltip. */
-    const ejeDeGrupos = (o: any, eje: 'x' | 'y', tamano: number) => {
+    const ejeAMano = (
+      o: any,
+      eje: 'x' | 'y',
+      modo: 'grupo' | 'viaje',
+      tamano: number,
+    ) => {
       /* El eje Y admite las dos formas dibujadas a mano; el X solo el avatar,
-         porque una placa girada bajo las barras costaría más alto del que
+         porque un rótulo girado bajo las barras costaría más alto del que
          ahorra. */
-      const aMano = () =>
-        self.avatarTicks || (eje === 'y' && self.rotatedPlateTicks);
+      const forma = () => {
+        const f = self.tickMode(modo);
+        return f === 'girado' && eje !== 'y' ? 'normal' : f;
+      };
+
+      /* El tooltip se dispara por toda la fila —o columna—, no solo sobre la
+         barra. Es lo que hace que tocar el avatar o la placa girada muestre el
+         nombre completo: el rótulo se dibuja dentro del canvas pero fuera del
+         área de trazado, y con `intersect` activo ahí no había nada que tocar.
+         De paso, acertarle a una barra de 26 px con el dedo deja de ser
+         necesario. */
+      o.interaction = { mode: 'index', intersect: false, axis: eje };
 
       const categoryTick = o.scales[eje].ticks.callback;
       o.scales[eje].ticks = {
         ...o.scales[eje].ticks,
         // `function` y no flecha: el callback necesita el `this` de la escala.
         callback: function (this: any, value: any) {
-          return aMano() ? '' : categoryTick.call(this, value);
+          return forma() === 'normal' ? categoryTick.call(this, value) : '';
         },
       };
       o.scales[eje].afterFit = (scale: any) => {
-        if (!aMano()) return;
-        const px = self.avatarTicks ? tamano : 22;
+        const f = forma();
+        if (f === 'normal') return;
+        const px = f === 'avatar' ? tamano : 22;
         if (eje === 'y') scale.width = px;
         else scale.height = px;
       };
     };
+    const ejeDeGrupos = (o: any, eje: 'x' | 'y', tamano: number) =>
+      ejeAMano(o, eje, 'grupo', tamano);
 
     // Barras horizontales: los grupos van en Y.
     ejeDeGrupos(this.vehicleProfitOptions, 'y', 46);
@@ -1485,6 +1537,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     ejeDeGrupos(this.monthVehicleFinOptions, 'y', 46);
     // Barras verticales: los grupos van en X.
     ejeDeGrupos(this.tripsByVehicleOptions, 'x', 40);
+
+    /* Tarjetas de detalle por viaje. Su etiqueta solo es larga para el
+       administrador, donde lleva la placa además del número. */
+    ejeAMano(this.tripProfitDetailOptions, 'y', 'viaje', 22);
+    ejeAMano(this.financialOptions, 'y', 'viaje', 22);
 
     /* Gráficas de líneas: aquí el grupo no está en el eje sino en la leyenda,
        una entrada por propietario. El círculo conserva el color de la serie
