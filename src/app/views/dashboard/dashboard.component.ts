@@ -116,6 +116,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     },
   };
   public tripsByVehicleType: ChartType = 'bar';
+  public tripsByVehiclePlugins: Plugin<'bar'>[] = [this.ownerAvatarTicks()];
 
   /** Total de viajes pintados. Suma las tres series del desglose por tipo
    *  (cargado, redondo, vacío) o la única del administrador, según el rol.
@@ -220,6 +221,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   public monthVehicleFinPlugins: Plugin<'bar'>[] = [
     this.barValueLabels((v) => this.formatMoneyLabel(v)),
+    this.ownerAvatarTicks(),
   ];
 
   public monthVehicleFinIncomeTotal = 0;
@@ -282,6 +284,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     minLabel: '—',
     n: 0,
   };
+
+  /** Avatar del eje en móvil: gris para todos, con las iniciales en negro. */
+  private static readonly AVATAR_BG = '#cbd5e1';
+  private static readonly AVATAR_TEXT = '#111827';
 
   public static readonly BAR_THICKNESS = 26;
   private static readonly ROW_H = 44;
@@ -460,6 +466,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   public vehicleProfitPlugins: Plugin<'bar'>[] = [
     this.barValueLabels((v) => this.formatProfitLabel(v)),
+    this.ownerAvatarTicks(),
   ];
 
   /** Monto sin signo. El cero no se rotula: con media flota sin taller en el
@@ -471,6 +478,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   public maintenancePlugins: Plugin<'bar'>[] = [
     this.barValueLabels((v) => this.formatMoneyLabel(v)),
+    this.ownerAvatarTicks(),
   ];
 
   /* Detalle: Utilidad Mensual del grupo seleccionado ------------------------
@@ -1184,6 +1192,106 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * si aun así no cabe, o si es una sola palabra, se trunca. Las placas y los
    * meses no llegan al umbral, así que quedan intactos.
    */
+  /**
+   * En móvil, con el eje agrupado por propietario, el nombre completo se come
+   * el área de trazado incluso recortado. Ahí el eje pasa a mostrar un avatar
+   * con las iniciales y el nombre queda en el tooltip. En escritorio, y para
+   * los ejes de placas, no cambia nada.
+   *
+   * Se evalúa en cada render — no se congela al configurar —, así que girar el
+   * teléfono o cambiar de rol lo activa y desactiva solo.
+   */
+  get avatarTicks(): boolean {
+    return this.groupByOwner && window.innerWidth < 768;
+  }
+
+  /**
+   * La otra mitad del ahorro en móvil: con el eje agrupado por vehículo, la
+   * placa se gira 90° y el eje pasa de ~60 px a 22. Girada se lee de abajo
+   * hacia arriba, la orientación habitual de un rótulo de eje.
+   *
+   * No se le aplica el avatar porque una placa de seis caracteres ya es la
+   * abreviatura: recortarla a dos letras no identificaría nada.
+   */
+  get rotatedPlateTicks(): boolean {
+    return !this.groupByOwner && window.innerWidth < 768;
+  }
+
+  /** Dos letras en mayúscula: la inicial del nombre y la del apellido. */
+  private initials(label: string): string {
+    const partes = (label ?? '').trim().split(/\s+/).filter(Boolean);
+    if (!partes.length) return '?';
+    if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+    return (partes[0][0] + partes[1][0]).toUpperCase();
+  }
+
+  /**
+   * Dibuja el avatar de cada categoría en el espacio que el eje reserva.
+   *
+   * Va en `afterDraw` para quedar sobre la rejilla. Gris fijo para todos: el
+   * color del eje no identifica nada —la identidad la dan las iniciales y el
+   * tooltip—, y un tono por propietario competiría con el color de las barras.
+   *
+   * El gris es el mismo en ambos temas, y a propósito: es claro para que el
+   * texto negro se lea sobre él, y con suficiente cuerpo para separarse del
+   * fondo oscuro.
+   */
+  private ownerAvatarTicks(): Plugin<'bar'> {
+    return {
+      id: 'ownerAvatarTicks',
+      afterDraw: (chart) => {
+        /* El eje de categorías es Y en las barras horizontales y X en las
+           verticales; el rótulo se coloca a un lado o debajo según cuál sea. */
+        const horizontal = (chart.options as any)?.indexAxis === 'y';
+        const avatar = this.avatarTicks;
+        const placa = this.rotatedPlateTicks && horizontal;
+        if (!avatar && !placa) return;
+
+        const scale: any = (chart as any).scales?.[horizontal ? 'y' : 'x'];
+        const labels = (chart.data.labels ?? []) as string[];
+        if (!scale || !labels.length) return;
+
+        const ctx = chart.ctx;
+        const R = 13;
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        labels.forEach((label, i) => {
+          const tick = scale.getPixelForTick(i);
+          if (tick == null || Number.isNaN(tick)) return;
+
+          // Placa girada: el eje solo reserva 22 px, así que el texto va vertical.
+          if (placa) {
+            ctx.save();
+            ctx.translate(scale.right - 11, tick);
+            ctx.rotate(-Math.PI / 2);
+            ctx.font = "600 10px 'Inter', sans-serif";
+            ctx.fillStyle = this.chartTextColor;
+            ctx.fillText(label, 0, 0);
+            ctx.restore();
+            return;
+          }
+
+          const cx = horizontal ? scale.right - R - 6 : tick;
+          const cy = horizontal ? tick : scale.top + R + 6;
+
+          ctx.beginPath();
+          ctx.arc(cx, cy, R, 0, Math.PI * 2);
+          ctx.fillStyle = DashboardComponent.AVATAR_BG;
+          ctx.fill();
+
+          ctx.font = "600 10px 'Inter', sans-serif";
+          ctx.fillStyle = DashboardComponent.AVATAR_TEXT;
+          ctx.fillText(this.initials(label), cx, cy + 0.5);
+        });
+
+        ctx.restore();
+      },
+    };
+  }
+
   private shortenLabel(text: string): string {
     const full = (text ?? '').toString().trim();
     if (window.innerWidth >= 768 || full.length <= 12) return full;
@@ -1248,6 +1356,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
         color: textColor,
         font: { family: "'Inter', sans-serif", size: 11 },
         callback: categoryTick,
+        /* Nunca inclinadas. Por defecto Chart.js gira las etiquetas hasta 50°
+           cuando no caben, y una placa en diagonal cuesta leerla. Prefiere
+           omitir alguna —`autoSkip` sigue activo— antes que torcerlas. */
+        maxRotation: 0,
+        minRotation: 0,
       };
       options.scales.y.ticks = {
         ...options.scales.y.ticks,
@@ -1331,6 +1444,73 @@ export class DashboardComponent implements OnInit, OnDestroy {
         callback: (value: any) => this.formatMobileValue(value),
       };
       o.scales.y.ticks = { ...o.scales.y.ticks, callback: categoryTick };
+    });
+
+    /* Las tres gráficas cuyo eje son los grupos. En móvil con agrupación por
+       propietario, el eje deja de escribir el nombre —lo dibuja el plugin como
+       avatar— y se le fija un ancho: sin eso Chart.js lo colapsa al no haber
+       texto que medir. El nombre completo sigue en el tooltip. */
+    const self = this;
+
+    /* Gráficas cuyo eje de categorías son los grupos. En móvil con agrupación
+       por propietario el eje deja de escribir el nombre —lo dibuja el plugin
+       como avatar— y se le fija el tamaño: sin eso Chart.js lo colapsa al no
+       haber texto que medir. El nombre completo sigue en el tooltip. */
+    const ejeDeGrupos = (o: any, eje: 'x' | 'y', tamano: number) => {
+      /* El eje Y admite las dos formas dibujadas a mano; el X solo el avatar,
+         porque una placa girada bajo las barras costaría más alto del que
+         ahorra. */
+      const aMano = () =>
+        self.avatarTicks || (eje === 'y' && self.rotatedPlateTicks);
+
+      const categoryTick = o.scales[eje].ticks.callback;
+      o.scales[eje].ticks = {
+        ...o.scales[eje].ticks,
+        // `function` y no flecha: el callback necesita el `this` de la escala.
+        callback: function (this: any, value: any) {
+          return aMano() ? '' : categoryTick.call(this, value);
+        },
+      };
+      o.scales[eje].afterFit = (scale: any) => {
+        if (!aMano()) return;
+        const px = self.avatarTicks ? tamano : 22;
+        if (eje === 'y') scale.width = px;
+        else scale.height = px;
+      };
+    };
+
+    // Barras horizontales: los grupos van en Y.
+    ejeDeGrupos(this.vehicleProfitOptions, 'y', 46);
+    ejeDeGrupos(this.maintenanceOptions, 'y', 46);
+    ejeDeGrupos(this.monthVehicleFinOptions, 'y', 46);
+    // Barras verticales: los grupos van en X.
+    ejeDeGrupos(this.tripsByVehicleOptions, 'x', 40);
+
+    /* Gráficas de líneas: aquí el grupo no está en el eje sino en la leyenda,
+       una entrada por propietario. El círculo conserva el color de la serie
+       —es lo que la identifica contra su línea— y el texto pasa a iniciales.
+       El nombre completo sigue en el tooltip de cada punto. */
+    [this.monthlyTripsOptions, this.monthlyProfitOptions].forEach((o: any) => {
+      o.plugins.legend.labels = {
+        ...o.plugins.legend.labels,
+        usePointStyle: true,
+        pointStyle: 'circle',
+        boxWidth: 8,
+        generateLabels: (chart: any) => {
+          const base = (
+            Chart.defaults.plugins.legend.labels as any
+          ).generateLabels(chart);
+          // Con una sola serie la leyenda no es el grupo: no se abrevia.
+          const porGrupo = (chart.data.datasets?.length ?? 0) > 1;
+          return base.map((l: any) => ({
+            ...l,
+            text:
+              self.avatarTicks && porGrupo
+                ? self.initials(l.text)
+                : self.shortenLabel(l.text),
+          }));
+        },
+      };
     });
   }
 

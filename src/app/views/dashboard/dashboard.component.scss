@@ -156,9 +156,21 @@
    salta de 8 (`pt-2`) a 16 (`pt-3`). La doble clase gana en especificidad al
    `p-2` / `p-md-4` del mismo elemento. */
 .card-body.chart-body {
-  padding-top: 10px;
+  padding-top: 18px;
 
   @media (min-width: 768px) {
     padding-top: 1rem;
   }
+}
+
+/* Borde de las tarjetas de reporte. Reemplaza al `border-0` que traían: con
+   solo la sombra, el canto de la tarjeta se perdia contra el fondo. El tono se
+   fija por tema en vez de heredar el de Bootstrap, que queda demasiado suave
+   en claro y demasiado apagado en oscuro. */
+.card.chart-card {
+  border: 1px solid #b6bfcb;
+}
+
+:host-context([data-bs-theme="dark"]) .card.chart-card {
+  border-color: #4c5e72 !important;
 }

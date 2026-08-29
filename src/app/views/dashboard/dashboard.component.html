@@ -138,7 +138,7 @@
            ocupa el ancho completo. -->
       <div class="col-12" [class.col-lg-6]="scope === 'anio'">
         <div
-          class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+          class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
         >
           <div
             class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
@@ -153,6 +153,7 @@
                 [data]="tripsByVehicleData"
                 [options]="tripsByVehicleOptions"
                 [type]="tripsByVehicleType"
+                [plugins]="tripsByVehiclePlugins"
               >
               </canvas>
             </div>
@@ -181,7 +182,7 @@
       @if (scope === "anio") {
         <div class="col-12 col-lg-6">
           <div
-            class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+            class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
           >
             <div
               class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
@@ -211,14 +212,12 @@
            cuesta. El selector Mes/Ano recalcula sobre los datos ya cargados. -->
       <div class="col-12">
         <div
-          class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+          class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
         >
           <div
             class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
           >
-            <h5 class="fw-bold mb-0">
-              Finanzas: Utilidad por {{ groupDimension }}
-            </h5>
+            <h5 class="fw-bold mb-0">Utilidad por {{ groupDimension }}</h5>
             <div class="d-flex align-items-center gap-2 flex-shrink-0">
               <!-- Escritorio: el texto. Movil: el icono, que lo despliega. -->
               <span
@@ -294,13 +293,13 @@
       @if (scope === "anio" && groupByOwner) {
         <div class="col-12">
           <div
-            class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+            class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
           >
             <div
               class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
             >
               <h5 class="fw-bold mb-0">
-                Finanzas: Utilidad Mensual por {{ groupDimension }}
+                Utilidad Mensual por {{ groupDimension }}
               </h5>
               <i
                 class="fa-solid fa-chart-area text-success opacity-50 fs-4"
@@ -326,13 +325,13 @@
            periodo se nombra en el titulo del canvas, no en el encabezado. -->
       <div class="col-12">
         <div
-          class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+          class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
         >
           <div
             class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
           >
             <h5 class="fw-bold mb-0">
-              Finanzas: Ingresos vs Egresos por {{ groupDimension }}
+              Ingresos vs Egresos por {{ groupDimension }}
             </h5>
             <div class="d-flex align-items-center gap-2 flex-shrink-0">
               <!-- Escritorio: el texto. Movil: el icono, que lo despliega. -->
@@ -411,13 +410,13 @@
       @if (scope === "anio" && selectedProfitGroup) {
         <div class="col-12">
           <div
-            class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+            class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
           >
             <div
               class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
             >
               <h5 class="fw-bold mb-0">
-                Finanzas: Utilidad Mensual del {{ groupDimension }}
+                Utilidad Mensual del {{ groupDimension }}
                 {{ selectedProfitGroup }}
               </h5>
               <button
@@ -560,13 +559,13 @@
       @if (scope === "mes" && selectedProfitGroup) {
         <div class="col-12">
           <div
-            class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+            class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
           >
             <div
               class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
             >
               <h5 class="fw-bold mb-0">
-                Finanzas: Utilidad por Viaje del {{ groupDimension }}
+                Utilidad por Viaje del {{ groupDimension }}
                 {{ selectedProfitGroup }}
               </h5>
               <button
@@ -712,13 +711,13 @@
       @if (selectedProfitGroup) {
         <div class="col-12">
           <div
-            class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+            class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
           >
             <div
               class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
             >
               <h5 class="fw-bold mb-0">
-                Finanzas: Ingresos vs Egresos por
+                Ingresos vs Egresos por
                 {{ scope === "mes" ? "Viaje" : "Mes" }} del {{ groupDimension }}
                 {{ selectedProfitGroup }}
               </h5>
@@ -808,14 +807,12 @@
            selector Mes/Ano; el periodo se nombra en el titulo del canvas. -->
       <div class="col-12">
         <div
-          class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+          class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
         >
           <div
             class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
           >
-            <h5 class="fw-bold mb-0">
-              Mantenimiento: Inversión por {{ groupDimension }}
-            </h5>
+            <h5 class="fw-bold mb-0">Mantenimiento por {{ groupDimension }}</h5>
             <i class="fa-solid fa-wrench text-warning opacity-50 fs-4"></i>
           </div>
           <div class="card-body chart-body p-2 p-md-4">
