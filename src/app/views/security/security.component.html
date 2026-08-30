@@ -327,6 +327,10 @@
             </label>
             <div
               class="input-group border rounded-3 overflow-hidden bg-body-tertiary"
+              [class.is-invalid-group]="
+                userForm.get('password')?.invalid &&
+                userForm.get('password')?.touched
+              "
             >
               <input
                 id="password"
@@ -361,7 +365,11 @@
               userForm.get("password")?.touched
             ) {
               <div class="text-danger small mt-1">
-                Este campo es obligatorio para continuar
+                @if (userForm.get("password")?.hasError("minlength")) {
+                  La contraseña debe tener al menos 6 caracteres
+                } @else {
+                  Este campo es obligatorio para continuar
+                }
               </div>
             }
           </div>
@@ -372,6 +380,11 @@
             </label>
             <div
               class="input-group border rounded-3 overflow-hidden bg-body-tertiary"
+              [class.is-invalid-group]="
+                (userForm.hasError('mismatch') ||
+                  userForm.get('confirmPassword')?.invalid) &&
+                userForm.get('confirmPassword')?.touched
+              "
             >
               <input
                 id="confirmPassword"
@@ -380,7 +393,8 @@
                 formControlName="confirmPassword"
                 placeholder="Escribe"
                 [class.is-invalid]="
-                  userForm.hasError('mismatch') &&
+                  (userForm.hasError('mismatch') ||
+                    userForm.get('confirmPassword')?.invalid) &&
                   userForm.get('confirmPassword')?.touched
                 "
               />
@@ -403,13 +417,16 @@
                 ></i>
               </button>
             </div>
-            @if (
-              userForm.hasError("mismatch") &&
-              userForm.get("confirmPassword")?.touched
-            ) {
-              <div class="text-danger small mt-1">
-                Las contraseñas no coinciden
-              </div>
+            @if (userForm.get("confirmPassword")?.touched) {
+              @if (userForm.get("confirmPassword")?.hasError("required")) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              } @else if (userForm.hasError("mismatch")) {
+                <div class="text-danger small mt-1">
+                  Las contraseñas no coinciden
+                </div>
+              }
             }
           </div>
 

@@ -90,3 +90,12 @@
 .transition-all {
   transition: all 0.2s ease;
 }
+
+/**
+ * Los campos de contraseña llevan el borde en el `.input-group` y el `input`
+ * va con `border-0`, asi que `is-invalid` no tiene borde que pintar. El rojo
+ * se marca sobre el grupo, que es el que se ve.
+ */
+.input-group.is-invalid-group {
+  border-color: var(--bs-danger) !important;
+}

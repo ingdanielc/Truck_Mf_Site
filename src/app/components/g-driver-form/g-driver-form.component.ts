@@ -131,7 +131,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
         confirmPassword: [''],
         ownerId: [null, [Validators.required]],
         salaryTypeId: [null, [Validators.required]],
-        salary: [null],
+        salary: [null, [Validators.required]],
       },
       {
         validators: [CustomValidators.passwordMatchValidator],
@@ -317,7 +317,7 @@ export class GDriverFormComponent implements OnInit, OnChanges {
     const salaryControl = this.driverForm.get('salary');
     if (!salaryTypeId) {
       this.salaryLabel = 'Valor Salario';
-      salaryControl?.clearValidators();
+      salaryControl?.setValidators([Validators.required]);
       salaryControl?.updateValueAndValidity();
       return;
     }

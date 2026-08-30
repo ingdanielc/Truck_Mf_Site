@@ -852,15 +852,18 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     const value = input.value;
     const stringValue = String(value).replaceAll(/\D/g, '');
-    const numericValue = stringValue ? Number.parseInt(stringValue, 10) : 0;
+    // Campo vacío -> null, para que `required` se dispare. Con 0 el validador
+    // lo daba por diligenciado y el mensaje nunca aparecía.
+    const numericValue = stringValue ? Number.parseInt(stringValue, 10) : null;
 
-    if (numericValue > MAX) {
+    if (numericValue !== null && numericValue > MAX) {
       const current = this.tripForm.get(controlName)?.value ?? 0;
       input.value = new Intl.NumberFormat('de-DE').format(current);
       return;
     }
     this.tripForm.get(controlName)?.setValue(numericValue, { emitEvent: true });
     this.tripForm.get(controlName)?.markAsDirty();
+    this.tripForm.get(controlName)?.markAsTouched();
   }
 
   getFormattedValue(controlName: string): string {

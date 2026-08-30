@@ -328,7 +328,19 @@ export class GAddExpenseComponent implements OnInit {
     this.selectedType = typeId;
     this.expenseForm.patchValue({ categoryId: null });
     this.selectedCategoryId = null;
+    // Al cambiar de tipo se pierde la categoria: se marca como tocada para que
+    // quede en rojo y se vea que falta elegir una.
+    this.expenseForm.get('categoryId')?.markAsTouched();
     this.filterCategories();
+  }
+
+  /**
+   * `categoryId` no tiene input propio, asi que nunca recibe el blur que la
+   * marcaria como tocada. Al salir del monto ya hay interaccion suficiente
+   * para resaltar todo lo que falte.
+   */
+  onAmountBlur(): void {
+    this.expenseForm.markAllAsTouched();
   }
 
   filterCategories(): void {

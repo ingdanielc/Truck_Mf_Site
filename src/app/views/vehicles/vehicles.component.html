@@ -819,9 +819,31 @@
           </div>
 
           <div class="col-6 mb-3">
-            <label for="axleCount" class="form-label small fw-bold mb-2"
-              >Nro. de Ejes</label
-            >
+            <div class="d-flex align-items-center gap-1 mb-2">
+              <label for="axleCount" class="form-label small fw-bold mb-0"
+                >Nro. de Ejes</label
+              >
+              <!--
+                En movil el texto de ayuda no cabe bajo el campo: se colapsa
+                en este icono y se despliega como tooltip al tocarlo.
+              -->
+              <span class="axle-help position-relative d-md-none">
+                <button
+                  type="button"
+                  class="btn btn-link p-0 border-0 shadow-none text-secondary d-flex"
+                  aria-label="Por que importa el numero de ejes"
+                  [attr.aria-expanded]="showAxleHelp"
+                  (click)="toggleAxleHelp($event)"
+                >
+                  <i class="fa-solid fa-circle-question"></i>
+                </button>
+                @if (showAxleHelp) {
+                  <span class="axle-help-bubble small shadow" role="tooltip">
+                    {{ axleHelpText }}
+                  </span>
+                }
+              </span>
+            </div>
             <select
               id="axleCount"
               class="form-select rounded-3 py-2 px-3"
@@ -835,6 +857,9 @@
                 <option [value]="option">{{ option }}</option>
               }
             </select>
+            <div class="form-text small text-secondary mt-1 d-none d-md-block">
+              {{ axleHelpText }}
+            </div>
           </div>
         </div>
       </div>
@@ -892,6 +917,11 @@
             class="form-select rounded-3 py-2 px-3"
             formControlName="driverId"
             [disabled]="!vehicleForm.get('ownerId')?.value || loadingDrivers"
+            [class.is-invalid]="
+              vehicleForm.get('ownerId')?.value &&
+              vehicleForm.get('driverId')?.invalid &&
+              vehicleForm.get('driverId')?.touched
+            "
           >
             <option [value]="null">
               @if (loadingDrivers) {
@@ -915,6 +945,13 @@
             <div class="text-body-secondary small mt-1">
               <i class="fa-solid fa-circle-info me-1"></i>
               Selecciona un propietario para ver los conductores disponibles
+            </div>
+          } @else if (
+            vehicleForm.get("driverId")?.invalid &&
+            vehicleForm.get("driverId")?.touched
+          ) {
+            <div class="text-danger small mt-1">
+              Este campo es obligatorio para continuar
             </div>
           }
         </div>

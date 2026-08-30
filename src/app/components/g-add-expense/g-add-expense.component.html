@@ -33,7 +33,7 @@
     @if (!isMaintenance) {
       <!-- Type Selection -->
       <div class="mb-4">
-        <label for="" class="form-label fw-bold small text-body mb-3"
+        <label for="" class="form-label fw-bold small text-body mb-2"
           >Tipo de Gasto*</label
         >
         <div
@@ -59,7 +59,7 @@
 
     <!-- Category Selection -->
     <div class="mb-4">
-      <label for="" class="form-label fw-bold small text-body mb-3"
+      <label for="" class="form-label fw-bold small text-body mb-2"
         >Selecciona una categoría*</label
       >
 
@@ -119,15 +119,6 @@
           }
         </div>
       }
-
-      @if (
-        expenseForm.get("categoryId")?.touched &&
-        expenseForm.get("categoryId")?.invalid
-      ) {
-        <div class="text-danger small mt-2">
-          Este campo es obligatorio para continuar
-        </div>
-      }
     </div>
 
     <!-- Amount Input -->
@@ -137,11 +128,10 @@
       >
       <div
         class="input-group input-group-lg no-border-input-group rounded-3 overflow-hidden shadow-sm border transition-all"
-        [ngClass]="{
-          'border-danger':
-            expenseForm.get('amount')?.touched &&
-            expenseForm.get('amount')?.invalid,
-        }"
+        [class.is-invalid-group]="
+          expenseForm.get('amount')?.touched &&
+          expenseForm.get('amount')?.invalid
+        "
       >
         <span
           class="input-group-text bg-transparent border-0 text-primary fw-bold fs-4 ps-4"
@@ -156,6 +146,7 @@
           maxlength="10"
           formControlName="amount"
           (input)="onAmountInput($event)"
+          (blur)="onAmountBlur()"
         />
         @if (
           expenseForm.get("amount")?.touched &&
@@ -188,8 +179,12 @@
       >
       <textarea
         id="desc"
-        class="form-control border shadow-sm rounded-3 p-3 text-secondary transition-all"
+        class="form-control shadow-sm rounded-3 p-3 text-secondary transition-all"
         rows="3"
+        [class.is-invalid]="
+          expenseForm.get('description')?.touched &&
+          expenseForm.get('description')?.invalid
+        "
         placeholder="{{
           isMaintenance
             ? 'Ingresa una descripción breve del mantenimiento'

@@ -105,7 +105,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
             updateOn: 'blur',
           },
         ],
-        password: ['', [Validators.required, Validators.minLength(6)]],
+        password: ['', [Validators.required, Validators.minLength(8)]],
         confirmPassword: ['', [Validators.required]],
         isDriver: [false],
         licenseCategory: [null],
@@ -318,7 +318,7 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
 
     this.ownerForm
       .get('password')
-      ?.setValidators([Validators.required, Validators.minLength(6)]);
+      ?.setValidators([Validators.required, Validators.minLength(8)]);
     this.ownerForm.get('confirmPassword')?.setValidators([Validators.required]);
     this.ownerForm.get('password')?.updateValueAndValidity();
     this.ownerForm.get('confirmPassword')?.updateValueAndValidity();

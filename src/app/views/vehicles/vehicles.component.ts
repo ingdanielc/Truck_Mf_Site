@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 
 import { ActivatedRoute, Router } from '@angular/router';
@@ -131,6 +131,15 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   brands: any[] = [];
   years: number[] = [];
   axleOptions: number[] = [1, 2, 3, 4, 5, 6];
+
+  /**
+   * El numero de ejes define la categoria del vehiculo en los peajes, que es
+   * de donde sale el estimado de peajes de cada viaje. Se explica en el
+   * formulario porque un dato mal cargado desvia ese calculo en todos los
+   * viajes del vehiculo.
+   */
+  readonly axleHelpText = 'Define la categoría del vehículo en peajes.';
+  showAxleHelp = false;
   owners: ModelOwner[] = [];
   drivers: ModelDriver[] = [];
   loadingDrivers: boolean = false;
@@ -279,6 +288,19 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.userSub?.unsubscribe();
     this.ownerChangeSub?.unsubscribe();
+  }
+
+  toggleAxleHelp(event: Event): void {
+    // Sin esto el click llega al documento y el listener de abajo lo cierra
+    // en el mismo gesto que lo abre.
+    event.stopPropagation();
+    this.showAxleHelp = !this.showAxleHelp;
+  }
+
+  /** El tooltip de ejes se cierra al tocar en cualquier otro lado. */
+  @HostListener('document:click')
+  closeAxleHelp(): void {
+    this.showAxleHelp = false;
   }
 
   loadDriversByOwner(ownerId: number): void {

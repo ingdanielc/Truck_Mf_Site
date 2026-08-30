@@ -489,3 +489,18 @@ html[data-bs-theme="dark"] .text-indigo {
 .sidebar.bg-dark .text-muted {
   color: rgba(var(--bs-body-color-rgb), 0.75) !important;
 }
+
+/* En movil los campos van en `col-6`, asi que un mensaje de validacion de 39
+   caracteres se parte en tres lineas y empuja el formulario. Se compacta la
+   tipografia para que quepa en dos. En >=768px se deja como esta.
+
+   Se cualifica con `.small` (que todos los mensajes ya llevan) para ganarle
+   por especificidad al `font-size` de Bootstrap sin recurrir a `!important`:
+   el shell sirve Bootstrap y no se puede asumir el orden de carga. */
+@media (max-width: 767.98px) {
+  .text-danger.small,
+  .invalid-feedback.small {
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+}

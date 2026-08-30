@@ -18,6 +18,36 @@
   }
 }
 
+/**
+ * Estado invalido. Las utilidades de Bootstrap (`border-danger`, `is-invalid`)
+ * no alcanzan a pintar el borde aqui: el `border` con `!important` de
+ * `.no-border-input-group` y de la utilidad `.border` las gana. Se marca el
+ * rojo desde el propio componente para que si se vea.
+ */
+.input-group.no-border-input-group.is-invalid-group {
+  border-color: var(--bs-danger) !important;
+
+  &:focus-within {
+    border-color: var(--bs-danger) !important;
+    box-shadow: 0 0 0 4px rgba(var(--bs-danger-rgb), 0.1) !important;
+  }
+}
+
+.category-group.is-invalid-group {
+  border: 1px solid var(--bs-danger) !important;
+  border-radius: var(--bs-border-radius);
+  padding: 0.5rem;
+}
+
+textarea.form-control.is-invalid {
+  border-color: var(--bs-danger) !important;
+
+  &:focus {
+    border-color: var(--bs-danger) !important;
+    box-shadow: 0 0 0 4px rgba(var(--bs-danger-rgb), 0.1) !important;
+  }
+}
+
 [data-bs-theme="dark"] {
   .btn-white {
     background-color: #2b3035 !important;
@@ -59,6 +89,14 @@
     .input-group-text {
       color: var(--bs-primary) !important;
     }
+
+    &.is-invalid-group {
+      border-color: var(--bs-danger) !important;
+    }
+  }
+
+  .form-control.is-invalid {
+    border-color: var(--bs-danger) !important;
   }
 
   .text-secondary {

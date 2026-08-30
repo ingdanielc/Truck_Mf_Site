@@ -453,7 +453,7 @@
                   ownerForm.get("licenseCategory")?.touched
                 ) {
                   <div class="text-danger small mt-1">
-                    Este campo es obligatorio
+                    Este campo es obligatorio para continuar
                   </div>
                 }
               </div>
@@ -481,7 +481,7 @@
                   ownerForm.get("licenseExpiry")?.touched
                 ) {
                   <div class="text-danger small mt-1">
-                    Este campo es obligatorio
+                    Este campo es obligatorio para continuar
                   </div>
                 }
               </div>
@@ -564,7 +564,11 @@
                 ownerForm.get("password")?.touched
               ) {
                 <div class="text-danger small mt-1">
-                  Este campo es obligatorio para continuar
+                  @if (ownerForm.get("password")?.hasError("minlength")) {
+                    La contraseña debe tener al menos 8 caracteres
+                  } @else {
+                    Este campo es obligatorio para continuar
+                  }
                 </div>
               }
             </div>
