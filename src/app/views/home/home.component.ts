@@ -23,6 +23,33 @@ import {
   imports: [],
 })
 export class HomeComponent implements OnInit, OnDestroy {
+  /**
+   * La deja Truck_Mf_Auth al terminar el registro. Los dos microfrontends
+   * comparten origen, asi que comparten sessionStorage.
+   */
+  private static readonly ONBOARDING_KEY = 'owner_onboarding';
+
+  /** Guia de primeros pasos para quien acaba de crear su cuenta. */
+  showOnboarding: boolean = false;
+
+  readonly onboardingSteps: any[] = [
+    {
+      routing: '/site/drivers',
+      title: 'Agrega tus conductores',
+      icon: 'fa-solid fa-id-card',
+    },
+    {
+      routing: '/site/vehicles',
+      title: 'Registra tus vehículos',
+      icon: 'fa-solid fa-truck-moving',
+    },
+    {
+      routing: '/site/trips',
+      title: 'Registra tus viajes',
+      icon: 'fa-solid fa-route',
+    },
+  ];
+
   readonly whatsappUrl: string =
     'https://wa.me/573147235739?text=' +
     encodeURIComponent(
@@ -116,7 +143,15 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.listCard = [...this.allCards];
+    this.showOnboarding =
+      sessionStorage.getItem(HomeComponent.ONBOARDING_KEY) === '1';
     this.subscribeToUserContext();
+  }
+
+  /** Se oculta al descartarla o al entrar a cualquiera de los tres pasos. */
+  dismissOnboarding(): void {
+    this.showOnboarding = false;
+    sessionStorage.removeItem(HomeComponent.ONBOARDING_KEY);
   }
 
   private subscribeToUserContext(): void {
@@ -185,6 +220,11 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   navigateTo(path: string): void {
     this.router.navigateByUrl(path);
+  }
+
+  goToOnboardingStep(path: string): void {
+    this.dismissOnboarding();
+    this.navigateTo(path);
   }
 
   private async handleDriverLocation(userId: number) {

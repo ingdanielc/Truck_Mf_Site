@@ -4,10 +4,60 @@
       <div class="col-12">
         <h1 class="display-4 fw-bold mb-2 gradient-text">Panel de Control</h1>
         <p class="lead text-secondary opacity-75">
-          Bienvenido al ecosistema logístico de Cash<span class="text-primary">Truck</span>.
+          Te damos la bienvenida al ecosistema logístico de Cash<span
+            class="text-primary"
+            >Truck</span
+          >.
         </p>
       </div>
     </div>
+
+    @if (showOnboarding) {
+      <div class="row mb-4 justify-content-center">
+        <div class="col-12 col-xl-10">
+          <div class="alert alert-success p-4 mb-0" role="status">
+            <div
+              class="d-flex justify-content-between align-items-start gap-3 mb-3"
+            >
+              <div>
+                <h2 class="h5 fw-bold mb-1">
+                  <i class="fa-solid fa-flag-checkered me-2"></i>
+                  Tus primeros pasos
+                </h2>
+                <p class="mb-0 small opacity-75">
+                  Sigue este orden para empezar a registrar viajes.
+                </p>
+              </div>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="Ocultar los primeros pasos"
+                (click)="dismissOnboarding()"
+              ></button>
+            </div>
+
+            <div class="row g-3">
+              @for (
+                step of onboardingSteps;
+                track step.routing;
+                let i = $index
+              ) {
+                <div class="col-12 col-md-4">
+                  <div
+                    class="onboarding-step h-100 p-3 d-flex gap-3 align-items-center"
+                    (click)="goToOnboardingStep(step.routing)"
+                    onkeypress
+                  >
+                    <span class="onboarding-number">{{ i + 1 }}</span>
+                    <span class="fw-bold">{{ step.title }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
 
     <div class="row g-4 justify-content-center">
       @for (card of listCard; track card.routing) {
@@ -35,7 +85,9 @@
     <!-- Developer Info Footer -->
     <div class="row mt-4">
       <div class="col-12 text-center text-secondary opacity-75">
-        <p class="mb-0 fw-bold" style="margin-bottom: -2px !important">Cash<span class="text-primary">Truck</span></p>
+        <p class="mb-0 fw-bold" style="margin-bottom: -2px !important">
+          Cash<span class="text-primary">Truck</span>
+        </p>
         <p class="mb-1 small">Menos gastos, más camino.</p>
         <p class="mb-0 small">
           Ing. Daniel Castro S.

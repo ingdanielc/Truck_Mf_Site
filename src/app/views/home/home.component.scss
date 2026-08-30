@@ -88,3 +88,32 @@
     padding: 1.5rem !important;
   }
 }
+
+/* Guia de primeros pasos. Vive dentro de un .alert-success, asi que los
+   colores salen del token de exito y no del primario. */
+.onboarding-step {
+  background: rgba(var(--bs-success-rgb), 0.12);
+  border: 1px solid transparent;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: var(--bs-success);
+    transform: translateY(-3px);
+  }
+}
+
+.onboarding-number {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--bs-success);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
