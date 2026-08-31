@@ -266,9 +266,7 @@
             >
               <span class="text-body-secondary small">
                 {{
-                  scope === "mes"
-                    ? "Utilidad en el mes"
-                    : "Utilidad en el año"
+                  scope === "mes" ? "Utilidad en el mes" : "Utilidad en el año"
                 }}
               </span>
               <span
@@ -579,7 +577,17 @@
               </button>
             </div>
             <div class="card-body chart-body p-2 p-md-4">
-              @if (tripProfitDetailData.labels?.length) {
+              @if (detailLoading) {
+                <p
+                  class="text-body-secondary small mb-0 d-flex align-items-center gap-2"
+                >
+                  <span
+                    class="spinner-border spinner-border-sm"
+                    aria-hidden="true"
+                  ></span>
+                  Cargando el detalle de {{ currentMonthName }}...
+                </p>
+              } @else if (tripProfitDetailData.labels?.length) {
                 <div
                   class="chart-container"
                   [style.height.px]="tripProfitDetailHeight"
@@ -732,16 +740,31 @@
               </button>
             </div>
             <div class="card-body chart-body p-2 p-md-4">
-              <div class="chart-container" [style.height.px]="financialHeight">
-                <canvas
-                  baseChart
-                  [data]="financialData"
-                  [options]="financialOptions"
-                  [type]="financialType"
-                  [plugins]="financialPlugins"
+              @if (detailLoading) {
+                <p
+                  class="text-body-secondary small mb-0 d-flex align-items-center gap-2"
                 >
-                </canvas>
-              </div>
+                  <span
+                    class="spinner-border spinner-border-sm"
+                    aria-hidden="true"
+                  ></span>
+                  Cargando el detalle de {{ currentMonthName }}...
+                </p>
+              } @else {
+                <div
+                  class="chart-container"
+                  [style.height.px]="financialHeight"
+                >
+                  <canvas
+                    baseChart
+                    [data]="financialData"
+                    [options]="financialOptions"
+                    [type]="financialType"
+                    [plugins]="financialPlugins"
+                  >
+                  </canvas>
+                </div>
+              }
               <div
                 class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
               >

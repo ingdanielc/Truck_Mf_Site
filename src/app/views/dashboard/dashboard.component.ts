@@ -5,7 +5,7 @@ import { VehicleService as ExpenseService } from '../../services/expense.service
 import { VehicleService } from '../../services/vehicle.service';
 import { SecurityService } from '../../services/security/security.service';
 import { OwnerService } from '../../services/owner.service';
-import { DriverService } from '../../services/driver.service';
+import { ReportService } from '../../services/report.service';
 import { CommonService } from '../../services/common.service';
 import {
   Filter,
@@ -27,16 +27,18 @@ import { ModelVehicle } from '../../models/vehicle-model';
 import { ModelTrip } from '../../models/trip-model';
 import { ModelExpense } from '../../models/expense-model';
 import { ModelOwner } from '../../models/owner-model';
+import {
+  DashboardActiveTrip,
+  DashboardGroup,
+  DashboardGroupTrip,
+  DashboardGroupTrips,
+  DashboardMonth,
+  MAINTENANCE_EXPENSE_TYPE,
+} from '../../models/dashboard-report-model';
 import { FormsModule } from '@angular/forms';
 import { GVehicleTripExpCardComponent } from '../../components/g-vehicle-trip-exp-card/g-vehicle-trip-exp-card.component';
 
 Chart.register(...registerables);
-
-/** Mes y año ya resueltos de un registro; `null` si no tiene fecha usable. */
-interface Periodo {
-  mes: number;
-  anio: number;
-}
 
 /** Resumen de una serie de utilidad, para el pie de los detalles. */
 interface ProfitStats {
@@ -493,6 +495,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
      suman exactamente la barra de la que se abrió. */
   public selectedProfitGroup: string | null = null;
 
+  /**
+   * Filas viaje a viaje del grupo abierto, en el mes seleccionado. Vienen del
+   * Endpoint B, que solo se pide al tocar una barra: el reporte de la carga
+   * llega agregado por mes y no baja al viaje.
+   *
+   * Es la fuente comun de las dos tarjetas de detalle del alcance de mes
+   * —"Utilidad por Viaje" e "Ingresos vs Egresos por Viaje"—, y por eso sus
+   * totales cuadran por construcción y no por coincidencia.
+   */
+  private groupTripRows: {
+    label: string;
+    freight: number;
+    gasto: number;
+    mes: number;
+  }[] = [];
+
+  /** Gastos del periodo que no cuelgan de ningun viaje del periodo:
+   *  mantenimiento y gastos sueltos. Los devuelve el mismo Endpoint B. */
+  private groupTripOthers = 0;
+
+  /** El detalle viaja aparte de la carga: mientras llega, la tarjeta lo dice. */
+  public detailLoading = false;
+
+  /** Respuestas del Endpoint B ya recibidas, por grupo, año y mes. Cerrar y
+   *  volver a abrir la misma barra no vuelve a pedir nada. */
+  private readonly detailCache = new Map<string, DashboardGroupTrips>();
+
+  /** Descarta la respuesta de una petición que ya quedó atrás: el usuario
+   *  puede tocar otra barra antes de que vuelva la anterior. */
+  private detailToken = 0;
+
   /** Utilidad por grupo y mes del año cargado. Llave: la etiqueta del grupo. */
   private profitByGroupMonth: Record<string, number[]> = {};
 
@@ -716,8 +749,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.selectedProfitGroup =
       this.selectedProfitGroup === label ? null : label;
     this.buildMonthProfitDetail();
-    this.buildTripProfitDetail();
-    this.processFinancialData();
+    /* El detalle del mes baja del mes al viaje, y eso solo lo sabe el
+       servidor: se pide aquí —al tocar la barra— y repinta las dos tarjetas
+       que lo usan cuando llega. */
+    void this.refreshGroupDetail();
     this.updateCurrentMonthName();
   }
 
@@ -755,12 +790,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     /* Los tres componentes del pie salen de la misma fuente que alimenta a las
        tarjetas del alcance de mes, así que las cifras se leen igual en los dos
        alcances y suman exactamente la utilidad del año. */
-    const { filas, otros } = this.selectedProfitGroup
-      ? this.selectedGroupRows(false)
-      : { filas: [], otros: 0 };
-    this.monthProfitFreight = filas.reduce((a, f) => a + f.freight, 0);
-    this.monthProfitTripExpenses = filas.reduce((a, f) => a + f.gasto, 0);
-    this.monthProfitOtherExpenses = otros;
+    const meses = this.monthsOf(this.selectedProfitGroup);
+    this.monthProfitFreight = meses.reduce((a, m) => a + (m.freight || 0), 0);
+    this.monthProfitTripExpenses = meses.reduce(
+      (a, m) => a + (m.tripExpenses || 0),
+      0,
+    );
+    this.monthProfitOtherExpenses = meses.reduce(
+      (a, m) => a + this.otherExpenses(m),
+      0,
+    );
 
     this.monthProfitStats = this.computeStats(
       data,
@@ -770,87 +809,117 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Vuelca la utilidad viaje a viaje del grupo seleccionado, en el mes.
+   * Trae el detalle viaje a viaje del grupo abierto, en el mes seleccionado.
    *
-   * El gasto de un viaje se resuelve por `tripId` y acotado al mes, igual que
-   * lo acota la gráfica de la que cuelga. Lo que no cae en ningún viaje del mes
-   * — mantenimiento, gastos sueltos, o gastos de un viaje de otro mes — se
-   * acumula en `tripProfitOtherExpenses` y se muestra en el pie: sin eso, el
-   * total no cuadraría con la barra que se tocó y no habría forma de saber por
-   * qué.
+   * Es la única pieza del tablero que baja del mes al viaje, y por eso viaja
+   * aparte: el reporte de la carga llega agregado por mes. Se pide al tocar
+   * una barra —nunca en la entrada— y se guarda en caché, así que cerrar y
+   * volver a abrir la misma barra no cuesta otra petición.
+   *
+   * `detailToken` descarta la respuesta de una petición que ya quedó atrás:
+   * tocar otra barra antes de que vuelva la anterior dejaría en pantalla las
+   * filas del grupo equivocado.
    */
+  private async refreshGroupDetail(): Promise<void> {
+    const token = ++this.detailToken;
+    const label = this.selectedProfitGroup;
+
+    /* En el alcance de año el detalle es "Utilidad Mensual", que sale del
+       propio reporte: no hay nada que pedir. */
+    if (!label || this.scope !== 'mes') {
+      this.applyGroupDetail([], 0);
+      return;
+    }
+
+    const key = this.groupKeyByLabel[label];
+    if (!key) {
+      this.applyGroupDetail([], 0);
+      return;
+    }
+
+    const cacheKey = `${key}|${this.selectedYear}|${this.selectedMonth}`;
+    const cached = this.detailCache.get(cacheKey);
+    if (cached) {
+      this.applyGroupDetail(cached.trips ?? [], cached.otherExpenses ?? 0);
+      return;
+    }
+
+    /* Se repinta vacío antes de salir a la red: si no, las tarjetas seguirían
+       mostrando los viajes del grupo anterior mientras llega la respuesta. */
+    this.applyGroupDetail([], 0);
+    this.detailLoading = true;
+    try {
+      const detail = await lastValueFrom(
+        this.reportService.getGroupTrips(
+          key,
+          this.selectedYear,
+          this.selectedMonth,
+        ),
+      );
+      if (token !== this.detailToken) return;
+      this.detailCache.set(cacheKey, detail);
+      this.applyGroupDetail(detail?.trips ?? [], detail?.otherExpenses ?? 0);
+    } catch (error) {
+      if (token !== this.detailToken) return;
+      console.error('Error loading group detail:', error);
+      this.applyGroupDetail([], 0);
+    } finally {
+      if (token === this.detailToken) this.detailLoading = false;
+    }
+  }
+
+  /** Vacía el detalle sin pedir nada: cambió el grupo, el mes, el año o el
+   *  reporte entero, y las filas que hubiera pertenecen a otro periodo. */
+  private invalidateGroupDetail(): void {
+    this.detailToken++;
+    this.detailLoading = false;
+    this.groupTripRows = [];
+    this.groupTripOthers = 0;
+  }
+
   /**
-   * Filas viaje a viaje del grupo abierto, dentro del mes o del año.
+   * Vuelca las filas del Endpoint B y repinta las dos tarjetas que las usan.
    *
-   * Es la fuente común de las dos tarjetas de detalle — "Utilidad por Viaje" e
-   * "Ingresos vs Egresos por Viaje" —, y por eso sus totales cuadran por
-   * construcción y no por coincidencia.
+   * El gasto ya viene imputado por `tripId` y acotado al periodo, igual que lo
+   * acota la gráfica de la que cuelga el detalle. Lo que no cae en ningún
+   * viaje del periodo —mantenimiento, gastos sueltos— llega en `otherExpenses`
+   * y se muestra en el pie: sin eso, el total no cuadraría con la barra que se
+   * tocó y no habría forma de saber por qué.
    *
-   * El gasto se imputa por `tripId` y acotado al periodo; lo que no cae en
-   * ningún viaje del periodo (mantenimiento, gastos sueltos, o gastos de un
-   * viaje de otro periodo) se devuelve aparte en `otros`.
-   *
-   * No se excluye el viaje vacío: no factura, pero sí puede generar gasto, y
-   * dejarlo fuera descuadraría el total contra la barra de origen.
+   * La placa solo entra en la etiqueta cuando el grupo es un propietario: sus
+   * viajes pueden repartirse entre varios vehículos. Con el grupo siendo un
+   * vehículo, la placa ya está en el título de la tarjeta y repetirla en cada
+   * fila solo roba ancho al eje.
    */
-  private selectedGroupRows(esMes: boolean): {
-    filas: { label: string; freight: number; gasto: number; mes: number }[];
-    otros: number;
-  } {
-    const key = this.selectedProfitGroup;
-    if (!key) return { filas: [], otros: 0 };
-
+  private applyGroupDetail(
+    trips: DashboardGroupTrip[],
+    otherExpenses: number,
+  ): void {
     const porPropietario = this.groupByOwner;
-    const enRango = (p: Periodo | null) =>
-      !!p &&
-      p.anio === this.selectedYear &&
-      (!esMes || p.mes === this.selectedMonth);
 
-    const viajes = this.loadedTrips.filter((t) => {
-      if (!enRango(this.tripPeriodo(t))) return false;
-      return this.tripGroupKey(t, porPropietario) === key;
-    });
-
-    const ids = new Set(viajes.map((t) => t.id));
-    const gastoPorViaje: Record<string, number> = {};
-    const porId = this.vehicleById(this.vehicles);
-    let otros = 0;
-
-    this.loadedExpenses.forEach((e) => {
-      if (!enRango(this.expensePeriodo(e))) return;
-      const vehicle = porId.get(e.vehicleId);
-      if (this.vehicleGroupKey(vehicle, porPropietario) !== key) return;
-
-      if (e.tripId != null && ids.has(e.tripId)) {
-        gastoPorViaje[e.tripId] =
-          (gastoPorViaje[e.tripId] || 0) + (e.amount || 0);
-      } else {
-        otros += e.amount || 0;
-      }
-    });
-
-    /* La placa solo entra en la etiqueta cuando el grupo es un propietario: sus
-       viajes pueden repartirse entre varios vehículos. Con el grupo siendo un
-       vehículo, la placa ya está en el título de la tarjeta y repetirla en cada
-       fila solo roba ancho al eje. */
-    const filas = viajes.map((t) => {
+    this.groupTripRows = (trips ?? []).map((t) => {
       const numero = `#${t.numberTrip ?? t.id}`;
-      const placa = (
-        t.vehiclePlate ||
-        t.vehicle?.plate ||
-        'S/P'
-      ).toUpperCase();
+      const placa = (t.plate || 'S/P').toUpperCase();
       return {
         label: porPropietario ? `${placa} ${numero}` : numero,
         freight: t.freight || 0,
-        gasto: gastoPorViaje[String(t.id)] || 0,
-        mes: this.tripPeriodo(t)!.mes,
+        gasto: t.expenses || 0,
+        mes: t.month ?? this.selectedMonth,
       };
     });
+    this.groupTripOthers = otherExpenses || 0;
+    this.detailLoading = false;
 
-    return { filas, otros };
+    this.buildTripProfitDetail();
+    this.processFinancialData();
   }
 
+  /**
+   * Vuelca la utilidad viaje a viaje del grupo seleccionado, en el mes.
+   *
+   * El gemelo de "Utilidad Mensual" para el alcance de mes: al tocar una barra
+   * se abre el desglose viaje a viaje del grupo, en vez de mes a mes.
+   */
   private buildTripProfitDetail(): void {
     const pintar = (labels: string[], data: number[]) => {
       this.tripProfitDetailData = {
@@ -882,10 +951,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const { filas, otros } = this.selectedGroupRows(true);
+    const filas = this.groupTripRows;
     this.tripProfitFreight = filas.reduce((a, f) => a + f.freight, 0);
     this.tripProfitTripExpenses = filas.reduce((a, f) => a + f.gasto, 0);
-    this.tripProfitOtherExpenses = otros;
+    this.tripProfitOtherExpenses = this.groupTripOthers;
 
     /* De mayor a menor: con `indexAxis: 'y'` la primera etiqueta va arriba, así
        que el viaje más rentable encabeza y los que perdieron quedan al pie. */
@@ -1043,10 +1112,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private observer: MutationObserver | null = null;
 
-  /* Último lote recibido. Permite recalcular el alcance del gráfico de
-     utilidad (Mes/Año) sin volver a pedirle nada al servidor. */
-  private loadedTrips: ModelTrip[] = [];
-  private loadedExpenses: ModelExpense[] = [];
+  /* Último reporte recibido (Endpoint A), ya normalizado: por cada grupo, sus
+     doce meses indexados por mes. Todas las gráficas se reconstruyen desde
+     aquí, así que cambiar de alcance o de mes no vuelve a pedirle nada al
+     servidor — el reporte cubre el año entero. */
+  private groupMonths = new Map<string, DashboardMonth[]>();
+
+  /* Etiquetas de los grupos en orden alfabético: el eje de categorías de todas
+     las gráficas. Al fijarlo una sola vez, un grupo conserva su color entre
+     tarjetas y entre alcances. */
+  private groupLabels: string[] = [];
+
+  /* Etiqueta → `key` del reporte. La etiqueta es lo que se pinta y lo que
+     guarda la selección; el `key` es lo que pide el Endpoint B. */
+  private groupKeyByLabel: Record<string, string> = {};
   private userSub?: Subscription;
   private brands: any[] = [];
   private vehicles: ModelVehicle[] = [];
@@ -1058,7 +1137,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private readonly vehicleService: VehicleService,
     private readonly securityService: SecurityService,
     private readonly ownerService: OwnerService,
-    private readonly driverService: DriverService,
+    private readonly reportService: ReportService,
     private readonly commonService: CommonService,
   ) {}
 
@@ -1160,8 +1239,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Alcance de todas las gráficas. Recalcula sobre el lote ya cargado — que el
-   * servidor acota al año seleccionado —, así que no dispara peticiones.
+   * Alcance de todas las gráficas. Se recalcula sobre el reporte ya cargado,
+   * que cubre el año entero: ninguna gráfica vuelve a pedir nada.
+   *
+   * La única excepción es el detalle de una barra abierta: al pasar al mes, su
+   * eje es el viaje y eso solo lo sabe el servidor — ver `refreshGroupDetail`.
    *
    * Dos gráficas cambian de tipo con el alcance: con el mes en el eje X son
    * líneas, y al pasar a un eje de grupos serían una línea sobre placas, que
@@ -1174,25 +1256,33 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.monthlyProfitType = scope === 'mes' ? 'bar' : 'line';
     this.updateCurrentMonthName();
 
-    const trips = this.loadedTrips;
-    const expenses = this.loadedExpenses;
-    this.processTripsByVehicle(trips, this.vehicles);
-    this.processFinancialData();
-    this.processMonthVehicleFin(trips, expenses, this.vehicles);
-    this.processVehicleProfit(trips, expenses, this.vehicles);
-    this.processMaintenanceData(expenses, this.vehicles);
-    this.processTripsByMonth(trips, this.vehicles);
-    this.processProfitByMonth(trips, expenses, this.vehicles);
+    this.invalidateGroupDetail();
+    this.rebuildCharts();
+    void this.refreshGroupDetail();
   }
 
+  /**
+   * Cambia el periodo. Solo recarga cuando cambia el año: el reporte trae los
+   * doce meses de una vez, así que moverse dentro del mismo año se resuelve en
+   * memoria y no cuesta ninguna petición.
+   */
   public setHistoryDate(month: number, year: number): void {
+    const cambioAnio = year !== this.selectedYear;
     this.selectedMonth = month;
     this.selectedYear = year;
     this.updateCurrentMonthName();
 
-    if (this.currentUser) {
+    if (!this.currentUser) return;
+
+    if (cambioAnio) {
       this.loadData(this.currentUser);
+      return;
     }
+
+    this.invalidateGroupDetail();
+    this.rebuildCharts();
+    void this.refreshGroupDetail();
+    this.updateCharts();
   }
 
   /**
@@ -1593,6 +1683,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Carga del tablero: una sola petición agregada (Endpoint A).
+   *
+   * Antes eran hasta ocho peticiones y ~61.000 registros —los viajes, los
+   * gastos y los vehículos del año, más las resoluciones seriales de
+   * propietario o conductor—, y las nueve agregaciones ocurrían en el
+   * navegador. Ahora el reporte llega agregado por grupo y mes, y el alcance
+   * (qué vehículos ve quién) lo resuelve el servidor con el token.
+   *
+   * El reporte cubre el año entero, así que cambiar de mes o de alcance no
+   * vuelve a pedir nada: se reconstruye sobre lo que ya está en memoria.
+   */
   async loadData(user: any) {
     this.loading = true;
     try {
@@ -1609,185 +1711,160 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.activeTripsCollapsed = true;
       }
 
-      let vehicleFilters: Filter[] = [];
-      let tripFilters: Filter[] = [];
-      let expenseFilters: Filter[] = [];
-
-      let ownerId: string | undefined;
-
-      if (role.includes('PROPIETARIO') && user?.id) {
-        const ownerFilter = new ModelFilterTable(
-          [new Filter('user.id', '=', user.id.toString())],
-          new Pagination(1, 0),
-          new Sort('id', true),
-        );
-        const ownerResp: any = await lastValueFrom(
-          this.ownerService.getOwnerFilter(ownerFilter),
-        );
-        ownerId = ownerResp?.data?.content?.[0]?.id?.toString();
-      } else if (role.includes('ADMINISTRADOR') && this.selectedOwnerId) {
-        ownerId = this.selectedOwnerId.toString();
-      }
-
-      if (ownerId) {
-        // 2. Get Vehicle IDs for this owner
-        const vehicleOwnerFilter = new ModelFilterTable(
-          [new Filter('owner.id', '=', ownerId)],
-          new Pagination(3000, 0),
-          new Sort('id', true),
-        );
-        const vehiclesResp: any = await lastValueFrom(
-          this.vehicleService.getVehicleOwnerFilter(vehicleOwnerFilter),
-        );
-        const vehiclesContext: ModelVehicle[] =
-          vehiclesResp?.data?.content ?? [];
-        const vehicleIds = vehiclesContext
-          .map((v) => v.id)
-          .filter((id) => id != null)
-          .join(',');
-
-        if (vehicleIds) {
-          tripFilters.push(new Filter('vehicle.id', 'in', vehicleIds));
-          expenseFilters.push(new Filter('vehicleId', 'in', vehicleIds));
-          vehicleFilters.push(new Filter('id', 'in', vehicleIds));
-        } else {
-          // No vehicles found for owner, data will be empty
-          this.clearChartData();
-          this.updateCharts();
-          this.loading = false;
-          return;
-        }
-      } else if (role.includes('CONDUCTOR') && user?.id) {
-        // 1. Get Driver linked to this User
-        const driverFilter = new ModelFilterTable(
-          [new Filter('user.id', '=', user.id.toString())],
-          new Pagination(1, 0),
-          new Sort('id', true),
-        );
-        const driverResp: any = await lastValueFrom(
-          this.driverService.getDriverFilter(driverFilter),
-        );
-        const driverId = driverResp?.data?.content?.[0]?.id;
-
-        if (driverId) {
-          // 2. Filter vehicles by currentDriverId
-          const vehicleDriverFilter = new ModelFilterTable(
-            [new Filter('currentDriverId', '=', driverId.toString())],
-            new Pagination(3000, 0),
-            new Sort('id', true),
-          );
-          const vehiclesResp: any = await lastValueFrom(
-            this.vehicleService.getVehicleFilter(vehicleDriverFilter),
-          );
-          const vehiclesContext: ModelVehicle[] =
-            vehiclesResp?.data?.content ?? [];
-          const vehicleIds = vehiclesContext
-            .map((v) => v.id)
-            .filter((id) => id != null)
-            .join(',');
-
-          if (vehicleIds) {
-            tripFilters.push(new Filter('vehicle.id', 'in', vehicleIds));
-            expenseFilters.push(new Filter('vehicleId', 'in', vehicleIds));
-            vehicleFilters.push(new Filter('id', 'in', vehicleIds));
-          } else {
-            // No vehicles assigned to driver, data will be empty
-            this.clearChartData();
-            this.updateCharts();
-            this.loading = false;
-            return;
-          }
-        }
-      }
-
-      // Filtros por año seleccionado para optimizar carga en servidor
-      const yearStart = `${this.selectedYear}-01-01T00:00:00`;
-      const yearEnd = `${this.selectedYear}-12-31T23:59:59`;
-
-      tripFilters.push(
-        new Filter('startDate', '>=', yearStart),
-        new Filter('startDate', '<=', yearEnd),
+      /* `ownerId` solo lo manda el administrador filtrando por un propietario;
+         para los demas roles el alcance sale del token. */
+      const report = await lastValueFrom(
+        this.reportService.getDashboard({
+          year: this.selectedYear,
+          groupBy: this.groupByOwner ? 'owner' : 'vehicle',
+          ownerId: this.groupByOwner ? this.selectedOwnerId : null,
+        }),
       );
 
-      expenseFilters.push(
-        new Filter('expenseDate', '>=', yearStart),
-        new Filter('expenseDate', '<=', yearEnd),
-      );
+      this.indexReport(report?.groups ?? []);
+      await this.loadActiveTrips(report?.activeTrips ?? []);
 
-      const vehicleFilterPayload = new ModelFilterTable(
-        vehicleFilters,
-        new Pagination(20000, 0),
-        new Sort('id', false),
-      );
-      const tripFilterPayload = new ModelFilterTable(
-        tripFilters,
-        new Pagination(20000, 0),
-        new Sort('id', false),
-      );
-      const expenseFilterPayload = new ModelFilterTable(
-        expenseFilters,
-        new Pagination(20000, 0),
-        new Sort('id', false),
-      );
-
-      // Petición específica para viajes activos (evita que se filtren por fecha si vienen de otro año)
-      const activeTripFilters = tripFilters.filter(
-        (f) => f.fieldFilter !== 'startDate',
-      );
-      activeTripFilters.push(new Filter('status', '=', 'En Curso'));
-      const activeTripPayload = new ModelFilterTable(
-        activeTripFilters,
-        new Pagination(1000, 0),
-        new Sort('id', false),
-      );
-
-      const [tripsResp, expensesResp, vehiclesResp, activeTripsResp]: any[] =
-        await Promise.all([
-          lastValueFrom(this.tripService.getTripFilter(tripFilterPayload)),
-          lastValueFrom(
-            this.expenseService.getExpenseFilter(expenseFilterPayload),
-          ),
-          lastValueFrom(
-            this.vehicleService.getVehicleFilter(vehicleFilterPayload),
-          ),
-          lastValueFrom(this.tripService.getTripFilter(activeTripPayload)),
-        ]);
-
-      const yearTrips: ModelTrip[] = tripsResp?.data?.content || [];
-      const currentActiveTrips: ModelTrip[] =
-        activeTripsResp?.data?.content || [];
-
-      // Combinar viajes del año y viajes activos sin duplicados
-      const tripsMap = new Map<string, ModelTrip>();
-      [...yearTrips, ...currentActiveTrips].forEach((t) => {
-        if (t.id) tripsMap.set(t.id.toString(), t);
-      });
-      const trips = Array.from(tripsMap.values());
-
-      const expenses: ModelExpense[] = expensesResp?.data?.content || [];
-      this.vehicles = vehiclesResp?.data?.content || [];
-
-      this.mapBrandNames(this.vehicles);
-      this.mapDriverNames(this.vehicles);
-
-      this.processActiveTrips(trips, expenses);
-
-      this.processTripsByVehicle(trips, this.vehicles);
-      this.processFinancialData();
-      this.processMonthVehicleFin(trips, expenses, this.vehicles);
-      this.loadedTrips = trips;
-      this.loadedExpenses = expenses;
-      this.processVehicleProfit(trips, expenses, this.vehicles);
-      this.processMaintenanceData(expenses, this.vehicles);
-      this.processTripsByMonth(trips, this.vehicles);
-      this.processProfitByMonth(trips, expenses, this.vehicles);
-
+      this.rebuildCharts();
       this.updateCharts();
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+      this.clearChartData();
+      this.updateCharts();
     } finally {
       this.loading = false;
     }
+  }
+
+  /**
+   * Normaliza el reporte: los doce meses de cada grupo indexados por mes y las
+   * etiquetas en orden alfabético.
+   *
+   * Un mes que el backend omita queda en cero, no ausente: los builders leen
+   * los doce por índice y un hueco los rompería. El detalle en caché se
+   * descarta — pertenece al reporte anterior.
+   */
+  private indexReport(groups: DashboardGroup[]): void {
+    this.groupMonths = new Map();
+    this.groupKeyByLabel = {};
+
+    groups.forEach((g) => {
+      const label = g?.label?.trim();
+      if (!label) return;
+
+      const meses: DashboardMonth[] = Array.from(
+        { length: 12 },
+        (_, month) => ({
+          month,
+          activity: false,
+          freight: 0,
+          tripsByType: {},
+          tripExpenses: 0,
+          expensesByType: {},
+        }),
+      );
+      (g.months ?? []).forEach((m) => {
+        if (m?.month == null || m.month < 0 || m.month > 11) return;
+        meses[m.month] = { ...meses[m.month], ...m };
+      });
+
+      this.groupMonths.set(label, meses);
+      this.groupKeyByLabel[label] = g.key;
+    });
+
+    this.groupLabels = [...this.groupMonths.keys()].sort((a, b) =>
+      a.localeCompare(b),
+    );
+
+    this.detailCache.clear();
+    this.invalidateGroupDetail();
+  }
+
+  /** Los doce meses del grupo. Vacíos si la etiqueta ya no está en el reporte. */
+  private monthsOf(label: string | null | undefined): DashboardMonth[] {
+    return (label && this.groupMonths.get(label)) || [];
+  }
+
+  /**
+   * Tarjetas de viajes activos.
+   *
+   * El reporte solo trae el resumen de cada viaje en curso; la tarjeta necesita
+   * el viaje completo, el vehículo (foto, marca, conductor) y sus gastos. Se
+   * piden por id: son un puñado de registros y no los 20.000 del lote anterior,
+   * y el alcance por rol ya lo aplicó el servidor al armar el reporte.
+   */
+  private async loadActiveTrips(actives: DashboardActiveTrip[]): Promise<void> {
+    this.activeTrips = [];
+    this.vehicles = [];
+
+    const tripIds = (actives ?? [])
+      .map((a) => a?.tripId)
+      .filter((id) => id != null);
+    if (!tripIds.length) return;
+
+    const ids = tripIds.join(',');
+    const tripsResp: any = await lastValueFrom(
+      this.tripService.getTripFilter(
+        new ModelFilterTable(
+          [new Filter('id', 'in', ids)],
+          new Pagination(tripIds.length, 0),
+          new Sort('id', false),
+        ),
+      ),
+    );
+    const trips: ModelTrip[] = tripsResp?.data?.content || [];
+    if (!trips.length) return;
+
+    const vehicleIds = [
+      ...new Set(trips.map((t) => t.vehicleId).filter((id) => id != null)),
+    ];
+
+    const [expensesResp, vehiclesResp]: any[] = await Promise.all([
+      lastValueFrom(
+        this.expenseService.getExpenseFilter(
+          new ModelFilterTable(
+            [new Filter('tripId', 'in', ids)],
+            new Pagination(1000, 0),
+            new Sort('id', false),
+          ),
+        ),
+      ),
+      vehicleIds.length
+        ? lastValueFrom(
+            this.vehicleService.getVehicleFilter(
+              new ModelFilterTable(
+                [new Filter('id', 'in', vehicleIds.join(','))],
+                new Pagination(vehicleIds.length, 0),
+                new Sort('id', false),
+              ),
+            ),
+          )
+        : Promise.resolve(null),
+    ]);
+
+    const expenses: ModelExpense[] = expensesResp?.data?.content || [];
+    this.vehicles = vehiclesResp?.data?.content || [];
+
+    this.mapBrandNames(this.vehicles);
+    this.mapDriverNames(this.vehicles);
+
+    this.processActiveTrips(trips, expenses);
+  }
+
+  /**
+   * Reconstruye las nueve gráficas sobre el reporte ya cargado.
+   *
+   * El orden es el mismo de siempre y no es indiferente:
+   * `processVehicleProfit` anula la selección si su grupo desapareció del eje,
+   * y `processProfitByMonth` es quien alimenta el detalle anual.
+   */
+  private rebuildCharts(): void {
+    this.processTripsByVehicle();
+    this.processFinancialData();
+    this.processMonthVehicleFin();
+    this.processVehicleProfit();
+    this.processMaintenanceData();
+    this.processTripsByMonth();
+    this.processProfitByMonth();
   }
 
   private processActiveTrips(trips: ModelTrip[], expenses: ModelExpense[]) {
@@ -1810,6 +1887,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private clearChartData() {
+    this.groupMonths = new Map();
+    this.groupLabels = [];
+    this.groupKeyByLabel = {};
+    this.invalidateGroupDetail();
+
     this.tripsByVehicleData.labels = [];
     // Puede tener una o tres series según el rol
     this.tripsByVehicleData.datasets.forEach((d) => (d.data = []));
@@ -1861,15 +1943,57 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return this.userRole === 'PROPIETARIO' || this.userRole === 'CONDUCTOR';
   }
 
-  /** Los viajes sin tipo (anteriores a la funcionalidad) cuentan como cargados */
-  private resolveTripType(trip: ModelTrip): string {
-    const type = (trip.tripType || '').toUpperCase();
-    return this.TRIP_TYPE_SERIES.some((s) => s.id === type) ? type : 'CARGADO';
+  /**
+   * Los viajes sin tipo (anteriores a la funcionalidad) cuentan como cargados.
+   *
+   * `tripsByType` es un mapa por clave existente —para que un tipo nuevo no
+   * obligue a desplegar backend—, así que puede traer un tipo que este cliente
+   * todavía no conoce: se pliega también a CARGADO en vez de perderse.
+   */
+  private canonicalTripType(type: string): string {
+    const t = (type || '').toUpperCase();
+    return this.TRIP_TYPE_SERIES.some((s) => s.id === t) ? t : 'CARGADO';
   }
 
-  /** El viaje vacío no genera flete: se excluye de rendimiento y finanzas */
-  private isEmptyTrip(trip: ModelTrip): boolean {
-    return this.resolveTripType(trip) === 'VACIO';
+  /** Viajes del mes por tipo, ya canonizado. */
+  private tripCountsByType(m: DashboardMonth): Record<string, number> {
+    const out: Record<string, number> = {};
+    Object.entries(m.tripsByType ?? {}).forEach(([type, n]) => {
+      const tipo = this.canonicalTripType(type);
+      out[tipo] = (out[tipo] || 0) + (n || 0);
+    });
+    return out;
+  }
+
+  /** Viajes del mes. Con `vacios: false` queda fuera el viaje vacio, que no
+   *  factura y por eso no entra en las gráficas de rendimiento. */
+  private tripCount(m: DashboardMonth, vacios = true): number {
+    return Object.entries(m.tripsByType ?? {}).reduce((a, [type, n]) => {
+      if (!vacios && this.canonicalTripType(type) === 'VACIO') return a;
+      return a + (n || 0);
+    }, 0);
+  }
+
+  /** Gastos del mes que no cuelgan de ningun viaje del mes: mantenimiento y
+   *  gastos sueltos, sumando todos los tipos. */
+  private otherExpenses(m: DashboardMonth): number {
+    return Object.values(m.expensesByType ?? {}).reduce(
+      (a, v) => a + (v || 0),
+      0,
+    );
+  }
+
+  /** Todo el egreso del mes: el imputado a viajes y el que no. */
+  private totalExpenses(m: DashboardMonth): number {
+    return (m.tripExpenses || 0) + this.otherExpenses(m);
+  }
+
+  /** Los meses que entran en el alcance vigente: el seleccionado, o los doce. */
+  private scopedMonths(label: string): DashboardMonth[] {
+    const meses = this.monthsOf(label);
+    if (this.scope !== 'mes') return meses;
+    const mes = meses[this.selectedMonth];
+    return mes ? [mes] : [];
   }
 
   private buildTripTypeDatasets(
@@ -1884,48 +2008,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Viajes por vehículo. En alcance "anio" cuenta todo el lote — que el
-   * servidor ya acota al año seleccionado — y en "mes" filtra además por el
-   * mes. Propietario y conductor ven el desglose por tipo de viaje.
+   * Viajes por vehículo. En alcance "anio" cuenta los doce meses del reporte y
+   * en "mes" solo el seleccionado. Propietario y conductor ven el desglose por
+   * tipo de viaje.
    */
-  private processTripsByVehicle(trips: ModelTrip[], vehicles: ModelVehicle[]) {
-    const esMes = this.scope === 'mes';
-    const porPropietario = this.groupByOwner;
+  private processTripsByVehicle() {
     const counts: Record<string, number> = {};
     const countsByType: Record<string, Record<string, number>> = {};
-    vehicles.forEach((v) => {
-      const key = this.vehicleGroupKey(v, porPropietario);
-      if (!key) return;
-      counts[key] ??= 0;
-      countsByType[key] ??= {};
-    });
-    trips.forEach((t) => {
-      if (esMes) {
-        const p = this.tripPeriodo(t);
-        if (
-          !p ||
-          p.mes !== this.selectedMonth ||
-          p.anio !== this.selectedYear
-        ) {
-          return;
-        }
-      }
-      /* El administrador agrupa por propietario — ver `groupByOwner` —, que se
-         resuelve por el conductor y, si no, por el vehículo del viaje. */
-      const key = this.tripGroupKey(t, porPropietario);
-      if (!key) return;
-      counts[key] = (counts[key] || 0) + 1;
-      countsByType[key] ??= {};
-      const type = this.resolveTripType(t);
-      countsByType[key][type] = (countsByType[key][type] || 0) + 1;
+
+    /* Todo grupo del reporte aparece en el eje aunque no haya rodado: el
+       backend lo devuelve con sus meses en cero, no lo omite. */
+    this.groupLabels.forEach((label) => {
+      counts[label] = 0;
+      countsByType[label] = {};
+      this.scopedMonths(label).forEach((m) => {
+        Object.entries(this.tripCountsByType(m)).forEach(([tipo, n]) => {
+          counts[label] += n;
+          countsByType[label][tipo] = (countsByType[label][tipo] || 0) + n;
+        });
+      });
     });
 
-    const labels = Object.keys(counts).sort((a, b) => a.localeCompare(b));
+    const labels = [...this.groupLabels];
 
-    this.tripsByVehicleTotal = Object.values(counts).reduce(
-      (a, v) => a + (v || 0),
-      0,
-    );
+    this.tripsByVehicleTotal = labels.reduce((a, l) => a + counts[l], 0);
 
     this.tripsByVehicleData = {
       labels: labels,
@@ -1945,80 +2051,38 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Ingresos y gastos acumulados por placa, dentro del año seleccionado y —
-   * si `esMes` — del mes seleccionado. Alimenta tanto esta gráfica como la de
-   * utilidad por vehículo: las dos parten del mismo acumulado y solo cambia
-   * cómo lo pintan, así que el criterio vive en un único sitio.
+   * Ingresos y gastos acumulados por grupo, dentro del alcance vigente.
    *
-   * El ingreso se atribuye por la placa del viaje y el gasto por `vehicleId`,
-   * de modo que aquí sí entra el gasto sin viaje asociado (mantenimiento, por
-   * ejemplo), a diferencia de "Ingresos vs Egresos", que lo resuelve por
-   * `tripId`. Todos los vehículos visibles aparecen, aunque queden en cero.
+   * Alimenta tanto "Ingresos vs Gastos por Vehículo" como "Utilidad por
+   * Vehículo": las dos parten del mismo acumulado y solo cambia cómo lo
+   * pintan, así que el criterio vive en un único sitio.
+   *
+   * El gasto es TODO el del grupo —el imputado a viajes y el que no, como el
+   * mantenimiento—, a diferencia de "Ingresos vs Egresos", que solo cuenta lo
+   * que cuelga de un viaje. Todos los grupos aparecen, aunque queden en cero.
    */
-  private accumulateByGroup(
-    trips: ModelTrip[],
-    expenses: ModelExpense[],
-    vehicles: ModelVehicle[],
-    esMes: boolean,
-    porPropietario: boolean,
-  ): Record<string, { income: number; expense: number }> {
+  private accumulateByGroup(): Record<
+    string,
+    { income: number; expense: number }
+  > {
     const stats: Record<string, { income: number; expense: number }> = {};
-    const bucket = (k: string) => (stats[k] ??= { income: 0, expense: 0 });
 
-    // Todo grupo con vehículos aparece, aunque no haya tenido movimiento.
-    vehicles.forEach((v) => {
-      const key = this.vehicleGroupKey(v, porPropietario);
-      if (key) bucket(key);
-    });
-
-    trips.forEach((t) => {
-      const p = this.tripPeriodo(t);
-      if (!p || p.anio !== this.selectedYear) return;
-      if (esMes && p.mes !== this.selectedMonth) return;
-
-      if (porPropietario) {
-        /* El propietario se resuelve por el conductor y, si no, por el
-           vehículo — igual que en "Ingresos vs Egresos". El grupo se crea si
-           no existía: un propietario puede tener viajes con un vehículo que
-           no está en el lote, y descartar el flete lo escondería. */
-        const key = this.ownerLabel(this.resolveOwnerId(t));
-        if (key) bucket(key).income += t.freight || 0;
-        return;
-      }
-
-      const plate = (t.vehicle?.plate || t.vehiclePlate)?.toUpperCase();
-      if (plate && stats[plate]) stats[plate].income += t.freight || 0;
-    });
-
-    const porId = this.vehicleById(vehicles);
-    expenses.forEach((e) => {
-      const p = this.expensePeriodo(e);
-      if (!p || p.anio !== this.selectedYear) return;
-      if (esMes && p.mes !== this.selectedMonth) return;
-      /* El gasto solo trae `vehicleId`: sin el vehículo en el lote no hay
-         forma de saber de quién es, así que se descarta. */
-      const vehicle = porId.get(e.vehicleId);
-      const key = this.vehicleGroupKey(vehicle, porPropietario);
-      if (key && stats[key]) stats[key].expense += e.amount || 0;
+    this.groupLabels.forEach((label) => {
+      const acc = { income: 0, expense: 0 };
+      this.scopedMonths(label).forEach((m) => {
+        acc.income += m.freight || 0;
+        acc.expense += this.totalExpenses(m);
+      });
+      stats[label] = acc;
     });
 
     return stats;
   }
 
-  private processMonthVehicleFin(
-    trips: ModelTrip[],
-    expenses: ModelExpense[],
-    vehicles: ModelVehicle[],
-  ) {
-    const stats = this.accumulateByGroup(
-      trips,
-      expenses,
-      vehicles,
-      this.scope === 'mes',
-      this.groupByOwner,
-    );
+  private processMonthVehicleFin() {
+    const stats = this.accumulateByGroup();
 
-    const labels = Object.keys(stats).sort((a, b) => a.localeCompare(b));
+    const labels = [...this.groupLabels];
     const incomeData = labels.map((l) => stats[l].income);
     const expenseData = labels.map((l) => stats[l].expense);
 
@@ -2040,36 +2104,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
   }
 
-  /** Cambia entre el mes seleccionado y el acumulado del año. Recalcula
-   *  sobre los datos que ya están en memoria: no dispara peticiones. */
   /**
    * Utilidad neta (flete menos gastos) por vehículo. Responde de un vistazo
    * qué camión deja dinero y cuál cuesta: el cero queda en medio y la barra
    * sale a la derecha o a la izquierda según el signo.
    *
-   * NOTA: los gastos se agrupan por `creationDate`, igual que el resto de las
-   * gráficas de este componente, para que las cifras cuadren entre ellas. El
-   * criterio correcto es `expenseDate` (que es por donde filtra el servidor,
-   * ver `expenseFilters` en la carga) — al unificarlo hay que cambiarlo en
-   * TODAS a la vez, no solo aquí.
+   * El criterio de fecha del gasto ya no vive aqui: el reporte imputa cada
+   * gasto a un mes en el servidor, de modo que todas las gráficas del tablero
+   * cuadran entre sí por construcción.
    */
-  private processVehicleProfit(
-    trips: ModelTrip[],
-    expenses: ModelExpense[],
-    vehicles: ModelVehicle[],
-  ) {
-    const stats = this.accumulateByGroup(
-      trips,
-      expenses,
-      vehicles,
-      this.scope === 'mes',
-      this.groupByOwner,
-    );
+  private processVehicleProfit() {
+    const stats = this.accumulateByGroup();
 
     /* Con `indexAxis: 'y'` Chart.js pinta la primera etiqueta arriba, así que
        ordenar de mayor a menor deja el vehículo más rentable en la cabecera. */
     const util = (k: string) => stats[k].income - stats[k].expense;
-    const labels = Object.keys(stats).sort((a, b) => util(b) - util(a));
+    const labels = [...this.groupLabels].sort((a, b) => util(b) - util(a));
 
     const detail: Record<
       string,
@@ -2095,6 +2145,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       !labels.includes(this.selectedProfitGroup)
     ) {
       this.selectedProfitGroup = null;
+      this.invalidateGroupDetail();
     }
     this.buildTripProfitDetail();
     this.vehicleProfitData = {
@@ -2118,11 +2169,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return this.scope === 'anio'
       ? `Ingresos vs Egresos por Mes (${this.selectedYear})`
       : `Ingresos vs Egresos por Viaje (${this.currentMonthName})`;
-  }
-
-  /** Propietario del viaje: por el conductor, o por la relación del vehículo. */
-  private resolveOwnerId(trip: ModelTrip): number | undefined {
-    return trip.driver?.ownerId ?? trip.vehicle?.owners?.[0]?.ownerId;
   }
 
   /**
@@ -2153,123 +2199,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return this.groupByOwner ? 'Propietario' : 'Vehículo';
   }
 
-  /* Índices por id. Los gastos solo traen `vehicleId`, así que resolver el
-     vehículo con `find` dentro del bucle costaba O(gastos × flota) en cada
-     reconstrucción, con lotes de hasta 20.000 registros.
-
-     El índice se rehace cuando cambia la IDENTIDAD del arreglo — que es lo que
-     ocurre al recargar datos o al llegar el catálogo de propietarios —, no en
-     cada llamada. Se guarda también el arreglo de origen para que un builder
-     que reciba otra lista no lea el índice de la anterior.
-
-     Dos detalles que mantienen el comportamiento idéntico al de `find`:
-     la clave se guarda tal cual, sin convertir tipos —una comparación que hoy
-     falla por tipos distintos debe seguir fallando—, y con ids repetidos gana
-     el primero, como haría `find`. */
-  private vehicleIndexSource: ModelVehicle[] | null = null;
-  private vehicleIndex = new Map<number, ModelVehicle>();
-  private ownerIndexSource: ModelOwner[] | null = null;
-  private ownerIndex = new Map<number, ModelOwner>();
-
-  private vehicleById(vehicles: ModelVehicle[]): Map<number, ModelVehicle> {
-    if (this.vehicleIndexSource === vehicles) return this.vehicleIndex;
-    const index = new Map<number, ModelVehicle>();
-    /* El vehículo sin id se omite: `vehicleId` siempre llega con valor, así
-       que `find` nunca lo habría emparejado. */
-    vehicles.forEach((v) => {
-      if (v.id != null && !index.has(v.id)) index.set(v.id, v);
-    });
-    this.vehicleIndexSource = vehicles;
-    this.vehicleIndex = index;
-    return index;
-  }
-
-  private ownerById(): Map<number, ModelOwner> {
-    if (this.ownerIndexSource === this.owners) return this.ownerIndex;
-    const index = new Map<number, ModelOwner>();
-    this.owners.forEach((o) => {
-      if (o.id != null && !index.has(o.id)) index.set(o.id, o);
-    });
-    this.ownerIndexSource = this.owners;
-    this.ownerIndex = index;
-    return index;
-  }
-
-  /* Mes y año de cada registro, resueltos una sola vez.
-
-     Construir un `Date` dentro de los bucles costaba decenas de miles de
-     parseos por reconstrucción: cada gráfica recorre el lote entero y hay
-     nueve. El `WeakMap` se indexa por el propio objeto, así que un lote nuevo
-     —objetos nuevos— empieza vacío sin necesidad de invalidar nada.
-
-     Se sigue usando `new Date(cadena)` con `getMonth`/`getFullYear`, no un
-     recorte de la cadena ISO: interpretar en hora local o en UTC cambia de mes
-     los registros de fin de mes, y el resto del tablero razona en hora local.
-     Una fecha ausente o inválida devuelve `null` y el registro se descarta,
-     igual que hoy hace la comparación contra `NaN`. */
-  private readonly tripPeriod = new WeakMap<ModelTrip, Periodo | null>();
-  private readonly expensePeriod = new WeakMap<ModelExpense, Periodo | null>();
-
-  private parsePeriodo(fecha?: string | null): Periodo | null {
-    if (!fecha) return null;
-    const d = new Date(fecha);
-    const anio = d.getFullYear();
-    if (Number.isNaN(anio)) return null;
-    return { mes: d.getMonth(), anio };
-  }
-
-  private tripPeriodo(t: ModelTrip): Periodo | null {
-    let p = this.tripPeriod.get(t);
-    if (p === undefined) {
-      p = this.parsePeriodo(t.startDate as string | undefined);
-      this.tripPeriod.set(t, p);
-    }
-    return p;
-  }
-
-  private expensePeriodo(e: ModelExpense): Periodo | null {
-    let p = this.expensePeriod.get(e);
-    if (p === undefined) {
-      p = this.parsePeriodo(e.creationDate as string | undefined);
-      this.expensePeriod.set(e, p);
-    }
-    return p;
-  }
-
-  /** Nombre del propietario, o un marcador si aún no cargó el catálogo. */
-  private ownerLabel(ownerId?: number): string | undefined {
-    if (ownerId == null) return undefined;
-    return this.ownerById().get(ownerId)?.name ?? `Propietario ${ownerId}`;
-  }
-
-  /** Etiqueta con la que agrupar un viaje: la placa, o su propietario. */
-  private tripGroupKey(
-    trip: ModelTrip,
-    porPropietario: boolean,
-  ): string | undefined {
-    return porPropietario
-      ? this.ownerLabel(this.resolveOwnerId(trip))
-      : (trip.vehicle?.plate || trip.vehiclePlate)?.toUpperCase();
-  }
-
-  /** Etiqueta con la que agrupar un vehículo: su placa, o su propietario. */
-  private vehicleGroupKey(
-    vehicle: ModelVehicle | undefined,
-    porPropietario: boolean,
-  ): string | undefined {
-    if (!vehicle) return undefined;
-    if (!porPropietario) return vehicle.plate?.toUpperCase();
-    return this.ownerLabel(vehicle.owners?.[0]?.ownerId ?? vehicle.ownerId);
-  }
-
   /**
    * Ingresos (flete) contra egresos del grupo abierto en "Utilidad por
    * Vehículo/Propietario". Es un detalle de esa gráfica: sin barra tocada no
    * hay nada que pintar.
    *
-   * En alcance de mes el eje es el VIAJE y en el de año, el MES. Comparte la
-   * fuente con "Utilidad por Viaje" — ver `selectedGroupRows` —, de modo que
-   * las dos tarjetas cierran con la misma utilidad.
+   * En alcance de mes el eje es el VIAJE y en el de año, el MES. El eje de
+   * meses sale del propio reporte; el de viajes, del detalle bajo demanda
+   * —Endpoint B—, que es la única fuente que baja del mes al viaje. Comparte
+   * esas filas con "Utilidad por Viaje", de modo que las dos tarjetas cierran
+   * con la misma utilidad.
    */
   private processFinancialData() {
     const pintar = (labels: string[], ing: number[], gas: number[]) => {
@@ -2290,24 +2229,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const esMes = this.scope === 'mes';
-    const { filas, otros } = this.selectedGroupRows(esMes);
-    this.financialOtherExpenses = otros;
-
     // --- Año: un grupo por mes. Como máximo 12 barras dobles. ---
-    if (!esMes) {
-      const ing = new Array(12).fill(0);
-      const gas = new Array(12).fill(0);
-      filas.forEach((f) => {
-        ing[f.mes] += f.freight;
-        gas[f.mes] += f.gasto;
-      });
-      pintar([...this.MESES_CORTOS], ing, gas);
+    if (this.scope !== 'mes') {
+      const meses = this.monthsOf(this.selectedProfitGroup);
+      this.financialOtherExpenses = meses.reduce(
+        (a, m) => a + this.otherExpenses(m),
+        0,
+      );
+      pintar(
+        [...this.MESES_CORTOS],
+        this.MESES_CORTOS.map((_, m) => meses[m]?.freight || 0),
+        this.MESES_CORTOS.map((_, m) => meses[m]?.tripExpenses || 0),
+      );
       return;
     }
 
     // --- Mes: un grupo por viaje, en orden de placa y número. ---
-    const ordenadas = [...filas].sort((a, b) => a.label.localeCompare(b.label));
+    this.financialOtherExpenses = this.groupTripOthers;
+    const ordenadas = [...this.groupTripRows].sort((a, b) =>
+      a.label.localeCompare(b.label),
+    );
     pintar(
       ordenadas.map((f) => f.label),
       ordenadas.map((f) => f.freight),
@@ -2319,41 +2260,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * Inversión en mantenimiento por vehículo, en el mes o en el año según el
    * alcance. Es el desglose de una categoría de los egresos que ya suma
    * "Ingresos vs Egresos por Vehículo", no una cifra aparte.
+   *
+   * El reporte indexa los gastos por `category.expenseTypeId`, así que el
+   * mantenimiento se lee por su clave en vez de filtrar el lote entero.
    */
-  private processMaintenanceData(
-    expenses: ModelExpense[],
-    vehicles: ModelVehicle[],
-  ) {
-    const esMes = this.scope === 'mes';
-    const porPropietario = this.groupByOwner;
-    const maintCounts: Record<string, number> = {};
-    vehicles.forEach((v) => {
-      const key = this.vehicleGroupKey(v, porPropietario);
-      if (key) maintCounts[key] ??= 0;
-    });
-
-    // Type 4 is Maintenance
-    const maintenanceExpenses = expenses.filter((e) => {
-      if (e.category?.expenseTypeId !== 4) return false;
-      const p = this.expensePeriodo(e);
-      if (!p || p.anio !== this.selectedYear) return false;
-      return !esMes || p.mes === this.selectedMonth;
-    });
-
-    const porId = this.vehicleById(vehicles);
-    maintenanceExpenses.forEach((e) => {
-      const vehicle = porId.get(e.vehicleId);
-      const key = this.vehicleGroupKey(vehicle, porPropietario);
-      /* El gasto de un vehículo fuera de la lista visible se descarta, igual
-         que en el resto de gráficas: antes caía en una barra "Desconocido".
-         `amount` puede venir nulo y sin el `|| 0` el acumulado se vuelve NaN,
-         que Chart.js no pinta — el grupo desaparecía del eje. */
-      if (!key || maintCounts[key] === undefined) return;
-      maintCounts[key] += e.amount || 0;
-    });
-
-    const labels = Object.keys(maintCounts).sort((a, b) => a.localeCompare(b));
-    const data = labels.map((l) => maintCounts[l]);
+  private processMaintenanceData() {
+    const labels = [...this.groupLabels];
+    const data = labels.map((label) =>
+      this.scopedMonths(label).reduce(
+        (a, m) => a + (m.expensesByType?.[MAINTENANCE_EXPENSE_TYPE] || 0),
+        0,
+      ),
+    );
 
     this.maintenanceTotal = data.reduce((a, v) => a + (v || 0), 0);
 
@@ -2369,44 +2287,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Viajes por vehículo con eje X variable — ver el comentario de
-   * `scope`. El viaje vacío queda fuera en ambos alcances, igual
-   * que en el resto de gráficas de rendimiento.
+   * Viajes por vehículo con eje X variable — ver el comentario de `scope`. El
+   * viaje vacio queda fuera en ambos alcances, igual que en el resto de
+   * gráficas de rendimiento.
    */
-  private processTripsByMonth(trips: ModelTrip[], vehicles: ModelVehicle[]) {
+  private processTripsByMonth() {
     const colors = this.GROUP_COLORS;
-    const porPropietario = this.groupByOwner;
 
-    /* Grupos del eje — placas, o propietarios si mira un administrador — en
-       orden alfabético. Al fijar el orden una sola vez, el color de un grupo
-       es el mismo en los dos alcances: su línea en "año" y su barra en "mes". */
-    const grupos = [
-      ...new Set(
-        vehicles
-          .map((v) => this.vehicleGroupKey(v, porPropietario))
-          .filter((k): k is string => !!k),
-      ),
-    ].sort((a, b) => a.localeCompare(b));
+    /* Mismo listado en los dos alcances: los grupos salen del reporte, que
+       cubre el año completo, así que el eje de "mes" no pierde un grupo por no
+       haber rodado ese mes. */
+    const labels = [...this.groupLabels];
 
-    /* Una sola pasada sobre los viajes: cuenta por grupo y mes. El grupo se
-       crea si no venía sembrado — un viaje puede traer un vehículo fuera del
-       lote — para no esconder actividad. */
     const porMes: Record<string, number[]> = {};
-    grupos.forEach((g) => (porMes[g] = new Array(12).fill(0)));
-
-    trips.forEach((t) => {
-      if (this.isEmptyTrip(t)) return;
-      const p = this.tripPeriodo(t);
-      if (!p || p.anio !== this.selectedYear) return;
-      const key = this.tripGroupKey(t, porPropietario);
-      if (!key) return;
-      porMes[key] ??= new Array(12).fill(0);
-      porMes[key][p.mes]++;
+    labels.forEach((label) => {
+      const meses = this.monthsOf(label);
+      porMes[label] = this.MESES_CORTOS.map((_, m) =>
+        meses[m] ? this.tripCount(meses[m], false) : 0,
+      );
     });
 
-    /* Mismo listado en los dos alcances: se arma sobre el año completo, así el
-       eje de "mes" no pierde un grupo por no haber rodado ese mes. */
-    const labels = Object.keys(porMes).sort((a, b) => a.localeCompare(b));
     const datasets: any[] = [];
 
     // --- Mes: el eje X es el grupo. Una barra por placa o propietario. ---
@@ -2445,64 +2345,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * Utilidad (flete menos gastos) por grupo y mes. El grupo es la placa, o el
    * propietario si mira un administrador — ver `groupByOwner`.
    *
-   * El gasto se imputa al mes de su `creationDate` y al vehículo por
-   * `vehicleId`, así que aquí entra también lo que no cuelga de un viaje.
+   * Entra TODO el gasto del mes, también el que no cuelga de un viaje: el
+   * reporte ya lo imputó al mes y al grupo en el servidor.
    */
-  private processProfitByMonth(
-    trips: ModelTrip[],
-    expenses: ModelExpense[],
-    vehicles: ModelVehicle[],
-  ) {
+  private processProfitByMonth() {
     const colors = this.GROUP_COLORS;
-    const porPropietario = this.groupByOwner;
-
-    /* Grupos del eje en orden alfabético, fijado una sola vez: el color de un
-       grupo es el mismo en los dos alcances. */
-    const grupos = [
-      ...new Set(
-        vehicles
-          .map((v) => this.vehicleGroupKey(v, porPropietario))
-          .filter((k): k is string => !!k),
-      ),
-    ].sort((a, b) => a.localeCompare(b));
+    const labels = [...this.groupLabels];
 
     const porMes: Record<string, number[]> = {};
-    grupos.forEach((g) => (porMes[g] = new Array(12).fill(0)));
-    const bucket = (k: string) => (porMes[k] ??= new Array(12).fill(0));
-
-    /* Meses con movimiento. Se registra aparte y no se deduce de un valor
-       distinto de cero: un mes puede cerrar en cero exacto habiendo tenido
-       actividad, y contarlo como inactivo falsearía el mínimo y el promedio. */
     const activos: Record<string, boolean[]> = {};
-    const marcar = (k: string, mes: number) => {
-      (activos[k] ??= new Array(12).fill(false))[mes] = true;
-    };
 
-    trips.forEach((t) => {
-      const p = this.tripPeriodo(t);
-      if (!p || p.anio !== this.selectedYear) return;
-      const key = this.tripGroupKey(t, porPropietario);
-      if (!key) return;
-      bucket(key)[p.mes] += t.freight || 0;
-      marcar(key, p.mes);
+    labels.forEach((label) => {
+      const meses = this.monthsOf(label);
+      porMes[label] = this.MESES_CORTOS.map((_, m) =>
+        meses[m] ? (meses[m].freight || 0) - this.totalExpenses(meses[m]) : 0,
+      );
+      /* Meses con movimiento. Los marca el reporte y no se deducen de un valor
+         distinto de cero: un mes puede cerrar en cero exacto habiendo tenido
+         actividad, y contarlo como inactivo falsearía el mínimo y el promedio. */
+      activos[label] = this.MESES_CORTOS.map((_, m) => !!meses[m]?.activity);
     });
 
-    const porId = this.vehicleById(vehicles);
-    expenses.forEach((e) => {
-      const p = this.expensePeriodo(e);
-      if (!p || p.anio !== this.selectedYear) return;
-      /* El gasto solo trae `vehicleId`: sin el vehículo en el lote no hay
-         forma de saber a qué grupo va, así que se descarta. */
-      const vehicle = porId.get(e.vehicleId);
-      const key = this.vehicleGroupKey(vehicle, porPropietario);
-      if (!key || !porMes[key]) return;
-      porMes[key][p.mes] -= e.amount || 0;
-      marcar(key, p.mes);
-    });
-
-    /* Mismo listado en los dos alcances: se arma sobre el año completo, así el
-       eje de "mes" no pierde un grupo por no haber facturado ese mes. */
-    const labels = Object.keys(porMes).sort((a, b) => a.localeCompare(b));
     const datasets: any[] = [];
 
     /* El detalle mensual se sirve de aquí en vez de recalcular: así los doce
