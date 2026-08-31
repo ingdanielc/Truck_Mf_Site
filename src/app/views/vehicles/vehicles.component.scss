@@ -305,11 +305,14 @@
 .axle-help-bubble {
   position: absolute;
   top: calc(100% + 0.5rem);
-  left: -0.5rem;
+  /* El campo ocupa la mitad derecha de la fila: el globo crece hacia abajo y
+     hacia la izquierda para no desbordar el borde derecho de la pantalla. */
+  right: -0.5rem;
+  left: auto;
   z-index: 1080;
   display: block;
   width: max-content;
-  max-width: min(240px, 60vw);
+  max-width: min(240px, 70vw);
   padding: 0.5rem 0.65rem;
   border-radius: 0.5rem;
   background-color: var(--bs-emphasis-color);
@@ -323,7 +326,7 @@
     content: "";
     position: absolute;
     bottom: 100%;
-    left: 0.75rem;
+    right: 0.75rem;
     border: 0.35rem solid transparent;
     border-bottom-color: var(--bs-emphasis-color);
   }
