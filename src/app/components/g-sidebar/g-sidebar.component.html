@@ -94,6 +94,16 @@
           class="user-dropdown-menu bg-body border rounded shadow-sm position-absolute end-0 mt-2"
         >
           <ul class="list-unstyled m-0 p-2">
+            <li class="d-md-none">
+              <div class="ps-3 pe-2 pt-0 pb-3 mb-2 border-bottom">
+                <div class="fw-bold small line-height-1 text-truncate">
+                  {{ userName }}
+                </div>
+                <div class="text-secondary smaller text-truncate">
+                  {{ userRole }}
+                </div>
+              </div>
+            </li>
             <li>
               <button
                 class="btn btn-link text-body w-100 text-start text-decoration-none p-2 rounded hover-bg d-flex align-items-center"
@@ -117,10 +127,12 @@
             </li>
             <li>
               <div
-                class="text-center text-secondary mt-2 mb-1 px-2 pt-2 border-top"
+                class="text-center text-secondary mt-2 mb-1 px-2 pt-3 border-top"
                 style="font-size: 0.75rem; line-height: 1.3"
-              >
-                <div class="fw-bold mb-0">Cash<span class="text-primary">Truck</span></div>
+              > 
+                <div class="fw-bold mb-0" style="font-size: 0.875rem">
+                  Cash<span class="text-primary">Truck</span>
+                </div>
                 <div class="opacity-75 mb-2">Menos gastos, más camino.</div>
                 <div class="opacity-75 text-nowrap">
                   Ing. Daniel Castro S.<br />
