@@ -109,6 +109,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     return false;
   }
   isPatching: boolean = false;
+  /** Vehículo que la ficha de detalle pidió editar al navegar hasta aquí. */
+  private pendingEditVehicleId: number | null = null;
   showingVehicleLimitWarning: boolean = false;
   /**
    * Vehículos activos por propietario, sin los filtros de búsqueda ni estado de
@@ -228,7 +230,39 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       this.driverIdFilter = Number(rawDriverId);
     }
 
+    // La ficha del vehículo pide editar aquí en vez de repetir el formulario:
+    // llega con el id y el offcanvas se abre en cuanto el rol está resuelto.
+    const rawEditId = this.route.snapshot.queryParamMap.get('editVehicleId');
+    if (rawEditId != null) {
+      this.pendingEditVehicleId = Number(rawEditId);
+    }
+
     this.subscribeToUserContext();
+  }
+
+  /**
+   * Abre el offcanvas de edición de un vehículo que no está necesariamente en
+   * la página cargada, así que se pide por id en lugar de buscarlo en la lista.
+   */
+  private openPendingEditVehicle(): void {
+    const id = this.pendingEditVehicleId;
+    if (id == null) return;
+    this.pendingEditVehicleId = null;
+
+    const filter = new ModelFilterTable(
+      [new Filter('id', '=', id.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.vehicleService.getVehicleFilter(filter).subscribe({
+      next: (response: any) => {
+        const vehicle = response?.data?.content?.[0];
+        if (vehicle && !this.isOffcanvasOpen) {
+          this.toggleOffcanvas(vehicle);
+        }
+      },
+      error: (err) => console.error('Error loading vehicle to edit:', err),
+    });
   }
 
   subscribeToUserContext(): void {
@@ -244,6 +278,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           ) {
             this.rows = 9;
           }
+
+          this.openPendingEditVehicle();
 
           if (this.userRole === 'ADMINISTRADOR') {
             this.vehicleForm

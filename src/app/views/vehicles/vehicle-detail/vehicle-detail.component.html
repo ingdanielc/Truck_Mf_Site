@@ -1,0 +1,770 @@
+@if (vehicle) {
+  <div class="vehicle-detail-container py-4 bg-body">
+    <!-- Header -->
+    <div class="row mb-4 gy-3 align-items-center">
+      <div class="col-12 col-md">
+        <div class="d-flex align-items-center gap-3">
+          <button
+            (click)="goBack()"
+            class="btn btn-link text-body p-0 shadow-none mt-1"
+            aria-label="atras"
+          >
+            <i class="fa-solid fa-arrow-left fs-4"></i>
+          </button>
+          <h1 class="h3 fw-bold mb-0 text-body">Detalle del Vehículo</h1>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div
+      class="card border-0 rounded-4 shadow-sm bg-primary mb-4 overflow-hidden position-relative hover-scale"
+    >
+      <!-- Menú contextual -->
+      @if (!isConductor) {
+        <div class="position-absolute top-0 end-0 p-3 z-2">
+          <div class="dropdown">
+            <button
+              class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center"
+              style="width: 36px; height: 36px"
+              type="button"
+              (click)="toggleMenu($event)"
+              aria-label="Opciones"
+            >
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
+            @if (isMenuOpen) {
+              <ul
+                class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
+              >
+                @if (isAdmin) {
+                  <li>
+                    <button
+                      class="dropdown-item d-flex align-items-center gap-2 py-2"
+                      (click)="openDocuments()"
+                    >
+                      <i class="fa-solid fa-folder-open text-secondary"></i>
+                      <span>Gestionar documentos</span>
+                    </button>
+                  </li>
+                }
+                @if (canEdit) {
+                  <li>
+                    <button
+                      class="dropdown-item d-flex align-items-center gap-2 py-2"
+                      (click)="goToEdit()"
+                    >
+                      <i class="fa-solid fa-pencil text-secondary"></i>
+                      <span>Editar vehículo</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      class="dropdown-item d-flex align-items-center gap-2 py-2"
+                      (click)="toggleMenu($event); goToMaintenance()"
+                    >
+                      <i class="fa-solid fa-wrench text-secondary"></i>
+                      <span>Mantenimiento</span>
+                    </button>
+                  </li>
+                }
+                @if (canSell) {
+                  <li>
+                    <button
+                      class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
+                      (click)="openSellConfirm()"
+                    >
+                      <i class="fa-solid fa-hand-holding-dollar"></i>
+                      <span>Vender vehículo</span>
+                    </button>
+                  </li>
+                }
+              </ul>
+              <div
+                class="dropdown-backdrop"
+                (click)="toggleMenu($event)"
+                onkeypress
+              ></div>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="card-body p-4 p-md-5 position-relative z-1">
+        <div class="row align-items-center gy-3">
+          <div
+            class="col-12 col-md-auto d-flex justify-content-center justify-content-md-start"
+          >
+            <div class="vehicle-img-container position-relative">
+              <input
+                type="file"
+                #photoInput
+                class="d-none"
+                accept="image/*"
+                (change)="onPhotoSelected($event)"
+              />
+              <div
+                class="vehicle-photo rounded-4 overflow-hidden bg-white bg-opacity-10 d-flex align-items-center justify-content-center border border-4 border-white border-opacity-10 shadow-lg"
+                [class.cursor-pointer]="canEdit"
+                (click)="canEdit && triggerPhotoInput(photoInput)"
+                onkeypress
+              >
+                @if (vehicle.photo) {
+                  <img
+                    [src]="vehicle.photo"
+                    class="w-100 h-100 object-fit-cover"
+                    [alt]="vehicle.plate"
+                  />
+                } @else {
+                  <i
+                    class="fa-solid fa-truck text-white opacity-50 display-3"
+                  ></i>
+                }
+              </div>
+              @if (canEdit) {
+                <button
+                  type="button"
+                  class="btn btn-light btn-sm rounded-circle position-absolute photo-edit-btn shadow-sm d-flex align-items-center justify-content-center"
+                  aria-label="Editar foto"
+                  (click)="triggerPhotoInput(photoInput)"
+                  title="Seleccionar desde archivo"
+                >
+                  <i class="fa-solid fa-folder-open text-primary"></i>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-light btn-sm rounded-circle position-absolute photo-camera-btn shadow-sm d-flex align-items-center justify-content-center"
+                  aria-label="Cámara"
+                  (click)="showCamera = true"
+                  title="Tomar fotografía"
+                >
+                  <i class="fa-solid fa-camera text-primary"></i>
+                </button>
+                @if (vehicle.photo) {
+                  <button
+                    type="button"
+                    class="btn btn-danger btn-sm rounded-circle position-absolute photo-remove-btn shadow-sm d-flex align-items-center justify-content-center"
+                    aria-label="Eliminar foto"
+                    (click)="removePhoto()"
+                  >
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                }
+              }
+            </div>
+          </div>
+
+          <div class="col-12 col-md text-center text-md-start">
+            <h1 class="display-6 fw-bold mb-2 text-white text-uppercase">
+              {{ vehicle.plate }}
+            </h1>
+            <div
+              class="d-flex flex-wrap gap-1 gap-md-3 text-white text-opacity-75 justify-content-center justify-content-md-start"
+            >
+              <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-truck-front"></i>
+                <span>
+                  {{ vehicle.vehicleBrandName || vehicle.vehicleBrandId }}
+                  {{ vehicle.model }}
+                </span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <i class="fa-regular fa-calendar"></i>
+                <span>{{ vehicle.year }}</span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-palette"></i>
+                <span>{{ vehicle.color }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-auto ms-lg-auto">
+            <div class="row g-2 justify-content-center justify-content-lg-end">
+              <div class="col-6 col-sm-auto">
+                <div
+                  class="card h-100 bg-dark bg-opacity-50 border-0 rounded-4 p-3 px-4 text-center"
+                  style="min-width: 130px"
+                >
+                  <p
+                    class="text-white text-opacity-50 small fw-bold mb-0 text-uppercase tracking-wider"
+                  >
+                    Estado
+                  </p>
+                  <h5 class="fw-bold mb-0" [ngClass]="statusTextClass">
+                    {{ displayTripStatus }}
+                  </h5>
+                </div>
+              </div>
+              @if (isAdmin) {
+                <div class="col-6 col-sm-auto">
+                  <div
+                    class="card h-100 bg-dark bg-opacity-50 border-0 rounded-4 p-3 px-4 text-center"
+                    style="min-width: 130px"
+                  >
+                    <p
+                      class="text-white text-opacity-50 small fw-bold mb-0 text-uppercase tracking-wider"
+                    >
+                      Documentos
+                    </p>
+                    <h5
+                      class="fw-bold mb-0"
+                      [ngClass]="
+                        documentsToRenew > 0 ? 'text-warning' : 'text-success'
+                      "
+                    >
+                      {{ documentRows.length }}
+                    </h5>
+                    @if (documentsToRenew > 0) {
+                      <small class="text-warning" style="font-size: 0.7rem">
+                        {{ documentsToRenew }} por renovar
+                      </small>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contadores -->
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-md-4">
+        <div
+          class="card border-0 rounded-4 shadow-sm bg-body-tertiary p-4 h-100 hover-scale"
+        >
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div
+              (click)="goToTrips()"
+              class="icon-box bg-success bg-opacity-10 rounded-3 p-3 text-success"
+              style="cursor: pointer"
+              onkeypress
+            >
+              <i class="fa-solid fa-route fs-4"></i>
+            </div>
+            <span class="text-secondary small fw-bold text-uppercase"
+              >Historial</span
+            >
+          </div>
+          <h2 class="display-6 fw-bold mb-1 text-success">{{ tripCount }}</h2>
+          <p class="text-secondary mb-0">Total Viajes</p>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div
+          class="card border-0 rounded-4 shadow-sm bg-body-tertiary p-4 h-100 hover-scale"
+        >
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div
+              (click)="goToMaintenance()"
+              class="icon-box bg-warning bg-opacity-10 rounded-3 p-3 text-warning"
+              style="cursor: pointer"
+              onkeypress
+            >
+              <i class="fa-solid fa-wrench fs-4"></i>
+            </div>
+            <span class="text-secondary small fw-bold text-uppercase"
+              >Acumulado</span
+            >
+          </div>
+          <h2 class="display-6 fw-bold mb-1 text-warning">
+            @if (loadingExpenses) {
+              <output class="spinner-border" aria-hidden="true"></output>
+            } @else {
+              {{
+                totalMaintenance | currency: "COP" : "symbol-narrow" : "1.0-0"
+              }}
+            }
+          </h2>
+          <p class="text-secondary mb-0">
+            Mantenimientos
+            @if (!loadingExpenses && maintenanceExpenses.length > 0) {
+              <span class="opacity-75"
+                >· {{ maintenanceExpenses.length }} registro{{
+                  maintenanceExpenses.length === 1 ? "" : "s"
+                }}</span
+              >
+            }
+          </p>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div
+          class="card border-0 rounded-4 shadow-sm bg-body-tertiary p-4 h-100 hover-scale"
+        >
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div
+              (click)="goToMap()"
+              class="icon-box bg-primary bg-opacity-10 rounded-3 p-3 text-primary"
+              style="cursor: pointer"
+              onkeypress
+            >
+              <i class="fa-solid fa-location-dot fs-4"></i>
+            </div>
+            <span class="text-secondary small fw-bold text-uppercase"
+              >Ubicación</span
+            >
+          </div>
+          <h6
+            class="fw-bold mb-1 location-text"
+            [title]="lastLocation?.addressText || ''"
+          >
+            @if (loadingLocation) {
+              Cargando…
+            } @else {
+              {{ lastLocation?.addressText || "No conocida" }}
+            }
+          </h6>
+          <p class="text-secondary mb-0">Último Reporte</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Información técnica -->
+    <div
+      class="card border-0 rounded-4 shadow-sm bg-body-tertiary mb-4 hover-scale"
+    >
+      <div
+        class="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center"
+      >
+        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary">
+          <i class="fa-solid fa-gears"></i> Información Técnica
+        </h5>
+        @if (canEdit) {
+          <button
+            class="btn btn-link text-primary p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
+            (click)="goToEdit()"
+          >
+            <i class="fa-solid fa-pen-to-square d-inline d-md-none fs-5"></i>
+            <span class="d-none d-md-inline">Actualizar</span>
+          </button>
+        }
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-4">
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">
+              Placa
+            </p>
+            <h6 class="fw-bold mb-0 text-uppercase">{{ vehicle.plate }}</h6>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">
+              Marca
+            </p>
+            <h6 class="fw-bold mb-0">
+              {{ vehicle.vehicleBrandName || vehicle.vehicleBrandId }}
+            </h6>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">
+              Modelo
+            </p>
+            <h6 class="fw-bold mb-0">{{ vehicle.model }}</h6>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">Año</p>
+            <h6 class="fw-bold mb-0">{{ vehicle.year }}</h6>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">
+              Color
+            </p>
+            <h6 class="fw-bold mb-0">{{ vehicle.color }}</h6>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">
+              Número de Ejes
+            </p>
+            <h6 class="fw-bold mb-0">{{ vehicle.numberOfAxles }}</h6>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">
+              Número de Motor
+            </p>
+            <h6 class="fw-bold mb-0 text-break">
+              {{ vehicle.engineNumber || "---" }}
+            </h6>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">
+              Número de Chasis
+            </p>
+            <h6 class="fw-bold mb-0 text-break">
+              {{ vehicle.chassisNumber || "---" }}
+            </h6>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-4">
+            <p class="text-secondary small fw-bold mb-1 text-uppercase">
+              Estado
+            </p>
+            <h6 class="fw-bold mb-0">{{ vehicle.status || "Activo" }}</h6>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Propietarios y conductor -->
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-lg-6">
+        <div
+          class="card border-0 rounded-4 shadow-sm bg-body-tertiary h-100 hover-scale"
+        >
+          <div class="card-header bg-transparent border-0 p-4 pb-0">
+            <h5
+              class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary"
+            >
+              <i class="fa-solid fa-user-tie"></i> Propietarios
+            </h5>
+          </div>
+          <div class="card-body p-4">
+            @for (relation of ownerRelations; track relation.id) {
+              <div
+                class="entity-row d-flex align-items-center gap-3 py-2"
+                [class.cursor-pointer]="!isConductor"
+                (click)="goToOwner(relation.ownerId)"
+                onkeypress
+              >
+                <div
+                  class="entity-avatar rounded-circle overflow-hidden bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                >
+                  @if (relation.owner.photo) {
+                    <img
+                      [src]="relation.owner.photo"
+                      class="w-100 h-100 object-fit-cover"
+                      [alt]="relation.owner.name"
+                    />
+                  } @else {
+                    <i class="fa-solid fa-user text-secondary"></i>
+                  }
+                </div>
+                <div class="flex-grow-1 overflow-hidden">
+                  <p class="fw-bold mb-0 text-truncate">
+                    {{ relation.owner.name || "Propietario" }}
+                  </p>
+                  <p class="text-secondary small mb-0 text-truncate">
+                    {{ formatDocNumber(relation.owner.documentNumber) }}
+                  </p>
+                </div>
+                <span
+                  class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2 flex-shrink-0"
+                >
+                  {{ relation.ownershipPercentage }}%
+                </span>
+              </div>
+            }
+            @if (ownerRelations.length === 0) {
+              <div class="text-center py-4 text-secondary">
+                <i
+                  class="fa-solid fa-user-tie fs-2 mb-2 opacity-25 d-block"
+                ></i>
+                <p class="mb-0 small fw-bold">Sin propietarios registrados.</p>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <div
+          class="card border-0 rounded-4 shadow-sm bg-body-tertiary h-100 hover-scale"
+        >
+          <div class="card-header bg-transparent border-0 p-4 pb-0">
+            <h5
+              class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary"
+            >
+              <i class="fa-solid fa-id-card-clip"></i> Conductor Asignado
+            </h5>
+          </div>
+          <div class="card-body p-4">
+            @if (vehicle.currentDriverId) {
+              <div
+                class="entity-row d-flex align-items-center gap-3 py-2 cursor-pointer"
+                (click)="goToDriver()"
+                onkeypress
+              >
+                <div
+                  class="entity-avatar rounded-circle overflow-hidden bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                >
+                  <i class="fa-solid fa-user text-secondary"></i>
+                </div>
+                <div class="flex-grow-1 overflow-hidden">
+                  <p class="fw-bold mb-0 text-truncate">
+                    {{ vehicle.currentDriverName || "Conductor asignado" }}
+                  </p>
+                  <p class="text-secondary small mb-0">Ver perfil</p>
+                </div>
+                <i class="fa-solid fa-chevron-right text-secondary"></i>
+              </div>
+            } @else {
+              <div class="text-center py-4 text-secondary">
+                <i
+                  class="fa-solid fa-id-card-clip fs-2 mb-2 opacity-25 d-block"
+                ></i>
+                <p class="mb-0 small fw-bold">Sin conductor asignado.</p>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @if (isAdmin) {
+      <!-- Documentos -->
+      <div
+        class="card border-0 rounded-4 shadow-sm bg-body-tertiary mb-4 hover-scale"
+      >
+        <div
+          class="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center"
+        >
+          <h5 class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary">
+            <i class="fa-solid fa-folder-open"></i> Documentos
+          </h5>
+          <div class="d-flex align-items-center gap-3">
+            @if (documentRows.length > 0) {
+              <button
+                class="btn btn-link text-success p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
+                (click)="shareDocumentsByWhatsApp()"
+                title="Compartir por WhatsApp"
+              >
+                <i class="fa-brands fa-whatsapp fs-5"></i>
+                <span class="d-none d-md-inline">Compartir</span>
+              </button>
+            }
+            <button
+              class="btn btn-link text-primary p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
+              (click)="openDocuments()"
+            >
+              <i class="fa-solid fa-pen-to-square d-inline d-md-none fs-5"></i>
+              <span class="d-none d-md-inline">Gestionar</span>
+            </button>
+          </div>
+        </div>
+        <div class="card-body p-4">
+          @if (documentRows.length > 0) {
+            <div class="row g-3">
+              @for (row of documentRows; track trackByDocument($index, row)) {
+                <div class="col-12 col-md-6 col-xl-4">
+                  <div class="document-tile border rounded-3 p-3 h-100">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <span
+                        class="fw-bold text-truncate flex-grow-1"
+                        [title]="row.name"
+                      >
+                        {{ row.name }}
+                      </span>
+                      @if (row.document.fileUrl) {
+                        <button
+                          type="button"
+                          class="btn btn-link p-0 border-0 shadow-none text-primary flex-shrink-0"
+                          (click)="openDocumentFile(row, $event)"
+                          title="Abrir archivo"
+                          aria-label="Abrir archivo"
+                        >
+                          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </button>
+                      }
+                    </div>
+
+                    <div
+                      class="d-flex flex-wrap gap-2 text-secondary mb-2"
+                      style="font-size: 0.75rem"
+                    >
+                      @if (row.document.documentNumber) {
+                        <span class="text-truncate">
+                          <i class="fa-solid fa-hashtag me-1 opacity-75"></i
+                          >{{ row.document.documentNumber }}
+                        </span>
+                      }
+                      @if (row.document.issuer) {
+                        <span class="text-truncate">
+                          <i class="fa-solid fa-building me-1 opacity-75"></i
+                          >{{ row.document.issuer }}
+                        </span>
+                      }
+                    </div>
+
+                    <div
+                      class="validity-track rounded-pill"
+                      [title]="row.validity.label"
+                    >
+                      <div
+                        class="validity-fill rounded-pill"
+                        [ngClass]="'state-' + row.validity.state"
+                        [style.width.%]="row.validity.percent"
+                      ></div>
+                    </div>
+                    <span
+                      class="d-block mt-1"
+                      style="font-size: 0.7rem"
+                      [ngClass]="{
+                        'text-danger': row.validity.state === 'vencido',
+                        'text-warning': row.validity.state === 'por-vencer',
+                        'text-secondary':
+                          row.validity.state === 'vigente' ||
+                          row.validity.state === 'sin-vigencia',
+                      }"
+                    >
+                      {{ row.validity.label }}
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="text-center py-5 text-secondary">
+              <i
+                class="fa-solid fa-folder-open fs-1 mb-3 opacity-25 d-block"
+              ></i>
+              <p class="mb-3 fw-bold">Este vehículo no tiene documentos.</p>
+              <button
+                class="btn btn-outline-primary rounded-3 px-4 py-2 fw-bold"
+                (click)="openDocuments()"
+              >
+                <i class="fa-solid fa-file-circle-plus me-2"></i>Cargar
+                documentos
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Últimos viajes -->
+    <div class="card border-0 rounded-4 shadow-sm bg-body-tertiary hover-scale">
+      <div
+        class="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center"
+      >
+        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary">
+          <i class="fa-solid fa-route"></i> Últimos Viajes
+        </h5>
+        <button
+          class="btn btn-link text-primary p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
+          (click)="goToTrips()"
+        >
+          <i class="fa-solid fa-route d-inline d-md-none fs-5"></i>
+          <span class="d-none d-md-inline">Ver Viajes</span>
+        </button>
+      </div>
+      <div class="card-body p-4">
+        @if (loadingTrips) {
+          <div class="section-loader">
+            <output class="spinner-border text-primary"></output>
+          </div>
+        } @else if (trips.length > 0) {
+          <div class="row g-2">
+            @for (trip of trips; track trip.id) {
+              <div class="col-12">
+                <g-vehicle-trip-card
+                  [vehicle]="vehicle"
+                  [trip]="trip"
+                  [cities]="cities"
+                ></g-vehicle-trip-card>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="text-center py-5 text-secondary">
+            <i class="fa-solid fa-route fs-1 mb-3 opacity-25 d-block"></i>
+            <p class="mb-0 fw-bold">Este vehículo no tiene viajes.</p>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+} @else {
+  <div
+    class="d-flex flex-column align-items-center justify-content-center py-5"
+  >
+    <output class="spinner-border text-primary mb-3"></output>
+    <p class="text-secondary fw-bold">Cargando vehículo...</p>
+  </div>
+}
+
+@if (showCamera) {
+  <g-camera
+    (capture)="onCameraCapture($event)"
+    (close)="onCameraClose()"
+  ></g-camera>
+}
+
+<!-- Documentos -->
+@if (isDocumentsOpen) {
+  <div
+    class="offcanvas-backdrop transition-all d-none d-md-block"
+    (click)="closeDocuments()"
+    onkeypress
+  ></div>
+}
+
+<div
+  class="custom-offcanvas shadow-lg border-start transition-all"
+  [class.open]="isDocumentsOpen"
+>
+  @if (isDocumentsOpen && vehicleId && isAdmin) {
+    <g-vehicle-documents
+      [vehicleId]="vehicleId"
+      [plate]="vehicle?.plate || ''"
+      [canEdit]="!isSold"
+      (changed)="setDocuments($event)"
+      (close)="closeDocuments()"
+      class="d-flex flex-column h-100"
+    ></g-vehicle-documents>
+  }
+</div>
+
+<!-- Confirmación de venta -->
+@if (showSellConfirm) {
+  <div class="offcanvas-backdrop" (click)="cancelSell()" onkeypress></div>
+}
+
+<div
+  class="custom-offcanvas offcanvas-above shadow-lg"
+  [class.open]="showSellConfirm"
+>
+  <div
+    class="offcanvas-body d-flex align-items-center justify-content-center"
+    style="
+      background-color: rgba(var(--bs-body-bg-rgb), 0.85);
+      backdrop-filter: blur(4px);
+    "
+  >
+    <div class="confirm-card shadow-lg p-4 text-center rounded-4 bg-body">
+      <div
+        class="confirm-icon-box mb-3 mx-auto d-flex align-items-center justify-content-center bg-danger bg-opacity-10 rounded-circle"
+        style="width: 80px; height: 80px"
+      >
+        <i class="fa-solid fa-hand-holding-dollar text-danger fs-1"></i>
+      </div>
+      <h5 class="fw-bold mb-2">¿Vender el vehículo {{ vehicle?.plate }}?</h5>
+      <p class="small text-secondary mb-4">
+        ¿Está seguro de vender este vehículo? Esta acción es irreversible y
+        restringirá futuras operaciones sobre el mismo.
+      </p>
+      <div
+        class="d-flex flex-column-reverse flex-sm-row gap-2 justify-content-center"
+      >
+        <button
+          class="btn btn-outline-secondary w-100 w-sm-auto px-5 py-2 rounded-3"
+          (click)="cancelSell()"
+          [disabled]="isSelling"
+        >
+          Cancelar
+        </button>
+        <button
+          class="btn btn-danger w-100 w-sm-auto px-5 py-2 rounded-3 shadow-sm d-flex align-items-center justify-content-center"
+          (click)="confirmSell()"
+          [disabled]="isSelling"
+        >
+          @if (isSelling) {
+            <output class="spinner-border me-2" aria-hidden="true"></output>
+          } @else {
+            Vender
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

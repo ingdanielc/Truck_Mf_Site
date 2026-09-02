@@ -34,6 +34,13 @@ export const routes: Routes = [
       import('./vehicles/vehicles.component').then((m) => m.VehiclesComponent),
   },
   {
+    path: 'vehicles/:id',
+    loadComponent: () =>
+      import('./vehicles/vehicle-detail/vehicle-detail.component').then(
+        (m) => m.VehicleDetailComponent,
+      ),
+  },
+  {
     path: 'expenses',
     loadComponent: () =>
       import('./expenses/expenses.component').then((m) => m.ExpensesComponent),

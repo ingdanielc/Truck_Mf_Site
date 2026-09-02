@@ -1,0 +1,431 @@
+<div class="offcanvas-header p-4 pb-3 d-flex flex-column border-bottom">
+  <div class="d-flex justify-content-between align-items-start w-100">
+    <h2 class="h4 fw-bold mb-0 text-body">Documentos</h2>
+    <button
+      type="button"
+      class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
+      (click)="dismiss()"
+      aria-label="Cerrar"
+    >
+      <i class="fa-solid fa-xmark fs-3"></i>
+    </button>
+  </div>
+  <p class="text-secondary small mb-0 mt-1">
+    @if (plate) {
+      Documentos de <span class="fw-bold text-uppercase">{{ plate }}</span
+      >. El archivo es opcional.
+    } @else {
+      Cada cambio se guarda al momento. El archivo es opcional.
+    }
+  </p>
+</div>
+
+<div class="offcanvas-body p-4 custom-scrollbar">
+  @if (loading) {
+    <div class="section-loader">
+      <output class="spinner-border text-primary"></output>
+      <span class="small text-secondary mt-2">Cargando documentos…</span>
+    </div>
+  } @else {
+    <!-- Documentos vigentes -->
+    @if (rows.length > 0) {
+      <div class="mb-4">
+        <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+          <i class="fa-solid fa-folder-open me-2"></i>Vigentes
+          <span
+            class="badge bg-primary-subtle text-primary ms-2 rounded-pill"
+            >{{ rows.length }}</span
+          >
+        </h6>
+
+        <div class="d-flex flex-column gap-2">
+          @for (row of rows; track trackByRow($index, row)) {
+            <div
+              class="draft-item border rounded-3 p-3"
+              [class.is-editing]="editingId === row.document.id"
+            >
+              <div class="d-flex align-items-start gap-3">
+                <div
+                  class="draft-icon rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                  [class.has-file]="!!row.document.fileUrl"
+                >
+                  <i
+                    class="fa-solid"
+                    [ngClass]="
+                      row.document.fileUrl ? 'fa-paperclip' : 'fa-calendar-day'
+                    "
+                  ></i>
+                </div>
+
+                <div class="flex-grow-1 overflow-hidden">
+                  <p class="fw-bold mb-1 text-truncate small">{{ row.name }}</p>
+                  <div
+                    class="d-flex flex-wrap gap-2 text-secondary"
+                    style="font-size: 0.72rem"
+                  >
+                    @if (row.document.documentNumber) {
+                      <span class="text-truncate">
+                        <i class="fa-solid fa-hashtag me-1 opacity-75"></i
+                        >{{ row.document.documentNumber }}
+                      </span>
+                    }
+                    @if (row.document.issuer) {
+                      <span class="text-truncate">
+                        <i class="fa-solid fa-building me-1 opacity-75"></i
+                        >{{ row.document.issuer }}
+                      </span>
+                    }
+                    <span class="text-nowrap">
+                      <i class="fa-solid fa-clock me-1 opacity-75"></i
+                      >{{ row.validity.label }}
+                    </span>
+                  </div>
+
+                  <div
+                    class="validity-track rounded-pill mt-2"
+                    [title]="row.validity.label"
+                  >
+                    <div
+                      class="validity-fill rounded-pill"
+                      [ngClass]="'state-' + row.validity.state"
+                      [style.width.%]="row.validity.percent"
+                    ></div>
+                  </div>
+                </div>
+
+                <div class="d-flex flex-column flex-sm-row gap-2 flex-shrink-0">
+                  @if (row.document.fileUrl) {
+                    <button
+                      type="button"
+                      class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none draft-btn"
+                      (click)="openFile(row.document.fileUrl, $event)"
+                      title="Abrir archivo"
+                    >
+                      <i
+                        class="fa-solid fa-arrow-up-right-from-square"
+                        style="font-size: 0.75rem"
+                      ></i>
+                    </button>
+                  }
+                  @if (canEdit) {
+                    <button
+                      type="button"
+                      class="btn btn-outline-info btn-sm rounded-3 p-1 shadow-none draft-btn"
+                      (click)="editRow(row)"
+                      title="Editar documento"
+                    >
+                      <i
+                        class="fa-solid fa-pencil"
+                        style="font-size: 0.75rem"
+                      ></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger btn-sm rounded-3 p-1 shadow-none draft-btn"
+                      (click)="askDelete(row)"
+                      title="Eliminar documento"
+                    >
+                      <i
+                        class="fa-solid fa-trash"
+                        style="font-size: 0.75rem"
+                      ></i>
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Confirmación de borrado, en la propia fila -->
+              @if (confirmDeleteId === row.document.id) {
+                <div
+                  class="delete-confirm border-top mt-3 pt-3 d-flex flex-column flex-sm-row align-items-sm-center gap-2"
+                >
+                  <p class="small mb-0 flex-grow-1">
+                    <i
+                      class="fa-solid fa-triangle-exclamation text-danger me-1"
+                    ></i>
+                    Se elimina de forma permanente. ¿Continuar?
+                  </p>
+                  <div class="d-flex gap-2">
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary btn-sm rounded-3 px-3"
+                      (click)="cancelDelete()"
+                      [disabled]="deletingId !== null"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-danger btn-sm rounded-3 px-3"
+                      (click)="confirmDelete()"
+                      [disabled]="deletingId !== null"
+                    >
+                      @if (deletingId !== null) {
+                        <output
+                          class="spinner-border spinner-border-sm"
+                          aria-hidden="true"
+                        ></output>
+                      } @else {
+                        Eliminar
+                      }
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        @if (!showForm && canEdit) {
+          <button
+            type="button"
+            class="btn btn-outline-primary w-100 rounded-3 py-2 mt-3 fw-bold"
+            (click)="openForm()"
+          >
+            <i class="fa-solid fa-plus me-2"></i>Agregar documento
+          </button>
+        }
+      </div>
+    } @else if (!showForm) {
+      <div class="text-center py-5 text-secondary">
+        <i class="fa-solid fa-folder-open fs-1 mb-3 opacity-25 d-block"></i>
+        <p class="mb-0 fw-bold small">Este vehículo no tiene documentos.</p>
+      </div>
+    }
+
+    <!-- Alta / edición -->
+    @if (showForm && canEdit) {
+      <form [formGroup]="documentForm" (ngSubmit)="saveDocument()">
+        <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
+          <i class="fa-solid fa-file-circle-plus me-2"></i>
+          {{ editingId ? "Editar documento" : "Nuevo documento" }}
+        </h6>
+
+        @if (loadingTypes) {
+          <div class="section-loader">
+            <output class="spinner-border text-primary"></output>
+            <span class="small text-secondary mt-2">Cargando tipos…</span>
+          </div>
+        } @else {
+          <div class="row g-3">
+            <div class="col-12 mb-1">
+              <label
+                for="documentFileTypeId"
+                class="form-label small fw-bold mb-2"
+                >Tipo de documento*</label
+              >
+              <select
+                id="documentFileTypeId"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="documentFileTypeId"
+                [class.is-invalid]="
+                  documentForm.get('documentFileTypeId')?.invalid &&
+                  documentForm.get('documentFileTypeId')?.touched
+                "
+              >
+                <option [ngValue]="null" disabled>Selecciona</option>
+                @for (type of documentTypes; track type.id) {
+                  <option [ngValue]="type.id">{{ type.name }}</option>
+                }
+              </select>
+              @if (documentTypes.length === 0) {
+                <div class="text-danger small mt-1">
+                  No se pudo cargar el catálogo de documentos. Intenta más
+                  tarde.
+                </div>
+              } @else if (typeBeingRenewed) {
+                <div class="text-warning small mt-1">
+                  <i class="fa-solid fa-rotate me-1"></i>
+                  Ya hay un documento vigente de este tipo. Al guardar pasa al
+                  histórico y este queda como el vigente.
+                </div>
+              } @else if (expiryRequired) {
+                <div class="text-body-secondary small mt-1">
+                  <i class="fa-solid fa-circle-info me-1"></i>
+                  Este documento exige fecha de vencimiento.
+                </div>
+              }
+            </div>
+
+            <div class="col-12 col-sm-6 mb-1">
+              <label for="documentNumber" class="form-label small fw-bold mb-2"
+                >Número</label
+              >
+              <input
+                id="documentNumber"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="documentNumber"
+                placeholder="Ej. 12345678"
+                maxlength="100"
+              />
+            </div>
+
+            <div class="col-12 col-sm-6 mb-1">
+              <label for="issuer" class="form-label small fw-bold mb-2"
+                >Expedido por</label
+              >
+              <input
+                id="issuer"
+                type="text"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="issuer"
+                placeholder="Aseguradora o CDA"
+                maxlength="150"
+              />
+            </div>
+
+            <div class="col-6 mb-1">
+              <label for="issueDate" class="form-label small fw-bold mb-2"
+                >Expedición</label
+              >
+              <input
+                id="issueDate"
+                type="date"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="issueDate"
+                [max]="maxIssueDate"
+              />
+            </div>
+
+            <div class="col-6 mb-1">
+              <label for="expiryDate" class="form-label small fw-bold mb-2">
+                Vencimiento{{ expiryRequired ? "*" : "" }}
+              </label>
+              <input
+                id="expiryDate"
+                type="date"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="expiryDate"
+              />
+            </div>
+
+            <!-- Archivo (opcional) -->
+            <div class="col-12 mb-1">
+              <span class="form-label small fw-bold mb-2 d-block">Archivo</span>
+              <input
+                type="file"
+                #documentInput
+                class="d-none"
+                [accept]="acceptedFiles"
+                (change)="onFileSelected($event)"
+              />
+
+              @if (selectedFileName) {
+                <div
+                  class="file-chip border rounded-3 p-3 d-flex align-items-center gap-3"
+                >
+                  <i class="fa-solid fa-file-lines fs-4 text-primary"></i>
+                  <div class="flex-grow-1 overflow-hidden">
+                    <p class="mb-0 small fw-bold text-truncate">
+                      {{ selectedFileName }}
+                    </p>
+                    <p class="mb-0 text-secondary" style="font-size: 0.72rem">
+                      @if (selectedFile) {
+                        Se subirá al guardar
+                      } @else {
+                        Archivo actual
+                      }
+                    </p>
+                  </div>
+                  @if (!selectedFile && currentFileUrl) {
+                    <button
+                      type="button"
+                      class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none draft-btn"
+                      (click)="openFile(currentFileUrl, $event)"
+                      title="Abrir archivo"
+                    >
+                      <i
+                        class="fa-solid fa-arrow-up-right-from-square"
+                        style="font-size: 0.75rem"
+                      ></i>
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm rounded-3 p-1 shadow-none draft-btn"
+                    (click)="triggerFileInput(documentInput)"
+                    title="Reemplazar archivo"
+                  >
+                    <i
+                      class="fa-solid fa-arrows-rotate"
+                      style="font-size: 0.75rem"
+                    ></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm rounded-3 p-1 shadow-none draft-btn"
+                    (click)="removeFile()"
+                    title="Quitar archivo"
+                  >
+                    <i class="fa-solid fa-trash" style="font-size: 0.75rem"></i>
+                  </button>
+                </div>
+              } @else {
+                <button
+                  type="button"
+                  class="file-dropzone btn w-100 rounded-3 py-4 d-flex flex-column align-items-center justify-content-center gap-1"
+                  (click)="triggerFileInput(documentInput)"
+                >
+                  <i class="fa-solid fa-cloud-arrow-up fs-4 text-primary"></i>
+                  <span class="small fw-bold">Seleccionar archivo</span>
+                  <span class="text-secondary" style="font-size: 0.72rem">
+                    PDF o imagen, hasta {{ maxFileSizeMb }} MB · opcional
+                  </span>
+                </button>
+              }
+            </div>
+
+            <div class="col-12 mb-1">
+              <label for="observations" class="form-label small fw-bold mb-2"
+                >Observaciones</label
+              >
+              <textarea
+                id="observations"
+                class="form-control rounded-3 py-2 px-3"
+                formControlName="observations"
+                rows="2"
+                maxlength="500"
+                placeholder="Notas del documento (opcional)"
+              ></textarea>
+            </div>
+          </div>
+
+          @if (formError) {
+            <div
+              class="alert alert-danger d-flex align-items-start gap-2 rounded-3 mt-3 mb-0 py-2 px-3 small"
+            >
+              <i class="fa-solid fa-triangle-exclamation mt-1"></i>
+              <span>{{ formError }}</span>
+            </div>
+          }
+
+          <div class="d-flex flex-column-reverse flex-sm-row gap-2 mt-3">
+            @if (rows.length > 0) {
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-lg flex-fill py-3 rounded-3"
+                (click)="cancelForm()"
+                [disabled]="isSaving"
+              >
+                Descartar
+              </button>
+            }
+            <button
+              type="submit"
+              class="btn btn-primary btn-lg flex-fill py-3 rounded-3 fw-bold shadow-primary"
+              [disabled]="documentTypes.length === 0 || isSaving"
+            >
+              @if (isSaving) {
+                <output class="spinner-border me-2" aria-hidden="true"></output>
+              } @else {
+                <i class="fa-solid fa-check-circle me-2"></i>
+              }
+              {{ editingId ? "Guardar cambios" : "Guardar documento" }}
+            </button>
+          </div>
+        }
+      </form>
+    }
+  }
+</div>

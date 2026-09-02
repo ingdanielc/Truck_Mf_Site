@@ -10,7 +10,11 @@
       <span class="small fw-medium">Cargando...</span>
     </div>
   } @else {
-    <div class="row g-0 flex-grow-1 h-100">
+    <div
+      class="row g-0 flex-grow-1 h-100 card-body-clickable"
+      (click)="onCardClick()"
+      onkeypress
+    >
       <!-- Vehicle Image Container (Left Side) -->
       <div
         class="col-5 position-relative bg-secondary-subtle d-flex flex-column align-items-center justify-content-center"
@@ -36,7 +40,7 @@
           [style.cursor]="
             vehicle.lastTripStatus === 'En Curso' ? 'pointer' : 'default'
           "
-          (click)="onStatusClick()"
+          (click)="onStatusClick($event)"
           [title]="vehicle.lastTripStatus === 'En Curso' ? 'Ver viaje' : ''"
           onkeypress
         ></span>
@@ -45,107 +49,197 @@
       <!-- Vehicle Info (Right Side) -->
       <div class="col-7 d-flex flex-column">
         <div class="card-body p-3 d-flex flex-column flex-grow-1">
-          <!-- Vehicle Info -->
-          <div class="mb-2">
-            <div
-              class="d-flex justify-content-between align-items-start mb-1 gap-2"
-            >
-              <h5 class="fw-bold mb-0 text-truncate text-uppercase fs-6">
-                {{ vehicle.plate }}
-              </h5>
-              <span
-                class="badge status-badge px-3 py-2 rounded-pill small fw-bold text-wrap text-center flex-shrink-0"
-                [ngClass]="statusClass"
-                style="font-size: 0.65rem"
-                [style.cursor]="
-                  vehicle.lastTripStatus === 'En Curso' ? 'pointer' : 'default'
-                "
-                (click)="onStatusClick()"
-                [title]="
-                  vehicle.lastTripStatus === 'En Curso' ? 'Ver viaje' : ''
-                "
-                onkeypress
+          <!-- Reverso: documentos del vehiculo -->
+          @if (showDocuments) {
+            <div class="documents-panel d-flex flex-column flex-grow-1 mb-auto">
+              <div
+                class="d-flex justify-content-between align-items-center gap-2 mb-2"
               >
-                <span class="d-none d-md-inline">{{ displayTripStatus }}</span>
-                <i
-                  class="fa-solid d-md-none"
-                  [ngClass]="{
-                    'fa-truck-fast': displayTripStatus === 'En Curso',
-                    'fa-check': displayTripStatus === 'Disponible',
-                    'fa-xmark': displayTripStatus === 'Cancelado',
-                    'fa-circle-question': displayTripStatus === 'Sin Viajes',
-                  }"
-                ></i>
-              </span>
-            </div>
-            <p
-              class="small text-secondary mb-0 text-truncate"
-              style="font-size: 0.8rem"
-            >
-              {{ vehicle.vehicleBrandName || vehicle.vehicleBrandId }}
-              {{ vehicle.model }} - {{ vehicle.color }}
-            </p>
-            <p class="year text-body-secondary mb-0" style="font-size: 0.75rem">
-              Año: {{ vehicle.year }}
-            </p>
-          </div>
-
-          <!-- Assigned Driver & Last Location -->
-          <div class="mb-auto">
-            <div class="rounded-3 d-flex flex-column gap-1">
-              <div class="flex-grow-1 overflow-hidden">
-                <p
-                  class="fw-bold mb-0 text-truncate"
-                  style="font-size: 0.85rem"
+                <h5 class="fw-bold mb-0 text-truncate text-uppercase fs-6">
+                  {{ vehicle.plate }}
+                </h5>
+                <button
+                  type="button"
+                  class="btn btn-link p-0 border-0 shadow-none text-body-secondary flex-shrink-0"
+                  (click)="toggleDocuments($event)"
+                  title="Volver a la información"
+                  aria-label="Volver a la información"
                 >
-                  {{ vehicle.currentDriverName || "Sin conductor asignado" }}
-                </p>
-                <p class="text-secondary mb-0" style="font-size: 0.7rem">
-                  Conductor asignado
-                </p>
+                  <i class="fa-solid fa-arrow-left"></i>
+                </button>
               </div>
 
-              @if (lastLocation) {
-                <div
-                  class="d-flex align-items-center gap-1 text-primary opacity-75 mt-1 cursor-pointer hover-opacity-100 transition-all"
-                  [title]="lastLocation.addressText"
-                  (click)="onLocationClick($event)"
+              <div class="documents-list flex-grow-1 overflow-auto pe-1">
+                @for (row of documentRows; track row.document.id) {
+                  <div class="document-row mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                      <span
+                        class="fw-bold text-truncate flex-grow-1"
+                        style="font-size: 0.78rem"
+                        [title]="row.name"
+                      >
+                        {{ row.name }}
+                      </span>
+                      @if (row.document.fileUrl) {
+                        <button
+                          type="button"
+                          class="btn btn-link p-0 border-0 shadow-none text-primary flex-shrink-0"
+                          (click)="openDocumentFile(row, $event)"
+                          title="Abrir archivo"
+                          aria-label="Abrir archivo"
+                        >
+                          <i
+                            class="fa-solid fa-arrow-up-right-from-square"
+                            style="font-size: 0.7rem"
+                          ></i>
+                        </button>
+                      }
+                    </div>
+
+                    <div
+                      class="validity-track rounded-pill mt-1"
+                      [title]="row.validity.label"
+                    >
+                      <div
+                        class="validity-fill rounded-pill"
+                        [ngClass]="'state-' + row.validity.state"
+                        [style.width.%]="row.validity.percent"
+                      ></div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          } @else {
+            <!-- Vehicle Info -->
+            <div class="mb-2">
+              <div
+                class="d-flex justify-content-between align-items-start mb-1 gap-2"
+              >
+                <h5 class="fw-bold mb-0 text-truncate text-uppercase fs-6">
+                  {{ vehicle.plate }}
+                </h5>
+                <span
+                  class="badge status-badge px-3 py-2 rounded-pill small fw-bold text-wrap text-center flex-shrink-0"
+                  [ngClass]="statusClass"
+                  style="font-size: 0.65rem"
+                  [style.cursor]="
+                    vehicle.lastTripStatus === 'En Curso'
+                      ? 'pointer'
+                      : 'default'
+                  "
+                  (click)="onStatusClick($event)"
+                  [title]="
+                    vehicle.lastTripStatus === 'En Curso' ? 'Ver viaje' : ''
+                  "
                   onkeypress
                 >
+                  <span class="d-none d-md-inline">{{
+                    displayTripStatus
+                  }}</span>
                   <i
-                    class="fa-solid fa-location-dot"
-                    style="font-size: 0.75rem"
+                    class="fa-solid d-md-none"
+                    [ngClass]="{
+                      'fa-truck-fast': displayTripStatus === 'En Curso',
+                      'fa-check': displayTripStatus === 'Disponible',
+                      'fa-xmark': displayTripStatus === 'Cancelado',
+                      'fa-circle-question': displayTripStatus === 'Sin Viajes',
+                    }"
                   ></i>
-                  <span class="text-truncate" style="font-size: 0.72rem">
-                    {{ lastLocation.addressText }}
-                  </span>
-                </div>
-              } @else {
-                <div
-                  class="d-flex align-items-center gap-1 text-secondary opacity-75 mt-1"
-                  title="Ubicación no conocida"
-                >
-                  <i
-                    class="fa-solid fa-location-dot"
-                    style="font-size: 0.75rem"
-                  ></i>
-                  <span class="text-truncate" style="font-size: 0.72rem">
-                    No conocida
-                  </span>
-                </div>
-              }
+                </span>
+              </div>
+              <p
+                class="small text-secondary mb-0 text-truncate"
+                style="font-size: 0.8rem"
+              >
+                {{ vehicle.vehicleBrandName || vehicle.vehicleBrandId }}
+                {{ vehicle.model }} - {{ vehicle.color }}
+              </p>
+              <p
+                class="year text-body-secondary mb-0"
+                style="font-size: 0.75rem"
+              >
+                Año: {{ vehicle.year }}
+              </p>
             </div>
-          </div>
+
+            <!-- Assigned Driver & Last Location -->
+            <div class="mb-auto">
+              <div class="rounded-3 d-flex flex-column gap-1">
+                <div class="flex-grow-1 overflow-hidden">
+                  <p
+                    class="fw-bold mb-0 text-truncate"
+                    style="font-size: 0.85rem"
+                  >
+                    {{ vehicle.currentDriverName || "Sin conductor asignado" }}
+                  </p>
+                  <p class="text-secondary mb-0" style="font-size: 0.7rem">
+                    Conductor asignado
+                  </p>
+                </div>
+
+                @if (lastLocation) {
+                  <div
+                    class="d-flex align-items-center gap-1 text-primary opacity-75 mt-1 cursor-pointer hover-opacity-100 transition-all"
+                    [title]="lastLocation.addressText"
+                    (click)="onLocationClick($event)"
+                    onkeypress
+                  >
+                    <i
+                      class="fa-solid fa-location-dot"
+                      style="font-size: 0.75rem"
+                    ></i>
+                    <span class="text-truncate" style="font-size: 0.72rem">
+                      {{ lastLocation.addressText }}
+                    </span>
+                  </div>
+                } @else {
+                  <div
+                    class="d-flex align-items-center gap-1 text-secondary opacity-75 mt-1"
+                    title="Ubicación no conocida"
+                  >
+                    <i
+                      class="fa-solid fa-location-dot"
+                      style="font-size: 0.75rem"
+                    ></i>
+                    <span class="text-truncate" style="font-size: 0.72rem">
+                      No conocida
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
 
           <!-- Footer Stats (Desktop Only) -->
           <div
             class="d-none d-md-flex justify-content-between align-items-center mt-2 pt-2 border-top border-secondary-subtle"
+            (click)="$event.stopPropagation()"
+            onkeypress
           >
             <div class="stats-group d-flex gap-3 text-body-secondary fs-6">
               <i class="fa-solid fa-gauge-high op-60" title="Kilometraje"></i>
               <i class="fa-solid fa-gas-pump op-60" title="Combustible"></i>
             </div>
             <div class="d-flex gap-2">
+              @if (hasDocuments) {
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none action-btn"
+                  (click)="toggleDocuments()"
+                  style="width: 32px; height: 32px"
+                  onkeypress
+                  [title]="showDocuments ? 'Ver información' : 'Ver documentos'"
+                >
+                  <i
+                    class="fa-solid"
+                    [ngClass]="
+                      showDocuments ? 'fa-circle-info' : 'fa-folder-open'
+                    "
+                    style="font-size: 0.8rem"
+                  ></i>
+                </button>
+              }
               @if (canSell) {
                 <button
                   type="button"
@@ -210,6 +304,22 @@
         <i class="fa-solid fa-gas-pump op-60" title="Combustible"></i>
       </div>
       <div class="d-flex gap-2">
+        @if (hasDocuments) {
+          <button
+            type="button"
+            class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none action-btn"
+            (click)="toggleDocuments()"
+            style="width: 32px; height: 32px"
+            onkeypress
+            [title]="showDocuments ? 'Ver información' : 'Ver documentos'"
+          >
+            <i
+              class="fa-solid"
+              [ngClass]="showDocuments ? 'fa-circle-info' : 'fa-folder-open'"
+              style="font-size: 0.8rem"
+            ></i>
+          </button>
+        }
         @if (canSell) {
           <button
             type="button"

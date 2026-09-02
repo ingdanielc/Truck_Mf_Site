@@ -15,6 +15,7 @@ export class CommonService {
   private expenseTypesCache$: Observable<any> | null = null;
   private vehicleBrandsCache$: Observable<any> | null = null;
   private salaryTypesCache$: Observable<any> | null = null;
+  private readonly documentFileTypesCache = new Map<string, Observable<any>>();
 
   constructor(private readonly http: HttpClient) {}
 
@@ -81,6 +82,34 @@ export class CommonService {
       .get<any>(`${this.basePath}/getSalaryTypes`)
       .pipe(shareReplay(1));
     return this.salaryTypesCache$;
+  }
+
+  /**
+   * Tipos de documento archivado acotados por portador (VEHICLE, DRIVER,
+   * OWNER). Es un catálogo, así que se cachea por portador igual que el resto.
+   */
+  getDocumentFileTypes(appliesTo: 'VEHICLE' | 'DRIVER' | 'OWNER') {
+    let cached = this.documentFileTypesCache.get(appliesTo);
+    if (!cached) {
+      cached = this.http
+        .get<any>(`${this.basePath}/getDocumentFileTypes`, {
+          params: { appliesTo },
+        })
+        .pipe(shareReplay(1));
+      this.documentFileTypesCache.set(appliesTo, cached);
+    }
+    return cached;
+  }
+
+  /**
+   * Sube el escaneo y devuelve su URL, que luego viaja en `fileUrl` al guardar
+   * el documento. No recibe el id del documento: se puede subir antes de que la
+   * fila exista. Acepta pdf, jpg, jpeg, png y webp.
+   */
+  uploadDocument(file: File | Blob, fileName?: string) {
+    const formData = new FormData();
+    formData.append('file', file, fileName || (file as File).name);
+    return this.http.post<any>(`${this.basePath}/upload-document`, formData);
   }
 
   uploadPhoto(
