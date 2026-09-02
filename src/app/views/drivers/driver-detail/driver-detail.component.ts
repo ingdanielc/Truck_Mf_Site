@@ -41,6 +41,9 @@ import {
 export class DriverDetailComponent implements OnInit, OnDestroy {
   @ViewChild(GPasswordCardComponent) passwordCard?: GPasswordCardComponent;
   driverId: number | null = null;
+  /** Origen de la navegación y ficha de vehículo de la que se viene, si aplica. */
+  fromSource: string | null = null;
+  fromVehicleId: string | null = null;
   driver: ModelDriver | null = null;
   vehicles: ModelVehicle[] = [];
   cities: any[] = [];
@@ -86,6 +89,8 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.fromSource = this.route.snapshot.queryParamMap.get('from');
+    this.fromVehicleId = this.route.snapshot.queryParamMap.get('vehicleId');
     this.userSub = this.securityService.userData$.subscribe({
       next: (user: any) => {
         if (user) {
@@ -313,6 +318,11 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
+    // Desde la ficha de un vehículo se vuelve a esa ficha, no al listado.
+    if (this.fromSource === 'vehicle-detail' && this.fromVehicleId) {
+      this.router.navigate(['/site/vehicles', this.fromVehicleId]);
+      return;
+    }
     this.router.navigate(['/site/drivers']);
   }
 

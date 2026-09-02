@@ -179,12 +179,13 @@ export class GVehicleCardComponent implements OnInit {
   }
 
   /**
-   * Cuerpo de la tarjeta: abre la ficha del vehículo. Los botones del pie y los
-   * atajos de estado y ubicación cortan la propagación para conservar su
-   * comportamiento actual.
+   * Cuerpo de la tarjeta: abre la ficha del vehículo, esté a la vista la cara
+   * de información o el reverso de documentos. Los botones del pie, el volver
+   * del reverso y los atajos de estado, ubicación y archivo cortan la
+   * propagación para conservar su comportamiento actual.
    */
   onCardClick(): void {
-    if (this.showDocuments || !this.vehicle.id) return;
+    if (!this.vehicle.id) return;
     this.router.navigate(['/site/vehicles', this.vehicle.id], {
       queryParams: { from: 'vehicles' },
     });

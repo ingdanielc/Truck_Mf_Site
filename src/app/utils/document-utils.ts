@@ -4,6 +4,7 @@ import { ModelDocumentFile } from '../models/document-model';
 export type DocumentValidityState =
   | 'vigente'
   | 'por-vencer'
+  | 'critico'
   | 'vencido'
   | 'sin-vigencia';
 
@@ -18,6 +19,12 @@ export interface DocumentValidity {
 
 /** Un mes de aviso antes del vencimiento, igual que en el resto de la app. */
 const WARNING_DAYS = 30;
+/**
+ * Últimos días de vigencia. A partir de aquí el documento se pinta en rojo
+ * como si ya hubiera vencido: con menos de diez días el trámite ya no da
+ * espera y avisar en ámbar se queda corto.
+ */
+const CRITICAL_DAYS = 10;
 /** Ventana por defecto cuando el documento no trae fecha de expedición. */
 const DEFAULT_WINDOW_DAYS = 365;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -41,6 +48,17 @@ function startOfToday(): Date {
 
 function diffInDays(from: Date, to: Date): number {
   return Math.round((to.getTime() - from.getTime()) / MS_PER_DAY);
+}
+
+function resolveState(daysLeft: number): DocumentValidityState {
+  if (daysLeft < CRITICAL_DAYS) return 'critico';
+  if (daysLeft <= WARNING_DAYS) return 'por-vencer';
+  return 'vigente';
+}
+
+/** Un documento en rojo o en ámbar es el que toca renovar. */
+export function needsRenewal(state: DocumentValidityState): boolean {
+  return state === 'vencido' || state === 'critico' || state === 'por-vencer';
 }
 
 /**
@@ -86,7 +104,7 @@ export function getDocumentValidity(
   const percent = Math.min(100, Math.round((daysLeft / totalDays) * 100));
 
   return {
-    state: daysLeft <= WARNING_DAYS ? 'por-vencer' : 'vigente',
+    state: resolveState(daysLeft),
     daysLeft,
     percent: Math.max(percent, 2),
     label:

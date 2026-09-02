@@ -104,7 +104,7 @@
                 (change)="onPhotoSelected($event)"
               />
               <div
-                class="vehicle-photo rounded-4 overflow-hidden bg-white bg-opacity-10 d-flex align-items-center justify-content-center border border-4 border-white border-opacity-10 shadow-lg"
+                class="vehicle-photo rounded-circle overflow-hidden bg-white bg-opacity-10 d-flex align-items-center justify-content-center border border-4 border-white border-opacity-10 shadow-lg"
                 [class.cursor-pointer]="canEdit"
                 (click)="canEdit && triggerPhotoInput(photoInput)"
                 onkeypress
@@ -205,7 +205,8 @@
                     <p
                       class="text-white text-opacity-50 small fw-bold mb-0 text-uppercase tracking-wider"
                     >
-                      Documentos
+                      <span class="d-none d-md-inline">Documentos</span>
+                      <span class="d-md-none">Docs</span>
                     </p>
                     <h5
                       class="fw-bold mb-0"
@@ -380,28 +381,26 @@
             </p>
             <h6 class="fw-bold mb-0">{{ vehicle.numberOfAxles }}</h6>
           </div>
-          <div class="col-12 col-sm-6 col-lg-4">
-            <p class="text-secondary small fw-bold mb-1 text-uppercase">
-              Número de Motor
-            </p>
-            <h6 class="fw-bold mb-0 text-break">
-              {{ vehicle.engineNumber || "---" }}
-            </h6>
-          </div>
-          <div class="col-12 col-sm-6 col-lg-4">
-            <p class="text-secondary small fw-bold mb-1 text-uppercase">
-              Número de Chasis
-            </p>
-            <h6 class="fw-bold mb-0 text-break">
-              {{ vehicle.chassisNumber || "---" }}
-            </h6>
-          </div>
-          <div class="col-12 col-sm-6 col-lg-4">
-            <p class="text-secondary small fw-bold mb-1 text-uppercase">
-              Estado
-            </p>
-            <h6 class="fw-bold mb-0">{{ vehicle.status || "Activo" }}</h6>
-          </div>
+          @if (vehicle.engineNumber) {
+            <div class="col-12 col-sm-6 col-lg-4">
+              <p class="text-secondary small fw-bold mb-1 text-uppercase">
+                Número de Motor
+              </p>
+              <h6 class="fw-bold mb-0 text-break">
+                {{ vehicle.engineNumber }}
+              </h6>
+            </div>
+          }
+          @if (vehicle.chassisNumber) {
+            <div class="col-12 col-sm-6 col-lg-4">
+              <p class="text-secondary small fw-bold mb-1 text-uppercase">
+                Número de Chasis
+              </p>
+              <h6 class="fw-bold mb-0 text-break">
+                {{ vehicle.chassisNumber }}
+              </h6>
+            </div>
+          }
         </div>
       </div>
     </div>
@@ -416,7 +415,8 @@
             <h5
               class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary"
             >
-              <i class="fa-solid fa-user-tie"></i> Propietarios
+              <i class="fa-solid fa-user-tie"></i>
+              {{ ownerRelations.length === 1 ? "Propietario" : "Propietarios" }}
             </h5>
           </div>
           <div class="card-body p-4">
@@ -448,11 +448,13 @@
                     {{ formatDocNumber(relation.owner.documentNumber) }}
                   </p>
                 </div>
-                <span
-                  class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2 flex-shrink-0"
-                >
-                  {{ relation.ownershipPercentage }}%
-                </span>
+                @if (ownerRelations.length > 1) {
+                  <span
+                    class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2 flex-shrink-0"
+                  >
+                    {{ relation.ownershipPercentage }}%
+                  </span>
+                }
               </div>
             }
             @if (ownerRelations.length === 0) {
@@ -494,7 +496,11 @@
                   <p class="fw-bold mb-0 text-truncate">
                     {{ vehicle.currentDriverName || "Conductor asignado" }}
                   </p>
-                  <p class="text-secondary small mb-0">Ver perfil</p>
+                  @if (driverDocumentNumber) {
+                    <p class="text-secondary small mb-0 text-truncate">
+                      {{ formatDocNumber(driverDocumentNumber) }}
+                    </p>
+                  }
                 </div>
                 <i class="fa-solid fa-chevron-right text-secondary"></i>
               </div>
@@ -527,10 +533,20 @@
               <button
                 class="btn btn-link text-success p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
                 (click)="shareDocumentsByWhatsApp()"
+                [disabled]="sharingDocuments"
                 title="Compartir por WhatsApp"
               >
-                <i class="fa-brands fa-whatsapp fs-5"></i>
-                <span class="d-none d-md-inline">Compartir</span>
+                @if (sharingDocuments) {
+                  <output
+                    class="spinner-border spinner-border-sm"
+                    aria-hidden="true"
+                  ></output>
+                } @else {
+                  <i class="fa-brands fa-whatsapp fs-5"></i>
+                }
+                <span class="d-none d-md-inline">
+                  {{ sharingDocuments ? "Preparando…" : "Compartir" }}
+                </span>
               </button>
             }
             <button
@@ -547,7 +563,9 @@
             <div class="row g-3">
               @for (row of documentRows; track trackByDocument($index, row)) {
                 <div class="col-12 col-md-6 col-xl-4">
-                  <div class="document-tile border rounded-3 p-3 h-100">
+                  <div
+                    class="document-tile card border-0 rounded-4 shadow-sm p-3 h-100"
+                  >
                     <div class="d-flex align-items-center gap-2 mb-2">
                       <span
                         class="fw-bold text-truncate flex-grow-1"
@@ -600,7 +618,9 @@
                       class="d-block mt-1"
                       style="font-size: 0.7rem"
                       [ngClass]="{
-                        'text-danger': row.validity.state === 'vencido',
+                        'text-danger':
+                          row.validity.state === 'vencido' ||
+                          row.validity.state === 'critico',
                         'text-warning': row.validity.state === 'por-vencer',
                         'text-secondary':
                           row.validity.state === 'vigente' ||
@@ -654,14 +674,23 @@
             <output class="spinner-border text-primary"></output>
           </div>
         } @else if (trips.length > 0) {
-          <div class="row g-2">
+          <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
             @for (trip of trips; track trip.id) {
-              <div class="col-12">
-                <g-vehicle-trip-card
-                  [vehicle]="vehicle"
-                  [trip]="trip"
-                  [cities]="cities"
-                ></g-vehicle-trip-card>
+              <div class="col">
+                <g-trip-mini-card
+                  [origin]="getCityName(trip.originId)"
+                  [destination]="getCityName(trip.destinationId)"
+                  [returnDestination]="
+                    trip.tripType === 'REDONDO'
+                      ? getCityName(trip.returnDestinationId)
+                      : ''
+                  "
+                  [status]="trip.status"
+                  [numberTrip]="trip.numberTrip || trip.manifestNumber"
+                  (click)="goToTrip(trip)"
+                  class="cursor-pointer d-block h-100"
+                  onkeypress
+                ></g-trip-mini-card>
               </div>
             }
           </div>

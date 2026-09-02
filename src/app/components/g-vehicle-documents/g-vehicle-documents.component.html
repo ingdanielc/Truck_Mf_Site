@@ -13,9 +13,9 @@
   <p class="text-secondary small mb-0 mt-1">
     @if (plate) {
       Documentos de <span class="fw-bold text-uppercase">{{ plate }}</span
-      >. El archivo es opcional.
+      >.
     } @else {
-      Cada cambio se guarda al momento. El archivo es opcional.
+      Cada cambio se guarda al momento.
     }
   </p>
 </div>
@@ -43,57 +43,70 @@
             <div
               class="draft-item border rounded-3 p-3"
               [class.is-editing]="editingId === row.document.id"
+              [class.is-renewing]="
+                renewingFrom?.document?.id === row.document.id
+              "
             >
-              <div class="d-flex align-items-start gap-3">
+              <div
+                class="draft-row d-flex flex-column flex-sm-row align-items-sm-start gap-2 gap-sm-3"
+              >
                 <div
-                  class="draft-icon rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
-                  [class.has-file]="!!row.document.fileUrl"
+                  class="d-flex align-items-start gap-3 flex-grow-1 overflow-hidden"
                 >
-                  <i
-                    class="fa-solid"
-                    [ngClass]="
-                      row.document.fileUrl ? 'fa-paperclip' : 'fa-calendar-day'
-                    "
-                  ></i>
-                </div>
-
-                <div class="flex-grow-1 overflow-hidden">
-                  <p class="fw-bold mb-1 text-truncate small">{{ row.name }}</p>
                   <div
-                    class="d-flex flex-wrap gap-2 text-secondary"
-                    style="font-size: 0.72rem"
+                    class="draft-icon rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                    [class.has-file]="!!row.document.fileUrl"
                   >
-                    @if (row.document.documentNumber) {
-                      <span class="text-truncate">
-                        <i class="fa-solid fa-hashtag me-1 opacity-75"></i
-                        >{{ row.document.documentNumber }}
-                      </span>
-                    }
-                    @if (row.document.issuer) {
-                      <span class="text-truncate">
-                        <i class="fa-solid fa-building me-1 opacity-75"></i
-                        >{{ row.document.issuer }}
-                      </span>
-                    }
-                    <span class="text-nowrap">
-                      <i class="fa-solid fa-clock me-1 opacity-75"></i
-                      >{{ row.validity.label }}
-                    </span>
+                    <i
+                      class="fa-solid"
+                      [ngClass]="
+                        row.document.fileUrl
+                          ? 'fa-paperclip'
+                          : 'fa-calendar-day'
+                      "
+                    ></i>
                   </div>
 
-                  <div
-                    class="validity-track rounded-pill mt-2"
-                    [title]="row.validity.label"
-                  >
+                  <div class="flex-grow-1 overflow-hidden">
+                    <p class="fw-bold mb-1 text-truncate small">
+                      {{ row.name }}
+                    </p>
                     <div
-                      class="validity-fill rounded-pill"
-                      [ngClass]="'state-' + row.validity.state"
-                      [style.width.%]="row.validity.percent"
-                    ></div>
+                      class="d-flex flex-wrap gap-2 text-secondary"
+                      style="font-size: 0.72rem"
+                    >
+                      @if (row.document.documentNumber) {
+                        <span class="text-truncate">
+                          <i class="fa-solid fa-hashtag me-1 opacity-75"></i
+                          >{{ row.document.documentNumber }}
+                        </span>
+                      }
+                      @if (row.document.issuer) {
+                        <span class="text-truncate">
+                          <i class="fa-solid fa-building me-1 opacity-75"></i
+                          >{{ row.document.issuer }}
+                        </span>
+                      }
+                      <span class="text-nowrap">
+                        <i class="fa-solid fa-clock me-1 opacity-75"></i
+                        >{{ row.validity.label }}
+                      </span>
+                    </div>
+
+                    <div
+                      class="validity-track rounded-pill mt-2"
+                      [title]="row.validity.label"
+                    >
+                      <div
+                        class="validity-fill rounded-pill"
+                        [ngClass]="'state-' + row.validity.state"
+                        [style.width.%]="row.validity.percent"
+                      ></div>
+                    </div>
                   </div>
                 </div>
 
-                <div class="d-flex flex-column flex-sm-row gap-2 flex-shrink-0">
+                <div class="draft-actions d-flex flex-row gap-2 flex-shrink-0">
                   @if (row.document.fileUrl) {
                     <button
                       type="button"
@@ -108,6 +121,19 @@
                     </button>
                   }
                   @if (canEdit) {
+                    @if (canRenew(row)) {
+                      <button
+                        type="button"
+                        class="btn btn-outline-warning btn-sm rounded-3 p-1 shadow-none draft-btn"
+                        (click)="renewRow(row)"
+                        title="Renovar documento"
+                      >
+                        <i
+                          class="fa-solid fa-rotate"
+                          style="font-size: 0.75rem"
+                        ></i>
+                      </button>
+                    }
                     <button
                       type="button"
                       class="btn btn-outline-info btn-sm rounded-3 p-1 shadow-none draft-btn"
@@ -197,9 +223,28 @@
     @if (showForm && canEdit) {
       <form [formGroup]="documentForm" (ngSubmit)="saveDocument()">
         <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">
-          <i class="fa-solid fa-file-circle-plus me-2"></i>
-          {{ editingId ? "Editar documento" : "Nuevo documento" }}
+          <i
+            class="fa-solid me-2"
+            [ngClass]="renewingFrom ? 'fa-rotate' : 'fa-file-circle-plus'"
+          ></i>
+          {{ formTitle }}
         </h6>
+
+        @if (renewingFrom) {
+          <div
+            class="renew-banner border rounded-3 p-3 mb-3 d-flex align-items-start gap-2 small"
+          >
+            <i class="fa-solid fa-rotate text-warning mt-1"></i>
+            <div>
+              Renovando <span class="fw-bold">{{ renewingFrom.name }}</span> ·
+              {{ renewingFrom.validity.label }}.
+              <span class="d-block text-secondary mt-1">
+                Carga el archivo nuevo y las fechas vigentes. Al guardar, el
+                documento actual pasa al histórico y este queda como el vigente.
+              </span>
+            </div>
+          </div>
+        }
 
         @if (loadingTypes) {
           <div class="section-loader">
@@ -233,7 +278,7 @@
                   No se pudo cargar el catálogo de documentos. Intenta más
                   tarde.
                 </div>
-              } @else if (typeBeingRenewed) {
+              } @else if (typeBeingRenewed && !renewingFrom) {
                 <div class="text-warning small mt-1">
                   <i class="fa-solid fa-rotate me-1"></i>
                   Ya hay un documento vigente de este tipo. Al guardar pasa al
@@ -401,7 +446,7 @@
           }
 
           <div class="d-flex flex-column-reverse flex-sm-row gap-2 mt-3">
-            @if (rows.length > 0) {
+            @if (rows.length > 0 || renewingFrom) {
               <button
                 type="button"
                 class="btn btn-outline-secondary btn-lg flex-fill py-3 rounded-3"
@@ -419,9 +464,12 @@
               @if (isSaving) {
                 <output class="spinner-border me-2" aria-hidden="true"></output>
               } @else {
-                <i class="fa-solid fa-check-circle me-2"></i>
+                <i
+                  class="fa-solid me-2"
+                  [ngClass]="renewingFrom ? 'fa-rotate' : 'fa-check-circle'"
+                ></i>
               }
-              {{ editingId ? "Guardar cambios" : "Guardar documento" }}
+              {{ submitLabel }}
             </button>
           </div>
         }

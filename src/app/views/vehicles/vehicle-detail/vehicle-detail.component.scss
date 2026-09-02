@@ -37,15 +37,14 @@
   }
 }
 
-/* La foto de un camion es apaisada: rectangulo redondeado en vez del circulo
-   que usan los perfiles de persona. */
+/* Mismo avatar circular que owner-detail y driver-detail. */
 .vehicle-photo {
-  width: 220px;
-  height: 150px;
+  width: 160px;
+  height: 160px;
 
   @media (max-width: 575.98px) {
-    width: 180px;
-    height: 124px;
+    width: 140px;
+    height: 140px;
   }
 }
 
@@ -64,18 +63,18 @@
   }
 
   .photo-edit-btn {
-    bottom: -8px;
+    bottom: -4px;
     right: 5px;
   }
 
   .photo-camera-btn {
-    bottom: -8px;
+    bottom: -4px;
     right: 42px;
   }
 
   .photo-remove-btn {
-    top: -8px;
-    right: -8px;
+    top: 5px;
+    right: 5px;
   }
 }
 
@@ -98,10 +97,28 @@
 
 .entity-row {
   border-radius: var(--bs-border-radius);
-  transition: background-color 0.2s ease;
+  padding-inline: 0.5rem;
+  margin-inline: -0.5rem;
+  border: 1px solid transparent;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 
   &.cursor-pointer:hover {
-    background-color: rgba(var(--bs-primary-rgb), 0.05);
+    background-color: rgba(var(--bs-primary-rgb), 0.06);
+    border-color: rgba(var(--bs-primary-rgb), 0.25);
+    box-shadow: 0 4px 14px rgba(var(--bs-primary-rgb), 0.1);
+
+    .entity-avatar {
+      transform: scale(1.06);
+    }
+
+    /* El chevron acompaña el gesto y anuncia a dónde lleva la fila. */
+    .fa-chevron-right {
+      transform: translateX(3px);
+      color: var(--bs-primary) !important;
+    }
   }
 
   & + .entity-row {
@@ -111,16 +128,28 @@
   .entity-avatar {
     width: 44px;
     height: 44px;
+    transition: transform 0.2s ease;
+  }
+
+  .fa-chevron-right {
+    transition:
+      transform 0.2s ease,
+      color 0.2s ease;
   }
 }
 
+/* Misma forma, sombra y gesto de hover que g-trip-mini-card. */
 .document-tile {
   background-color: rgba(var(--bs-emphasis-color-rgb), 0.02);
-  border-color: rgba(var(--bs-emphasis-color-rgb), 0.1) !important;
-  transition: all 0.2s ease;
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s ease,
+    background-color 0.3s ease;
 
   &:hover {
-    border-color: rgba(var(--bs-primary-rgb), 0.3) !important;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
   }
 }
 
@@ -142,6 +171,7 @@
       background-color: #f59e0b;
     }
 
+    &.state-critico,
     &.state-vencido {
       background-color: #ef4444;
     }

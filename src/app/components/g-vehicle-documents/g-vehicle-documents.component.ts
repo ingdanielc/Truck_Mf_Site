@@ -24,6 +24,7 @@ import {
   DocumentValidity,
   getDocumentTypeName,
   getDocumentValidity,
+  needsRenewal,
 } from 'src/app/utils/document-utils';
 
 /** Lo que acepta `/common/upload-document`. */
@@ -77,6 +78,12 @@ export class GVehicleDocumentsComponent implements OnInit {
 
   /** Documento que se está editando; null cuando el formulario es de alta. */
   editingId: number | null = null;
+  /**
+   * Documento vigente que se está renovando. Una renovación no modifica ese
+   * documento: crea uno nuevo del mismo tipo, y el backend manda el anterior
+   * al histórico. Por eso `editingId` queda en null mientras esto tiene valor.
+   */
+  renewingFrom: DocumentRow | null = null;
   showForm: boolean = false;
   formError: string = '';
   selectedFile: File | null = null;
@@ -187,14 +194,38 @@ export class GVehicleDocumentsComponent implements OnInit {
     );
   }
 
+  /**
+   * Solo se renueva lo que está por vencer o ya venció: sobre un documento
+   * vigente la acción no aplica —el anterior no tendría por qué ir al
+   * histórico— y para corregir sus datos está editar. Mismo criterio que el
+   * contador "por renovar" de la ficha del vehículo.
+   */
+  canRenew(row: DocumentRow): boolean {
+    return needsRenewal(row.validity.state);
+  }
+
+  get formTitle(): string {
+    if (this.renewingFrom) return 'Renovar documento';
+    return this.editingId ? 'Editar documento' : 'Nuevo documento';
+  }
+
+  get submitLabel(): string {
+    if (this.renewingFrom) return 'Guardar renovación';
+    return this.editingId ? 'Guardar cambios' : 'Guardar documento';
+  }
+
   openForm(): void {
     this.editingId = null;
+    this.renewingFrom = null;
     this.resetForm();
+    this.documentForm.get('documentFileTypeId')?.enable();
     this.showForm = true;
   }
 
   editRow(row: DocumentRow): void {
     this.editingId = row.document.id ?? null;
+    this.renewingFrom = null;
+    this.documentForm.get('documentFileTypeId')?.enable();
     this.formError = '';
     this.selectedFile = null;
     this.currentFileUrl = row.document.fileUrl || null;
@@ -212,9 +243,37 @@ export class GVehicleDocumentsComponent implements OnInit {
     this.showForm = true;
   }
 
+  /**
+   * Renueva un documento: el formulario arranca con los datos que suelen
+   * repetirse —tipo, número y expedidor— y con las fechas y el archivo en
+   * blanco, que es justo lo que cambia al renovar. El tipo queda fijo porque
+   * es lo que identifica la renovación; para cambiarlo está "Descartar".
+   */
+  renewRow(row: DocumentRow): void {
+    this.editingId = null;
+    this.renewingFrom = row;
+    this.formError = '';
+    this.selectedFile = null;
+    this.selectedFileName = '';
+    this.currentFileUrl = null;
+    this.documentForm.reset({
+      documentFileTypeId: row.document.documentFileTypeId,
+      documentNumber: row.document.documentNumber || '',
+      issuer: row.document.issuer || '',
+      issueDate: '',
+      expiryDate: '',
+      observations: '',
+    });
+    this.documentForm.markAsUntouched();
+    this.documentForm.get('documentFileTypeId')?.disable();
+    this.showForm = true;
+  }
+
   cancelForm(): void {
     this.editingId = null;
+    this.renewingFrom = null;
     this.resetForm();
+    this.documentForm.get('documentFileTypeId')?.enable();
     this.showForm = this.rows.length === 0;
   }
 
@@ -353,15 +412,18 @@ export class GVehicleDocumentsComponent implements OnInit {
 
       await firstValueFrom(this.vehicleService.saveVehicleDocuments([payload]));
 
-      this.toastService.showSuccess(
-        'Documentos',
-        this.editingId !== null
-          ? 'Documento actualizado exitosamente!'
-          : 'Documento cargado exitosamente!',
-      );
+      let message = 'Documento cargado exitosamente!';
+      if (this.renewingFrom) {
+        message = 'Documento renovado exitosamente!';
+      } else if (this.editingId !== null) {
+        message = 'Documento actualizado exitosamente!';
+      }
+      this.toastService.showSuccess('Documentos', message);
 
       this.editingId = null;
+      this.renewingFrom = null;
       this.resetForm();
+      this.documentForm.get('documentFileTypeId')?.enable();
       this.showForm = false;
       this.isSaving = false;
       this.loadDocuments();
@@ -395,7 +457,7 @@ export class GVehicleDocumentsComponent implements OnInit {
         );
         this.deletingId = null;
         this.confirmDeleteId = null;
-        if (this.editingId === id) {
+        if (this.editingId === id || this.renewingFrom?.document.id === id) {
           this.cancelForm();
         }
         this.loadDocuments();

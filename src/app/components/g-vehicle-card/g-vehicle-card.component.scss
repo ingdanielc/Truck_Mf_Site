@@ -207,15 +207,24 @@
   }
 
   /**
-   * Reverso de la tarjeta. Ocupa el mismo alto que la cara de información —la
-   * foto y el pie no se mueven— y la lista scrollea dentro: una tarjeta con
-   * seis documentos no puede empujar a las vecinas de la grilla.
+   * Las dos caras comparten hueco. La de informacion sigue en el flujo y es la
+   * que fija el alto de la tarjeta; el reverso se superpone sobre ella. Asi
+   * abrir los documentos no mueve la foto, el pie ni a las tarjetas vecinas de
+   * la grilla, y una lista larga scrollea dentro del mismo espacio.
    */
+  .card-faces {
+    min-height: 0;
+  }
+
+  .card-face.face-hidden {
+    visibility: hidden;
+  }
+
   .documents-panel {
     min-height: 0;
 
     .documents-list {
-      max-height: 150px;
+      min-height: 0;
       scrollbar-width: thin;
     }
 
@@ -243,6 +252,7 @@
         background-color: #f59e0b;
       }
 
+      &.state-critico,
       &.state-vencido {
         background-color: #ef4444;
       }

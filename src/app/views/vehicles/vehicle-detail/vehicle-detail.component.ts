@@ -28,9 +28,10 @@ import {
   DocumentValidity,
   getDocumentTypeName,
   getDocumentValidity,
+  needsRenewal,
 } from 'src/app/utils/document-utils';
 import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
-import { GVehicleTripCardComponent } from 'src/app/components/g-vehicle-trip-card/g-vehicle-trip-card.component';
+import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-trip-mini-card.component';
 import { GVehicleDocumentsComponent } from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
 
 /** Documento con nombre y vigencia resueltos, listo para pintar en la tarjeta. */
@@ -51,7 +52,7 @@ interface DocumentRow {
   imports: [
     CommonModule,
     GCameraComponent,
-    GVehicleTripCardComponent,
+    GTripMiniCardComponent,
     GVehicleDocumentsComponent,
   ],
   templateUrl: './vehicle-detail.component.html',
@@ -73,6 +74,10 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
   loadingExpenses: boolean = true;
   loadingLocation: boolean = true;
   tripCount: number = 0;
+  /** Descarga de los archivos previa a compartirlos por WhatsApp. */
+  sharingDocuments: boolean = false;
+  /** Identificación del conductor asignado; el filtro de vehículos no la trae. */
+  driverDocumentNumber: string = '';
 
   userRole: string = '';
   isAdmin: boolean = false;
@@ -178,6 +183,7 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
         if (found.driver?.name) {
           this.vehicle!.currentDriverName = found.driver.name;
         }
+        this.driverDocumentNumber = found.driver?.documentNumber ?? '';
         if (this.vehicle?.photo) {
           this.vehicle.photo = `${this.vehicle.photo.split('?')[0]}?t=${Date.now()}`;
         }
@@ -335,11 +341,13 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** El filtro no siempre trae el nombre del conductor asignado. */
+  /**
+   * El filtro no siempre trae el nombre del conductor asignado y nunca su
+   * identificación, así que se piden juntos cuando falta alguno.
+   */
   private resolveDriverName(): void {
-    if (!this.vehicle?.currentDriverId || this.vehicle.currentDriverName) {
-      return;
-    }
+    if (!this.vehicle?.currentDriverId) return;
+    if (this.vehicle.currentDriverName && this.driverDocumentNumber) return;
     this.driverService
       .getDriverFilter(
         new ModelFilterTable(
@@ -352,7 +360,9 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           const driver = response?.data?.content?.[0];
           if (driver && this.vehicle) {
-            this.vehicle.currentDriverName = driver.name;
+            this.vehicle.currentDriverName ||= driver.name;
+            this.driverDocumentNumber =
+              this.driverDocumentNumber || (driver.documentNumber ?? '');
           }
         },
         error: () => undefined,
@@ -435,10 +445,8 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
 
   /** Documentos vencidos o a menos de un mes de vencer: lo que hay que atender. */
   get documentsToRenew(): number {
-    return this.documentRows.filter(
-      (row) =>
-        row.validity.state === 'vencido' || row.validity.state === 'por-vencer',
-    ).length;
+    return this.documentRows.filter((row) => needsRenewal(row.validity.state))
+      .length;
   }
 
   get ownerRelations() {
@@ -461,10 +469,15 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Los perfiles se abren marcando de dónde se viene: `vehicle-detail` los
+   * hace volver a esta ficha y no al listado de vehículos, que es a donde
+   * lleva el `vehicles` que usa la lista.
+   */
   goToOwner(ownerId: number | undefined): void {
     if (!ownerId || this.isConductor) return;
     this.router.navigate(['/site/owners', ownerId], {
-      queryParams: { from: 'vehicles' },
+      queryParams: { from: 'vehicle-detail', vehicleId: this.vehicleId },
     });
   }
 
@@ -472,7 +485,7 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
     const driverId = this.vehicle?.currentDriverId;
     if (!driverId) return;
     this.router.navigate(['/site/drivers', driverId], {
-      queryParams: { from: 'vehicles' },
+      queryParams: { from: 'vehicle-detail', vehicleId: this.vehicleId },
     });
   }
 
@@ -480,6 +493,20 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
     this.router.navigate(['/site/trips'], {
       queryParams: { vehicleId: this.vehicleId },
     });
+  }
+
+  goToTrip(trip: ModelTrip): void {
+    if (!trip?.id) return;
+    this.router.navigate(['/site/trips', trip.id], {
+      queryParams: { from: 'vehicles' },
+    });
+  }
+
+  /** Nombre de la ciudad; sin catalogo cargado devuelve el propio id. */
+  getCityName(cityId: any): string {
+    if (!cityId) return 'N/A';
+    const city = this.cities.find((c) => String(c.id) === String(cityId));
+    return city ? city.name : String(cityId);
   }
 
   goToExpenses(): void {
@@ -527,13 +554,37 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Comparte los documentos por WhatsApp. WhatsApp no admite adjuntar archivos
-   * desde un enlace, así que el mensaje lleva los datos de cada documento y la
-   * URL de su escaneo, que el destinatario abre desde el chat.
+   * Comparte los documentos por WhatsApp. Se intenta primero con los archivos
+   * ya descargados: Web Share es la unica via del navegador para entregarlos
+   * como adjuntos, y pide HTTPS, soporte de ficheros y que el almacenamiento
+   * responda con CORS. Si algo de eso falta se cae al mensaje con los enlaces,
+   * que es como funcionaba hasta ahora.
    */
-  shareDocumentsByWhatsApp(): void {
-    if (this.documentRows.length === 0) return;
+  async shareDocumentsByWhatsApp(): Promise<void> {
+    if (this.documentRows.length === 0 || this.sharingDocuments) return;
 
+    const text = this.buildDocumentsMessage();
+    const files = await this.downloadDocumentFiles();
+
+    if (files.length > 0 && navigator.canShare?.({ files })) {
+      try {
+        await navigator.share({ files, text });
+        return;
+      } catch (err: any) {
+        // Cerrar el selector de app no es un fallo: no se abre nada mas.
+        if (err?.name === 'AbortError') return;
+        console.error('Error sharing documents:', err);
+      }
+    }
+
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(text)}`,
+      '_blank',
+      'noopener',
+    );
+  }
+
+  private buildDocumentsMessage(): string {
     const header = [
       `*Documentos ${this.vehicle?.plate ?? ''}*`,
       [
@@ -561,12 +612,57 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
       return lines.join('\n');
     });
 
-    const text = [...header, '', ...body].join('\n');
-    window.open(
-      `https://wa.me/?text=${encodeURIComponent(text)}`,
-      '_blank',
-      'noopener',
-    );
+    return [...header, '', ...body].join('\n');
+  }
+
+  /**
+   * Baja los archivos para adjuntarlos. Los documentos sin archivo y los que
+   * no se dejen descargar se omiten: se comparte lo que si llego.
+   */
+  private async downloadDocumentFiles(): Promise<File[]> {
+    const withFile = this.documentRows.filter((row) => !!row.document.fileUrl);
+    if (withFile.length === 0 || !navigator.canShare) return [];
+
+    this.sharingDocuments = true;
+    try {
+      const files = await Promise.all(
+        withFile.map((row) => this.fetchDocumentFile(row)),
+      );
+      return files.filter((file): file is File => file !== null);
+    } finally {
+      this.sharingDocuments = false;
+    }
+  }
+
+  private async fetchDocumentFile(row: DocumentRow): Promise<File | null> {
+    try {
+      const response = await fetch(row.document.fileUrl!);
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      return new File([blob], this.buildFileName(row, blob.type), {
+        type: blob.type || 'application/octet-stream',
+      });
+    } catch (err) {
+      console.error('Error downloading document file:', err);
+      return null;
+    }
+  }
+
+  /** Nombre legible en el chat: placa, documento y extension del original. */
+  private buildFileName(row: DocumentRow, mimeType: string): string {
+    const path = (row.document.fileUrl ?? '').split(/[?#]/)[0];
+    const original = path.substring(path.lastIndexOf('/') + 1);
+    let extension = original.includes('.')
+      ? original.substring(original.lastIndexOf('.'))
+      : '';
+    if (!extension && mimeType.includes('pdf')) extension = '.pdf';
+
+    const base = [this.vehicle?.plate, row.name]
+      .filter(Boolean)
+      .join(' - ')
+      .replace(/[\\\/:*?"<>|]/g, '')
+      .trim();
+    return `${base || 'documento'}${extension}`;
   }
 
   openDocumentFile(row: DocumentRow, event: Event): void {

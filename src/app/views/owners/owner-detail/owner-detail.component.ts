@@ -53,6 +53,8 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   loadingBrands: boolean = true;
   tripCount: number = 0;
   fromSource: string | null = null;
+  /** Ficha de vehículo desde la que se llegó, si se llegó desde una. */
+  fromVehicleId: string | null = null;
   fromTrips: boolean = false; // Kept for backward compatibility if needed elsewhere but updated logic
   showCamera: boolean = false;
   isAdmin: boolean = false;
@@ -83,6 +85,7 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.fromSource = this.route.snapshot.queryParamMap.get('from');
+    this.fromVehicleId = this.route.snapshot.queryParamMap.get('vehicleId');
     this.fromTrips = this.fromSource === 'trips';
 
     this.routeSub = this.route.paramMap.subscribe((params) => {
@@ -420,6 +423,12 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
+    // Desde la ficha de un vehículo se vuelve a esa ficha, no al listado.
+    if (this.fromSource === 'vehicle-detail' && this.fromVehicleId) {
+      this.router.navigate(['/site/vehicles', this.fromVehicleId]);
+      return;
+    }
+
     const user = this.securityService.getUserData();
     const role = (user?.userRoles?.[0]?.role?.name ?? '').toUpperCase();
 
