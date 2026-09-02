@@ -1,0 +1,344 @@
+/* El azul y el rojo de la utilidad son los mismos que usan las barras del
+   tablero (`PROFIT_POS` / `PROFIT_NEG`): un numero positivo se ve igual aqui
+   que en la grafica de la que este reporte es el detalle. El verde queda
+   reservado para "ingresos", que es como lo usa "Ingresos vs Egresos". */
+:host {
+  --profit-color: #2a78d6;
+  --loss-color: #e34948;
+}
+
+.text-profit {
+  color: var(--profit-color) !important;
+}
+
+.text-loss {
+  color: var(--loss-color) !important;
+}
+
+/* ---- Las cuatro cifras ---------------------------------------------------
+   Superficie propia, no una tarjeta con sombra: son cuatro lecturas de un
+   mismo numero y encerrar cada una sugeriria cuatro temas distintos. */
+.kpi-tile {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  background-color: var(--bs-tertiary-bg);
+  border: 1px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+    border-color: rgba(var(--bs-primary-rgb), 0.25);
+
+    /* El mismo giro que hacen los contadores de propietarios y conductores
+       (`.card.stat-card:hover .icon-shape` en `styles.scss`). Se repite aquí
+       porque estas baldosas no son `stat-card`: no llevan su sombra ni su
+       borde, solo su lenguaje de icono. */
+    .icon-shape {
+      transform: scale(1.1) rotate(5deg);
+    }
+  }
+}
+
+/* La columna de texto. El icono es el otro hijo del flex, así que la cifra y
+   sus dos rótulos necesitan su propia caja para seguir apilados. */
+.kpi-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+/* Misma caja que en las vistas de propietarios y conductores, a menor escala:
+   allí son tres tarjetas anchas con un número enorme y el icono a 60 px; aquí
+   son cuatro en una fila y lo que se lee es la cifra. */
+.icon-shape {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  transition: transform 0.3s ease;
+
+  @media (min-width: 768px) {
+    width: 44px;
+    height: 44px;
+    font-size: 1.15rem;
+  }
+}
+
+.kpi-label {
+  font-size: 0.9rem;
+  color: var(--bs-secondary-color);
+  font-weight: 500;
+}
+
+.kpi-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+
+  @media (min-width: 768px) {
+    font-size: 1.4rem;
+  }
+}
+
+/* La formula, o de que esta hecha la cifra. Discreta a proposito: se consulta
+   una vez y despues estorba. */
+.kpi-note {
+  font-size: 0.8rem;
+  color: var(--bs-secondary-color);
+  opacity: 0.85;
+}
+
+/* La utilidad es la respuesta del reporte, no una cifra mas: se lleva el color
+   y el tamaño. El signo nunca queda solo en el color — el rotulo cambia a
+   "Perdida" y el icono con el, que es lo que hace que se lea igual impreso o
+   sin distinguir el rojo del azul. */
+.kpi-hero {
+  background-color: rgba(42, 120, 214, 0.1);
+  border-color: rgba(42, 120, 214, 0.25);
+
+  .kpi-label,
+  .kpi-value {
+    color: var(--profit-color);
+  }
+
+  .kpi-value {
+    font-size: 1.35rem;
+
+    @media (min-width: 768px) {
+      font-size: 1.75rem;
+    }
+  }
+
+  /* El icono no usa `bg-*` de Bootstrap como los otros tres: su color cambia
+     con el signo, y una clase fija no podría seguirlo. */
+  .kpi-hero-icon {
+    background-color: rgba(42, 120, 214, 0.15);
+    color: var(--profit-color);
+  }
+
+  /* En hover el borde se marca, pero en su propio color: teñirlo del primario
+     como a las demás baldosas le quitaría al pasar el puntero justo lo que la
+     distingue —que esta cifra es la respuesta, y de qué signo es. */
+  &:hover {
+    border-color: rgba(42, 120, 214, 0.55);
+  }
+
+  &.kpi-hero-loss {
+    background-color: rgba(227, 73, 72, 0.1);
+    border-color: rgba(227, 73, 72, 0.25);
+
+    .kpi-label,
+    .kpi-value {
+      color: var(--loss-color);
+    }
+
+    .kpi-hero-icon {
+      background-color: rgba(227, 73, 72, 0.15);
+      color: var(--loss-color);
+    }
+
+    &:hover {
+      border-color: rgba(227, 73, 72, 0.55);
+    }
+  }
+}
+
+/* ---- Promedios por viaje ------------------------------------------------- */
+.avg-tile {
+  display: flex;
+  /* A ancho completo la baldosa se lee como una línea —rótulo a la izquierda,
+     cifra a la derecha—, igual que las de arriba con su icono. Apilada dejaría
+     media baldosa vacía. En cuanto caben las tres en una fila, vuelve a
+     columna. */
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--bs-border-color);
+  height: 100%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  @media (min-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+  }
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+    border-color: rgba(var(--bs-primary-rgb), 0.25);
+  }
+}
+
+.avg-label {
+  font-size: 0.82rem;
+  color: var(--bs-secondary-color);
+  line-height: 1.25;
+}
+
+.avg-value {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+
+  @media (min-width: 768px) {
+    font-size: 1.15rem;
+  }
+}
+
+/* ---- Viajes en móvil: una tarjeta por fila ------------------------------- */
+.trip-cards {
+  /* El mismo tope que la tabla: una lista de un año se desplaza dentro de la
+     sección, no estira la página. */
+  max-height: 26rem;
+  overflow-y: auto;
+}
+
+.trip-card {
+  padding: 0.75rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--bs-border-color);
+  font-size: 0.925rem;
+
+  & + & {
+    margin-top: 0.5rem;
+  }
+}
+
+/* El pie no es un viaje más: cierra la lista y por eso lleva otra superficie. */
+.trip-card-total {
+  background-color: var(--bs-tertiary-bg);
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+/* ---- Tabla de viajes ----------------------------------------------------- */
+.trip-table {
+  /* Muchos viajes en un año: la tabla se desplaza dentro de la tarjeta en vez
+     de estirar la pagina. El encabezado se queda fijo para que las columnas
+     sigan teniendo nombre al bajar. */
+  max-height: 26rem;
+
+  table {
+    font-size: 0.925rem;
+    /* El tinte de `table-hover`, en el primario de la app en vez del gris de
+       Bootstrap. Se pasa por la variable y no por una regla propia porque el
+       hover de la tabla lo pinta Bootstrap sobre las celdas, no sobre la fila:
+       un `background-color` en el `tr` queda debajo. */
+    --bs-table-hover-bg: rgba(var(--bs-primary-rgb), 0.07);
+    --bs-table-hover-color: var(--bs-body-color);
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--bs-body-bg);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    user-select: none;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+
+    /* El encabezado ordena: al pasar por encima se oscurece, que es la única
+       pista de que se puede tocar — la flecha de orden ya está ahí siempre. */
+    &:hover {
+      color: var(--bs-emphasis-color);
+    }
+  }
+
+  /* La fila entera se tiñe al pasar por encima. En una tabla de cinco columnas
+     de cifras es lo que mantiene unido el renglón que se está leyendo: sin
+     eso, seguir "#48" hasta su rentabilidad es un ejercicio de puntería. */
+  tbody tr > * {
+    transition: box-shadow 0.15s ease;
+  }
+
+  tfoot td {
+    background-color: var(--bs-tertiary-bg);
+  }
+}
+
+.route-text {
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+:host-context([data-bs-theme="dark"]) {
+  /* Los dos colores suben un paso en oscuro: los mismos tonos sobre el fondo
+     #1e293b de las tarjetas quedan por debajo del contraste minimo. */
+  --profit-color: #6ea8f0;
+  --loss-color: #f07a79;
+
+  .kpi-hero {
+    background-color: rgba(110, 168, 240, 0.12);
+    border-color: rgba(110, 168, 240, 0.3);
+
+    .kpi-hero-icon {
+      background-color: rgba(110, 168, 240, 0.18);
+    }
+
+    &:hover {
+      border-color: rgba(110, 168, 240, 0.6);
+    }
+
+    &.kpi-hero-loss {
+      background-color: rgba(240, 122, 121, 0.12);
+      border-color: rgba(240, 122, 121, 0.3);
+
+      .kpi-hero-icon {
+        background-color: rgba(240, 122, 121, 0.18);
+      }
+
+      &:hover {
+        border-color: rgba(240, 122, 121, 0.6);
+      }
+    }
+  }
+
+  /* En oscuro una sombra al 10 % no se ve: sobre un fondo casi negro lo que
+     separa del plano de atrás es una bastante más densa. Son los mismos
+     valores que usan las tarjetas de contador del resto de la app. */
+  .kpi-tile:hover,
+  .avg-tile:hover {
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Quien pidió menos movimiento se queda con el color y el borde del hover,
+   que es lo que informa, y sin el desplazamiento, que es lo que molesta.
+   Misma concesión que hace el bloque equivalente de `styles.scss`. */
+@media (prefers-reduced-motion: reduce) {
+  .kpi-tile,
+  .avg-tile,
+  .icon-shape {
+    transition: none;
+  }
+
+  .kpi-tile:hover,
+  .avg-tile:hover {
+    transform: none;
+
+    .icon-shape {
+      transform: none;
+    }
+  }
+}

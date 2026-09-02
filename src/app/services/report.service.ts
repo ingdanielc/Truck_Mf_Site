@@ -44,7 +44,7 @@ export class ReportService {
 
     return this.http
       .get<any>(this.basePath, { params })
-      .pipe(map((resp) => this.unwrap<DashboardReport>(resp)));
+      .pipe(map((resp) => this.unwrap<DashboardReport>(resp, 'groups')));
   }
 
   /**
@@ -63,13 +63,29 @@ export class ReportService {
       .get<any>(`${this.basePath}/groups/${encodeURIComponent(key)}/trips`, {
         params,
       })
-      .pipe(map((resp) => this.unwrap<DashboardGroupTrips>(resp)));
+      .pipe(map((resp) => this.unwrap<DashboardGroupTrips>(resp, 'trips')));
   }
 
-  /* El resto de la API responde envuelto en `{ data: ... }`; el contrato de
-     estos dos reportes está escrito sin envoltura. Se acepta cualquiera de las
-     dos formas para no depender de por dónde salga la respuesta. */
-  private unwrap<T>(resp: any): T {
-    return (resp?.data ?? resp) as T;
+  /**
+   * Saca el reporte de la envoltura de la API.
+   *
+   * La API responde `{ data: ... }` cuando todo va bien y
+   * `{ code, message, i18n }` cuando no. Devolver la envoltura de error tal
+   * cual dejaba un objeto sin `groups`, y el tablero lo pintaba como un año
+   * sin movimiento: nueve gráficas vacías y nada en la consola. Un reporte
+   * que no trae la colección esperada es un fallo, y se trata como tal.
+   */
+  private unwrap<T>(resp: any, coleccion: 'groups' | 'trips'): T {
+    const payload =
+      resp && typeof resp === 'object' && 'data' in resp ? resp.data : resp;
+
+    if (!payload || !Array.isArray(payload[coleccion])) {
+      throw new Error(
+        resp?.message ??
+          `El reporte no trajo "${coleccion}" (respuesta inesperada).`,
+      );
+    }
+
+    return payload as T;
   }
 }

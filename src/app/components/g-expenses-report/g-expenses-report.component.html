@@ -1,0 +1,74 @@
+<div class="expenses-report">
+  @if (loading) {
+    <p class="text-body-secondary small mb-0 d-flex align-items-center gap-2">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Cargando los gastos del periodo...
+    </p>
+  } @else if (loadError) {
+    <p class="text-danger small mb-0">
+      <i class="fa-solid fa-triangle-exclamation me-2"></i>
+      No se pudieron cargar los gastos.
+    </p>
+  } @else if (!hasData) {
+    <p class="text-body-secondary small mb-0">
+      No hay gastos registrados en el periodo.
+    </p>
+  } @else {
+    <!-- El total, arriba y solo. Es la cifra contra la que se leen todas las
+         demas: cada renglon de abajo es un pedazo de esta. -->
+    <div class="total-block mb-3">
+      <span class="total-label">
+        <i class="fa-solid fa-money-bill-wave me-2 text-danger"></i>
+        ¿En qué se gastó el dinero?
+      </span>
+      <span class="total-value">
+        {{ total | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+      </span>
+      <span class="total-note">
+        {{ count }}
+        {{ count === 1 ? "gasto registrado" : "gastos registrados" }}
+      </span>
+    </div>
+
+    <!-- La barra de proporciones, al modo del almacenamiento de iOS: el gasto
+         entero en una sola linea, partida por categoria.
+
+         Responde de un vistazo lo que la lista responde en detalle —quien se
+         lleva la mayor parte—, y por eso no hay ademas un circular: seria la
+         misma informacion dos veces. Los segmentos se separan 2 px para que dos
+         categorias contiguas del mismo tono no se lean como una. -->
+    <div
+      class="storage-bar mb-2"
+      role="img"
+      [attr.aria-label]="
+        'Reparto del gasto del periodo entre ' + slices.length + ' categorías'
+      "
+    >
+      @for (s of slices; track s.name) {
+        <div
+          class="storage-seg"
+          [ngClass]="s.bgClass"
+          [style.width]="segmentWidth(s)"
+          [title]="s.name + ' · ' + (s.share | number: '1.1-1') + '%'"
+        ></div>
+      }
+    </div>
+
+    <!-- La lista. Lleva el nombre, la cifra y el porcentaje en texto: la barra
+         da la proporcion y esta da el dato, que es lo que se apunta o se
+         discute con el conductor. -->
+    <ul class="category-list list-unstyled mb-0">
+      @for (s of slices; track s.name) {
+        <li class="category-row">
+          <span class="category-dot" [ngClass]="s.bgClass"></span>
+          <i class="category-icon" [ngClass]="[s.icon, s.textClass]"></i>
+          <span class="category-name">{{ s.name }}</span>
+          <span class="category-share"> {{ s.share | number: "1.0-0" }}% </span>
+          <span class="category-amount">
+            {{ s.amount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+          </span>
+        </li>
+      }
+    </ul>
+  }
+</div>

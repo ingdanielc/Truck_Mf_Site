@@ -1,0 +1,119 @@
+/* El total del periodo. Mismo tratamiento que la baldosa de utilidad en
+   rentabilidad —rótulo pequeño, cifra grande, nota debajo—: son las dos caras
+   del mismo número y conviene que se lean igual. */
+.total-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.total-label {
+  font-size: 0.9rem;
+  color: var(--bs-secondary-color);
+  font-weight: 500;
+}
+
+.total-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+
+  @media (min-width: 768px) {
+    font-size: 1.9rem;
+  }
+}
+
+.total-note {
+  font-size: 0.8rem;
+  color: var(--bs-secondary-color);
+}
+
+/* ---- La barra de proporciones -------------------------------------------
+   Una sola línea con el gasto entero, partida por categoría. El hueco de 2 px
+   entre segmentos no es decorativo: la paleta de categorías tiene siete tonos
+   y dos contiguas pueden coincidir; sin separación se leerían como una sola. */
+.storage-bar {
+  display: flex;
+  gap: 2px;
+  height: 18px;
+  border-radius: 9px;
+  overflow: hidden;
+  background-color: var(--bs-tertiary-bg);
+}
+
+.storage-seg {
+  height: 100%;
+  min-width: 4px;
+  transition: width 0.3s ease;
+}
+
+/* ---- La lista ------------------------------------------------------------
+   Rejilla y no flex: así el porcentaje y la cifra quedan alineados en columna
+   entre renglones, que es lo que permite compararlos de un vistazo. */
+.category-list {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.category-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.25rem;
+  font-size: 0.925rem;
+  border-radius: 0.4rem;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.06);
+  }
+}
+
+/* El punto ata cada renglón a su segmento de la barra. El icono dice de qué
+   categoría se trata; el color, solo, no lo diría. */
+.category-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.category-icon {
+  width: 1.1rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.category-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-share {
+  color: var(--bs-secondary-color);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 2.75rem;
+  text-align: right;
+}
+
+.category-amount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* Bootstrap define `.text-indigo` en `styles.scss` pero no su fondo, y la
+   categoría de peajes lo usa: sin esto su segmento y su punto salen vacíos. */
+.bg-indigo {
+  background-color: #6610f2;
+}
+
+:host-context([data-bs-theme="dark"]) .bg-indigo {
+  background-color: #a370f7;
+}

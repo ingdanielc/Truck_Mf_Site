@@ -1,4 +1,12 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  NgZone,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TripService } from '../../services/trip.service';
 import { VehicleService as ExpenseService } from '../../services/expense.service';
@@ -27,6 +35,7 @@ import { ModelVehicle } from '../../models/vehicle-model';
 import { ModelTrip } from '../../models/trip-model';
 import { ModelExpense } from '../../models/expense-model';
 import { ModelOwner } from '../../models/owner-model';
+import { Formatters } from '../../utils/formatters';
 import {
   DashboardActiveTrip,
   DashboardGroup,
@@ -37,6 +46,9 @@ import {
 } from '../../models/dashboard-report-model';
 import { FormsModule } from '@angular/forms';
 import { GVehicleTripExpCardComponent } from '../../components/g-vehicle-trip-exp-card/g-vehicle-trip-exp-card.component';
+import { GProfitabilityReportComponent } from '../../components/g-profitability-report/g-profitability-report.component';
+import { GExpensesReportComponent } from '../../components/g-expenses-report/g-expenses-report.component';
+import { GSubscriptionsReportComponent } from '../../components/g-subscriptions-report/g-subscriptions-report.component';
 
 Chart.register(...registerables);
 
@@ -58,19 +70,32 @@ interface ProfitStats {
     FormsModule,
     BaseChartDirective,
     GVehicleTripExpCardComponent,
+    GProfitabilityReportComponent,
+    GExpensesReportComponent,
+    GSubscriptionsReportComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
-export class DashboardComponent implements OnInit, OnDestroy {
+export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = true;
   activeTrips: {
     vehicle: ModelVehicle;
     trip: ModelTrip;
     expenses: ModelExpense[];
   }[] = [];
-  activeTripsCollapsed: boolean = true;
-  chartsCollapsed: boolean = false;
+  /**
+   * Pestaña abierta. Las tres secciones dejaron de apilarse plegadas: llegar a
+   * las gráficas obligaba a pasar por la rentabilidad entera o a plegarla a
+   * mano en cada carga.
+   *
+   * Abre en rentabilidad, que es la respuesta —cuánto dejó—; las gráficas son
+   * su desglose y los viajes en curso, la operación del día. Al administrador,
+   * que no ve rentabilidad, lo recibe "Gráficos" — ver `loadData`.
+   */
+  public activeTab:
+    'rentabilidad' | 'gastos' | 'suscripciones' | 'graficos' | 'viajes' =
+    'rentabilidad';
   userRole: string = '';
   owners: ModelOwner[] = [];
   selectedOwnerId: number | null = null;
@@ -78,6 +103,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   showHistoryPanel: boolean = false;
 
   public currentMonthName: string = '';
+
+  /* El tablero abre en el mes en curso — ver `scope`. `browsingYear` es el año
+     que se está hojeando dentro del panel de periodo, y no el aplicado: se
+     puede mirar 2025 y cerrar el panel sin elegir nada. */
   public selectedMonth: number = new Date().getMonth();
   public selectedYear: number = new Date().getFullYear();
   public browsingYear: number = new Date().getFullYear();
@@ -92,12 +121,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ];
 
   /**
-   * Alcance de TODAS las gráficas: el mes seleccionado o el año completo.
+   * Alcance de TODO el tablero —las nueve gráficas y el reporte de
+   * rentabilidad—: el mes seleccionado o el año completo.
    *
    * Antes cada tarjeta traía su propio selector y podían quedar desfasadas —
    * una en el mes y la de al lado en el año —, lo que invita a comparar cifras
-   * de periodos distintos. Ahora hay un único control, arriba junto al del
-   * periodo, y todas las gráficas responden a él.
+   * de periodos distintos. Hoy hay un único control: el panel de periodo, donde
+   * el año completo es una opción más junto a los doce meses — ver `setPeriod`.
+   *
+   * Abre en `'mes'` sobre el mes en curso: es el periodo que el propietario
+   * está viviendo, y el que responde "¿cómo voy?". El año completo es una
+   * consulta que se pide, no el punto de partida.
    *
    * Qué cambia con el alcance depende de la gráfica: en unas solo se amplía la
    * ventana acumulada, y en las que tienen el mes en el eje X (viajes
@@ -1118,10 +1152,74 @@ export class DashboardComponent implements OnInit, OnDestroy {
      servidor — el reporte cubre el año entero. */
   private groupMonths = new Map<string, DashboardMonth[]>();
 
-  /* Etiquetas de los grupos en orden alfabético: el eje de categorías de todas
-     las gráficas. Al fijarlo una sola vez, un grupo conserva su color entre
-     tarjetas y entre alcances. */
-  private groupLabels: string[] = [];
+  /* Etiquetas de los grupos en orden alfabético, tal como vienen del reporte.
+     Al fijarlo una sola vez, un grupo conserva su color entre tarjetas y entre
+     alcances. Es también lo que ofrece el selector de vehículo. */
+  private allGroupLabels: string[] = [];
+
+  /**
+   * Placa elegida en el selector de vehículo, o `null` para toda la flota.
+   *
+   * Filtra el eje de categorías de las nueve gráficas —y, por el `@Input` del
+   * reporte, también la rentabilidad—: las dos secciones hablan siempre del
+   * mismo camión, igual que hablan siempre del mismo periodo.
+   *
+   * Solo existe para propietario y conductor, que son quienes tienen el
+   * vehículo en el eje — ver `showVehicleFilter`.
+   */
+  public selectedVehicleLabel: string | null = null;
+
+  /**
+   * El eje de categorías de las gráficas: la flota entera, o solo la placa
+   * elegida.
+   *
+   * Es un getter y no un campo para que ningún builder pueda olvidarse del
+   * filtro: los nueve leen de aquí, y quien añada el décimo lo hereda.
+   */
+  private get groupLabels(): string[] {
+    if (!this.selectedVehicleLabel) return this.allGroupLabels;
+    return this.allGroupLabels.filter((l) => l === this.selectedVehicleLabel);
+  }
+
+  /** Las placas que ofrece el selector. */
+  get vehicleOptions(): string[] {
+    return this.allGroupLabels;
+  }
+
+  /**
+   * El selector de vehículo solo tiene sentido cuando el eje ES el vehículo:
+   * propietario y conductor. Con el administrador los grupos son propietarios
+   * —ver `groupByOwner`— y filtrar "por vehículo" no significaría nada.
+   *
+   * Con un solo camión tampoco: no hay entre qué elegir.
+   */
+  get showVehicleFilter(): boolean {
+    return this.showProfitabilityReport && this.allGroupLabels.length > 1;
+  }
+
+  /**
+   * La `key` del vehículo elegido, que es lo que entiende el reporte de
+   * rentabilidad. `null` es su "Todos".
+   */
+  get selectedVehicleKey(): string | null {
+    return this.selectedVehicleLabel
+      ? (this.groupKeyByLabel[this.selectedVehicleLabel] ?? null)
+      : null;
+  }
+
+  /**
+   * Cambia el vehículo. No recarga nada: el reporte ya está en memoria y las
+   * gráficas se reconstruyen sobre él, igual que al cambiar de mes.
+   */
+  public selectVehicle(label: string | null): void {
+    if (this.selectedVehicleLabel === label) return;
+    this.selectedVehicleLabel = label;
+
+    this.invalidateGroupDetail();
+    this.rebuildCharts();
+    void this.refreshGroupDetail();
+    this.updateCharts();
+  }
 
   /* Etiqueta → `key` del reporte. La etiqueta es lo que se pinta y lo que
      guarda la selección; el `key` es lo que pide el Endpoint B. */
@@ -1132,6 +1230,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private currentUser: any = null;
 
   constructor(
+    private readonly host: ElementRef<HTMLElement>,
+    private readonly zone: NgZone,
     private readonly tripService: TripService,
     private readonly expenseService: ExpenseService,
     private readonly vehicleService: VehicleService,
@@ -1165,11 +1265,164 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
   }
 
+  ngAfterViewInit(): void {
+    this.scroller = this.findScroller();
+    /* Fuera de la zona de Angular: el scroll dispara decenas de eventos por
+       segundo y cada uno provocaría un ciclo de detección de cambios sobre las
+       nueve gráficas. Solo se vuelve a entrar cuando el botón cambia de estado,
+       que es como mucho dos veces por recorrido. */
+    this.zone.runOutsideAngular(() => {
+      this.scroller.addEventListener('scroll', this.onScroll, {
+        passive: true,
+      });
+      window.addEventListener('resize', this.updateTabsOverflow, {
+        passive: true,
+      });
+    });
+    this.onScroll();
+    this.scheduleTabsCheck();
+  }
+
   ngOnDestroy(): void {
     if (this.observer) {
       this.observer.disconnect();
     }
     this.userSub?.unsubscribe();
+    this.scroller.removeEventListener('scroll', this.onScroll);
+    window.removeEventListener('resize', this.updateTabsOverflow);
+    this.tabBar?.nativeElement.removeEventListener(
+      'scroll',
+      this.updateTabsOverflow,
+    );
+  }
+
+  /* ======================================================================
+     Volver arriba
+     ====================================================================== */
+
+  /** El botón flotante está a la vista. */
+  public showScrollTop = false;
+
+  /**
+   * Cuánto hay que bajar para que aparezca. Aproximadamente una pantalla: antes
+   * de eso el encabezado sigue visible y el botón sobraría.
+   */
+  private static readonly SCROLL_UMBRAL = 500;
+
+  /**
+   * Quién se desplaza realmente.
+   *
+   * Esta vista es un micro-frontend: la ventana puede no moverse porque el
+   * contenedor del shell es el que lleva el scroll. Se busca el primer
+   * antecesor que lo tenga y, si no hay ninguno, se usa la ventana.
+   */
+  private scroller: HTMLElement | Window = window;
+
+  private findScroller(): HTMLElement | Window {
+    let el = this.host?.nativeElement?.parentElement ?? null;
+    while (el && el !== document.body) {
+      const overflow = getComputedStyle(el).overflowY;
+      /* No se comprueba la altura: al montar la vista el contenido aún no ha
+         crecido, y el contenedor bueno todavía no desborda. */
+      if (overflow === 'auto' || overflow === 'scroll') return el;
+      el = el.parentElement;
+    }
+    return window;
+  }
+
+  private get scrollTop(): number {
+    return this.scroller instanceof Window
+      ? window.scrollY
+      : this.scroller.scrollTop;
+  }
+
+  /* Función de campo y no método: se registra y se quita como oyente, y hace
+     falta que las dos veces sea exactamente la misma referencia. */
+  private readonly onScroll = (): void => {
+    const visible = this.scrollTop > DashboardComponent.SCROLL_UMBRAL;
+    if (visible === this.showScrollTop) return;
+    this.zone.run(() => (this.showScrollTop = visible));
+  };
+
+  /* ======================================================================
+     Pestañas que no caben
+     ====================================================================== */
+
+  /** La barra de pestañas. En móvil se desplaza de lado. */
+  @ViewChild('tabBar') tabBar?: ElementRef<HTMLElement>;
+
+  /** Quedan pestañas sin ver hacia cada lado. */
+  public tabsMoreLeft = false;
+  public tabsMoreRight = false;
+
+  /**
+   * Decide qué flechas hacen falta.
+   *
+   * En un teléfono estrecho las cinco pestañas no caben y la barra se desplaza,
+   * pero un corte limpio en el borde no se lee como "hay más": parece el final.
+   * De ahí las flechas, una por lado y solo cuando queda algo en esa dirección
+   * — un indicador que sigue ahí cuando ya no hay nada miente, y en medio del
+   * recorrido las dos son ciertas a la vez.
+   *
+   * El margen de 4 px absorbe los subpíxeles del zoom del navegador, que si no
+   * dejan una flecha encendida sobre una barra que ya está al final.
+   */
+  private readonly updateTabsOverflow = (): void => {
+    const el = this.tabBar?.nativeElement;
+    const izq = el ? el.scrollLeft > 4 : false;
+    const der = el
+      ? el.scrollLeft + el.clientWidth < el.scrollWidth - 4
+      : false;
+    if (izq === this.tabsMoreLeft && der === this.tabsMoreRight) return;
+    this.zone.run(() => {
+      this.tabsMoreLeft = izq;
+      this.tabsMoreRight = der;
+    });
+  };
+
+  /**
+   * Vuelve a medir cuando el juego de pestañas puede haber cambiado: el rol se
+   * resuelve después de la primera pintura y el administrador gana dos al
+   * elegir propietario. Se aplaza un turno para medir ya con el DOM repintado.
+   */
+  private scheduleTabsCheck(): void {
+    setTimeout(() => {
+      this.bindTabsScroll();
+      this.updateTabsOverflow();
+    });
+  }
+
+  /** La barra solo existe una vez cargado el tablero, así que el oyente no se
+   *  puede colgar en `ngAfterViewInit`: se cuelga en cuanto aparece, y una sola
+   *  vez. Fuera de la zona, por lo mismo que el de la página. */
+  private tabsBound = false;
+
+  private bindTabsScroll(): void {
+    const el = this.tabBar?.nativeElement;
+    if (!el || this.tabsBound) return;
+    this.tabsBound = true;
+    this.zone.runOutsideAngular(() => {
+      el.addEventListener('scroll', this.updateTabsOverflow, { passive: true });
+    });
+  }
+
+  /** Un empujón de dos tercios de la barra: deja a la vista lo que venía y
+   *  algo de lo anterior, para no perder el hilo de dónde se estaba. */
+  public scrollTabs(direction: 1 | -1): void {
+    const el = this.tabBar?.nativeElement;
+    if (!el) return;
+    el.scrollBy({
+      left: direction * el.clientWidth * 0.66,
+      behavior: 'smooth',
+    });
+  }
+
+  public scrollToTop(): void {
+    /* Quien pidió menos movimiento sube de golpe: un recorrido animado de
+       varias pantallas es justo lo que ese ajuste evita. */
+    const suave = !window.matchMedia('(prefers-reduced-motion: reduce)')
+      .matches;
+    this.scroller.scrollTo({ top: 0, behavior: suave ? 'smooth' : 'auto' });
   }
 
   private updateCurrentMonthName(): void {
@@ -1239,37 +1492,63 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Alcance de todas las gráficas. Se recalcula sobre el reporte ya cargado,
-   * que cubre el año entero: ninguna gráfica vuelve a pedir nada.
+   * Periodo que están mostrando las gráficas, para el encabezado.
    *
-   * La única excepción es el detalle de una barra abierta: al pasar al mes, su
-   * eje es el viaje y eso solo lo sabe el servidor — ver `refreshGroupDetail`.
+   * Hasta ahora el periodo solo se leía dentro de los títulos de las
+   * gráficas, que Chart.js dibuja en el canvas: justo lo que desaparece
+   * cuando el mes no tiene movimiento. Un primero de mes el tablero abría en
+   * un mes vacío y no quedaba ninguna pista de en qué mes estaba.
    *
-   * Dos gráficas cambian de tipo con el alcance: con el mes en el eje X son
-   * líneas, y al pasar a un eje de grupos serían una línea sobre placas, que
-   * no se lee. ng2-charts vuelve a crear el canvas cuando cambia `type`.
+   * En alcance de año el mes no interviene en nada de lo que se dibuja, así
+   * que no se nombra: rotularlo sugeriría un filtro que no está aplicado.
    */
-  public setScope(scope: 'mes' | 'anio'): void {
-    if (this.scope === scope) return;
-    this.scope = scope;
-    this.monthlyTripsType = scope === 'mes' ? 'bar' : 'line';
-    this.monthlyProfitType = scope === 'mes' ? 'bar' : 'line';
-    this.updateCurrentMonthName();
+  get periodLabel(): string {
+    return this.scope === 'mes'
+      ? `${this.currentMonthName} ${this.selectedYear}`
+      : `Año ${this.selectedYear}`;
+  }
 
-    this.invalidateGroupDetail();
-    this.rebuildCharts();
-    void this.refreshGroupDetail();
+  /** El mismo rótulo abreviado: en móvil el botón comparte fila con el
+   *  título. */
+  get periodLabelShort(): string {
+    return this.scope === 'mes'
+      ? `${this.getMonthName(this.selectedMonth)} ${this.selectedYear}`
+      : `Año ${this.selectedYear}`;
   }
 
   /**
-   * Cambia el periodo. Solo recarga cuando cambia el año: el reporte trae los
-   * doce meses de una vez, así que moverse dentro del mismo año se resuelve en
-   * memoria y no cuesta ninguna petición.
+   * Fija el periodo de TODO el tablero: las nueve gráficas y el reporte de
+   * rentabilidad. `month` a `null` es el año completo.
+   *
+   * Unifica lo que antes eran dos controles —el grupo Mes/Año de la cabecera y
+   * el panel de meses—, porque son una sola decisión: qué periodo se mira.
+   * Separados dejaban estados ilegibles: el botón decía "Agosto" mientras el
+   * alcance estaba en año y el mes no intervenía en nada de lo dibujado.
+   *
+   * Al pasar al año completo el mes se conserva, no se borra: volver a "Mes"
+   * devuelve al que se estaba mirando en vez de saltar a enero.
+   *
+   * Dos gráficas cambian de tipo con el alcance: con el mes en el eje X son
+   * líneas, y sobre un eje de placas una línea no se lee. ng2-charts vuelve a
+   * crear el canvas cuando cambia `type`.
+   *
+   * Solo recarga cuando cambia el año: el reporte trae los doce meses de una
+   * vez, así que moverse dentro del mismo año se resuelve en memoria y no
+   * cuesta ninguna petición.
    */
-  public setHistoryDate(month: number, year: number): void {
+  public setPeriod(month: number | null, year: number): void {
+    const nuevoScope: 'mes' | 'anio' = month == null ? 'anio' : 'mes';
     const cambioAnio = year !== this.selectedYear;
-    this.selectedMonth = month;
+
+    if (month != null) this.selectedMonth = month;
     this.selectedYear = year;
+
+    if (this.scope !== nuevoScope) {
+      this.scope = nuevoScope;
+      this.monthlyTripsType = nuevoScope === 'mes' ? 'bar' : 'line';
+      this.monthlyProfitType = nuevoScope === 'mes' ? 'bar' : 'line';
+    }
+
     this.updateCurrentMonthName();
 
     if (!this.currentUser) return;
@@ -1521,9 +1800,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
       if (options.plugins?.title) {
         options.plugins.title.color = textColor;
+        /* 12 px. El título del canvas repite lo que ya dice el encabezado de
+           la tarjeta —añade el periodo—, así que compite con él si se acerca a
+           su tamaño. Se fija aquí una sola vez: `applyTheme` recorre las nueve
+           gráficas, y con un tamaño por tarjeta bastaba con olvidar una para
+           que quedara desalineada con el resto. */
         options.plugins.title.font = {
           family: "'Inter', sans-serif",
-          size: 14,
+          size: 12,
           weight: 'bold',
         };
         /* Sin `padding` Chart.js reserva 10 px arriba, que sumados al del
@@ -1677,7 +1961,34 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Los vehículos del propietario que el administrador tiene elegido, tal como
+   * los cargó el reporte de rentabilidad.
+   *
+   * Se compara antes de asignar: la entrada de la sección de gastos es un
+   * arreglo, y darle una referencia nueva con el mismo contenido la haría salir
+   * a pedir sus gastos otra vez sin que nada hubiera cambiado.
+   */
+  public onReportVehicles(ids: number[]): void {
+    if (!this.groupByOwner) return;
+    const igual =
+      ids.length === this.scopedVehicleIds.length &&
+      ids.every((id, i) => id === this.scopedVehicleIds[i]);
+    if (igual) return;
+    this.scopedVehicleIds = ids;
+  }
+
+  /** El nombre del propietario en el selector del panel, con el mismo criterio
+   *  que en las gráficas: si no, el filtro y el eje se leerían distinto. */
+  public ownerName(owner: ModelOwner): string {
+    return Formatters.titleCase(owner?.name);
+  }
+
   onOwnerChange() {
+    /* Los vehículos en alcance son los del propietario anterior hasta que el
+       reporte cargue los del nuevo. Se vacían aquí para que la sección de
+       gastos no alcance a mostrar la factura del que ya no está elegido. */
+    this.scopedVehicleIds = [];
     if (this.currentUser) {
       this.loadData(this.currentUser);
     }
@@ -1704,11 +2015,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
          aquí no se conocía: el tema se reaplica ya sabiéndolo. */
       this.updateChartTheme();
 
-      if (
-        (role.includes('ADMINISTRADOR') || role.includes('PROPIETARIO')) &&
-        this.activeTripsCollapsed === undefined
-      ) {
-        this.activeTripsCollapsed = true;
+      /* Cada rol tiene sus pestañas: el administrador no ve rentabilidad hasta
+         elegir propietario ni tiene gastos, y los otros dos no ven
+         suscripciones. Sin esto el tablero abriría en una pestaña que no existe
+         y no se vería ninguna sección. */
+      if (!this.isTabAvailable(this.activeTab)) {
+        this.activeTab = this.groupByOwner ? 'suscripciones' : 'graficos';
       }
 
       /* `ownerId` solo lo manda el administrador filtrando por un propietario;
@@ -1722,16 +2034,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
       );
 
       this.indexReport(report?.groups ?? []);
-      await this.loadActiveTrips(report?.activeTrips ?? []);
-
       this.rebuildCharts();
       this.updateCharts();
+
+      /* Las tarjetas de viajes activos cuelgan de tres consultas aparte y son
+         un extra sobre las gráficas. Si fallan, la sección se queda sin
+         tarjetas; vaciar el tablero entero por eso sería desproporcionado
+         —y era justo lo que hacía el `catch` de abajo. */
+      try {
+        await this.loadActiveTrips(report?.activeTrips ?? []);
+      } catch (error) {
+        console.error('Error loading active trips:', error);
+      }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       this.clearChartData();
       this.updateCharts();
     } finally {
       this.loading = false;
+      /* El rol —y con él las pestañas— solo se conoce aquí. */
+      this.scheduleTabsCheck();
     }
   }
 
@@ -1748,7 +2070,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.groupKeyByLabel = {};
 
     groups.forEach((g) => {
-      const label = g?.label?.trim();
+      /* El nombre del propietario se normaliza aquí, en el único sitio por el
+         que pasan todos: la etiqueta que sale de aquí es el eje de las nueve
+         gráficas, la leyenda, el tooltip y el título de los detalles. Se
+         capturan sin criterio —"ENRIQUE CASTRO", "enrique castro"— y así un eje
+         mezclaba renglones que gritan con otros que parecen un error.
+
+         Las placas no se tocan: pasarlas por mayúscula inicial las rompería
+         ("HTM-123" → "Htm-123"), y ya vienen normalizadas. */
+      const label = this.groupByOwner
+        ? Formatters.titleCase(g?.label)
+        : g?.label?.trim();
       if (!label) return;
 
       const meses: DashboardMonth[] = Array.from(
@@ -1771,9 +2103,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.groupKeyByLabel[label] = g.key;
     });
 
-    this.groupLabels = [...this.groupMonths.keys()].sort((a, b) =>
+    this.allGroupLabels = [...this.groupMonths.keys()].sort((a, b) =>
       a.localeCompare(b),
     );
+
+    /* Una placa que ya no viene en el reporte del año nuevo no puede seguir
+       filtrando: se vuelve a toda la flota en vez de dejar el tablero vacío. */
+    if (
+      this.selectedVehicleLabel &&
+      !this.groupMonths.has(this.selectedVehicleLabel)
+    ) {
+      this.selectedVehicleLabel = null;
+    }
 
     this.detailCache.clear();
     this.invalidateGroupDetail();
@@ -1865,6 +2206,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.processMaintenanceData();
     this.processTripsByMonth();
     this.processProfitByMonth();
+    this.rebuildSectionInputs();
   }
 
   private processActiveTrips(trips: ModelTrip[], expenses: ModelExpense[]) {
@@ -1888,8 +2230,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private clearChartData() {
     this.groupMonths = new Map();
-    this.groupLabels = [];
+    this.allGroupLabels = [];
     this.groupKeyByLabel = {};
+    this.selectedVehicleLabel = null;
+    this.scopedVehicleIds = [];
+    this.tripsByOwnerId = {};
     this.invalidateGroupDetail();
 
     this.tripsByVehicleData.labels = [];
@@ -1941,6 +2286,150 @@ export class DashboardComponent implements OnInit, OnDestroy {
   /** Propietario y conductor ven una barra por tipo de viaje; el admin, el total */
   get showTripTypeBreakdown(): boolean {
     return this.userRole === 'PROPIETARIO' || this.userRole === 'CONDUCTOR';
+  }
+
+  /**
+   * El reporte de rentabilidad es de un vehículo, y solo lo ven quienes miran
+   * el tablero por vehículo: el propietario y el conductor. Cualquiera de los
+   * dos puede tener varios, y el reporte los ofrece en su encabezado.
+   *
+   * El administrador lo ve solo tras elegir un propietario en el panel de
+   * periodo: sin filtro su tablero abarca toda la plataforma, y ahí "la
+   * utilidad" no es de nadie. Con uno elegido, el reporte responde por la flota
+   * de ese propietario.
+   */
+  get showProfitabilityReport(): boolean {
+    if (this.userRole === 'PROPIETARIO' || this.userRole === 'CONDUCTOR') {
+      return true;
+    }
+    /* El administrador solo con un propietario elegido. Sin filtro su tablero
+       es la suma de toda la plataforma, y "la utilidad" de eso no es de nadie:
+       el reporte necesita una flota concreta de la que responder. El
+       propietario se elige en el panel de periodo. */
+    return this.groupByOwner && this.selectedOwnerId != null;
+  }
+
+  /** El propietario del que responde el reporte. Solo lo manda el
+   *  administrador: para los demás roles el alcance sale del token. */
+  get reportOwnerId(): number | null {
+    return this.groupByOwner ? this.selectedOwnerId : null;
+  }
+
+  /**
+   * El desglose del gasto es del dueño del camión, no de quien administra la
+   * plataforma: contesta "por qué gané o perdí este mes", que es una pregunta
+   * de propietario y de conductor.
+   */
+  get showExpensesReport(): boolean {
+    if (this.userRole === 'PROPIETARIO' || this.userRole === 'CONDUCTOR') {
+      return true;
+    }
+    /* El administrador, igual que con la rentabilidad: solo con un propietario
+       elegido. El desglose del gasto de toda la plataforma junta camiones de
+       dueños distintos y no responde por ninguno. */
+    return this.groupByOwner && this.selectedOwnerId != null;
+  }
+
+  /* La pestaña de gastos cambia de sitio con el rol, y es a propósito. Al
+     propietario le va pegada a Rentabilidad: son la misma pregunta —cuánto dejé
+     y por qué—. Al administrador le va al final, después de las gráficas: entra
+     por el estado de la plataforma, y el detalle del gasto de un propietario es
+     lo último a lo que baja. */
+  get showExpensesBeforeCharts(): boolean {
+    return this.showExpensesReport && !this.groupByOwner;
+  }
+
+  get showExpensesAfterCharts(): boolean {
+    return this.showExpensesReport && this.groupByOwner;
+  }
+
+  /** Las suscripciones son del negocio que sostiene la plataforma: solo el
+   *  administrador las ve, y las ve siempre — no dependen del periodo. */
+  get showSubscriptions(): boolean {
+    return this.groupByOwner;
+  }
+
+  /** Qué pestañas existen para el rol y el estado actuales. */
+  private isTabAvailable(tab: string): boolean {
+    if (tab === 'rentabilidad') return this.showProfitabilityReport;
+    if (tab === 'gastos') return this.showExpensesReport;
+    if (tab === 'suscripciones') return this.showSubscriptions;
+    return true;
+  }
+
+  /**
+   * `id` de los vehículos en pantalla, para la sección de gastos.
+   *
+   * Sale de `groupLabels`, que es el eje ya filtrado por el selector de
+   * vehículo: el desglose del gasto habla del mismo camión que la rentabilidad
+   * y que las gráficas, sin que haya que sincronizar nada.
+   */
+  public scopedVehicleIds: number[] = [];
+
+  /**
+   * Viajes del periodo por `id` de propietario, para las suscripciones.
+   *
+   * Con el administrador los grupos del reporte SON los propietarios y su
+   * `key` es `owner:14`, así que el conteo ya está cargado: no hay que pedir
+   * nada para saber cuántos viajes tiene cada suscripción.
+   */
+  public tripsByOwnerId: Record<number, number> = {};
+
+  /**
+   * Rearma las entradas de las secciones que cuelgan del tablero.
+   *
+   * Son campos y no getters, y eso importa: van atados con `[input]`, y un
+   * getter que construye un arreglo o un objeto devuelve una referencia nueva
+   * en cada ciclo de detección de cambios. La sección de gastos lo habría leído
+   * como "cambió el alcance" y habría salido a pedir sus gastos otra vez, en
+   * cada ciclo, para siempre.
+   *
+   * Se recalculan donde se reconstruyen las gráficas, que es exactamente cuando
+   * pueden cambiar: al cargar, al mover el periodo y al elegir vehículo.
+   */
+  private rebuildSectionInputs(): void {
+    /* Con el administrador los grupos son propietarios: sus `key` no llevan
+       `id` de vehículo y de aquí no saldría ninguno. Los aporta el reporte de
+       rentabilidad, que sí carga la dimensión vehículo del propietario elegido
+       — ver `onReportVehicles`. */
+    if (!this.groupByOwner) {
+      this.scopedVehicleIds = this.groupLabels
+        .map((label) => Number(this.groupKeyByLabel[label]?.split(':').pop()))
+        .filter((id) => Number.isFinite(id) && id > 0);
+    }
+
+    const porId: Record<number, number> = {};
+    if (this.groupByOwner) {
+      Object.entries(this.groupKeyByLabel).forEach(([label, key]) => {
+        const id = Number(key?.split(':').pop());
+        if (!Number.isFinite(id) || id <= 0) return;
+        porId[id] = this.scopedMonths(label).reduce(
+          (a, m) =>
+            a +
+            Object.values(m.tripsByType ?? {}).reduce(
+              (x, v) => x + (v || 0),
+              0,
+            ),
+          0,
+        );
+      });
+    }
+    this.tripsByOwnerId = porId;
+  }
+
+  /**
+   * El periodo del reporte de rentabilidad, traducido a lo que él entiende.
+   *
+   * El reporte se movía por su cuenta y quedaba en agosto mientras las nueve
+   * gráficas de abajo mostraban septiembre: dos periodos a la vez en la misma
+   * pantalla, que es justo lo que el control único de arriba existe para
+   * evitar. Ahora lee de aquí, y su mes lo fija el mismo panel de siempre.
+   *
+   * El alcance de año se le pasa como `-1`, que es como el reporte nombra "los
+   * doce meses" — el equivalente de que las gráficas dejen de mirar un mes.
+   */
+  get reportMonth(): number {
+    return this.scope === 'anio' ? -1 : this.selectedMonth;
   }
 
   /**

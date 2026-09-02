@@ -8,6 +8,17 @@ export class Formatters {
     return phone || '';
   }
 
+  /**
+   * Nombre propio con cada palabra en mayúscula inicial.
+   */
+  static titleCase(value: string | undefined | null): string {
+    const name = String(value ?? '').trim();
+    if (!name) return '';
+    return name
+      .toLocaleLowerCase('es-CO')
+      .replace(/(^|\s)\p{L}/gu, (c) => c.toLocaleUpperCase('es-CO'));
+  }
+
   static formatDocNumber(value: any): string {
     const n = Number(String(value ?? '').replaceAll(/\D/g, ''));
     return Number.isNaN(n) || value === ''

@@ -1,0 +1,312 @@
+<div class="subscriptions-report">
+  @if (!rows.length) {
+    <p class="text-body-secondary small mb-0">
+      No hay propietarios registrados.
+    </p>
+  } @else {
+    <!-- Los tres contadores. Mismo tratamiento que las cifras de rentabilidad
+         —icono en su caja, cifra grande, nota debajo— porque se leen igual: de
+         un vistazo y sin entrar en la lista.
+
+         Tocar una acota el detalle a ese estado; la activa se marca. -->
+    <div class="row g-3 mb-2">
+      <div class="col-12 col-md-4">
+        <button
+          type="button"
+          class="kpi-tile w-100 h-100"
+          [class.kpi-selected]="filter === 'activa'"
+          [attr.aria-pressed]="filter === 'activa'"
+          (click)="toggleFilter('activa')"
+        >
+          <span class="kpi-text">
+            <span class="kpi-label">Activas</span>
+            <span class="kpi-value">{{ activas }}</span>
+            <span class="kpi-note">Al día</span>
+          </span>
+          <span
+            class="icon-shape bg-success bg-opacity-10 text-success rounded-3"
+          >
+            <i class="fa-solid fa-circle-check"></i>
+          </span>
+        </button>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <button
+          type="button"
+          class="kpi-tile w-100 h-100"
+          [class.kpi-selected]="filter === 'porVencer'"
+          [attr.aria-pressed]="filter === 'porVencer'"
+          (click)="toggleFilter('porVencer')"
+        >
+          <span class="kpi-text">
+            <span class="kpi-label">Por vencerse</span>
+            <span class="kpi-value">{{ porVencer }}</span>
+            <span class="kpi-note">
+              En los próximos {{ warningDays }} días
+            </span>
+          </span>
+          <span
+            class="icon-shape bg-warning bg-opacity-10 text-warning rounded-3"
+          >
+            <i class="fa-solid fa-clock"></i>
+          </span>
+        </button>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <button
+          type="button"
+          class="kpi-tile w-100 h-100"
+          [class.kpi-selected]="filter === 'vencida'"
+          [attr.aria-pressed]="filter === 'vencida'"
+          (click)="toggleFilter('vencida')"
+        >
+          <span class="kpi-text">
+            <span class="kpi-label">Vencidas</span>
+            <span class="kpi-value">{{ vencidas }}</span>
+            <span class="kpi-note">Sin acceso</span>
+          </span>
+          <span
+            class="icon-shape bg-danger bg-opacity-10 text-danger rounded-3"
+          >
+            <i class="fa-solid fa-circle-exclamation"></i>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Cuantos camiones hay detras de lo vencido y lo que esta por vencer.
+         Tres propietarios con un camion y tres con diez son el mismo contador y
+         dos problemas de tamaño distinto. -->
+    @if (vehiclesAtRisk > 0) {
+      <p class="text-body-secondary small mb-3">
+        <i class="fa-solid fa-triangle-exclamation me-2 text-warning"></i>
+        {{ vehiclesAtRisk }}
+        {{ vehiclesAtRisk === 1 ? "vehículo" : "vehículos" }} en suscripciones
+        vencidas o por vencerse.
+      </p>
+    }
+
+    <!-- ================================================================
+         Ingresos por suscripción
+         ================================================================
+         Lo mismo que arriba, pero en pesos: tres propietarios vencidos con un
+         camion cada uno y tres con doce cuentan igual en el contador y no en la
+         factura. La tarifa se nombra debajo para que la cifra se pueda
+         verificar sin salir de la pantalla. -->
+    <div class="revenue-block mb-4">
+      <h6 class="fw-bold mb-3">
+        <i
+          class="fa-solid fa-file-invoice-dollar me-2 text-primary opacity-75"
+        ></i>
+        Ingresos por suscripción
+      </h6>
+
+      <div class="row g-3">
+        <div class="col-12 col-md-4">
+          <div class="kpi-tile h-100">
+            <span class="kpi-text">
+              <span class="kpi-label">Facturación vigente</span>
+              <span class="kpi-value">
+                {{
+                  ingresoVigente | currency: "COP" : "symbol-narrow" : "1.0-0"
+                }}
+              </span>
+              <span class="kpi-note">Al año, de las que están al día</span>
+            </span>
+            <span
+              class="icon-shape bg-success bg-opacity-10 text-success rounded-3"
+            >
+              <i class="fa-solid fa-sack-dollar"></i>
+            </span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <div class="kpi-tile h-100">
+            <span class="kpi-text">
+              <span class="kpi-label">Por renovar</span>
+              <span class="kpi-value">
+                {{
+                  ingresoPorRenovar
+                    | currency: "COP" : "symbol-narrow" : "1.0-0"
+                }}
+              </span>
+              <span class="kpi-note">
+                Incluido en lo vigente; vence en {{ warningDays }} días
+              </span>
+            </span>
+            <span
+              class="icon-shape bg-warning bg-opacity-10 text-warning rounded-3"
+            >
+              <i class="fa-solid fa-rotate"></i>
+            </span>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <div class="kpi-tile h-100">
+            <span class="kpi-text">
+              <span class="kpi-label">Dejado de facturar</span>
+              <span class="kpi-value">
+                {{
+                  ingresoVencido | currency: "COP" : "symbol-narrow" : "1.0-0"
+                }}
+              </span>
+              <span class="kpi-note">Al año, de las vencidas</span>
+            </span>
+            <span
+              class="icon-shape bg-danger bg-opacity-10 text-danger rounded-3"
+            >
+              <i class="fa-solid fa-circle-minus"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-body-secondary small mb-0 mt-2">
+        <i class="fa-solid fa-circle-info me-2 opacity-75"></i>
+        Suscripción anual:
+        {{ tarifaBase | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+        (incluye un vehículo) +
+        {{ tarifaAdicional | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+        por vehículo adicional.
+        @if (sinFecha > 0) {
+          {{ sinFecha }}
+          {{
+            sinFecha === 1
+              ? "suscripción sin fecha no entra"
+              : "suscripciones sin fecha no entran"
+          }}
+          en el cálculo.
+        }
+      </p>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <h6 class="fw-bold mb-0">
+        <i class="fa-solid fa-user-tie me-2 text-primary opacity-75"></i>
+        Detalle por propietario
+      </h6>
+      <span
+        class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill"
+      >
+        {{ visibleRows.length }}
+      </span>
+      @if (filter) {
+        <button
+          type="button"
+          class="btn btn-sm btn-link p-0 ms-auto text-decoration-none"
+          (click)="filter = null"
+        >
+          Ver todos
+        </button>
+      }
+    </div>
+
+    <!-- Movil: una tarjeta por propietario, para no desplazar de lado. -->
+    <div class="owner-cards d-md-none">
+      @for (r of visibleRows; track r.id) {
+        <div class="owner-card">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <span class="fw-semibold text-truncate">{{ r.name }}</span>
+            <span
+              class="badge rounded-pill flex-shrink-0"
+              [ngClass]="badgeClass(r.state)"
+            >
+              {{ r.label }}
+            </span>
+          </div>
+          <!-- Solo el icono y la cifra: los cuatro rotulos ocupaban dos
+               renglones y son los mismos en todas las tarjetas, asi que lo
+               unico que cambiaba de una a otra eran los numeros. El nombre
+               entero queda en `title` y en `aria-label`, que es donde lo
+               necesita quien no ve el icono. -->
+          <div class="d-flex flex-wrap gap-3 mt-2 pt-2 border-top counts">
+            <span
+              class="text-body-secondary"
+              title="Conductores"
+              [attr.aria-label]="r.drivers + ' conductores'"
+            >
+              <i class="fa-solid fa-id-card me-1 opacity-75"></i>
+              <span class="fw-semibold text-body">{{ r.drivers }}</span>
+            </span>
+            <span
+              class="text-body-secondary"
+              title="Vehículos"
+              [attr.aria-label]="r.vehicles + ' vehículos'"
+            >
+              <i class="fa-solid fa-truck me-1 opacity-75"></i>
+              <span class="fw-semibold text-body">{{ r.vehicles }}</span>
+            </span>
+            <span
+              class="text-body-secondary"
+              title="Viajes del periodo"
+              [attr.aria-label]="r.trips + ' viajes en el periodo'"
+            >
+              <i class="fa-solid fa-route me-1 opacity-75"></i>
+              <span class="fw-semibold text-body">{{ r.trips }}</span>
+            </span>
+            <span
+              class="text-body-secondary ms-auto"
+              title="Suscripción al año"
+              [attr.aria-label]="'Suscripción al año'"
+            >
+              <i class="fa-solid fa-file-invoice-dollar me-1 opacity-75"></i>
+              <span class="fw-semibold text-body">
+                {{ r.fee | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+              </span>
+            </span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="table-responsive owner-table d-none d-md-block">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th scope="col">Propietario</th>
+            <th scope="col">Suscripción</th>
+            <th scope="col" class="text-end">Conductores</th>
+            <th scope="col" class="text-end">Vehículos</th>
+            <th scope="col" class="text-end">
+              Viajes
+              <span class="fw-normal text-lowercase">
+                ({{ periodLabel }})
+              </span>
+            </th>
+            <th scope="col" class="text-end">Suscripción / año</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of visibleRows; track r.id) {
+            <tr>
+              <td class="fw-semibold">{{ r.name }}</td>
+              <td>
+                <span
+                  class="badge rounded-pill"
+                  [ngClass]="badgeClass(r.state)"
+                >
+                  {{ r.label }}
+                </span>
+                @if (r.endDate) {
+                  <span class="d-block text-body-secondary end-date">
+                    Hasta {{ r.endDate | date: "d MMM, yyyy" : "UTC" }}
+                  </span>
+                }
+              </td>
+              <td class="text-end">{{ r.drivers }}</td>
+              <td class="text-end">{{ r.vehicles }}</td>
+              <td class="text-end">{{ r.trips }}</td>
+              <td class="text-end text-nowrap fw-semibold">
+                {{ r.fee | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

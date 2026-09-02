@@ -5,43 +5,30 @@
       <div class="d-flex justify-content-between align-items-center mb-1">
         <h1 class="h2 fw-bold mb-0 text-body tracking-tight">Reportes</h1>
         <div class="d-flex align-items-center gap-2">
-          <!-- Alcance de TODAS las graficas. Un solo control: con un selector
-               por tarjeta era posible dejar una en el mes y la de al lado en
-               el ano, invitando a comparar periodos distintos. -->
-          <div
-            class="btn-group btn-group-sm flex-shrink-0"
-            role="group"
-            aria-label="Alcance de los gráficos"
-          >
-            <button
-              type="button"
-              class="btn"
-              [class.btn-primary]="scope === 'mes'"
-              [class.btn-outline-secondary]="scope !== 'mes'"
-              [attr.aria-pressed]="scope === 'mes'"
-              (click)="setScope('mes')"
-            >
-              Mes
-            </button>
-            <button
-              type="button"
-              class="btn"
-              [class.btn-primary]="scope === 'anio'"
-              [class.btn-outline-secondary]="scope !== 'anio'"
-              [attr.aria-pressed]="scope === 'anio'"
-              (click)="setScope('anio')"
-            >
-              Año
-            </button>
-          </div>
+          <!-- Un solo control para TODO lo que hay debajo: las gráficas y el
+               reporte de rentabilidad.
+
+               El botón muestra el periodo en vez de un ícono mudo: si no, el
+               mes solo se leería dentro de los títulos de las gráficas, que
+               se vacían junto con ellas. -->
           <button
             type="button"
-            class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center shadow-sm"
-            style="width: 40px; height: 40px"
+            class="btn btn-light btn-sm rounded-pill period-btn opacity-75 d-flex align-items-center gap-2 shadow-sm px-3 flex-shrink-0"
+            style="height: 40px"
             (click)="showHistoryPanel = true"
-            title="Ver historial"
+            [attr.aria-label]="'Periodo: ' + periodLabel + '. Cambiar periodo'"
+            title="Cambiar periodo"
           >
-            <i class="fa-solid fa-ellipsis-vertical fs-5 text-secondary"></i>
+            <i class="fa-regular fa-calendar text-secondary"></i>
+            <span class="fw-semibold text-body d-none d-sm-inline">
+              {{ periodLabel }}
+            </span>
+            <span class="fw-semibold text-body d-sm-none">
+              {{ periodLabelShort }}
+            </span>
+            <i
+              class="fa-solid fa-chevron-down small text-secondary opacity-50"
+            ></i>
           </button>
         </div>
       </div>
@@ -59,353 +46,461 @@
       <p class="mt-1 text-body-secondary fw-medium">Analizando datos...</p>
     </div>
   } @else {
-    <!-- Active Trips Grid -->
-    @if (activeTrips && activeTrips.length > 0) {
-      <div class="row mb-2">
+    <!-- Selector de vehiculo. Junto al de periodo son los dos controles que
+         acotan TODO lo de abajo: la rentabilidad y las nueve graficas hablan
+         siempre del mismo camion y del mismo mes.
+
+         El rotulo "Vehiculo" lleva la tipografia de las pestañas de abajo, sin
+         su subrayado: es el mismo rango —lo que se elige aqui manda sobre las
+         tres— y como texto menudo no se leia como tal. Las placas siguen
+         siendo botones: se pulsan, no se navegan. -->
+    @if (showVehicleFilter) {
+      <div class="row mb-3">
         <div class="col-12 mx-1">
+          <span class="tab-label">
+            <i class="fa-solid fa-truck me-2"></i>Vehículo
+          </span>
           <div
-            class="d-flex justify-content-between align-items-center mb-3 section-toggle"
-            (click)="activeTripsCollapsed = !activeTripsCollapsed"
-            role="button"
-            onkeypress
+            class="d-flex flex-wrap align-items-center gap-2"
+            role="group"
+            aria-label="Vehículo del tablero"
           >
-            <h5 class="fw-bold mb-0 text-body">
-              <i class="fa-solid fa-route me-2 text-primary"></i>Viajes Activos
-            </h5>
-            <div class="d-flex align-items-center">
-              <span
-                class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill me-3"
+            <!-- La flota entera. Va primero porque es el punto de partida:
+                 cuanto dejo lo mio, y despues de cual. -->
+            <button
+              type="button"
+              class="btn btn-sm plate-chip"
+              [class.btn-primary]="!selectedVehicleLabel"
+              [class.btn-outline-secondary]="selectedVehicleLabel"
+              [attr.aria-pressed]="!selectedVehicleLabel"
+              (click)="selectVehicle(null)"
+            >
+              <i class="fa-solid fa-layer-group me-1"></i>Todos
+            </button>
+            @for (placa of vehicleOptions; track placa) {
+              <button
+                type="button"
+                class="btn btn-sm plate-chip"
+                [class.btn-primary]="placa === selectedVehicleLabel"
+                [class.btn-outline-secondary]="placa !== selectedVehicleLabel"
+                [attr.aria-pressed]="placa === selectedVehicleLabel"
+                (click)="selectVehicle(placa)"
               >
-                {{ activeTrips.length }}
-              </span>
-              <i
-                class="fa-solid fa-chevron-up transition-transform text-secondary opacity-50"
-                [class.rotated]="activeTripsCollapsed"
-              ></i>
-            </div>
+                {{ placa }}
+              </button>
+            }
           </div>
         </div>
       </div>
+    }
 
-      <div
-        [class.d-none]="activeTripsCollapsed"
-        class="row gx-4 gy-2 animate__animated animate__fadeIn mb-4"
-      >
-        @for (item of activeTrips; track item.vehicle.id) {
-          <div class="col-12 col-xl-6">
-            <g-vehicle-trip-exp-card
-              [vehicle]="item.vehicle"
-              [trip]="item.trip"
-              [expenses]="item.expenses"
+    <!-- Las tres secciones, en pestañas. Antes eran tres bloques plegables
+         apilados, y llegar a las graficas obligaba a pasar por la rentabilidad
+         entera o a plegarla a mano cada vez. En pestañas el orden es una
+         eleccion, no un recorrido.
+
+         El orden lo marca la pregunta con la que entra cada rol. Al
+         administrador lo recibe Suscripciones: su trabajo es el estado de la
+         plataforma, y la rentabilidad de un propietario concreto viene despues
+         y solo si lo elige. Al propietario y al conductor los recibe
+         Rentabilidad —cuanto dejo—, con Gastos al lado explicando por que; las
+         graficas son el desglose de las dos. Los viajes en curso van al final
+         en los tres casos: son la operacion del dia, no el resultado del
+         periodo. -->
+    <div class="tabs-wrap mb-4">
+      <ul #tabBar class="nav nav-underline dashboard-tabs mb-0" role="tablist">
+        @if (showSubscriptions) {
+          <li class="nav-item" role="presentation">
+            <button
+              type="button"
+              class="nav-link"
+              role="tab"
+              [class.active]="activeTab === 'suscripciones'"
+              [attr.aria-selected]="activeTab === 'suscripciones'"
+              (click)="activeTab = 'suscripciones'"
             >
-            </g-vehicle-trip-exp-card>
+              <i class="fa-solid fa-id-badge me-2"></i>Suscripciones
+            </button>
+          </li>
+        }
+        @if (showProfitabilityReport) {
+          <li class="nav-item" role="presentation">
+            <button
+              type="button"
+              class="nav-link"
+              role="tab"
+              [class.active]="activeTab === 'rentabilidad'"
+              [attr.aria-selected]="activeTab === 'rentabilidad'"
+              (click)="activeTab = 'rentabilidad'"
+            >
+              <i class="fa-solid fa-sack-dollar me-2"></i>Rentabilidad
+            </button>
+          </li>
+        }
+        @if (showExpensesBeforeCharts) {
+          <li class="nav-item" role="presentation">
+            <button
+              type="button"
+              class="nav-link"
+              role="tab"
+              [class.active]="activeTab === 'gastos'"
+              [attr.aria-selected]="activeTab === 'gastos'"
+              (click)="activeTab = 'gastos'"
+            >
+              <i class="fa-solid fa-money-bill-wave me-2"></i>Gastos
+            </button>
+          </li>
+        }
+        <li class="nav-item" role="presentation">
+          <button
+            type="button"
+            class="nav-link"
+            role="tab"
+            [class.active]="activeTab === 'graficos'"
+            [attr.aria-selected]="activeTab === 'graficos'"
+            (click)="activeTab = 'graficos'"
+          >
+            <i class="fa-solid fa-chart-pie me-2"></i>Gráficos
+          </button>
+        </li>
+        @if (showExpensesAfterCharts) {
+          <li class="nav-item" role="presentation">
+            <button
+              type="button"
+              class="nav-link"
+              role="tab"
+              [class.active]="activeTab === 'gastos'"
+              [attr.aria-selected]="activeTab === 'gastos'"
+              (click)="activeTab = 'gastos'"
+            >
+              <i class="fa-solid fa-money-bill-wave me-2"></i>Gastos
+            </button>
+          </li>
+        }
+        <li class="nav-item" role="presentation">
+          <button
+            type="button"
+            class="nav-link"
+            role="tab"
+            [class.active]="activeTab === 'viajes'"
+            [attr.aria-selected]="activeTab === 'viajes'"
+            (click)="activeTab = 'viajes'"
+          >
+            <i class="fa-solid fa-route me-2"></i>En ruta
+            @if (activeTrips.length) {
+              <span
+                class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-2"
+              >
+                {{ activeTrips.length }}
+              </span>
+            }
+          </button>
+        </li>
+      </ul>
+
+      <!-- Las flechas de los bordes. En movil las cinco pestañas no caben y la
+           barra se desplaza, pero un corte limpio en el borde parece el final,
+           no una lista que sigue. Cada una aparece solo si queda algo en su
+           direccion: al principio solo la derecha, en medio las dos, al final
+           solo la izquierda. Tocarlas empuja la barra. -->
+      @if (tabsMoreLeft) {
+        <button
+          type="button"
+          class="tabs-more tabs-more-start d-md-none"
+          (click)="scrollTabs(-1)"
+          aria-label="Ver pestañas anteriores"
+          title="Ver pestañas anteriores"
+        >
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+      }
+      @if (tabsMoreRight) {
+        <button
+          type="button"
+          class="tabs-more tabs-more-end d-md-none"
+          (click)="scrollTabs(1)"
+          aria-label="Ver más pestañas"
+          title="Ver más pestañas"
+        >
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      }
+    </div>
+
+    <!-- Rentabilidad. Se oculta, no se destruye: el reporte pide su año al
+         crearse, y con `@if` cada ida y vuelta entre pestañas costaria esa
+         peticion y las del detalle por viaje. No tiene canvas, asi que estar
+         en `d-none` no le hace nada. -->
+    @if (showProfitabilityReport) {
+      <div
+        [class.d-none]="activeTab !== 'rentabilidad'"
+        class="animate__animated animate__fadeIn"
+      >
+        <g-profitability-report
+          [year]="selectedYear"
+          [month]="reportMonth"
+          [vehicleKey]="selectedVehicleKey"
+          [ownerId]="reportOwnerId"
+          (vehiclesLoaded)="onReportVehicles($event)"
+        ></g-profitability-report>
+      </div>
+    }
+
+    <!-- Gastos. Se oculta en vez de destruirse por lo mismo que rentabilidad:
+         pide su periodo al crearse. -->
+    @if (showExpensesReport) {
+      <div
+        [class.d-none]="activeTab !== 'gastos'"
+        class="animate__animated animate__fadeIn mb-4"
+      >
+        <g-expenses-report
+          [vehicleIds]="scopedVehicleIds"
+          [year]="selectedYear"
+          [month]="reportMonth"
+          [active]="activeTab === 'gastos'"
+        ></g-expenses-report>
+      </div>
+    }
+
+    <!-- Suscripciones. Aqui si se destruye: no pide nada, se calcula sobre lo
+         que el tablero ya tiene cargado. -->
+    @if (showSubscriptions && activeTab === "suscripciones") {
+      <div class="animate__animated animate__fadeIn mb-4">
+        <g-subscriptions-report
+          [owners]="owners"
+          [tripsByOwnerId]="tripsByOwnerId"
+          [periodLabel]="periodLabel"
+        ></g-subscriptions-report>
+      </div>
+    }
+
+    <!-- En ruta. Aqui si se destruye: son tarjetas sin estado y reconstruirlas
+         no cuesta nada. -->
+    @if (activeTab === "viajes") {
+      <div class="row gx-4 gy-2 animate__animated animate__fadeIn mb-4">
+        @if (activeTrips.length) {
+          @for (item of activeTrips; track item.vehicle.id) {
+            <div class="col-12 col-xl-6">
+              <g-vehicle-trip-exp-card
+                [vehicle]="item.vehicle"
+                [trip]="item.trip"
+                [expenses]="item.expenses"
+              >
+              </g-vehicle-trip-exp-card>
+            </div>
+          }
+        } @else {
+          <div class="col-12">
+            <p class="text-body-secondary small mb-0">
+              No hay viajes en curso.
+            </p>
           </div>
         }
       </div>
     }
 
-    <!-- Charts Grid -->
-    <div class="row mb-2 mt-2">
-      <div class="col-12 mx-1">
-        <div
-          class="d-flex justify-content-between align-items-center mb-3 section-toggle"
-          (click)="chartsCollapsed = !chartsCollapsed"
-          role="button"
-          onkeypress
-        >
-          <h5 class="fw-bold mb-0 text-body">
-            <i class="fa-solid fa-chart-pie me-2 text-primary"></i>Gráficos
-          </h5>
-          <div class="d-flex align-items-center">
-            <i
-              class="fa-solid fa-chevron-up transition-transform text-secondary opacity-50"
-              [class.rotated]="chartsCollapsed"
-            ></i>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div
-      [class.d-none]="chartsCollapsed"
-      class="row g-4 animate__animated animate__fadeIn"
-    >
-      <!-- Chart 1: Viajes por Vehiculo. Una sola grafica con selector
+    <!-- Graficos. Con `@if` y no con `d-none`: un canvas creado dentro de un
+         contenedor oculto nace con tamaño cero, y Chart.js no siempre se
+         recupera al mostrarlo. Creandolo al abrir la pestaña sale ya medido, y
+         reconstruirlo no cuesta ninguna peticion — los datos ya estan en
+         memoria. -->
+    @if (activeTab === "graficos") {
+      <div class="row g-4 animate__animated animate__fadeIn">
+        <!-- Chart 1: Viajes por Vehiculo. Una sola grafica con selector
            Mes/Ano, en lugar de las dos que habia antes.
 
            En alcance de ano comparte fila con "Viajes Mensuales", que es su
            desglose temporal; en alcance de mes esa tarjeta no esta y esta
            ocupa el ancho completo. -->
-      <div class="col-12" [class.col-lg-6]="scope === 'anio'">
-        <div
-          class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
-        >
+        <div class="col-12" [class.col-lg-6]="scope === 'anio'">
           <div
-            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
+            class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
           >
-            <h5 class="fw-bold mb-0">Viajes por {{ groupDimension }}</h5>
-            <i class="fa-solid fa-truck text-primary opacity-50 fs-4"></i>
-          </div>
-          <div class="card-body chart-body p-2 p-md-4">
-            <div class="chart-container" style="height: 300px">
-              <canvas
-                baseChart
-                [data]="tripsByVehicleData"
-                [options]="tripsByVehicleOptions"
-                [type]="tripsByVehicleType"
-                [plugins]="tripsByVehiclePlugins"
-              >
-              </canvas>
+            <div
+              class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
+            >
+              <h5 class="fw-bold mb-0">Viajes por {{ groupDimension }}</h5>
+              <i class="fa-solid fa-truck text-primary opacity-50 fs-4"></i>
             </div>
-            @if (!groupByOwner) {
+            <div class="card-body chart-body p-2 p-md-4">
+              <div class="chart-container" style="height: 300px">
+                <canvas
+                  baseChart
+                  [data]="tripsByVehicleData"
+                  [options]="tripsByVehicleOptions"
+                  [type]="tripsByVehicleType"
+                  [plugins]="tripsByVehiclePlugins"
+                >
+                </canvas>
+              </div>
+              @if (!groupByOwner) {
+                <div
+                  class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
+                >
+                  <span class="text-body-secondary small">
+                    {{
+                      scope === "mes"
+                        ? "Total de viajes en el mes"
+                        : "Total de viajes en el año"
+                    }}
+                  </span>
+                  <span class="fw-bold fs-6">{{ tripsByVehicleTotal }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Viajes Mensuales. En alcance de mes su eje X es el grupo, o sea la
+           misma grafica de arriba, asi que ahi se oculta en lugar de
+           repetirla. Solo existe en el alcance de ano, donde comparte fila con
+           "Viajes por Vehiculo" y aporta la evolucion mes a mes. -->
+        @if (scope === "anio") {
+          <div class="col-12 col-lg-6">
+            <div
+              class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+            >
+              <div
+                class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
+              >
+                <h5 class="fw-bold mb-0">
+                  Viajes Mensuales por {{ groupDimension }}
+                </h5>
+                <i class="fa-solid fa-chart-line text-info opacity-50 fs-4"></i>
+              </div>
+              <div class="card-body chart-body p-2 p-md-4">
+                <div class="chart-container" style="height: 300px">
+                  <canvas
+                    baseChart
+                    [data]="monthlyTripsData"
+                    [options]="monthlyTripsOptions"
+                    [type]="monthlyTripsType"
+                  >
+                  </canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Utilidad neta por vehiculo: barras horizontales divergentes.
+           A la derecha del cero lo que deja utilidad, a la izquierda lo que
+           cuesta. El selector Mes/Ano recalcula sobre los datos ya cargados. -->
+        <div class="col-12">
+          <div
+            class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+          >
+            <div
+              class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
+            >
+              <h5 class="fw-bold mb-0">Utilidad por {{ groupDimension }}</h5>
+              <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                <!-- Escritorio: el texto. Movil: el icono, que lo despliega. -->
+                <span
+                  class="text-body-secondary small text-end d-none d-md-inline"
+                >
+                  {{ scopeHint }}
+                </span>
+                <button
+                  type="button"
+                  class="btn btn-link p-0 border-0 text-body-secondary d-md-none"
+                  [title]="scopeHint"
+                  [attr.aria-label]="scopeHint"
+                  [attr.aria-expanded]="hintCard === 'utilidad'"
+                  (click)="
+                    hintCard = hintCard === 'utilidad' ? null : 'utilidad'
+                  "
+                >
+                  <i class="fa-solid fa-circle-info fs-5"></i>
+                </button>
+                <i
+                  class="fa-solid fa-sack-dollar text-primary opacity-50 fs-4"
+                ></i>
+              </div>
+            </div>
+            <div class="card-body chart-body p-2 p-md-4">
+              @if (hintCard === "utilidad") {
+                <p class="text-body-secondary small d-md-none mb-2">
+                  {{ scopeHint }}
+                </p>
+              }
+              <div
+                class="chart-container"
+                [style.height.px]="vehicleProfitHeight"
+              >
+                <canvas
+                  baseChart
+                  [data]="vehicleProfitData"
+                  [options]="vehicleProfitOptions"
+                  [type]="vehicleProfitType"
+                  [plugins]="vehicleProfitPlugins"
+                  style="cursor: pointer"
+                  (chartClick)="onVehicleProfitClick($event)"
+                >
+                </canvas>
+              </div>
               <div
                 class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
               >
                 <span class="text-body-secondary small">
                   {{
                     scope === "mes"
-                      ? "Total de viajes en el mes"
-                      : "Total de viajes en el año"
+                      ? "Utilidad en el mes"
+                      : "Utilidad en el año"
                   }}
                 </span>
-                <span class="fw-bold fs-6">{{ tripsByVehicleTotal }}</span>
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-
-      <!-- Viajes Mensuales. En alcance de mes su eje X es el grupo, o sea la
-           misma grafica de arriba, asi que ahi se oculta en lugar de
-           repetirla. Solo existe en el alcance de ano, donde comparte fila con
-           "Viajes por Vehiculo" y aporta la evolucion mes a mes. -->
-      @if (scope === "anio") {
-        <div class="col-12 col-lg-6">
-          <div
-            class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
-          >
-            <div
-              class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
-            >
-              <h5 class="fw-bold mb-0">
-                Viajes Mensuales por {{ groupDimension }}
-              </h5>
-              <i class="fa-solid fa-chart-line text-info opacity-50 fs-4"></i>
-            </div>
-            <div class="card-body chart-body p-2 p-md-4">
-              <div class="chart-container" style="height: 300px">
-                <canvas
-                  baseChart
-                  [data]="monthlyTripsData"
-                  [options]="monthlyTripsOptions"
-                  [type]="monthlyTripsType"
+                <span
+                  class="fw-bold fs-6"
+                  [class.text-danger]="vehicleProfitTotal < 0"
                 >
-                </canvas>
+                  {{
+                    vehicleProfitTotal
+                      | currency: "COP" : "symbol-narrow" : "1.0-0"
+                  }}
+                </span>
               </div>
             </div>
           </div>
         </div>
-      }
 
-      <!-- Utilidad neta por vehiculo: barras horizontales divergentes.
-           A la derecha del cero lo que deja utilidad, a la izquierda lo que
-           cuesta. El selector Mes/Ano recalcula sobre los datos ya cargados. -->
-      <div class="col-12">
-        <div
-          class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
-        >
-          <div
-            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
-          >
-            <h5 class="fw-bold mb-0">Utilidad por {{ groupDimension }}</h5>
-            <div class="d-flex align-items-center gap-2 flex-shrink-0">
-              <!-- Escritorio: el texto. Movil: el icono, que lo despliega. -->
-              <span
-                class="text-body-secondary small text-end d-none d-md-inline"
-              >
-                {{ scopeHint }}
-              </span>
-              <button
-                type="button"
-                class="btn btn-link p-0 border-0 text-body-secondary d-md-none"
-                [title]="scopeHint"
-                [attr.aria-label]="scopeHint"
-                [attr.aria-expanded]="hintCard === 'utilidad'"
-                (click)="hintCard = hintCard === 'utilidad' ? null : 'utilidad'"
-              >
-                <i class="fa-solid fa-circle-info fs-5"></i>
-              </button>
-              <i
-                class="fa-solid fa-sack-dollar text-primary opacity-50 fs-4"
-              ></i>
-            </div>
-          </div>
-          <div class="card-body chart-body p-2 p-md-4">
-            @if (hintCard === "utilidad") {
-              <p class="text-body-secondary small d-md-none mb-2">
-                {{ scopeHint }}
-              </p>
-            }
-            <div
-              class="chart-container"
-              [style.height.px]="vehicleProfitHeight"
-            >
-              <canvas
-                baseChart
-                [data]="vehicleProfitData"
-                [options]="vehicleProfitOptions"
-                [type]="vehicleProfitType"
-                [plugins]="vehicleProfitPlugins"
-                style="cursor: pointer"
-                (chartClick)="onVehicleProfitClick($event)"
-              >
-              </canvas>
-            </div>
-            <div
-              class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
-            >
-              <span class="text-body-secondary small">
-                {{
-                  scope === "mes" ? "Utilidad en el mes" : "Utilidad en el año"
-                }}
-              </span>
-              <span
-                class="fw-bold fs-6"
-                [class.text-danger]="vehicleProfitTotal < 0"
-              >
-                {{
-                  vehicleProfitTotal
-                    | currency: "COP" : "symbol-narrow" : "1.0-0"
-                }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Utilidad Mensual. En alcance de mes su eje X es el grupo, o sea la
+        <!-- Utilidad Mensual. En alcance de mes su eje X es el grupo, o sea la
            misma grafica que "Utilidad por Vehiculo", asi que se oculta ahi en
            lugar de repetirla. Propietario y conductor tampoco la ven en el
            alcance de ano: su desglose temporal lo dan las tarjetas de detalle
            que se abren al tocar una barra. -->
-      @if (scope === "anio" && groupByOwner) {
-        <div class="col-12">
-          <div
-            class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
-          >
+        @if (scope === "anio" && groupByOwner) {
+          <div class="col-12">
             <div
-              class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
+              class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
             >
-              <h5 class="fw-bold mb-0">
-                Utilidad Mensual por {{ groupDimension }}
-              </h5>
-              <i
-                class="fa-solid fa-chart-area text-success opacity-50 fs-4"
-              ></i>
-            </div>
-            <div class="card-body chart-body p-2 p-md-4">
-              <div class="chart-container" style="height: 350px">
-                <canvas
-                  baseChart
-                  [data]="monthlyProfitData"
-                  [options]="monthlyProfitOptions"
-                  [type]="monthlyProfitType"
-                >
-                </canvas>
+              <div
+                class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
+              >
+                <h5 class="fw-bold mb-0">
+                  Utilidad Mensual por {{ groupDimension }}
+                </h5>
+                <i
+                  class="fa-solid fa-chart-area text-success opacity-50 fs-4"
+                ></i>
+              </div>
+              <div class="card-body chart-body p-2 p-md-4">
+                <div class="chart-container" style="height: 350px">
+                  <canvas
+                    baseChart
+                    [data]="monthlyProfitData"
+                    [options]="monthlyProfitOptions"
+                    [type]="monthlyProfitType"
+                  >
+                  </canvas>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      }
+        }
 
-      <!-- Ingresos vs Egresos por Vehiculo. Selector Mes/Ano: el eje X es
+        <!-- Ingresos vs Egresos por Vehiculo. Selector Mes/Ano: el eje X es
            siempre la placa, el alcance solo cambia la ventana acumulada. El
            periodo se nombra en el titulo del canvas, no en el encabezado. -->
-      <div class="col-12">
-        <div
-          class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
-        >
-          <div
-            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
-          >
-            <h5 class="fw-bold mb-0">
-              Ingresos vs Egresos por {{ groupDimension }}
-            </h5>
-            <div class="d-flex align-items-center gap-2 flex-shrink-0">
-              <!-- Escritorio: el texto. Movil: el icono, que lo despliega. -->
-              <span
-                class="text-body-secondary small text-end d-none d-md-inline"
-              >
-                {{ scopeHint }}
-              </span>
-              <button
-                type="button"
-                class="btn btn-link p-0 border-0 text-body-secondary d-md-none"
-                [title]="scopeHint"
-                [attr.aria-label]="scopeHint"
-                [attr.aria-expanded]="hintCard === 'ingEgrVeh'"
-                (click)="
-                  hintCard = hintCard === 'ingEgrVeh' ? null : 'ingEgrVeh'
-                "
-              >
-                <i class="fa-solid fa-circle-info fs-5"></i>
-              </button>
-              <i
-                class="fa-solid fa-file-invoice-dollar text-success opacity-50 fs-4"
-              ></i>
-            </div>
-          </div>
-          <div class="card-body chart-body p-2 p-md-4">
-            @if (hintCard === "ingEgrVeh") {
-              <p class="text-body-secondary small d-md-none mb-2">
-                {{ scopeHint }}
-              </p>
-            }
-            <div
-              class="chart-container"
-              [style.height.px]="monthVehicleFinHeight"
-            >
-              <canvas
-                baseChart
-                [data]="monthVehicleFinData"
-                [options]="monthVehicleFinOptions"
-                [type]="monthVehicleFinType"
-                [plugins]="monthVehicleFinPlugins"
-                style="cursor: pointer"
-                (chartClick)="onMonthVehicleFinClick($event)"
-              >
-              </canvas>
-            </div>
-            <div
-              class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
-            >
-              <span class="text-body-secondary small">Total ingresos</span>
-              <span class="fw-bold">
-                {{
-                  monthVehicleFinIncomeTotal
-                    | currency: "COP" : "symbol-narrow" : "1.0-0"
-                }}
-              </span>
-            </div>
-            <div
-              class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
-            >
-              <span class="text-body-secondary small">Total gastos</span>
-              <span class="fw-bold text-danger">
-                {{
-                  monthVehicleFinExpenseTotal
-                    | currency: "COP" : "symbol-narrow" : "1.0-0"
-                }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Detalle: Utilidad Mensual del grupo seleccionado. Solo existe en el
-           alcance de ano y solo tras tocar una barra de la grafica anterior;
-           volver a tocar esa misma barra la cierra. -->
-      @if (scope === "anio" && selectedProfitGroup) {
         <div class="col-12">
           <div
             class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
@@ -414,364 +509,60 @@
               class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
             >
               <h5 class="fw-bold mb-0">
-                Utilidad Mensual del {{ groupDimension }}
-                {{ selectedProfitGroup }}
+                Ingresos vs Egresos por {{ groupDimension }}
               </h5>
-              <button
-                type="button"
-                class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
-                style="width: 32px; height: 32px"
-                (click)="selectedProfitGroup = null"
-                title="Cerrar detalle"
-              >
-                <i class="fa-solid fa-xmark text-secondary"></i>
-              </button>
+              <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                <!-- Escritorio: el texto. Movil: el icono, que lo despliega. -->
+                <span
+                  class="text-body-secondary small text-end d-none d-md-inline"
+                >
+                  {{ scopeHint }}
+                </span>
+                <button
+                  type="button"
+                  class="btn btn-link p-0 border-0 text-body-secondary d-md-none"
+                  [title]="scopeHint"
+                  [attr.aria-label]="scopeHint"
+                  [attr.aria-expanded]="hintCard === 'ingEgrVeh'"
+                  (click)="
+                    hintCard = hintCard === 'ingEgrVeh' ? null : 'ingEgrVeh'
+                  "
+                >
+                  <i class="fa-solid fa-circle-info fs-5"></i>
+                </button>
+                <i
+                  class="fa-solid fa-file-invoice-dollar text-success opacity-50 fs-4"
+                ></i>
+              </div>
             </div>
             <div class="card-body chart-body p-2 p-md-4">
+              @if (hintCard === "ingEgrVeh") {
+                <p class="text-body-secondary small d-md-none mb-2">
+                  {{ scopeHint }}
+                </p>
+              }
               <div
                 class="chart-container"
-                [style.height.px]="monthProfitDetailHeight"
+                [style.height.px]="monthVehicleFinHeight"
               >
                 <canvas
                   baseChart
-                  [data]="monthProfitDetailData"
-                  [options]="monthProfitDetailOptions"
-                  [type]="monthProfitDetailType"
-                  [plugins]="monthProfitDetailPlugins"
+                  [data]="monthVehicleFinData"
+                  [options]="monthVehicleFinOptions"
+                  [type]="monthVehicleFinType"
+                  [plugins]="monthVehicleFinPlugins"
+                  style="cursor: pointer"
+                  (chartClick)="onMonthVehicleFinClick($event)"
                 >
                 </canvas>
               </div>
-              <!-- Ingresos menos los dos tipos de gasto, igual que en las
-                   tarjetas del alcance de mes. Las tres lineas restan hasta la
-                   utilidad del ano, que es la barra desde la que se abrio. -->
-              <div
-                class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
-              >
-                <span class="text-body-secondary small">
-                  Ingresos (flete)
-                </span>
-                <span class="fw-bold">
-                  {{
-                    monthProfitFreight
-                      | currency: "COP" : "symbol-narrow" : "1.0-0"
-                  }}
-                </span>
-              </div>
-              <div
-                class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
-              >
-                <span class="text-body-secondary small">
-                  Gastos de viajes
-                </span>
-                <span class="fw-bold text-danger">
-                  -{{
-                    monthProfitTripExpenses
-                      | currency: "COP" : "symbol-narrow" : "1.0-0"
-                  }}
-                </span>
-              </div>
-              <div
-                class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
-              >
-                <span class="text-body-secondary small">
-                  Gastos de mantenimiento
-                </span>
-                <span class="fw-bold text-danger">
-                  -{{
-                    monthProfitOtherExpenses
-                      | currency: "COP" : "symbol-narrow" : "1.0-0"
-                  }}
-                </span>
-              </div>
-              <div
-                class="d-flex justify-content-between align-items-baseline gap-2 mt-1 pt-3 border-top"
-              >
-                <span class="text-body-secondary small">
-                  Utilidad del año
-                </span>
-                <span
-                  class="fw-bold fs-6"
-                  [class.text-danger]="monthProfitDetailTotal < 0"
-                >
-                  {{
-                    monthProfitDetailTotal
-                      | currency: "COP" : "symbol-narrow" : "1.0-0"
-                  }}
-                </span>
-              </div>
-              <!-- Maximo, minimo y promedio sobre los meses CON movimiento:
-                   contar los meses parados dejaria el minimo en cero y hundiria
-                   el promedio. -->
-              <div class="row g-2 mt-1 pt-3 border-top">
-                <div class="col-12 col-sm-4">
-                  <div class="text-body-secondary small">
-                    Utilidad máxima ({{ monthProfitStats.maxLabel }})
-                  </div>
-                  <div
-                    class="fw-bold"
-                    [class.text-danger]="monthProfitStats.max < 0"
-                  >
-                    {{
-                      monthProfitStats.max
-                        | currency: "COP" : "symbol-narrow" : "1.0-0"
-                    }}
-                  </div>
-                </div>
-                <div class="col-12 col-sm-4">
-                  <div class="text-body-secondary small">
-                    Utilidad mínima ({{ monthProfitStats.minLabel }})
-                  </div>
-                  <div
-                    class="fw-bold"
-                    [class.text-danger]="monthProfitStats.min < 0"
-                  >
-                    {{
-                      monthProfitStats.min
-                        | currency: "COP" : "symbol-narrow" : "1.0-0"
-                    }}
-                  </div>
-                </div>
-                <div class="col-12 col-sm-4">
-                  <div class="text-body-secondary small">
-                    Utilidad promedio ({{ monthProfitStats.n }}
-                    {{ monthProfitStats.n === 1 ? "mes" : "meses" }})
-                  </div>
-                  <div
-                    class="fw-bold"
-                    [class.text-danger]="monthProfitStats.avg < 0"
-                  >
-                    {{
-                      monthProfitStats.avg
-                        | currency: "COP" : "symbol-narrow" : "1.0-0"
-                    }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- Detalle: Utilidad por Viaje. El gemelo del anterior para el alcance
-           de mes; se abre y se cierra con la misma barra. -->
-      @if (scope === "mes" && selectedProfitGroup) {
-        <div class="col-12">
-          <div
-            class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
-          >
-            <div
-              class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
-            >
-              <h5 class="fw-bold mb-0">
-                Utilidad por Viaje del {{ groupDimension }}
-                {{ selectedProfitGroup }}
-              </h5>
-              <button
-                type="button"
-                class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
-                style="width: 32px; height: 32px"
-                (click)="selectedProfitGroup = null"
-                title="Cerrar detalle"
-              >
-                <i class="fa-solid fa-xmark text-secondary"></i>
-              </button>
-            </div>
-            <div class="card-body chart-body p-2 p-md-4">
-              @if (detailLoading) {
-                <p
-                  class="text-body-secondary small mb-0 d-flex align-items-center gap-2"
-                >
-                  <span
-                    class="spinner-border spinner-border-sm"
-                    aria-hidden="true"
-                  ></span>
-                  Cargando el detalle de {{ currentMonthName }}...
-                </p>
-              } @else if (tripProfitDetailData.labels?.length) {
-                <div
-                  class="chart-container"
-                  [style.height.px]="tripProfitDetailHeight"
-                >
-                  <canvas
-                    baseChart
-                    [data]="tripProfitDetailData"
-                    [options]="tripProfitDetailOptions"
-                    [type]="tripProfitDetailType"
-                    [plugins]="tripProfitDetailPlugins"
-                  >
-                  </canvas>
-                </div>
-              } @else {
-                <p class="text-body-secondary small mb-0">
-                  Sin viajes en {{ currentMonthName }}.
-                </p>
-              }
-              <!-- Ingresos menos los dos tipos de gasto. Las tres lineas
-                   restan exactamente hasta "Utilidad del mes", que a su vez es
-                   la barra desde la que se abrio el detalle. -->
-              <div
-                class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
-              >
-                <span class="text-body-secondary small">
-                  Ingresos (flete)
-                </span>
-                <span class="fw-bold">
-                  {{
-                    tripProfitFreight
-                      | currency: "COP" : "symbol-narrow" : "1.0-0"
-                  }}
-                </span>
-              </div>
-              <div
-                class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
-              >
-                <span class="text-body-secondary small">
-                  Gastos de viajes
-                </span>
-                <span class="fw-bold text-danger">
-                  -{{
-                    tripProfitTripExpenses
-                      | currency: "COP" : "symbol-narrow" : "1.0-0"
-                  }}
-                </span>
-              </div>
-              <div
-                class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
-              >
-                <span class="text-body-secondary small">
-                  Gastos de mantenimiento
-                </span>
-                <span class="fw-bold text-danger">
-                  -{{
-                    tripProfitOtherExpenses
-                      | currency: "COP" : "symbol-narrow" : "1.0-0"
-                  }}
-                </span>
-              </div>
-              <div
-                class="d-flex justify-content-between align-items-baseline gap-2 mt-1 pt-3 border-top"
-              >
-                <span class="text-body-secondary small">
-                  Utilidad del mes
-                </span>
-                <span
-                  class="fw-bold fs-6"
-                  [class.text-danger]="tripProfitMonthTotal < 0"
-                >
-                  {{
-                    tripProfitMonthTotal
-                      | currency: "COP" : "symbol-narrow" : "1.0-0"
-                  }}
-                </span>
-              </div>
-              <div class="row g-2 mt-1 pt-3 border-top">
-                <div class="col-12 col-sm-4">
-                  <div class="text-body-secondary small">
-                    Utilidad máxima ({{ tripProfitStats.maxLabel }})
-                  </div>
-                  <div
-                    class="fw-bold"
-                    [class.text-danger]="tripProfitStats.max < 0"
-                  >
-                    {{
-                      tripProfitStats.max
-                        | currency: "COP" : "symbol-narrow" : "1.0-0"
-                    }}
-                  </div>
-                </div>
-                <div class="col-12 col-sm-4">
-                  <div class="text-body-secondary small">
-                    Utilidad mínima ({{ tripProfitStats.minLabel }})
-                  </div>
-                  <div
-                    class="fw-bold"
-                    [class.text-danger]="tripProfitStats.min < 0"
-                  >
-                    {{
-                      tripProfitStats.min
-                        | currency: "COP" : "symbol-narrow" : "1.0-0"
-                    }}
-                  </div>
-                </div>
-                <div class="col-12 col-sm-4">
-                  <div class="text-body-secondary small">
-                    Utilidad promedio ({{ tripProfitStats.n }}
-                    {{ tripProfitStats.n === 1 ? "viaje" : "viajes" }})
-                  </div>
-                  <div
-                    class="fw-bold"
-                    [class.text-danger]="tripProfitStats.avg < 0"
-                  >
-                    {{
-                      tripProfitStats.avg
-                        | currency: "COP" : "symbol-narrow" : "1.0-0"
-                    }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- Ingresos vs Egresos. Es un detalle de "Utilidad por Vehiculo": solo
-           aparece tras tocar una de sus barras, y se cierra con ella. -->
-      @if (selectedProfitGroup) {
-        <div class="col-12">
-          <div
-            class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
-          >
-            <div
-              class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
-            >
-              <h5 class="fw-bold mb-0">
-                Ingresos vs Egresos por
-                {{ scope === "mes" ? "Viaje" : "Mes" }} del {{ groupDimension }}
-                {{ selectedProfitGroup }}
-              </h5>
-              <button
-                type="button"
-                class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
-                style="width: 32px; height: 32px"
-                (click)="selectedProfitGroup = null"
-                title="Cerrar detalle"
-              >
-                <i class="fa-solid fa-xmark text-secondary"></i>
-              </button>
-            </div>
-            <div class="card-body chart-body p-2 p-md-4">
-              @if (detailLoading) {
-                <p
-                  class="text-body-secondary small mb-0 d-flex align-items-center gap-2"
-                >
-                  <span
-                    class="spinner-border spinner-border-sm"
-                    aria-hidden="true"
-                  ></span>
-                  Cargando el detalle de {{ currentMonthName }}...
-                </p>
-              } @else {
-                <div
-                  class="chart-container"
-                  [style.height.px]="financialHeight"
-                >
-                  <canvas
-                    baseChart
-                    [data]="financialData"
-                    [options]="financialOptions"
-                    [type]="financialType"
-                    [plugins]="financialPlugins"
-                  >
-                  </canvas>
-                </div>
-              }
               <div
                 class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
               >
                 <span class="text-body-secondary small">Total ingresos</span>
                 <span class="fw-bold">
                   {{
-                    financialIncomeTotal
+                    monthVehicleFinIncomeTotal
                       | currency: "COP" : "symbol-narrow" : "1.0-0"
                   }}
                 </span>
@@ -782,41 +573,7 @@
                 <span class="text-body-secondary small">Total gastos</span>
                 <span class="fw-bold text-danger">
                   {{
-                    financialExpenseTotal
-                      | currency: "COP" : "symbol-narrow" : "1.0-0"
-                  }}
-                </span>
-              </div>
-              <!-- No esta en las barras: no pertenece a ningun viaje. Pero
-                     si entra en la utilidad, y es lo que hace que esta tarjeta
-                     cierre igual que "Utilidad por Viaje". -->
-              <div
-                class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
-              >
-                <span class="text-body-secondary small">
-                  Gastos de mantenimiento
-                </span>
-                <span class="fw-bold text-danger">
-                  {{
-                    financialOtherExpenses
-                      | currency: "COP" : "symbol-narrow" : "1.0-0"
-                  }}
-                </span>
-              </div>
-              <div
-                class="d-flex justify-content-between align-items-baseline gap-2 mt-1 pt-3 border-top"
-              >
-                <span class="text-body-secondary small">
-                  {{
-                    scope === "mes" ? "Utilidad del mes" : "Utilidad del año"
-                  }}
-                </span>
-                <span
-                  class="fw-bold fs-6"
-                  [class.text-danger]="financialProfitTotal < 0"
-                >
-                  {{
-                    financialProfitTotal
+                    monthVehicleFinExpenseTotal
                       | currency: "COP" : "symbol-narrow" : "1.0-0"
                   }}
                 </span>
@@ -824,49 +581,493 @@
             </div>
           </div>
         </div>
-      }
 
-      <!-- Chart 4: Mantenimiento por Vehiculo. Barras horizontales con
-           selector Mes/Ano; el periodo se nombra en el titulo del canvas. -->
-      <div class="col-12">
-        <div
-          class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
-        >
-          <div
-            class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
-          >
-            <h5 class="fw-bold mb-0">Mantenimiento por {{ groupDimension }}</h5>
-            <i class="fa-solid fa-wrench text-warning opacity-50 fs-4"></i>
-          </div>
-          <div class="card-body chart-body p-2 p-md-4">
-            <div class="chart-container" [style.height.px]="maintenanceHeight">
-              <canvas
-                baseChart
-                [data]="maintenanceData"
-                [options]="maintenanceOptions"
-                [type]="maintenanceType"
-                [plugins]="maintenancePlugins"
-              >
-              </canvas>
-            </div>
+        <!-- Detalle: Utilidad Mensual del grupo seleccionado. Solo existe en el
+           alcance de ano y solo tras tocar una barra de la grafica anterior;
+           volver a tocar esa misma barra la cierra. -->
+        @if (scope === "anio" && selectedProfitGroup) {
+          <div class="col-12">
             <div
-              class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
+              class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
             >
-              <span class="text-body-secondary small">
-                Total mantenimiento
-              </span>
-              <span class="fw-bold fs-6">
-                {{
-                  maintenanceTotal | currency: "COP" : "symbol-narrow" : "1.0-0"
-                }}
-              </span>
+              <div
+                class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
+              >
+                <h5 class="fw-bold mb-0">
+                  Utilidad Mensual del {{ groupDimension }}
+                  {{ selectedProfitGroup }}
+                </h5>
+                <button
+                  type="button"
+                  class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
+                  style="width: 32px; height: 32px"
+                  (click)="selectedProfitGroup = null"
+                  title="Cerrar detalle"
+                >
+                  <i class="fa-solid fa-xmark text-secondary"></i>
+                </button>
+              </div>
+              <div class="card-body chart-body p-2 p-md-4">
+                <div
+                  class="chart-container"
+                  [style.height.px]="monthProfitDetailHeight"
+                >
+                  <canvas
+                    baseChart
+                    [data]="monthProfitDetailData"
+                    [options]="monthProfitDetailOptions"
+                    [type]="monthProfitDetailType"
+                    [plugins]="monthProfitDetailPlugins"
+                  >
+                  </canvas>
+                </div>
+                <!-- Ingresos menos los dos tipos de gasto, igual que en las
+                   tarjetas del alcance de mes. Las tres lineas restan hasta la
+                   utilidad del ano, que es la barra desde la que se abrio. -->
+                <div
+                  class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
+                >
+                  <span class="text-body-secondary small">
+                    Ingresos (flete)
+                  </span>
+                  <span class="fw-bold">
+                    {{
+                      monthProfitFreight
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </span>
+                </div>
+                <div
+                  class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
+                >
+                  <span class="text-body-secondary small">
+                    Gastos de viajes
+                  </span>
+                  <span class="fw-bold text-danger">
+                    -{{
+                      monthProfitTripExpenses
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </span>
+                </div>
+                <div
+                  class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
+                >
+                  <span class="text-body-secondary small">
+                    Gastos de mantenimiento
+                  </span>
+                  <span class="fw-bold text-danger">
+                    -{{
+                      monthProfitOtherExpenses
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </span>
+                </div>
+                <div
+                  class="d-flex justify-content-between align-items-baseline gap-2 mt-1 pt-3 border-top"
+                >
+                  <span class="text-body-secondary small">
+                    Utilidad del año
+                  </span>
+                  <span
+                    class="fw-bold fs-6"
+                    [class.text-danger]="monthProfitDetailTotal < 0"
+                  >
+                    {{
+                      monthProfitDetailTotal
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </span>
+                </div>
+                <!-- Maximo, minimo y promedio sobre los meses CON movimiento:
+                   contar los meses parados dejaria el minimo en cero y hundiria
+                   el promedio. -->
+                <div class="row g-2 mt-1 pt-3 border-top">
+                  <div class="col-12 col-sm-4">
+                    <div class="text-body-secondary small">
+                      Utilidad máxima ({{ monthProfitStats.maxLabel }})
+                    </div>
+                    <div
+                      class="fw-bold"
+                      [class.text-danger]="monthProfitStats.max < 0"
+                    >
+                      {{
+                        monthProfitStats.max
+                          | currency: "COP" : "symbol-narrow" : "1.0-0"
+                      }}
+                    </div>
+                  </div>
+                  <div class="col-12 col-sm-4">
+                    <div class="text-body-secondary small">
+                      Utilidad mínima ({{ monthProfitStats.minLabel }})
+                    </div>
+                    <div
+                      class="fw-bold"
+                      [class.text-danger]="monthProfitStats.min < 0"
+                    >
+                      {{
+                        monthProfitStats.min
+                          | currency: "COP" : "symbol-narrow" : "1.0-0"
+                      }}
+                    </div>
+                  </div>
+                  <div class="col-12 col-sm-4">
+                    <div class="text-body-secondary small">
+                      Utilidad promedio ({{ monthProfitStats.n }}
+                      {{ monthProfitStats.n === 1 ? "mes" : "meses" }})
+                    </div>
+                    <div
+                      class="fw-bold"
+                      [class.text-danger]="monthProfitStats.avg < 0"
+                    >
+                      {{
+                        monthProfitStats.avg
+                          | currency: "COP" : "symbol-narrow" : "1.0-0"
+                      }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Detalle: Utilidad por Viaje. El gemelo del anterior para el alcance
+           de mes; se abre y se cierra con la misma barra. -->
+        @if (scope === "mes" && selectedProfitGroup) {
+          <div class="col-12">
+            <div
+              class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+            >
+              <div
+                class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
+              >
+                <h5 class="fw-bold mb-0">
+                  Utilidad por Viaje del {{ groupDimension }}
+                  {{ selectedProfitGroup }}
+                </h5>
+                <button
+                  type="button"
+                  class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
+                  style="width: 32px; height: 32px"
+                  (click)="selectedProfitGroup = null"
+                  title="Cerrar detalle"
+                >
+                  <i class="fa-solid fa-xmark text-secondary"></i>
+                </button>
+              </div>
+              <div class="card-body chart-body p-2 p-md-4">
+                @if (detailLoading) {
+                  <p
+                    class="text-body-secondary small mb-0 d-flex align-items-center gap-2"
+                  >
+                    <span
+                      class="spinner-border spinner-border-sm"
+                      aria-hidden="true"
+                    ></span>
+                    Cargando el detalle de {{ currentMonthName }}...
+                  </p>
+                } @else if (tripProfitDetailData.labels?.length) {
+                  <div
+                    class="chart-container"
+                    [style.height.px]="tripProfitDetailHeight"
+                  >
+                    <canvas
+                      baseChart
+                      [data]="tripProfitDetailData"
+                      [options]="tripProfitDetailOptions"
+                      [type]="tripProfitDetailType"
+                      [plugins]="tripProfitDetailPlugins"
+                    >
+                    </canvas>
+                  </div>
+                } @else {
+                  <p class="text-body-secondary small mb-0">
+                    Sin viajes en {{ currentMonthName }}.
+                  </p>
+                }
+                <!-- Ingresos menos los dos tipos de gasto. Las tres lineas
+                   restan exactamente hasta "Utilidad del mes", que a su vez es
+                   la barra desde la que se abrio el detalle. -->
+                <div
+                  class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
+                >
+                  <span class="text-body-secondary small">
+                    Ingresos (flete)
+                  </span>
+                  <span class="fw-bold">
+                    {{
+                      tripProfitFreight
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </span>
+                </div>
+                <div
+                  class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
+                >
+                  <span class="text-body-secondary small">
+                    Gastos de viajes
+                  </span>
+                  <span class="fw-bold text-danger">
+                    -{{
+                      tripProfitTripExpenses
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </span>
+                </div>
+                <div
+                  class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
+                >
+                  <span class="text-body-secondary small">
+                    Gastos de mantenimiento
+                  </span>
+                  <span class="fw-bold text-danger">
+                    -{{
+                      tripProfitOtherExpenses
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </span>
+                </div>
+                <div
+                  class="d-flex justify-content-between align-items-baseline gap-2 mt-1 pt-3 border-top"
+                >
+                  <span class="text-body-secondary small">
+                    Utilidad del mes
+                  </span>
+                  <span
+                    class="fw-bold fs-6"
+                    [class.text-danger]="tripProfitMonthTotal < 0"
+                  >
+                    {{
+                      tripProfitMonthTotal
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </span>
+                </div>
+                <div class="row g-2 mt-1 pt-3 border-top">
+                  <div class="col-12 col-sm-4">
+                    <div class="text-body-secondary small">
+                      Utilidad máxima ({{ tripProfitStats.maxLabel }})
+                    </div>
+                    <div
+                      class="fw-bold"
+                      [class.text-danger]="tripProfitStats.max < 0"
+                    >
+                      {{
+                        tripProfitStats.max
+                          | currency: "COP" : "symbol-narrow" : "1.0-0"
+                      }}
+                    </div>
+                  </div>
+                  <div class="col-12 col-sm-4">
+                    <div class="text-body-secondary small">
+                      Utilidad mínima ({{ tripProfitStats.minLabel }})
+                    </div>
+                    <div
+                      class="fw-bold"
+                      [class.text-danger]="tripProfitStats.min < 0"
+                    >
+                      {{
+                        tripProfitStats.min
+                          | currency: "COP" : "symbol-narrow" : "1.0-0"
+                      }}
+                    </div>
+                  </div>
+                  <div class="col-12 col-sm-4">
+                    <div class="text-body-secondary small">
+                      Utilidad promedio ({{ tripProfitStats.n }}
+                      {{ tripProfitStats.n === 1 ? "viaje" : "viajes" }})
+                    </div>
+                    <div
+                      class="fw-bold"
+                      [class.text-danger]="tripProfitStats.avg < 0"
+                    >
+                      {{
+                        tripProfitStats.avg
+                          | currency: "COP" : "symbol-narrow" : "1.0-0"
+                      }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Ingresos vs Egresos. Es un detalle de "Utilidad por Vehiculo": solo
+           aparece tras tocar una de sus barras, y se cierra con ella. -->
+        @if (selectedProfitGroup) {
+          <div class="col-12">
+            <div
+              class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+            >
+              <div
+                class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
+              >
+                <h5 class="fw-bold mb-0">
+                  Ingresos vs Egresos por
+                  {{ scope === "mes" ? "Viaje" : "Mes" }} del
+                  {{ groupDimension }}
+                  {{ selectedProfitGroup }}
+                </h5>
+                <button
+                  type="button"
+                  class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
+                  style="width: 32px; height: 32px"
+                  (click)="selectedProfitGroup = null"
+                  title="Cerrar detalle"
+                >
+                  <i class="fa-solid fa-xmark text-secondary"></i>
+                </button>
+              </div>
+              <div class="card-body chart-body p-2 p-md-4">
+                @if (detailLoading) {
+                  <p
+                    class="text-body-secondary small mb-0 d-flex align-items-center gap-2"
+                  >
+                    <span
+                      class="spinner-border spinner-border-sm"
+                      aria-hidden="true"
+                    ></span>
+                    Cargando el detalle de {{ currentMonthName }}...
+                  </p>
+                } @else {
+                  <div
+                    class="chart-container"
+                    [style.height.px]="financialHeight"
+                  >
+                    <canvas
+                      baseChart
+                      [data]="financialData"
+                      [options]="financialOptions"
+                      [type]="financialType"
+                      [plugins]="financialPlugins"
+                    >
+                    </canvas>
+                  </div>
+                }
+                <div
+                  class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
+                >
+                  <span class="text-body-secondary small">Total ingresos</span>
+                  <span class="fw-bold">
+                    {{
+                      financialIncomeTotal
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </span>
+                </div>
+                <div
+                  class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
+                >
+                  <span class="text-body-secondary small">Total gastos</span>
+                  <span class="fw-bold text-danger">
+                    {{
+                      financialExpenseTotal
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </span>
+                </div>
+                <!-- No esta en las barras: no pertenece a ningun viaje. Pero
+                     si entra en la utilidad, y es lo que hace que esta tarjeta
+                     cierre igual que "Utilidad por Viaje". -->
+                <div
+                  class="d-flex justify-content-between align-items-baseline gap-2 mt-1"
+                >
+                  <span class="text-body-secondary small">
+                    Gastos de mantenimiento
+                  </span>
+                  <span class="fw-bold text-danger">
+                    {{
+                      financialOtherExpenses
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </span>
+                </div>
+                <div
+                  class="d-flex justify-content-between align-items-baseline gap-2 mt-1 pt-3 border-top"
+                >
+                  <span class="text-body-secondary small">
+                    {{
+                      scope === "mes" ? "Utilidad del mes" : "Utilidad del año"
+                    }}
+                  </span>
+                  <span
+                    class="fw-bold fs-6"
+                    [class.text-danger]="financialProfitTotal < 0"
+                  >
+                    {{
+                      financialProfitTotal
+                        | currency: "COP" : "symbol-narrow" : "1.0-0"
+                    }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Chart 4: Mantenimiento por Vehiculo. Barras horizontales con
+           selector Mes/Ano; el periodo se nombra en el titulo del canvas. -->
+        <div class="col-12">
+          <div
+            class="card chart-card shadow-sm rounded-4 h-100 overflow-hidden bg-body"
+          >
+            <div
+              class="card-header bg-transparent border-0 p-2 p-md-4 pb-0 d-flex justify-content-between align-items-center gap-2"
+            >
+              <h5 class="fw-bold mb-0">
+                Mantenimiento por {{ groupDimension }}
+              </h5>
+              <i class="fa-solid fa-wrench text-warning opacity-50 fs-4"></i>
+            </div>
+            <div class="card-body chart-body p-2 p-md-4">
+              <div
+                class="chart-container"
+                [style.height.px]="maintenanceHeight"
+              >
+                <canvas
+                  baseChart
+                  [data]="maintenanceData"
+                  [options]="maintenanceOptions"
+                  [type]="maintenanceType"
+                  [plugins]="maintenancePlugins"
+                >
+                </canvas>
+              </div>
+              <div
+                class="d-flex justify-content-between align-items-baseline gap-2 mt-2 pt-3 border-top"
+              >
+                <span class="text-body-secondary small">
+                  Total mantenimiento
+                </span>
+                <span class="fw-bold fs-6">
+                  {{
+                    maintenanceTotal
+                      | currency: "COP" : "symbol-narrow" : "1.0-0"
+                  }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    }
   }
 </div>
+
+<!-- Volver arriba. Solo en Reportes -->
+@if (showScrollTop) {
+  <button
+    type="button"
+    class="btn btn-primary scroll-top-btn"
+    (click)="scrollToTop()"
+    title="Volver al inicio"
+    aria-label="Volver al inicio de la página"
+  >
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+}
 
 <!-- History Offcanvas -->
 <div
@@ -915,6 +1116,20 @@
       </button>
     </div>
 
+    <!-- Todo el año. Es el antiguo botón "Año" de la cabecera, traído aquí:
+         elegir el alcance y elegir el mes son la misma decisión —qué periodo
+         se mira—, y separarlas en dos controles dejaba estados que no se
+         podían leer de un vistazo. -->
+    <button
+      type="button"
+      class="btn w-100 py-2 rounded-3 month-btn shadow-sm mb-2"
+      [class.btn-primary]="scope === 'anio' && browsingYear === selectedYear"
+      [class.btn-light]="!(scope === 'anio' && browsingYear === selectedYear)"
+      (click)="setPeriod(null, browsingYear); showHistoryPanel = false"
+    >
+      <span class="fw-bold">TODO EL AÑO {{ browsingYear }}</span>
+    </button>
+
     <!-- Month Grid (3x4) -->
     <div class="row g-2">
       @for (m of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; track m) {
@@ -923,13 +1138,19 @@
             type="button"
             class="btn w-100 py-3 rounded-3 month-btn shadow-sm"
             [class.btn-primary]="
-              m === selectedMonth && browsingYear === selectedYear
+              scope === 'mes' &&
+              m === selectedMonth &&
+              browsingYear === selectedYear
             "
             [class.btn-light]="
-              !(m === selectedMonth && browsingYear === selectedYear)
+              !(
+                scope === 'mes' &&
+                m === selectedMonth &&
+                browsingYear === selectedYear
+              )
             "
             [disabled]="isMonthDisabled(m)"
-            (click)="setHistoryDate(m, browsingYear); showHistoryPanel = false"
+            (click)="setPeriod(m, browsingYear); showHistoryPanel = false"
           >
             <span class="fw-bold">{{ getMonthName(m) }}</span>
           </button>
@@ -955,7 +1176,7 @@
             <option [ngValue]="null">Todos los Propietarios</option>
             @for (owner of owners; track owner.id) {
               <option [ngValue]="owner.id">
-                {{ owner.name }}
+                {{ ownerName(owner) }}
               </option>
             }
           </select>
@@ -963,13 +1184,13 @@
       </div>
       <div class="mt-4 p-3 bg-body-tertiary rounded-3 small text-secondary">
         <i class="fa-solid fa-circle-info me-2 text-info"></i>
-        Selecciona un año y mes o propietario para visualizar los reportes
-        históricos.
+        Selecciona un mes, todo el año o un propietario para visualizar los
+        reportes históricos.
       </div>
     } @else {
       <div class="mt-4 p-3 bg-body-tertiary rounded-3 small text-secondary">
         <i class="fa-solid fa-circle-info me-2 text-info"></i>
-        Selecciona un año y mes para visualizar los reportes históricos.
+        Selecciona un mes o todo el año para visualizar los reportes históricos.
       </div>
     }
   </div>

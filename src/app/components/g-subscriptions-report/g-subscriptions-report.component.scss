@@ -1,0 +1,152 @@
+/* Los tres contadores comparten forma con las cuatro cifras de rentabilidad:
+   texto a la izquierda, icono en su caja a la derecha, y el mismo giro al pasar
+   el puntero que hacen los contadores de propietarios y conductores.
+
+   Aquí son botones y no cajas: además de contar, filtran la lista de abajo. */
+.kpi-tile {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  background-color: var(--bs-tertiary-bg);
+  border: 1px solid transparent;
+  text-align: left;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+    border-color: rgba(var(--bs-primary-rgb), 0.25);
+
+    .icon-shape {
+      transform: scale(1.1) rotate(5deg);
+    }
+  }
+
+  /* El estado abierto se marca con el borde, no solo con el fondo: es el que
+     dice qué está filtrando la lista. */
+  &.kpi-selected {
+    border-color: var(--bs-primary);
+    background-color: rgba(var(--bs-primary-rgb), 0.08);
+  }
+}
+
+.kpi-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.kpi-label {
+  font-size: 0.9rem;
+  color: var(--bs-secondary-color);
+  font-weight: 500;
+}
+
+.kpi-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+
+  @media (min-width: 768px) {
+    font-size: 1.75rem;
+  }
+}
+
+.kpi-note {
+  font-size: 0.8rem;
+  color: var(--bs-secondary-color);
+  opacity: 0.85;
+}
+
+.icon-shape {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  transition: transform 0.3s ease;
+
+  @media (min-width: 768px) {
+    width: 44px;
+    height: 44px;
+    font-size: 1.15rem;
+  }
+}
+
+/* ---- El detalle ---------------------------------------------------------- */
+.owner-table {
+  max-height: 26rem;
+
+  table {
+    font-size: 0.925rem;
+    --bs-table-hover-bg: rgba(var(--bs-primary-rgb), 0.07);
+    --bs-table-hover-color: var(--bs-body-color);
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--bs-body-bg);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+}
+
+.end-date {
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+/* Móvil: la tabla tiene cinco columnas y solo cabía desplazándola de lado. */
+.owner-cards {
+  max-height: 26rem;
+  overflow-y: auto;
+}
+
+.owner-card {
+  padding: 0.75rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--bs-border-color);
+  font-size: 0.925rem;
+
+  & + & {
+    margin-top: 0.5rem;
+  }
+}
+
+.counts {
+  font-size: 0.8rem;
+}
+
+:host-context([data-bs-theme="dark"]) {
+  .kpi-tile:hover {
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kpi-tile,
+  .icon-shape {
+    transition: none;
+  }
+
+  .kpi-tile:hover {
+    transform: none;
+
+    .icon-shape {
+      transform: none;
+    }
+  }
+}

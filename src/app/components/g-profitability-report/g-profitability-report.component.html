@@ -1,0 +1,459 @@
+<!-- El reporte no lleva tarjeta ni encabezado propio: es el cuerpo de la
+     pestaña "Rentabilidad", y la pestaña ya lo nombra. Encerrarlo en una `card`
+     lo dibujaba como una isla dentro de su propia seccion, y encima una que se
+     levantaba entera al pasar el puntero. Las unicas superficies aqui son las
+     de las cifras y la tabla, que son las que se leen. -->
+<div class="profitability-report">
+  @if (loading) {
+    <p class="text-body-secondary small mb-0 d-flex align-items-center gap-2">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Cargando el reporte de rentabilidad...
+    </p>
+  } @else if (loadError) {
+    <div
+      class="d-flex flex-wrap align-items-center justify-content-between gap-2"
+    >
+      <span class="text-danger small mb-0">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+        No se pudo cargar el reporte de rentabilidad.
+      </span>
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-secondary"
+        (click)="load()"
+      >
+        Reintentar
+      </button>
+    </div>
+  } @else if (!vehicles.length) {
+    <p class="text-body-secondary small mb-0">
+      No hay vehículos con movimiento en {{ year }}.
+    </p>
+  } @else {
+    <!-- ================================================================
+               1. Las cuatro cifras principales
+               ================================================================
+               Ingresos y gastos son el insumo; la utilidad es la respuesta y
+               por eso ocupa el doble y lleva el color. La rentabilidad la pone
+               en escala: $4M de utilidad no significan lo mismo sobre $20M que
+               sobre $200M.
+
+               El icono va en su propia caja (`icon-shape`), como en las
+               tarjetas de contador de propietarios y conductores, y gira igual
+               al pasar el puntero. Mas pequeño que alla: en escritorio son
+               cuatro en una fila y la cifra es lo que se lee, no el icono.
+
+               En movil va una por fila. De a dos no cabian: una cifra en pesos
+               con separadores de miles se partia en dos lineas o se salia de su
+               baldosa, y la formula de abajo se quedaba a medias. -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="kpi-tile h-100">
+          <div class="kpi-text">
+            <span class="kpi-label">Ingresos</span>
+            <span class="kpi-value">
+              {{ income | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+            </span>
+            <span class="kpi-note">Flete facturado</span>
+          </div>
+          <div
+            class="icon-shape bg-success bg-opacity-10 text-success rounded-3"
+          >
+            <i class="fa-solid fa-arrow-trend-up"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="kpi-tile h-100">
+          <div class="kpi-text">
+            <span class="kpi-label">Gastos</span>
+            <span class="kpi-value">
+              {{ expenses | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+            </span>
+            <span class="kpi-note">Viajes + mantenimiento</span>
+          </div>
+          <div class="icon-shape bg-danger bg-opacity-10 text-danger rounded-3">
+            <i class="fa-solid fa-arrow-trend-down"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="kpi-tile kpi-hero h-100" [class.kpi-hero-loss]="isLoss">
+          <div class="kpi-text">
+            <span class="kpi-label">
+              {{ isLoss ? "Pérdida" : "Utilidad" }}
+            </span>
+            <span class="kpi-value">
+              {{ profit | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+            </span>
+            <span class="kpi-note">Ingresos − Gastos</span>
+          </div>
+          <div class="icon-shape kpi-hero-icon rounded-3">
+            <i
+              class="fa-solid"
+              [class.fa-circle-check]="!isLoss"
+              [class.fa-circle-exclamation]="isLoss"
+            ></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="kpi-tile h-100">
+          <div class="kpi-text">
+            <span class="kpi-label">Rentabilidad</span>
+            <span class="kpi-value">
+              @if (margin != null) {
+                {{ margin | number: "1.1-1" }}%
+              } @else {
+                —
+              }
+            </span>
+            <span class="kpi-note">Utilidad ÷ Ingresos × 100</span>
+          </div>
+          <div
+            class="icon-shape bg-primary bg-opacity-10 text-primary rounded-3"
+          >
+            <i class="fa-solid fa-percent"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================
+               2. Utilidad por viaje
+               ================================================================
+               El nivel al que se decide: un promedio dice si el camion sirve,
+               la tabla dice cual viaje lo esta hundiendo. -->
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <h6 class="fw-bold mb-0">
+        <i class="fa-solid fa-route me-2 text-primary opacity-75"></i>
+        Utilidad por viaje
+      </h6>
+      <span
+        class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill"
+      >
+        {{ tripCount }}
+      </span>
+      <span class="text-body-secondary small ms-auto d-none d-md-inline">
+        {{ periodLabel }}
+      </span>
+    </div>
+
+    <!-- Los tres promedios. El gasto promedio reparte tambien el
+               mantenimiento entre los viajes: es lo que hace que el promedio de
+               utilidad cierre contra la cifra grande de arriba.
+
+               En movil van uno por fila, como las cuatro cifras de arriba, y
+               ahi el rotulo y la cifra se ponen en linea: de a tres, "Utilidad
+               prom./viaje" ocupaba tres renglones sobre una cifra en pesos que
+               tampoco cabia. -->
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-md-4">
+        <div class="avg-tile">
+          <span class="avg-label">Ingreso prom./viaje</span>
+          <span class="avg-value">
+            {{ avgIncome | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+          </span>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="avg-tile">
+          <span class="avg-label">Gasto prom./viaje</span>
+          <span class="avg-value">
+            {{ avgExpense | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+          </span>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="avg-tile">
+          <span class="avg-label">Utilidad prom./viaje</span>
+          <span
+            class="avg-value"
+            [class.text-profit]="avgProfit >= 0"
+            [class.text-loss]="avgProfit < 0"
+          >
+            {{ avgProfit | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    @if (detailLoading) {
+      <p class="text-body-secondary small mb-0 d-flex align-items-center gap-2">
+        <span
+          class="spinner-border spinner-border-sm"
+          aria-hidden="true"
+        ></span>
+        Cargando los viajes de {{ periodLabel | lowercase }}...
+      </p>
+    } @else if (detailError) {
+      <p class="text-danger small mb-0">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+        No se pudo cargar el detalle por viaje.
+      </p>
+    } @else if (!tripRows.length) {
+      <p class="text-body-secondary small mb-0">
+        {{ selectedPlate }} no {{ verboTener }} viajes en
+        {{ periodLabel | lowercase }}.
+      </p>
+    } @else {
+      <!-- Movil: una tarjeta por viaje. La tabla tiene cinco columnas de
+           cifras y en un telefono solo cabia desplazandola de lado, que es la
+           peor forma de leer una lista — se pierde de vista el viaje al que
+           pertenece la columna que se esta mirando. Mismos datos, apilados. -->
+      <div class="trip-cards d-md-none">
+        @for (r of tripRows; track $index) {
+          <div class="trip-card">
+            <div class="d-flex justify-content-between align-items-start gap-2">
+              <div class="min-w-0">
+                <span class="fw-semibold">{{ r.label }}</span>
+                @if (month === ANIO && r.monthLabel) {
+                  <span class="badge bg-body-tertiary text-body-secondary ms-1">
+                    {{ r.monthLabel }}
+                  </span>
+                }
+                @if (r.route) {
+                  <span class="d-block text-body-secondary route-text">
+                    {{ r.route }}
+                  </span>
+                }
+              </div>
+              <div class="text-end flex-shrink-0">
+                <span
+                  class="d-block fw-bold text-nowrap"
+                  [class.text-profit]="r.profit >= 0"
+                  [class.text-loss]="r.profit < 0"
+                >
+                  {{ r.profit | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+                </span>
+                <span
+                  class="text-body-secondary route-text"
+                  [class.text-loss]="r.margin != null && r.margin < 0"
+                >
+                  @if (r.margin != null) {
+                    {{ r.margin | number: "1.1-1" }}% de rentabilidad
+                  } @else {
+                    Sin flete
+                  }
+                </span>
+              </div>
+            </div>
+            <div
+              class="d-flex justify-content-between gap-3 mt-2 pt-2 border-top route-text"
+            >
+              <span class="text-body-secondary">
+                Ingreso
+                <span class="fw-semibold text-body">
+                  {{ r.income | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+                </span>
+              </span>
+              <span class="text-body-secondary">
+                Gastos
+                <span class="fw-semibold text-danger">
+                  {{ r.expenses | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+                </span>
+              </span>
+            </div>
+          </div>
+        }
+        <!-- El mismo pie de la tabla: las filas no suman la utilidad del
+             periodo hasta que se les resta lo que no cuelga de ningun viaje. -->
+        <div class="trip-card trip-card-total">
+          @if (unassignedExpenses > 0) {
+            <div class="d-flex justify-content-between gap-2 route-text mb-1">
+              <span class="text-body-secondary">
+                Mantenimiento y gastos sin viaje
+              </span>
+              <span class="text-danger text-nowrap">
+                -{{
+                  unassignedExpenses
+                    | currency: "COP" : "symbol-narrow" : "1.0-0"
+                }}
+              </span>
+            </div>
+          }
+          <div class="d-flex justify-content-between gap-2 fw-bold">
+            <span>Utilidad de {{ periodLabel | lowercase }}</span>
+            <span
+              class="text-nowrap"
+              [class.text-profit]="!isLoss"
+              [class.text-loss]="isLoss"
+            >
+              {{ profit | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive trip-table d-none d-md-block">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col" role="button" (click)="sortBy('label')">
+                Viaje
+                <i
+                  class="fa-solid ms-1 opacity-50"
+                  [ngClass]="sortIcon('label')"
+                ></i>
+              </th>
+              <th
+                scope="col"
+                class="text-end"
+                role="button"
+                (click)="sortBy('income')"
+              >
+                Ingreso
+                <i
+                  class="fa-solid ms-1 opacity-50"
+                  [ngClass]="sortIcon('income')"
+                ></i>
+              </th>
+              <th
+                scope="col"
+                class="text-end"
+                role="button"
+                (click)="sortBy('expenses')"
+              >
+                Gastos
+                <i
+                  class="fa-solid ms-1 opacity-50"
+                  [ngClass]="sortIcon('expenses')"
+                ></i>
+              </th>
+              <th
+                scope="col"
+                class="text-end"
+                role="button"
+                (click)="sortBy('profit')"
+              >
+                Utilidad
+                <i
+                  class="fa-solid ms-1 opacity-50"
+                  [ngClass]="sortIcon('profit')"
+                ></i>
+              </th>
+              <th
+                scope="col"
+                class="text-end"
+                role="button"
+                (click)="sortBy('margin')"
+              >
+                Rent.
+                <i
+                  class="fa-solid ms-1 opacity-50"
+                  [ngClass]="sortIcon('margin')"
+                ></i>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of tripRows; track $index) {
+              <tr>
+                <td>
+                  <span class="fw-semibold">{{ r.label }}</span>
+                  @if (month === ANIO && r.monthLabel) {
+                    <span
+                      class="badge bg-body-tertiary text-body-secondary ms-1"
+                    >
+                      {{ r.monthLabel }}
+                    </span>
+                  }
+                  @if (r.route) {
+                    <span class="d-block text-body-secondary route-text">
+                      {{ r.route }}
+                    </span>
+                  }
+                </td>
+                <td class="text-end text-nowrap">
+                  {{ r.income | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+                </td>
+                <td class="text-end text-nowrap text-danger">
+                  {{ r.expenses | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+                </td>
+                <td
+                  class="text-end text-nowrap fw-semibold"
+                  [class.text-profit]="r.profit >= 0"
+                  [class.text-loss]="r.profit < 0"
+                >
+                  {{ r.profit | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+                </td>
+                <td
+                  class="text-end text-nowrap"
+                  [class.text-loss]="r.margin != null && r.margin < 0"
+                >
+                  @if (r.margin != null) {
+                    {{ r.margin | number: "1.1-1" }}%
+                  } @else {
+                    —
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="border-top">
+              <td class="fw-semibold">Suma de los viajes</td>
+              <td class="text-end text-nowrap fw-semibold">
+                {{ rowsIncome | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+              </td>
+              <td class="text-end text-nowrap fw-semibold text-danger">
+                {{ rowsExpenses | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+              </td>
+              <td
+                class="text-end text-nowrap fw-semibold"
+                [class.text-profit]="rowsProfit >= 0"
+                [class.text-loss]="rowsProfit < 0"
+              >
+                {{ rowsProfit | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+              </td>
+              <td></td>
+            </tr>
+            <!-- El mantenimiento no cuelga de ningun viaje, asi que no
+                       puede estar en ninguna fila. Pero si entra en la utilidad
+                       del periodo, y sin esta linea la tabla no cerraria contra
+                       la cifra grande de arriba. -->
+            @if (unassignedExpenses > 0) {
+              <tr>
+                <!-- Sin `small`: es una de las tres lineas que restan hasta la
+                     utilidad del periodo, no un pie de pagina, y a 0,81 rem se
+                     leia como una nota al margen frente a las otras dos. -->
+                <td class="text-body-secondary" colspan="3">
+                  Mantenimiento y gastos sin viaje
+                </td>
+                <td class="text-end text-nowrap text-danger">
+                  -{{
+                    unassignedExpenses
+                      | currency: "COP" : "symbol-narrow" : "1.0-0"
+                  }}
+                </td>
+                <td></td>
+              </tr>
+            }
+            <tr class="border-top">
+              <td class="fw-bold" colspan="3">
+                Utilidad de {{ periodLabel | lowercase }}
+              </td>
+              <td
+                class="text-end text-nowrap fw-bold"
+                [class.text-profit]="!isLoss"
+                [class.text-loss]="isLoss"
+              >
+                {{ profit | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+              </td>
+              <td class="text-end text-nowrap fw-bold">
+                @if (margin != null) {
+                  {{ margin | number: "1.1-1" }}%
+                } @else {
+                  —
+                }
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    }
+  }
+</div>
