@@ -23,6 +23,10 @@
   border: 1px solid var(--card-border);
   border-radius: 20px;
   cursor: pointer;
+  /* Columna para poder anclar la flecha al fondo — ver `.card-arrow`. En movil
+     la tarjeta pasa a rejilla y esta declaracion queda anulada. */
+  display: flex;
+  flex-direction: column;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -72,7 +76,22 @@
 }
 
 .card-description {
-  line-height: 1.6;
+  /* En una variable porque el hueco que la descripcion reserva en movil son
+     tres de estas lineas: atado asi, cambiar el interlineado no descuadra el
+     alto de las tarjetas — ver el bloque de movil. */
+  --desc-line-height: 1.45;
+
+  /* El tamaño de TODAS las descripciones, en un unico sitio. Antes lo ponia la
+     utilidad `small` de la plantilla, que es `0.875em` —relativa al padre—: el
+     mismo valor para las nueve mientras nadie tocara la tarjeta, pero atado a
+     algo que no es la descripcion.
+
+     Va en variable como el interlineado: movil se define como este valor menos
+     un pixel, y verlos asi evita que se separen al ajustar solo uno. */
+  --desc-font-size: 0.9375rem; // 15 px
+
+  font-size: var(--desc-font-size);
+  line-height: var(--desc-line-height);
 }
 
 .card-arrow {
@@ -80,12 +99,112 @@
   transition: transform 0.3s ease;
   display: flex;
   justify-content: flex-end;
+  /* Pegada al fondo de la tarjeta.
+
+     Las nueve tienen el mismo alto —`h-100` estira las columnas de la fila—,
+     pero la flecha iba justo detras de la descripcion, asi que su distancia al
+     borde inferior la marcaba el largo del texto: en una fila quedaban a tres
+     alturas distintas. Con el margen automatico todas quedan a la misma, la del
+     `padding` de la tarjeta.
+
+     `!important` porque compite con el `mt-3` de la plantilla, que es una
+     utilidad de Bootstrap y ya lo lleva. */
+  margin-top: auto !important;
 }
 
-/* Mobile adjustments */
-@media (max-width: 576px) {
+/* ---- Movil: la tarjeta pasa de columna a renglon -------------------------
+   Apiladas —icono, titulo, descripcion, flecha— las ocho opciones ocupaban
+   varias pantallas y llegar a la ultima era un arrastre largo. En un telefono
+   la tarjeta ocupa el ancho completo, asi que al lado del icono sobra sitio de
+   sobra para el texto.
+
+   La reorganizacion es solo de CSS: el marcado no cambia y no se recorta ni se
+   oculta nada. Una rejilla de tres columnas coloca los cuatro hermanos que ya
+   existen —icono a la izquierda ocupando las dos filas, titulo arriba,
+   descripcion debajo, flecha a la derecha— sin necesidad de envolver el texto
+   en un contenedor nuevo.
+
+   Se corta en 768 px y no en 576: desde `col-md-6` la tarjeta va a media
+   columna y ahi la disposicion vertical vuelve a ser la que cabe. */
+@media (max-width: 767.98px) {
+  /* El encabezado, dos pixeles por debajo de lo que trae Bootstrap.
+
+     `.display-4` es fluido por debajo de 1200 px —`calc(1.475rem + 2.7vw)`—,
+     asi que se repite su formula y se le restan los 2 px: cambiar el tamaño a
+     un valor fijo habria congelado el titulo y dejado de acompañar al ancho de
+     la pantalla. `.lead` si es fijo (1.25rem) y basta con restar. */
+  .gradient-text {
+    font-size: calc(1.475rem + 2.7vw - 2px);
+  }
+
+  .lead {
+    font-size: calc(1.25rem - 2px);
+  }
+
   .hub-card {
-    padding: 1.5rem !important;
+    padding: 1rem !important;
+    display: grid;
+    /* Dos columnas y no tres: sin la flecha, un tercer carril dejaria su
+       `column-gap` de hueco muerto contra el borde derecho. */
+    grid-template-columns: auto 1fr;
+    column-gap: 1rem;
+    align-items: center;
+  }
+
+  .card-icon-container {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 48px;
+    height: 48px;
+    font-size: 1.25rem;
+    border-radius: 14px;
+    /* Los margenes son utilidades de Bootstrap en la plantilla: aqui la
+       separacion la da el `gap` de la rejilla. */
+    margin-bottom: 0 !important;
+  }
+
+  .card-title {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 1.05rem;
+    /* El titulo y la descripcion iban casi pegados: con el interlineado
+       apretado de la descripcion, las dos primeras lineas se leian como un solo
+       bloque y costaba distinguir donde acaba el nombre de la opcion. */
+    margin-bottom: 0.4rem !important;
+  }
+
+  .card-description {
+    grid-column: 2;
+    grid-row: 2;
+    /* Un pixel menos que en escritorio. */
+    --desc-font-size: 0.875rem; // 14 px
+    --desc-line-height: 1.25;
+
+    /* Todas las tarjetas al mismo alto. En escritorio lo resuelve el `h-100`
+       dentro de la fila —las columnas de Bootstrap se estiran—, pero en movil
+       cada tarjeta es su propia fila y ahi `h-100` no compara con nadie: el
+       alto lo acababa fijando el largo de la descripcion, y la lista quedaba
+       con renglones de dos tamaños alternandose.
+
+       Se reserva el hueco de tres lineas —lo que ocupa la descripcion mas larga
+       de las nueve— en vez de recortar el texto: sobra algo de aire bajo las
+       cortas, y no se pierde ni una palabra. `em` y no `rem` para que siga a la
+       fuente de la propia descripcion si algun dia cambia. */
+    min-height: calc(3em * var(--desc-line-height));
+  }
+
+  /* La flecha se va. En escritorio insinua que la tarjeta lleva a alguna parte
+     —y crece al pasar el puntero—, pero en un telefono no hay puntero que la
+     active y el renglon entero ya se ve pulsable: solo robaba ancho al texto,
+     que es lo escaso aqui. */
+  .card-arrow {
+    display: none;
+  }
+
+  /* El levantamiento de 8 px lo hereda de escritorio y en una lista de
+     renglones se nota como un salto. Basta con que el borde responda. */
+  .hub-card:hover {
+    transform: none;
   }
 }
 
