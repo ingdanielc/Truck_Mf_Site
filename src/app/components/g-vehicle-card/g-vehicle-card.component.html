@@ -394,3 +394,11 @@
     </div>
   }
 </div>
+
+@if (viewerUrl) {
+  <g-document-viewer
+    [url]="viewerUrl"
+    [name]="viewerName"
+    (close)="closeViewer()"
+  ></g-document-viewer>
+}

@@ -1,0 +1,115 @@
+<div
+  class="viewer-overlay d-flex flex-column animate-fade-in"
+  (click)="onBackdropClick($event)"
+  onkeypress
+>
+  <!-- Encabezado -->
+  <div
+    class="viewer-header d-flex align-items-center gap-2 px-3 py-2 text-white flex-shrink-0"
+  >
+    <i class="fa-solid fa-file-lines opacity-75"></i>
+    <span class="fw-bold text-truncate flex-grow-1" [title]="name">
+      {{ name }}
+    </span>
+
+    <a
+      class="btn btn-link text-white p-0 border-0 shadow-none viewer-action"
+      [href]="url"
+      [download]="downloadName"
+      title="Descargar"
+      aria-label="Descargar"
+    >
+      <i class="fa-solid fa-download"></i>
+    </a>
+    <button
+      type="button"
+      class="btn btn-link text-white p-0 border-0 shadow-none viewer-action"
+      (click)="openExternally()"
+      title="Abrir en el navegador"
+      aria-label="Abrir en el navegador"
+    >
+      <i class="fa-solid fa-arrow-up-right-from-square"></i>
+    </button>
+    <button
+      type="button"
+      class="btn btn-link text-white p-0 border-0 shadow-none viewer-action"
+      (click)="dismiss()"
+      title="Cerrar"
+      aria-label="Cerrar"
+    >
+      <i class="fa-solid fa-xmark fs-4"></i>
+    </button>
+  </div>
+
+  <!-- Contenido -->
+  <div
+    class="viewer-body flex-grow-1 d-flex align-items-center justify-content-center p-3"
+    (click)="onBackdropClick($event)"
+    onkeypress
+  >
+    @if (cannotEmbed || failed) {
+      <!--
+        Ni marco en blanco ni salida silenciosa: se dice por qué y se ofrecen
+        las dos vías, con la descarga primero porque conserva la app abierta.
+      -->
+      <div class="viewer-fallback bg-body rounded-4 shadow-lg p-4 text-center">
+        <div
+          class="fallback-icon mx-auto mb-3 d-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-circle"
+        >
+          <i class="fa-solid fa-file-pdf text-primary fs-1"></i>
+        </div>
+        <h5 class="fw-bold mb-2">{{ name }}</h5>
+        <p class="small text-secondary mb-4">
+          @if (failed) {
+            No se pudo mostrar el documento aquí. Descárgalo para verlo con tu
+            aplicación de archivos.
+          } @else {
+            Este dispositivo no muestra PDF dentro de la aplicación. Descárgalo
+            para verlo con tu visor y volver con el botón atrás.
+          }
+        </p>
+        <div class="d-flex flex-column gap-2">
+          <a
+            class="btn btn-primary rounded-3 py-2 fw-bold"
+            [href]="url"
+            [download]="downloadName"
+          >
+            <i class="fa-solid fa-download me-2"></i>Descargar
+          </a>
+          <button
+            type="button"
+            class="btn btn-outline-secondary rounded-3 py-2"
+            (click)="openExternally()"
+          >
+            <i class="fa-solid fa-arrow-up-right-from-square me-2"></i>
+            Abrir en el navegador
+          </button>
+        </div>
+      </div>
+    } @else if (kind === "image") {
+      <img
+        [src]="url"
+        [alt]="name"
+        class="viewer-image rounded-3"
+        (load)="onLoaded()"
+        (error)="onError()"
+      />
+    } @else {
+      <iframe
+        [src]="safeUrl"
+        [title]="name"
+        class="viewer-frame rounded-3 bg-white"
+        (load)="onLoaded()"
+      ></iframe>
+    }
+
+    @if (loading && !cannotEmbed && !failed) {
+      <div
+        class="position-absolute text-white text-center d-flex flex-column align-items-center"
+      >
+        <output class="spinner-border mb-2"></output>
+        <span class="small">Cargando documento…</span>
+      </div>
+    }
+  </div>
+</div>

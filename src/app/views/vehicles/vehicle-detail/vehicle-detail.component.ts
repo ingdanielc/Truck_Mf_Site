@@ -33,6 +33,7 @@ import {
 import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-trip-mini-card.component';
 import { GVehicleDocumentsComponent } from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
+import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
 
 /** Documento con nombre y vigencia resueltos, listo para pintar en la tarjeta. */
 interface DocumentRow {
@@ -54,6 +55,7 @@ interface DocumentRow {
     GCameraComponent,
     GTripMiniCardComponent,
     GVehicleDocumentsComponent,
+    GDocumentViewerComponent,
   ],
   templateUrl: './vehicle-detail.component.html',
   styleUrls: ['./vehicle-detail.component.scss'],
@@ -78,6 +80,10 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
   sharingDocuments: boolean = false;
   /** Identificación del conductor asignado; el filtro de vehículos no la trae. */
   driverDocumentNumber: string = '';
+
+  /** Documento abierto en el visor; null cuando no hay ninguno. */
+  viewerUrl: string | null = null;
+  viewerName: string = '';
 
   userRole: string = '';
   isAdmin: boolean = false;
@@ -554,21 +560,25 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Comparte los documentos por WhatsApp. Se intenta primero con los archivos
-   * ya descargados: Web Share es la unica via del navegador para entregarlos
-   * como adjuntos, y pide HTTPS, soporte de ficheros y que el almacenamiento
-   * responda con CORS. Si algo de eso falta se cae al mensaje con los enlaces,
-   * que es como funcionaba hasta ahora.
+   * Comparte los documentos por WhatsApp. El adjunto es lo que vale, así que
+   * el mensaje se arma despues de bajar los archivos: cada documento aporta
+   * solo su nombre, y el enlace aparece unicamente para los que no se pudieron
+   * descargar, como respaldo. Web Share es la unica via del navegador para
+   * entregar ficheros, y pide HTTPS, soporte de archivos y que el
+   * almacenamiento responda con CORS.
    */
   async shareDocumentsByWhatsApp(): Promise<void> {
     if (this.documentRows.length === 0 || this.sharingDocuments) return;
 
-    const text = this.buildDocumentsMessage();
-    const files = await this.downloadDocumentFiles();
+    const attachments = await this.downloadDocumentFiles();
+    const files = Array.from(attachments.values());
 
     if (files.length > 0 && navigator.canShare?.({ files })) {
       try {
-        await navigator.share({ files, text });
+        await navigator.share({
+          files,
+          text: this.buildDocumentsMessage(attachments),
+        });
         return;
       } catch (err: any) {
         // Cerrar el selector de app no es un fallo: no se abre nada mas.
@@ -577,6 +587,8 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
       }
     }
 
+    // Sin adjuntos posibles, el enlace es lo unico que queda por compartir.
+    const text = this.buildDocumentsMessage(new Map());
     window.open(
       `https://wa.me/?text=${encodeURIComponent(text)}`,
       '_blank',
@@ -584,7 +596,12 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
     );
   }
 
-  private buildDocumentsMessage(): string {
+  /**
+   * Mensaje del chat: encabezado del vehiculo y el nombre de cada documento.
+   * Ni numero ni vigencia —son datos que viajan en el propio archivo— y el
+   * enlace solo para lo que no va adjunto.
+   */
+  private buildDocumentsMessage(attached: Map<DocumentRow, File>): string {
     const header = [
       `*Documentos ${this.vehicle?.plate ?? ''}*`,
       [
@@ -597,38 +614,35 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
     ].filter(Boolean);
 
     const body = this.documentRows.map((row) => {
-      const lines = [`• *${row.name}* — ${row.validity.label}`];
-      if (row.document.documentNumber) {
-        lines.push(`  N° ${row.document.documentNumber}`);
+      if (attached.has(row) || !row.document.fileUrl) {
+        return `• ${row.name}`;
       }
-      if (row.document.issuer) {
-        lines.push(`  Expedido por ${row.document.issuer}`);
-      }
-      lines.push(
-        row.document.fileUrl
-          ? `  ${row.document.fileUrl}`
-          : '  (sin archivo adjunto)',
-      );
-      return lines.join('\n');
+      return `• ${row.name}\n  ${row.document.fileUrl}`;
     });
 
     return [...header, '', ...body].join('\n');
   }
 
   /**
-   * Baja los archivos para adjuntarlos. Los documentos sin archivo y los que
-   * no se dejen descargar se omiten: se comparte lo que si llego.
+   * Baja los archivos para adjuntarlos, sin perder de vista a que documento
+   * pertenece cada uno: el mensaje necesita saber cuales quedaron fuera para
+   * ponerles el enlace. Los que no tienen archivo o no se dejan descargar no
+   * entran en el mapa.
    */
-  private async downloadDocumentFiles(): Promise<File[]> {
+  private async downloadDocumentFiles(): Promise<Map<DocumentRow, File>> {
+    const attached = new Map<DocumentRow, File>();
     const withFile = this.documentRows.filter((row) => !!row.document.fileUrl);
-    if (withFile.length === 0 || !navigator.canShare) return [];
+    if (withFile.length === 0 || !navigator.canShare) return attached;
 
     this.sharingDocuments = true;
     try {
       const files = await Promise.all(
         withFile.map((row) => this.fetchDocumentFile(row)),
       );
-      return files.filter((file): file is File => file !== null);
+      files.forEach((file, index) => {
+        if (file) attached.set(withFile[index], file);
+      });
+      return attached;
     } finally {
       this.sharingDocuments = false;
     }
@@ -665,10 +679,20 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
     return `${base || 'documento'}${extension}`;
   }
 
+  /**
+   * El documento se muestra en el visor de la app. Abrirlo con `window.open`
+   * dejaba al usuario fuera y sin retorno cuando la PWA corre instalada.
+   */
   openDocumentFile(row: DocumentRow, event: Event): void {
     event.stopPropagation();
     if (!row.document.fileUrl) return;
-    window.open(row.document.fileUrl, '_blank', 'noopener');
+    this.viewerUrl = row.document.fileUrl;
+    this.viewerName = row.name;
+  }
+
+  closeViewer(): void {
+    this.viewerUrl = null;
+    this.viewerName = '';
   }
 
   // --- Foto ---

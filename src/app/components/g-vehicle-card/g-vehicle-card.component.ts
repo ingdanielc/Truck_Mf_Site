@@ -18,6 +18,7 @@ import {
   Pagination,
   Sort,
 } from 'src/app/models/model-filter-table';
+import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
 
 /** Documento ya listo para pintar: nombre resuelto y vigencia calculada. */
 export interface VehicleDocumentRow {
@@ -29,7 +30,7 @@ export interface VehicleDocumentRow {
 @Component({
   selector: 'app-g-vehicle-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, GDocumentViewerComponent],
   templateUrl: './g-vehicle-card.component.html',
   styleUrls: ['./g-vehicle-card.component.scss'],
 })
@@ -58,6 +59,10 @@ export class GVehicleCardComponent implements OnInit {
   private documentsRequested: boolean = false;
   /** Reverso de la tarjeta: misma foto, lista de documentos en lugar de datos. */
   showDocuments: boolean = false;
+
+  /** Documento abierto en el visor; null cuando no hay ninguno. */
+  viewerUrl: string | null = null;
+  viewerName: string = '';
 
   constructor(
     private readonly router: Router,
@@ -132,11 +137,20 @@ export class GVehicleCardComponent implements OnInit {
     this.showDocuments = !this.showDocuments;
   }
 
-  /** Abre el escaneo en otra pestaña; sin archivo el documento no es un enlace. */
+  /**
+   * Muestra el escaneo en el visor de la app; sin archivo no hay nada que ver.
+   * Se corta la propagación para que la tarjeta no navegue al detalle.
+   */
   openDocumentFile(row: VehicleDocumentRow, event: Event): void {
     event.stopPropagation();
     if (!row.document.fileUrl) return;
-    window.open(row.document.fileUrl, '_blank', 'noopener');
+    this.viewerUrl = row.document.fileUrl;
+    this.viewerName = row.name;
+  }
+
+  closeViewer(): void {
+    this.viewerUrl = null;
+    this.viewerName = '';
   }
 
   private loadLastLocation(): void {

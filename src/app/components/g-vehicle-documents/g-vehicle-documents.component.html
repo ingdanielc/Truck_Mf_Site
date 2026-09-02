@@ -111,7 +111,7 @@
                     <button
                       type="button"
                       class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none draft-btn"
-                      (click)="openFile(row.document.fileUrl, $event)"
+                      (click)="openFile(row.document.fileUrl, $event, row.name)"
                       title="Abrir archivo"
                     >
                       <i
@@ -377,7 +377,9 @@
                     <button
                       type="button"
                       class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none draft-btn"
-                      (click)="openFile(currentFileUrl, $event)"
+                      (click)="
+                        openFile(currentFileUrl, $event, selectedFileName)
+                      "
                       title="Abrir archivo"
                     >
                       <i
@@ -477,3 +479,11 @@
     }
   }
 </div>
+
+@if (viewerUrl) {
+  <g-document-viewer
+    [url]="viewerUrl"
+    [name]="viewerName"
+    (close)="closeViewer()"
+  ></g-document-viewer>
+}

@@ -26,6 +26,7 @@ import {
   getDocumentValidity,
   needsRenewal,
 } from 'src/app/utils/document-utils';
+import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
 
 /** Lo que acepta `/common/upload-document`. */
 const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
@@ -51,7 +52,7 @@ export interface DocumentRow {
 @Component({
   selector: 'g-vehicle-documents',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, GDocumentViewerComponent],
   templateUrl: './g-vehicle-documents.component.html',
   styleUrls: ['./g-vehicle-documents.component.scss'],
 })
@@ -90,6 +91,10 @@ export class GVehicleDocumentsComponent implements OnInit {
   selectedFileName: string = '';
   /** URL del escaneo ya guardado, cuando se edita sin reemplazarlo. */
   currentFileUrl: string | null = null;
+
+  /** Documento abierto en el visor; null cuando no hay ninguno. */
+  viewerUrl: string | null = null;
+  viewerName: string = '';
 
   readonly acceptedFiles = ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(',');
   readonly maxFileSizeMb = MAX_FILE_SIZE_MB;
@@ -332,10 +337,20 @@ export class GVehicleDocumentsComponent implements OnInit {
     this.currentFileUrl = null;
   }
 
-  openFile(url: string | null | undefined, event?: Event): void {
+  /**
+   * El documento se muestra en el visor de la app. Abrirlo con `window.open`
+   * dejaba al usuario fuera y sin retorno cuando la PWA corre instalada.
+   */
+  openFile(url: string | null | undefined, event?: Event, name?: string): void {
     event?.stopPropagation();
     if (!url) return;
-    window.open(url, '_blank', 'noopener');
+    this.viewerUrl = url;
+    this.viewerName = name || 'Documento';
+  }
+
+  closeViewer(): void {
+    this.viewerUrl = null;
+    this.viewerName = '';
   }
 
   /**
