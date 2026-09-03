@@ -3,6 +3,10 @@ export const environment = {
   environmentType: 'dev',
   _APIUrl: 'http://168.231.93.145:8089',
   subscription: 'truck-api-key',
+  // Llave publica VAPID para notificaciones push. Vacia = push desactivado.
+  // Se genera con `npx web-push generate-vapid-keys`; la privada va al backend.
+  vapidPublicKey:
+    'BINIBeuEWnLvwbDguMuyQrLgTZ3ZmRvX-XEIPCBj245Yq8_AVEI_-0JgEX60xfaOsIj7RRie83zsrzPDf5sRUsk',
   // Requerido por los marcadores avanzados de Google Maps.
   googleMapsMapId: 'DEMO_MAP_ID',
 };

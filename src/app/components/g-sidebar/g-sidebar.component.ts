@@ -17,6 +17,7 @@ import { DriverService } from '../../services/driver.service';
 import { Subscription, distinctUntilChanged } from 'rxjs';
 import { GNotificationsComponent } from '../g-notifications/g-notifications.component';
 import { NotificationsService } from '../../services/notifications.service';
+import { PushService } from '../../services/push.service';
 import { CommonModule } from '@angular/common';
 import {
   Filter,
@@ -59,6 +60,7 @@ export class GSidebarComponent implements OnInit, OnDestroy {
     private readonly ownerService: OwnerService,
     private readonly driverService: DriverService,
     public readonly notificationsService: NotificationsService,
+    private readonly pushService: PushService,
   ) {}
 
   ngOnInit(): void {
@@ -218,6 +220,11 @@ export class GSidebarComponent implements OnInit, OnDestroy {
   }
 
   logout() {
+    // Da de baja el dispositivo para que el siguiente usuario del mismo celular
+    // no reciba notificaciones ajenas. No se espera: el cierre de sesion no
+    // puede quedar a merced de una llamada de red.
+    void this.pushService.unsubscribe();
+
     this.tokenService.clearToken();
     this.router.navigateByUrl('/auth');
     this.isUserMenuOpen = false;

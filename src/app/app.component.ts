@@ -7,6 +7,7 @@ import { GFooterComponent } from './components/g-footer/g-footer.component';
 import { ToastContainerComponent } from './components/toast-container/toast-container.component';
 import { NotificationsService } from './services/notifications.service';
 import { SecurityService } from './services/security/security.service';
+import { PushService } from './services/push.service';
 import { Subscription, interval, filter, distinctUntilChanged } from 'rxjs';
 
 @Component({
@@ -37,6 +38,7 @@ export class AppComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly notificationsService: NotificationsService,
     private readonly securityService: SecurityService,
+    private readonly pushService: PushService,
   ) {}
 
   ngOnInit(): void {
@@ -57,6 +59,9 @@ export class AppComponent implements OnInit, OnDestroy {
       )
       .subscribe(() => {
         this.notificationsService.refreshNotifications();
+        // Re-verifica la suscripcion push: los push services rotan el endpoint
+        // en silencio. No pide permisos ni molesta si el usuario nunca los dio.
+        void this.pushService.syncSubscription();
       });
 
     // 2. Cada 5-10 minutos: Polling (5 minutos = 300,000 ms)

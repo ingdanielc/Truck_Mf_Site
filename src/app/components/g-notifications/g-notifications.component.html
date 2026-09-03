@@ -20,6 +20,66 @@
   </div>
 
   <div class="offcanvas-body p-0">
+    @if (pushState === "ask") {
+      <div class="push-prompt border-bottom p-3 d-flex gap-3 align-items-start">
+        <i class="fa-solid fa-bell text-primary fs-5 mt-1"></i>
+        <div class="flex-grow-1">
+          <p class="fw-semibold mb-1 small">Recibe tus avisos al instante</p>
+          <p class="text-secondary smallest mb-3">
+            Te avisamos en el celular cuando haya novedades en tus viajes,
+            gastos y vencimientos, aunque no tengas la app abierta.
+          </p>
+          <div class="d-flex gap-2 align-items-center">
+            <button
+              class="btn btn-primary btn-sm px-3"
+              (click)="onEnablePush()"
+              [disabled]="isSubscribing"
+            >
+              @if (isSubscribing) {
+                <output class="spinner-border spinner-border-sm"></output>
+              } @else {
+                Activar
+              }
+            </button>
+            <button
+              class="btn btn-link btn-sm text-secondary text-decoration-none smallest"
+              (click)="dismissPushPrompt()"
+              [disabled]="isSubscribing"
+            >
+              Ahora no
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (pushState === "ios") {
+      <div class="push-prompt border-bottom p-3 d-flex gap-3 align-items-start">
+        <i class="fa-solid fa-mobile-screen-button text-primary fs-5 mt-1"></i>
+        <div class="flex-grow-1">
+          <p class="fw-semibold mb-1 small">Activa los avisos en tu iPhone</p>
+          <p class="text-secondary smallest mb-2">
+            Para recibir notificaciones, agrega CashTruck a tu pantalla de
+            inicio:
+          </p>
+          <ol class="text-secondary smallest ps-3 mb-3">
+            <li>
+              Toca <i class="fa-solid fa-arrow-up-from-bracket"></i> Compartir,
+              en la barra de Safari
+            </li>
+            <li>Elige <strong>Agregar a pantalla de inicio</strong></li>
+            <li>Abre CashTruck desde el nuevo icono</li>
+          </ol>
+          <button
+            class="btn btn-link btn-sm text-secondary text-decoration-none p-0 smallest"
+            (click)="dismissPushPrompt()"
+          >
+            Entendido
+          </button>
+        </div>
+      </div>
+    }
+
     <div
       class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-body-tertiary"
     >
@@ -72,7 +132,9 @@
         Esta acción no se puede deshacer. Se ocultarán todas las notificaciones
         actuales.
       </p>
-      <div class="d-flex flex-column-reverse flex-sm-row gap-2 justify-content-center">
+      <div
+        class="d-flex flex-column-reverse flex-sm-row gap-2 justify-content-center"
+      >
         <button
           class="btn btn-outline-secondary w-100 w-sm-auto px-5 py-2"
           (click)="cancelClearAll()"
