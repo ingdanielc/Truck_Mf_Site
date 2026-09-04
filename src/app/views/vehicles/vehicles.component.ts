@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 
 import { ActivatedRoute, Router } from '@angular/router';
@@ -142,12 +142,22 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   /**
    * El numero de ejes define la categoria del vehiculo en los peajes, que es
-   * de donde sale el estimado de peajes de cada viaje. Se explica en el
-   * formulario porque un dato mal cargado desvia ese calculo en todos los
-   * viajes del vehiculo.
+   * de donde sale el estimado de peajes de cada viaje. Se explica bajo el
+   * campo porque un dato mal cargado desvia ese calculo en todos los viajes
+   * del vehiculo.
    */
   readonly axleHelpText = 'Define la categoría del vehículo en peajes.';
-  showAxleHelp = false;
+
+  /**
+   * La ayuda acompaña al campo mientras está sin llenar. Con un valor elegido
+   * ya no aporta, y si el campo está mostrando su error tampoco: serían dos
+   * mensajes seguidos bajo el mismo campo.
+   */
+  get showAxleHelp(): boolean {
+    const control = this.vehicleForm.get('axleCount');
+    if (!control || control.value) return false;
+    return !(control.invalid && control.touched);
+  }
   owners: ModelOwner[] = [];
   drivers: ModelDriver[] = [];
   loadingDrivers: boolean = false;
@@ -197,7 +207,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       ],
       motorNumber: [''],
       chassisNumber: [''],
-      axleCount: [2, [Validators.min(1), Validators.max(6)]],
+      axleCount: [
+        null,
+        [Validators.required, Validators.min(1), Validators.max(6)],
+      ],
       initialKm: [0, [Validators.min(0), Validators.max(99999999)]],
       photo: [''],
       ownerId: [null, [Validators.required]],
@@ -344,19 +357,6 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       input.value = input.value.slice(0, 8);
       this.vehicleForm.get('initialKm')?.setValue(input.value);
     }
-  }
-
-  toggleAxleHelp(event: Event): void {
-    // Sin esto el click llega al documento y el listener de abajo lo cierra
-    // en el mismo gesto que lo abre.
-    event.stopPropagation();
-    this.showAxleHelp = !this.showAxleHelp;
-  }
-
-  /** El tooltip de ejes se cierra al tocar en cualquier otro lado. */
-  @HostListener('document:click')
-  closeAxleHelp(): void {
-    this.showAxleHelp = false;
   }
 
   loadDriversByOwner(ownerId: number): void {
@@ -726,7 +726,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         // CREATE mode
         this.vehicleForm.reset({
           year: new Date().getFullYear(),
-          axleCount: 2,
+          axleCount: null,
           initialKm: 0,
           ownerId:
             this.userRole === 'ADMINISTRADOR' ? null : this.loggedInOwnerId,
@@ -836,7 +836,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.isOffcanvasOpen = true;
     // Primero reseteamos sin emitir eventos para evitar doble disparo
     this.vehicleForm.reset(
-      { year: new Date().getFullYear(), axleCount: 2, initialKm: 0 },
+      { year: new Date().getFullYear(), axleCount: null, initialKm: 0 },
       { emitEvent: false },
     );
 
@@ -885,7 +885,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             color: formValue.color,
             engineNumber: formValue.motorNumber,
             chassisNumber: formValue.chassisNumber,
-            numberOfAxles: formValue.axleCount,
+            numberOfAxles: Number(formValue.axleCount),
             initialKm: Number(formValue.initialKm) || 0,
             status: this.editingVehicle.status || 'Activo',
             ownerId:
@@ -947,7 +947,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             color: formValue.color,
             engineNumber: formValue.motorNumber,
             chassisNumber: formValue.chassisNumber,
-            numberOfAxles: formValue.axleCount,
+            numberOfAxles: Number(formValue.axleCount),
             initialKm: Number(formValue.initialKm) || 0,
             status: 'Activo',
             ownerId:
