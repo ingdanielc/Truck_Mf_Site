@@ -1,5 +1,6 @@
 <div
   class="card trip-card border-0 rounded-4 shadow-sm h-100 cursor-pointer hover-scale"
+  [ngClass]="statusTheme"
   (click)="navigateToDetail()"
   onkeypress
 >
@@ -30,7 +31,7 @@
     >
       <div class="d-flex flex-column gap-1 border-end pe-2 pe-sm-3">
         <div class="d-flex align-items-center gap-2">
-          <i class="fa-solid fa-truck text-primary"></i>
+          <i class="fa-solid fa-truck text-status"></i>
           <span class="small opacity-50 fw-bold text-uppercase">Placa</span>
         </div>
         <span class="small fw-bold text-uppercase text-nowrap">{{
@@ -39,7 +40,7 @@
       </div>
       <div class="d-flex flex-column gap-1 flex-grow-1 overflow-hidden">
         <div class="d-flex align-items-center gap-2">
-          <i class="fa-solid fa-user-tie text-primary"></i>
+          <i class="fa-solid fa-user-tie text-status"></i>
           <span class="small opacity-50 fw-bold text-uppercase">Conductor</span>
         </div>
         <span class="small fw-bold text-truncate driver-name">{{
@@ -52,7 +53,7 @@
     <div class="route-timeline mb-3">
       <div class="timeline-item d-flex gap-3 pb-3">
         <div class="timeline-visual position-relative">
-          <div class="dot dot-origin bg-primary border-0"></div>
+          <div class="dot dot-origin"></div>
           <div
             class="line dashed-line position-absolute h-100"
             [class.solid-line]="
@@ -71,7 +72,7 @@
         <!-- Móvil: los dos destinos apilados, cada uno con su punto -->
         <div class="timeline-item d-flex d-md-none gap-3 pb-3">
           <div class="timeline-visual position-relative">
-            <div class="dot dot-origin bg-primary border-0"></div>
+            <div class="dot dot-origin"></div>
             <div
               class="line dashed-line position-absolute h-100"
               [class.solid-line]="
@@ -91,7 +92,7 @@
         <div class="timeline-item d-flex d-md-none gap-3">
           <div class="timeline-visual">
             <div
-              class="dot dot-destination border border-primary border-2"
+              class="dot dot-destination"
               [class.dot-filled]="
                 trip.status === 'Completado' || trip.status === 'Pendiente'
               "
@@ -111,7 +112,7 @@
         <div class="timeline-item d-none d-md-flex gap-3">
           <div class="timeline-visual">
             <div
-              class="dot dot-destination border border-primary border-2"
+              class="dot dot-destination"
               [class.dot-filled]="
                 trip.status === 'Completado' || trip.status === 'Pendiente'
               "
@@ -146,7 +147,7 @@
         <div class="timeline-item d-flex gap-3">
           <div class="timeline-visual">
             <div
-              class="dot dot-destination border border-primary border-2"
+              class="dot dot-destination"
               [class.dot-filled]="
                 trip.status === 'Completado' || trip.status === 'Pendiente'
               "
@@ -228,13 +229,7 @@
         >
           <div
             class="progress-bar rounded-pill"
-            [ngClass]="
-              isEmptyTrip
-                ? 'bg-danger'
-                : trip.paidBalance
-                  ? 'bg-success'
-                  : 'bg-primary'
-            "
+            [ngClass]="isEmptyTrip ? 'bg-danger' : 'bg-status'"
             role="progressbar"
             [style.width.%]="isEmptyTrip ? 100 : progressPercentage"
             [attr.aria-valuenow]="isEmptyTrip ? 100 : progressPercentage"
@@ -259,7 +254,7 @@
 
       @if (trip.status === "Completado" || trip.status === "Pendiente") {
         <i class="fa-solid fa-arrow-right-long mx-1 opacity-50"></i>
-        <span class="text-success fw-bold">
+        <span class="text-status fw-bold">
           {{ trip.endDate | date: "dd MMM, yyyy" }} ({{ tripDuration }}
           {{ tripDuration === 1 ? "día" : "días" }})
         </span>
@@ -269,14 +264,14 @@
       class="d-flex flex-column flex-sm-row gap-0 gap-sm-3 align-items-end align-items-sm-center"
     >
       <button
-        class="btn btn-link text-primary p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2"
+        class="btn btn-link text-status p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2"
         (click)="onExpensesClick($event)"
       >
         Gastos <i class="fa-solid fa-wallet"></i>
       </button>
       @if (trip.status !== "Completado" || userRole === "ADMINISTRADOR") {
         <button
-          class="btn btn-link text-primary p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2"
+          class="btn btn-link text-status p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2"
           (click)="onEditClick($event)"
         >
           Editar <i class="fa-solid fa-pen-to-square"></i>

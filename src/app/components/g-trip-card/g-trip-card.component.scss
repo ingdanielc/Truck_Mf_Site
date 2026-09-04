@@ -3,6 +3,11 @@
 }
 
 .trip-card {
+  /* Color del estado. Tiñe los iconos de vehiculo y conductor, la ruta y las
+     acciones del pie, para que la tarjeta se lea sin buscar la etiqueta. */
+  --status-color: var(--bs-primary);
+  --status-color-rgb: var(--bs-primary-rgb);
+
   --card-bg: var(--bs-body-bg);
   --card-hover-bg: rgba(var(--bs-primary-rgb), 0.02);
   --card-border: rgba(var(--bs-emphasis-color-rgb), 0.05);
@@ -21,6 +26,18 @@
     background-color: var(--card-hover-bg);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
     border-color: rgba(var(--bs-primary-rgb), 0.2) !important;
+  }
+
+  &.status-completed {
+    --status-color: #10b981;
+    --status-color-rgb: 16, 185, 129;
+  }
+
+  /* El amarillo puro no contrasta sobre el fondo de la tarjeta: se usa el
+     mismo tono de enfasis que ya lleva la etiqueta de estado. */
+  &.status-pending {
+    --status-color: var(--bs-warning-text-emphasis);
+    --status-color-rgb: var(--bs-warning-rgb);
   }
 }
 
@@ -63,6 +80,16 @@
   border: 1px solid rgba(var(--bs-warning-rgb), 0.5);
 }
 
+/* Iconos y acciones que siguen el color del estado. Lleva !important como
+   las utilidades de color de Bootstrap, que es lo que reemplaza. */
+.text-status {
+  color: var(--status-color) !important;
+}
+
+.bg-status {
+  background-color: var(--status-color) !important;
+}
+
 /* Timeline specific styles */
 .timeline-visual {
   width: 16px;
@@ -78,29 +105,31 @@
     position: relative;
     z-index: 1;
     margin-left: 3px;
+    background-color: var(--status-color);
 
     &.dot-destination {
       // Hollow dot with border
       background: transparent;
+      border: 2px solid var(--status-color);
     }
   }
 
   .dashed-line {
     width: 0;
-    border-left: 2px dashed rgba(var(--bs-primary-rgb), 0.3);
+    border-left: 2px dashed rgba(var(--status-color-rgb), 0.3);
     left: 7.5px;
     top: 10px;
     z-index: 0;
 
     &.solid-line {
       border-left-style: solid;
-      border-left-color: var(--bs-primary);
+      border-left-color: var(--status-color);
       opacity: 0.8;
     }
   }
 
   .dot-filled {
-    background: var(--bs-primary) !important;
+    background: var(--status-color) !important;
     border: none !important;
   }
 }
@@ -133,7 +162,7 @@
 // Dark mode adjustments if needed for native high-contrast
 [data-bs-theme="dark"] {
   .dashed-line {
-    border-left-color: rgba(var(--bs-primary-rgb), 0.5);
+    border-left-color: rgba(var(--status-color-rgb), 0.5);
   }
 }
 

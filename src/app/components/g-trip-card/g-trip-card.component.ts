@@ -112,6 +112,22 @@ export class GTripCardComponent {
     }
   }
 
+  /**
+   * Tema de la tarjeta: fija el color del estado, con el que se pintan los
+   * iconos de vehículo y conductor, la ruta y las acciones del pie. Así la
+   * tarjeta se lee de un vistazo sin tener que buscar la etiqueta de estado.
+   */
+  get statusTheme(): string {
+    switch ((this.trip.status || '').toUpperCase()) {
+      case 'COMPLETADO':
+        return 'status-completed';
+      case 'PENDIENTE':
+        return 'status-pending';
+      default:
+        return 'status-in-progress';
+    }
+  }
+
   get tripDuration(): number {
     if (!this.trip.startDate || !this.trip.endDate) return 0;
     const start = new Date(this.trip.startDate);
