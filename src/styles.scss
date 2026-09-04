@@ -21,16 +21,61 @@
   position: fixed;
   bottom: 2rem;
   right: 1.5rem;
-  width: 60px;
+  /* Ancho libre para que quepa la etiqueta de presentacion. Recogido solo
+     queda el icono, que con este padding no llega a los 60px: manda el
+     min-width y el boton es el circulo de siempre. */
+  min-width: 60px;
   height: 60px;
-  border-radius: 50% !important;
+  padding: 0 1rem;
+  /* Pildora en vez de 50%: a 60x60 se ve igual de redondo y, con la etiqueta
+     desplegada, los extremos siguen siendo semicirculos en vez de un ovalo. */
+  border-radius: 999px !important;
   z-index: 1050;
   border: none;
+  white-space: nowrap;
   box-shadow: 0 4px 20px rgba(var(--bs-primary-rgb), 0.4) !important;
   transition: all 0.2s ease;
 
   &:active {
     transform: scale(0.95);
+  }
+}
+
+/**
+ * El boton flotante se presenta solo. Al entrar a la vista aparece como
+ * "+ Agregar" y a los pocos segundos se recoge al circulo de siempre: quien
+ * no lo ubica alcanza a leer para que sirve, y quien ya lo conoce lo
+ * encuentra donde lo deja.
+ *
+ * Va sin JS. La animacion arranca al crearse el elemento —o sea, al cargar la
+ * vista— y `both` hace el resto: durante la espera se aplica el fotograma
+ * inicial (etiqueta desplegada) y al terminar se queda el final (recogida).
+ * El ancho del boton no se anima: lo sigue solo, porque la etiqueta es un
+ * hijo flex y el boton se ajusta a su contenido.
+ */
+.btn-fab-label {
+  overflow: hidden;
+  animation: fab-label-collapse 0.45s cubic-bezier(0.4, 0, 0.2, 1) 2.5s both;
+}
+
+@keyframes fab-label-collapse {
+  from {
+    max-width: 14rem;
+    margin-left: 0.5rem;
+    opacity: 1;
+  }
+
+  to {
+    max-width: 0;
+    margin-left: 0;
+    opacity: 0;
+  }
+}
+
+/* Sin animaciones el boton no se presenta: aparece recogido, como antes. */
+@media (prefers-reduced-motion: reduce) {
+  .btn-fab-label {
+    display: none;
   }
 }
 

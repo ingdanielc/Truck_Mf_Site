@@ -23,22 +23,9 @@
 /* .stat-card: el estilo (sombra, borde, hover y giro del icono) esta
    unificado de forma transversal en src/styles.scss. No redefinir aqui. */
 
-.btn-fab {
-  position: fixed;
-  bottom: 2rem;
-  right: 1.5rem;
-  width: 60px;
-  height: 60px;
-  border-radius: 50% !important;
-  z-index: 1050;
-  border: none;
-  box-shadow: 0 4px 20px rgba(var(--bs-primary-rgb), 0.4) !important;
-  transition: all 0.2s ease;
-
-  &:active {
-    transform: scale(0.95);
-  }
-}
+/* .btn-fab: el estilo del boton flotante —y su animacion de entrada— esta
+   unificado en src/styles.scss. No redefinir aqui: la copia local ganaba por
+   especificidad y dejaba el boton sin el efecto. */
 
 .shadow-primary {
   box-shadow: 0 4px 15px rgba(var(--bs-primary-rgb), 0.3);

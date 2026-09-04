@@ -130,15 +130,29 @@
                   {{ destinationName }}
                 </p>
               </div>
-              <div class="col-6 overflow-hidden">
-                <p
-                  class="text-body-secondary small fw-bold mb-0 text-uppercase text-truncate"
-                >
-                  Destino Regreso
-                </p>
-                <p class="text-body fw-bold mb-0 text-truncate">
-                  {{ returnDestinationName }}
-                </p>
+              <!-- Aquí la ruta se parte en dos columnas y el punto de arriba
+                   se queda con el destino de ida: el de regreso lleva el suyo,
+                   del mismo color que el resto del recorrido. -->
+              <div class="col-6 overflow-hidden d-flex gap-3">
+                <div class="timeline-visual">
+                  <div
+                    class="dot dot-destination"
+                    [class.dot-filled]="
+                      trip.status === 'Completado' ||
+                      trip.status === 'Pendiente'
+                    "
+                  ></div>
+                </div>
+                <div class="overflow-hidden">
+                  <p
+                    class="text-body-secondary small fw-bold mb-0 text-uppercase text-truncate"
+                  >
+                    Destino Regreso
+                  </p>
+                  <p class="text-body fw-bold mb-0 text-truncate">
+                    {{ returnDestinationName }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

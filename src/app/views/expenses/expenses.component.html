@@ -224,9 +224,17 @@
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 pt-2">
               @for (trip of recentTrips; track trip.id) {
                 <div class="col">
+                  <!-- El redondo agrega su destino de regreso a la ruta. Sin
+                       el id no hay nada que mostrar: se deja en dos puntos
+                       antes que pintar un "N/A" al final. -->
                   <g-trip-mini-card
                     [origin]="getCityName(trip.originId)"
                     [destination]="getCityName(trip.destinationId)"
+                    [returnDestination]="
+                      trip.tripType === 'REDONDO' && trip.returnDestinationId
+                        ? getCityName(trip.returnDestinationId)
+                        : ''
+                    "
                     [status]="trip.status"
                     [numberTrip]="trip.numberTrip || trip.manifestNumber"
                     [isSelected]="selectedTrip?.id === trip.id"
@@ -288,6 +296,9 @@
     (click)="openAddExpense()"
   >
     <i class="fa-solid fa-plus fs-4"></i>
+    <span class="btn-fab-label" aria-hidden="true">{{
+      isMaintenance ? "Agregar Mantenimiento" : "Agregar Gasto"
+    }}</span>
   </button>
 </div>
 
