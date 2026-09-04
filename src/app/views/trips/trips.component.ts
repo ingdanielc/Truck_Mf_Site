@@ -23,6 +23,7 @@ import { VehicleService as ExpenseService } from 'src/app/services/expense.servi
 import { GTripFormComponent } from '../../components/g-trip-form/g-trip-form.component';
 import { GTripInfoCardComponent } from '../../components/g-trip-info-card/g-trip-info-card.component';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
+import { locationQuery } from 'src/app/utils/city-geo';
 
 export interface TripOwnerGroup {
   owner: ModelOwner;
@@ -94,6 +95,10 @@ export class TripsComponent implements OnInit, OnDestroy {
   latestTripDestination: string = '';
   /** Vacío salvo en viajes redondos: alimenta la ruta de tres puntos del trayecto */
   latestTripReturnDestination: string = '';
+  /** Ubicaciones con país para la ruta: el nombre suelto no basta en frontera */
+  latestTripOriginQuery: string = '';
+  latestTripDestinationQuery: string = '';
+  latestTripReturnDestinationQuery: string = '';
   latestTripAxles: number = 2;
 
   // Selection Lists for parent context
@@ -1164,22 +1169,33 @@ export class TripsComponent implements OnInit, OnDestroy {
         this.userRole === 'ADMINISTRADOR' ||
         this.userRole === 'CONDUCTOR')
     ) {
-      const originName =
-        this.cities.find((c) => String(c.id) === String(savedTrip.originId))
-          ?.name || 'N/A';
-      const destName =
-        this.cities.find(
-          (c) => String(c.id) === String(savedTrip.destinationId),
-        )?.name || 'N/A';
+      const originCity = this.cities.find(
+        (c) => String(c.id) === String(savedTrip.originId),
+      );
+      const destCity = this.cities.find(
+        (c) => String(c.id) === String(savedTrip.destinationId),
+      );
+      const returnCity =
+        savedTrip.tripType === 'REDONDO' && savedTrip.returnDestinationId
+          ? this.cities.find(
+              (c) => String(c.id) === String(savedTrip.returnDestinationId),
+            )
+          : null;
+
+      const originName = originCity?.name || 'N/A';
+      const destName = destCity?.name || 'N/A';
 
       this.latestTripOrigin = originName;
       this.latestTripDestination = destName;
       this.latestTripReturnDestination =
         savedTrip.tripType === 'REDONDO' && savedTrip.returnDestinationId
-          ? this.cities.find(
-              (c) => String(c.id) === String(savedTrip.returnDestinationId),
-            )?.name || 'N/A'
+          ? returnCity?.name || 'N/A'
           : '';
+      this.latestTripOriginQuery = locationQuery(originName, originCity);
+      this.latestTripDestinationQuery = locationQuery(destName, destCity);
+      this.latestTripReturnDestinationQuery = this.latestTripReturnDestination
+        ? locationQuery(this.latestTripReturnDestination, returnCity)
+        : '';
 
       // Find the full vehicle object to get the correct number of axles
       // Try the vehicles list first, then fallback to the nested object in the trip being edited

@@ -37,6 +37,7 @@ import {
 import { NgClass, UpperCasePipe } from '@angular/common';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 import { computeRoute, routeDistanceKm } from 'src/app/utils/google-routes';
+import { locationQuery } from 'src/app/utils/city-geo';
 import { PlatePipe } from '../../pipes/plate.pipe';
 
 @Component({
@@ -792,11 +793,14 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   /** Timeout de la ruta: guardar no puede quedar colgado de Google. */
   private readonly ROUTE_TIMEOUT_MS = 8000;
 
-  /** Nombre de la ciudad tal como lo espera Google Routes. */
-  private cityName(cityId: any): string {
+  /**
+   * Ubicacion de la ciudad tal como la espera Google Routes: el nombre del
+   * catalogo con su pais, que solo deja de ser Colombia en la frontera.
+   */
+  private cityQuery(cityId: any): string {
     if (cityId === null || cityId === undefined || cityId === '') return '';
     const city = this.cities.find((c) => String(c.id) === String(cityId));
-    return city?.name || '';
+    return locationQuery(city?.name || '', city);
   }
 
   /**
@@ -809,25 +813,25 @@ export class GTripFormComponent implements OnInit, OnDestroy {
    * esto: el viaje se registra igual y el kilometraje queda sin sumar.
    */
   private async resolveDistanceKm(formValue: any): Promise<number | undefined> {
-    const originName = this.cityName(formValue.originId);
-    const destinationName = this.cityName(formValue.destinationId);
-    if (!originName || !destinationName) return undefined;
+    const originQuery = this.cityQuery(formValue.originId);
+    const destinationQuery = this.cityQuery(formValue.destinationId);
+    if (!originQuery || !destinationQuery) return undefined;
 
-    const returnName =
+    const returnQuery =
       formValue.tripType === 'REDONDO'
-        ? this.cityName(formValue.returnDestinationId)
+        ? this.cityQuery(formValue.returnDestinationId)
         : '';
-    const isRoundTrip = !!returnName;
+    const isRoundTrip = !!returnQuery;
 
     const request: any = {
-      origin: `${originName}, Colombia`,
-      destination: `${isRoundTrip ? returnName : destinationName}, Colombia`,
+      origin: originQuery,
+      destination: isRoundTrip ? returnQuery : destinationQuery,
       travelMode: 'DRIVING',
       routingPreference: 'TRAFFIC_AWARE',
       fields: ['distanceMeters'],
     };
     if (isRoundTrip) {
-      request.intermediates = [`${destinationName}, Colombia`];
+      request.intermediates = [destinationQuery];
     }
 
     try {

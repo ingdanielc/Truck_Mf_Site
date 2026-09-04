@@ -20,6 +20,7 @@ import {
 } from 'src/app/models/model-filter-table';
 import { map, of, Subscription, switchMap, distinctUntilChanged } from 'rxjs';
 import { computeRoute } from 'src/app/utils/google-routes';
+import { locationQuery } from 'src/app/utils/city-geo';
 import { PlatePipe } from '../../pipes/plate.pipe';
 import { Formatters } from '../../utils/formatters';
 
@@ -328,10 +329,10 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     );
 
     const originName = originCity
-      ? `${originCity.name}, ${originCity.state}, Colombia`
+      ? locationQuery(`${originCity.name}, ${originCity.state}`, originCity)
       : 'Colombia';
     const destName = destCity
-      ? `${destCity.name}, ${destCity.state}, Colombia`
+      ? locationQuery(`${destCity.name}, ${destCity.state}`, destCity)
       : 'Colombia';
 
     const drawStraightLineFallback = (): void => {

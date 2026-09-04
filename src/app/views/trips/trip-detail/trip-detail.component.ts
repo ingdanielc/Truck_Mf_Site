@@ -26,6 +26,7 @@ import {
   computeRoute,
   routeDurationSeconds,
 } from 'src/app/utils/google-routes';
+import { locationQuery } from 'src/app/utils/city-geo';
 import { PlatePipe } from '../../../pipes/plate.pipe';
 
 declare var globalThis: any;
@@ -416,6 +417,35 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return this.formatCityName(city);
   }
 
+  private cityById(cityId: any): any {
+    return this.cities.find((c) => String(c.id) === String(cityId));
+  }
+
+  /**
+   * Ubicaciones para Google Maps: el mismo nombre que se muestra, con el país
+   * de la ciudad. El nombre visible viene recortado —"Tulcán" en vez de
+   * "Tulcán Ecuador"—, así que el país sale del registro del catálogo.
+   */
+  get originQuery(): string {
+    return locationQuery(this.originName, this.cityById(this.trip?.originId));
+  }
+
+  get destinationQuery(): string {
+    return locationQuery(
+      this.destinationName,
+      this.cityById(this.trip?.destinationId),
+    );
+  }
+
+  /** Vacío salvo en viajes redondos, igual que `returnDestinationName` */
+  get returnDestinationQuery(): string {
+    if (!this.returnDestinationName) return '';
+    return locationQuery(
+      this.returnDestinationName,
+      this.cityById(this.trip?.returnDestinationId),
+    );
+  }
+
   private formatCityName(cityObj: any): string {
     if (!cityObj?.name) return '';
     let name = cityObj.name.trim();
@@ -628,12 +658,12 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       return; // No location reported = 0%
     }
 
-    const destination = `${this.destinationName}, Colombia`;
+    const destination = this.destinationQuery;
 
     // We do two concurrent calls to get total distance, and distance left
     Promise.all([
       computeRoute({
-        origin: `${this.originName}, Colombia`,
+        origin: this.originQuery,
         destination: destination,
         travelMode: 'DRIVING',
         fields: ['distanceMeters'],
@@ -1024,12 +1054,12 @@ export class TripDetailComponent implements OnInit, OnDestroy {
             lat: Number(this.lastLocation.latitude),
             lng: Number(this.lastLocation.longitude),
           }
-        : `${this.originName}, Colombia`;
+        : this.originQuery;
 
     // Tiempo hasta el destino de ida (el destino a secas si no es redondo)
     computeRoute({
       origin: originQuery,
-      destination: `${this.destinationName}, Colombia`,
+      destination: this.destinationQuery,
       travelMode: 'DRIVING',
       routingPreference: 'TRAFFIC_AWARE',
       fields: ['durationMillis', 'staticDurationMillis'],
@@ -1049,8 +1079,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     // Tiempo hasta el destino de regreso: cubre los dos tramos
     computeRoute({
       origin: originQuery,
-      intermediates: [`${this.destinationName}, Colombia`],
-      destination: `${this.returnDestinationName}, Colombia`,
+      intermediates: [this.destinationQuery],
+      destination: this.returnDestinationQuery,
       travelMode: 'DRIVING',
       routingPreference: 'TRAFFIC_AWARE',
       fields: ['durationMillis', 'staticDurationMillis'],

@@ -14,6 +14,7 @@ import {
   routeTollCost,
 } from 'src/app/utils/google-routes';
 import { createPinMarker, removeMarker } from 'src/app/utils/google-markers';
+import { locationQuery } from 'src/app/utils/city-geo';
 import { environment } from 'src/environments/environment';
 
 declare var globalThis: any;
@@ -31,6 +32,14 @@ export class GTripInfoCardComponent implements OnChanges {
   @Input() destinationName: string = '';
   /** Solo se informa en viajes redondos: convierte la ruta en Origen → Ida → Regreso */
   @Input() returnDestinationName: string = '';
+  /**
+   * Ubicaciones para Google Maps. Los nombres de arriba son los que se
+   * muestran y no dicen el país, así que el padre pasa aquí la ciudad
+   * completa; si no las informa, se asume Colombia como antes.
+   */
+  @Input() originQuery: string = '';
+  @Input() destinationQuery: string = '';
+  @Input() returnDestinationQuery: string = '';
   @Input() vehicleAxles: number = 2;
   @Output() close = new EventEmitter<void>();
   /** Se emite cuando no hay ruta que mostrar, para que el padre cierre el panel */
@@ -90,6 +99,20 @@ export class GTripInfoCardComponent implements OnChanges {
     return this.isRoundTrip ? this.returnDestinationName : this.destinationName;
   }
 
+  /**
+   * La ubicación que informó el padre; si no la informó, el nombre con su
+   * país, que es Colombia salvo que el propio nombre diga otro.
+   */
+  private queryFor(query: string, name: string): string {
+    return query?.trim() || locationQuery(name);
+  }
+
+  private get finalDestinationQuery(): string {
+    return this.isRoundTrip
+      ? this.queryFor(this.returnDestinationQuery, this.returnDestinationName)
+      : this.queryFor(this.destinationQuery, this.destinationName);
+  }
+
   async calculateRoute(): Promise<void> {
     const currentRequest = ++this.requestId;
     this.routeData = null;
@@ -104,8 +127,8 @@ export class GTripInfoCardComponent implements OnChanges {
     }
 
     const request: any = {
-      origin: `${this.originName}, Colombia`,
-      destination: `${this.finalDestinationName}, Colombia`,
+      origin: this.queryFor(this.originQuery, this.originName),
+      destination: this.finalDestinationQuery,
       travelMode: 'DRIVING',
       routingPreference: 'TRAFFIC_AWARE',
       extraComputations: ['TOLLS'],
@@ -123,7 +146,9 @@ export class GTripInfoCardComponent implements OnChanges {
     // En el viaje redondo el destino de ida es una parada intermedia,
     // así que distancia, tiempo, combustible y peajes cubren los dos tramos
     if (this.isRoundTrip) {
-      request.intermediates = [`${this.destinationName}, Colombia`];
+      request.intermediates = [
+        this.queryFor(this.destinationQuery, this.destinationName),
+      ];
     }
 
     try {
