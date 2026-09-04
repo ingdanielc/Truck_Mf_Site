@@ -46,15 +46,13 @@
   font-weight: 500;
 }
 
+/* La cifra es lo que se lee primero: 32px y en el color de su icono, para
+   que el estado se reconozca antes que el texto. */
 .kpi-value {
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.02em;
-
-  @media (min-width: 768px) {
-    font-size: 1.75rem;
-  }
 }
 
 .kpi-note {

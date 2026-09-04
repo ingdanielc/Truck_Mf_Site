@@ -104,6 +104,24 @@ export class GVehicleTripExpCardComponent implements OnInit {
     return this.profit / this.totalIncome;
   }
 
+  /**
+   * Icono del estado, para el movil, donde no cabe el nombre. Son los mismos
+   * de la tarjeta de vehiculos: en curso rueda, terminado va con chulo y
+   * cancelado con equis; pendiente es el unico propio de los viajes.
+   */
+  get statusIconClass(): string {
+    switch ((this.trip.status || '').toUpperCase()) {
+      case 'COMPLETADO':
+        return 'fa-check';
+      case 'PENDIENTE':
+        return 'fa-clock';
+      case 'CANCELADO':
+        return 'fa-xmark';
+      default:
+        return 'fa-truck-fast';
+    }
+  }
+
   getStatusClass(status: string): string {
     switch ((status || '').toUpperCase()) {
       case 'COMPLETADO':

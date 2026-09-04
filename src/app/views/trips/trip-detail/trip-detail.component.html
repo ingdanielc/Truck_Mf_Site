@@ -309,12 +309,21 @@
                   <option value="En Curso">En Curso</option>
                   <option value="Completado">Completado</option>
                   <option value="Cancelado">Cancelado</option>
-                  <!-- El viaje vacío no puede quedar Pendiente. Se conserva la
-                       opción si ya venía en ese estado, para no mostrar en el
-                       combo un estado distinto al real -->
-                  @if (!isEmptyTrip || trip.status === "Pendiente") {
-                    <option value="Pendiente">Pendiente</option>
-                  }
+                  <!--
+                    El viaje vacío no puede quedar Pendiente, pero la opción no
+                    se crea con un @if: el [value] del select se aplica antes
+                    que el contenido condicional y, al no existir todavía la
+                    opción, el navegador cae en la primera —"En Curso"— y el
+                    viaje Pendiente aparecía con un estado que no era el suyo.
+                    Se deja siempre en el DOM y se bloquea cuando no aplica.
+                  -->
+                  <option
+                    value="Pendiente"
+                    [hidden]="isEmptyTrip && trip.status !== 'Pendiente'"
+                    [disabled]="isEmptyTrip && trip.status !== 'Pendiente'"
+                  >
+                    Pendiente
+                  </option>
                 </select>
               </div>
             </div>

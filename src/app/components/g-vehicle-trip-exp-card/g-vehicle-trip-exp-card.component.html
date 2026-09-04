@@ -80,7 +80,7 @@
               >
             }
           </div>
-          <p class="text-secondary small mb-0 mt-1">
+          <p class="text-secondary small mb-0 mt-0">
             Viaje Nº {{ trip.numberTrip || trip.manifestNumber }}
           </p>
         </div>
@@ -89,7 +89,14 @@
             class="badge rounded-pill px-3 py-2 fw-bold"
             [ngClass]="getStatusClass(trip.status)"
           >
-            {{ trip.status }}
+            <span class="d-none d-md-inline">{{ trip.status }}</span>
+            <!-- En movil el nombre del estado no cabe junto a la ruta: se
+                 muestra su icono, el mismo de la tarjeta de vehiculos. -->
+            <i
+              class="fa-solid d-md-none"
+              [ngClass]="statusIconClass"
+              [title]="trip.status"
+            ></i>
           </span>
         </div>
       </div>
@@ -101,7 +108,7 @@
     <!-- Ingresos -->
     <div class="col-6 col-md-3 mb-3 mb-md-0">
       <p
-        class="text-secondary small fw-bold mb-1 text-uppercase tracking-wider"
+        class="text-secondary small fw-bold mb-0 mb-md-1 text-uppercase tracking-wider"
       >
         Ingresos
       </p>
@@ -113,7 +120,7 @@
     <!-- Gastos -->
     <div class="col-6 col-md-3 mb-3 mb-md-0">
       <p
-        class="text-secondary small fw-bold mb-1 text-uppercase tracking-wider"
+        class="text-secondary small fw-bold mb-0 mb-md-1 text-uppercase tracking-wider"
       >
         Gastos
       </p>
@@ -125,13 +132,16 @@
     <!-- Utilidad -->
     <div class="col-6 col-md-3">
       <p
-        class="text-secondary small fw-bold mb-1 text-uppercase tracking-wider"
+        class="text-secondary small fw-bold mb-0 mb-md-1 text-uppercase tracking-wider"
       >
         Utilidad
       </p>
+      <!-- La utilidad va en azul, como en el reporte de rentabilidad: el verde
+           es de los ingresos y aquí se leen uno al lado del otro. En pérdida
+           sigue en rojo, que es lo que hay que ver. -->
       <h5
         class="fw-bold mb-0 finance-value"
-        [ngClass]="{ 'text-success': profit > 0, 'text-danger': profit < 0 }"
+        [ngClass]="{ 'text-primary': profit > 0, 'text-danger': profit < 0 }"
       >
         {{ profit | currency: "COP" : "symbol-narrow" : "1.0-0" }}
       </h5>
@@ -140,7 +150,7 @@
     <!-- % Utilidad -->
     <div class="col-6 col-md-3">
       <p
-        class="text-secondary small fw-bold mb-1 text-uppercase tracking-wider"
+        class="text-secondary small fw-bold mb-0 mb-md-1 text-uppercase tracking-wider"
       >
         Margen
       </p>

@@ -79,15 +79,13 @@
   font-weight: 500;
 }
 
+/* La cifra es lo que se lee primero: 32px y en el color de su icono, para
+   que el signo de cada una se reconozca antes que el rotulo. */
 .kpi-value {
-  font-size: 1.15rem;
+  font-size: 2rem;
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.02em;
-
-  @media (min-width: 768px) {
-    font-size: 1.4rem;
-  }
 }
 
 /* La formula, o de que esta hecha la cifra. Discreta a proposito: se consulta
@@ -99,7 +97,7 @@
 }
 
 /* La utilidad es la respuesta del reporte, no una cifra mas: se lleva el color
-   y el tamaño. El signo nunca queda solo en el color — el rotulo cambia a
+   y el fondo. El signo nunca queda solo en el color — el rotulo cambia a
    "Perdida" y el icono con el, que es lo que hace que se lea igual impreso o
    sin distinguir el rojo del azul. */
 .kpi-hero {
@@ -109,14 +107,6 @@
   .kpi-label,
   .kpi-value {
     color: var(--profit-color);
-  }
-
-  .kpi-value {
-    font-size: 1.35rem;
-
-    @media (min-width: 768px) {
-      font-size: 1.75rem;
-    }
   }
 
   /* El icono no usa `bg-*` de Bootstrap como los otros tres: su color cambia

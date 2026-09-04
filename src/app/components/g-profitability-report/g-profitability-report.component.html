@@ -34,7 +34,7 @@
                1. Las cuatro cifras principales
                ================================================================
                Ingresos y gastos son el insumo; la utilidad es la respuesta y
-               por eso ocupa el doble y lleva el color. La rentabilidad la pone
+               por eso lleva su propio fondo y color. La rentabilidad la pone
                en escala: $4M de utilidad no significan lo mismo sobre $20M que
                sobre $200M.
 
@@ -51,7 +51,7 @@
         <div class="kpi-tile h-100">
           <div class="kpi-text">
             <span class="kpi-label">Ingresos</span>
-            <span class="kpi-value">
+            <span class="kpi-value text-success">
               {{ income | currency: "COP" : "symbol-narrow" : "1.0-0" }}
             </span>
             <span class="kpi-note">Flete facturado</span>
@@ -68,7 +68,7 @@
         <div class="kpi-tile h-100">
           <div class="kpi-text">
             <span class="kpi-label">Gastos</span>
-            <span class="kpi-value">
+            <span class="kpi-value text-danger">
               {{ expenses | currency: "COP" : "symbol-narrow" : "1.0-0" }}
             </span>
             <span class="kpi-note">Viajes + mantenimiento</span>
@@ -104,7 +104,7 @@
         <div class="kpi-tile h-100">
           <div class="kpi-text">
             <span class="kpi-label">Rentabilidad</span>
-            <span class="kpi-value">
+            <span class="kpi-value text-primary">
               @if (margin != null) {
                 {{ margin | number: "1.1-1" }}%
               } @else {

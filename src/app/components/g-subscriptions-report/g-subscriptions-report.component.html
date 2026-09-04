@@ -20,7 +20,7 @@
         >
           <span class="kpi-text">
             <span class="kpi-label">Activas</span>
-            <span class="kpi-value">{{ activas }}</span>
+            <span class="kpi-value text-success">{{ activas }}</span>
             <span class="kpi-note">Al día</span>
           </span>
           <span
@@ -41,7 +41,7 @@
         >
           <span class="kpi-text">
             <span class="kpi-label">Por vencerse</span>
-            <span class="kpi-value">{{ porVencer }}</span>
+            <span class="kpi-value text-warning">{{ porVencer }}</span>
             <span class="kpi-note">
               En los próximos {{ warningDays }} días
             </span>
@@ -64,7 +64,7 @@
         >
           <span class="kpi-text">
             <span class="kpi-label">Vencidas</span>
-            <span class="kpi-value">{{ vencidas }}</span>
+            <span class="kpi-value text-danger">{{ vencidas }}</span>
             <span class="kpi-note">Sin acceso</span>
           </span>
           <span
@@ -108,7 +108,7 @@
           <div class="kpi-tile h-100">
             <span class="kpi-text">
               <span class="kpi-label">Facturación vigente</span>
-              <span class="kpi-value">
+              <span class="kpi-value text-success">
                 {{
                   ingresoVigente | currency: "COP" : "symbol-narrow" : "1.0-0"
                 }}
@@ -127,7 +127,7 @@
           <div class="kpi-tile h-100">
             <span class="kpi-text">
               <span class="kpi-label">Por renovar</span>
-              <span class="kpi-value">
+              <span class="kpi-value text-warning">
                 {{
                   ingresoPorRenovar
                     | currency: "COP" : "symbol-narrow" : "1.0-0"
@@ -149,7 +149,7 @@
           <div class="kpi-tile h-100">
             <span class="kpi-text">
               <span class="kpi-label">Dejado de facturar</span>
-              <span class="kpi-value">
+              <span class="kpi-value text-danger">
                 {{
                   ingresoVencido | currency: "COP" : "symbol-narrow" : "1.0-0"
                 }}
