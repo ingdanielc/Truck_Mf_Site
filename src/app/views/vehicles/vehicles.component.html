@@ -174,6 +174,7 @@
                 (edit)="toggleOffcanvas($event)"
                 (maintenance)="goToMaintenance($event)"
                 (sell)="openSellConfirm($event)"
+                (manageDocuments)="openDocuments($event)"
               ></app-g-vehicle-card>
             </div>
           }
@@ -271,6 +272,7 @@
                               (edit)="toggleOffcanvas($event)"
                               (maintenance)="goToMaintenance($event)"
                               (sell)="openSellConfirm($event)"
+                              (manageDocuments)="openDocuments($event)"
                             ></app-g-vehicle-card>
                           </div>
                         }
@@ -819,6 +821,26 @@
           </div>
 
           <div class="col-6 mb-3">
+            <label for="initialKm" class="form-label small fw-bold mb-2"
+              >Kilometraje actual</label
+            >
+            <input
+              id="initialKm"
+              type="number"
+              min="0"
+              max="99999999"
+              class="form-control rounded-3 py-2 px-3"
+              formControlName="initialKm"
+              placeholder="Ej. 120000"
+              (input)="onInitialKmInput($event)"
+              [class.is-invalid]="
+                vehicleForm.get('initialKm')?.invalid &&
+                vehicleForm.get('initialKm')?.touched
+              "
+            />
+          </div>
+
+          <div class="col-6 mb-3">
             <div class="d-flex align-items-center gap-1 mb-2">
               <label for="axleCount" class="form-label small fw-bold mb-0"
                 >Nro. de Ejes</label
@@ -986,6 +1008,30 @@
   ></div>
 }
 
+<!-- Documentos -->
+@if (documentsVehicle) {
+  <div
+    class="offcanvas-backdrop transition-all d-none d-md-block"
+    (click)="closeDocuments()"
+    onkeypress
+  ></div>
+}
+
+<div
+  class="custom-offcanvas shadow-lg border-start transition-all"
+  [class.open]="!!documentsVehicle"
+>
+  @if (documentsVehicle && documentsVehicle.id) {
+    <g-vehicle-documents
+      [vehicleId]="documentsVehicle.id"
+      [plate]="documentsVehicle.plate || ''"
+      [canEdit]="userRole !== 'CONDUCTOR'"
+      (close)="closeDocuments()"
+      class="d-flex flex-column h-100"
+    ></g-vehicle-documents>
+  }
+</div>
+
 @if (showCamera) {
   <g-camera
     (capture)="onCameraCapture($event)"
@@ -1018,7 +1064,7 @@
         <i class="fa-solid fa-hand-holding-dollar text-danger fs-1"></i>
       </div>
       <h5 class="fw-bold mb-2">
-        ¿Vender el vehículo {{ vehicleToSell?.plate }}?
+        ¿Vender el vehículo {{ vehicleToSell?.plate | plate }}?
       </h5>
       <p class="small text-secondary mb-4">
         ¿Está seguro de vender este vehículo? Esta acción es irreversible y

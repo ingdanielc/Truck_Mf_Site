@@ -66,60 +66,117 @@
                 <div
                   class="d-flex justify-content-between align-items-center gap-2 mb-2"
                 >
-                  <h5 class="fw-bold mb-0 text-truncate text-uppercase fs-6">
-                    {{ vehicle.plate }}
+                  <h5 class="fw-bold mb-0 text-truncate fs-6">
+                    {{ vehicle.plate | plate }}
                   </h5>
-                  <button
-                    type="button"
-                    class="btn btn-link p-0 border-0 shadow-none text-body-secondary flex-shrink-0"
-                    (click)="toggleDocuments($event)"
-                    title="Volver a la información"
-                    aria-label="Volver a la información"
-                  >
-                    <i class="fa-solid fa-arrow-left"></i>
-                  </button>
-                </div>
-
-                <div class="documents-list flex-grow-1 overflow-auto pe-1">
-                  @for (row of documentRows; track row.document.id) {
-                    <div class="document-row mb-2">
-                      <div class="d-flex align-items-center gap-2">
-                        <span
-                          class="fw-bold text-truncate flex-grow-1"
-                          style="font-size: 0.78rem"
-                          [title]="row.name"
-                        >
-                          {{ row.name }}
-                        </span>
-                        @if (row.document.fileUrl) {
-                          <button
-                            type="button"
-                            class="btn btn-link p-0 border-0 shadow-none text-primary flex-shrink-0"
-                            (click)="openDocumentFile(row, $event)"
-                            title="Abrir archivo"
-                            aria-label="Abrir archivo"
-                          >
-                            <i
-                              class="fa-solid fa-arrow-up-right-from-square"
-                              style="font-size: 0.7rem"
-                            ></i>
-                          </button>
-                        }
-                      </div>
-
-                      <div
-                        class="validity-track rounded-pill mt-1"
-                        [title]="row.validity.label"
+                  <div class="d-flex align-items-center gap-3 flex-shrink-0">
+                    @if (canManageDocuments) {
+                      <button
+                        type="button"
+                        class="btn btn-link p-0 border-0 shadow-none text-primary"
+                        (click)="onManageDocumentsClick($event)"
+                        title="Gestionar documentos"
+                        aria-label="Gestionar documentos"
                       >
-                        <div
-                          class="validity-fill rounded-pill"
-                          [ngClass]="'state-' + row.validity.state"
-                          [style.width.%]="row.validity.percent"
-                        ></div>
-                      </div>
-                    </div>
-                  }
+                        <i class="fa-solid fa-pen-to-square"></i>
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      class="btn btn-link p-0 border-0 shadow-none text-body-secondary"
+                      (click)="toggleDocuments($event)"
+                      title="Volver a la información"
+                      aria-label="Volver a la información"
+                    >
+                      <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                  </div>
                 </div>
+
+                @if (loadingDocuments) {
+                  <div
+                    class="flex-grow-1 d-flex flex-column align-items-center justify-content-center text-primary opacity-50"
+                  >
+                    <output class="spinner-border spinner-border-sm"></output>
+                  </div>
+                } @else if (!hasDocuments) {
+                  <!--
+                    Sin documentos el reverso no muestra una lista vacia: dice
+                    que no hay y abre el panel de carga, que es lo unico que
+                    queda por hacer desde aqui.
+                  -->
+                  <div
+                    class="flex-grow-1 d-flex flex-column align-items-center justify-content-center text-center text-secondary px-1"
+                  >
+                    <i class="fa-solid fa-folder-open fs-4 mb-2 opacity-25"></i>
+                    <p class="mb-2" style="font-size: 0.72rem">
+                      Este vehículo no tiene documentos.
+                    </p>
+                    @if (canEditDocuments) {
+                      <button
+                        type="button"
+                        class="btn btn-outline-primary btn-sm rounded-3 fw-bold px-2 py-1"
+                        style="font-size: 0.72rem"
+                        (click)="openDocuments($event)"
+                      >
+                        <i class="fa-solid fa-file-circle-plus me-1"></i>Cargar
+                        Documentos
+                      </button>
+                    }
+                  </div>
+                } @else {
+                  <div class="documents-list flex-grow-1 overflow-auto pe-1">
+                    @for (row of documentRows; track row.document.id) {
+                      <div class="document-row mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                          @if (row.document.fileUrl) {
+                            <button
+                              type="button"
+                              class="document-name btn btn-link p-0 border-0 shadow-none text-start fw-bold text-truncate flex-grow-1"
+                              style="font-size: 0.78rem"
+                              (click)="openDocumentFile(row, $event)"
+                              [title]="row.name"
+                              aria-label="Abrir archivo"
+                            >
+                              {{ row.name }}
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-link p-0 border-0 shadow-none text-primary flex-shrink-0"
+                              (click)="openDocumentFile(row, $event)"
+                              title="Abrir archivo"
+                              aria-label="Abrir archivo"
+                            >
+                              <i
+                                class="fa-solid fa-arrow-up-right-from-square"
+                                style="font-size: 0.7rem"
+                              ></i>
+                            </button>
+                          } @else {
+                            <span
+                              class="fw-bold text-truncate flex-grow-1"
+                              style="font-size: 0.78rem"
+                              [title]="row.name"
+                            >
+                              {{ row.name }}
+                            </span>
+                          }
+                        </div>
+
+                        <div
+                          class="validity-track rounded-pill"
+                          [title]="row.validity.label"
+                        >
+                          <div
+                            class="validity-fill rounded-pill"
+                            [ngClass]="'state-' + row.validity.state"
+                            [style.width.%]="row.validity.percent"
+                          ></div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
               </div>
             }
 
@@ -133,8 +190,8 @@
                 <div
                   class="d-flex justify-content-between align-items-start mb-1 gap-2"
                 >
-                  <h5 class="fw-bold mb-0 text-truncate text-uppercase fs-6">
-                    {{ vehicle.plate }}
+                  <h5 class="fw-bold mb-0 text-truncate fs-6">
+                    {{ vehicle.plate | plate }}
                   </h5>
                   <span
                     class="badge status-badge px-3 py-2 rounded-pill small fw-bold text-wrap text-center flex-shrink-0"
@@ -227,40 +284,47 @@
                       </span>
                     </div>
                   }
+
+                  <div class="stats-group d-flex gap-3 align-items-center mt-2">
+                    <span
+                      class="d-flex align-items-center gap-1 overflow-hidden"
+                      [title]="'Kilometraje: ' + odometerKm"
+                    >
+                      <i class="fa-solid fa-gauge-high"></i>
+                      <span class="stat-text text-truncate">{{
+                        odometerKm
+                      }}</span>
+                    </span>
+                    <i class="fa-solid fa-gas-pump" title="Combustible"></i>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Footer Stats (Desktop Only) -->
+          <!-- Acciones (Desktop Only) -->
           <div
-            class="d-none d-md-flex justify-content-between align-items-center mt-2 pt-2 border-top border-secondary-subtle"
+            class="d-none d-md-block mt-2 pt-2 border-top border-secondary-subtle"
             (click)="$event.stopPropagation()"
             onkeypress
           >
-            <div class="stats-group d-flex gap-3 text-body-secondary fs-6">
-              <i class="fa-solid fa-gauge-high op-60" title="Kilometraje"></i>
-              <i class="fa-solid fa-gas-pump op-60" title="Combustible"></i>
-            </div>
-            <div class="d-flex gap-2">
-              @if (hasDocuments) {
-                <button
-                  type="button"
-                  class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none action-btn"
-                  (click)="toggleDocuments()"
-                  style="width: 32px; height: 32px"
-                  onkeypress
-                  [title]="showDocuments ? 'Ver información' : 'Ver documentos'"
-                >
-                  <i
-                    class="fa-solid"
-                    [ngClass]="
-                      showDocuments ? 'fa-circle-info' : 'fa-folder-open'
-                    "
-                    style="font-size: 0.8rem"
-                  ></i>
-                </button>
-              }
+            <div class="d-flex justify-content-end gap-2">
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none action-btn"
+                (click)="toggleDocuments()"
+                style="width: 32px; height: 32px"
+                onkeypress
+                [title]="documentsButtonTitle"
+              >
+                <i
+                  class="fa-solid"
+                  [ngClass]="
+                    showDocuments ? 'fa-circle-info' : 'fa-folder-open'
+                  "
+                  style="font-size: 0.8rem"
+                ></i>
+              </button>
               @if (canSell) {
                 <button
                   type="button"
@@ -316,31 +380,25 @@
       </div>
     </div>
 
-    <!-- Footer Stats (Mobile Only - Full Width) -->
+    <!-- Acciones (Mobile Only - Full Width) -->
     <div
-      class="card-footer d-md-none bg-transparent d-flex justify-content-between align-items-center py-2 px-3 border-top border-secondary-subtle mt-auto"
+      class="card-footer d-md-none bg-transparent py-2 px-3 border-top border-secondary-subtle mt-auto"
     >
-      <div class="stats-group d-flex gap-3 text-body-secondary fs-6">
-        <i class="fa-solid fa-gauge-high op-60" title="Kilometraje"></i>
-        <i class="fa-solid fa-gas-pump op-60" title="Combustible"></i>
-      </div>
-      <div class="d-flex gap-2">
-        @if (hasDocuments) {
-          <button
-            type="button"
-            class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none action-btn"
-            (click)="toggleDocuments()"
-            style="width: 32px; height: 32px"
-            onkeypress
-            [title]="showDocuments ? 'Ver información' : 'Ver documentos'"
-          >
-            <i
-              class="fa-solid"
-              [ngClass]="showDocuments ? 'fa-circle-info' : 'fa-folder-open'"
-              style="font-size: 0.8rem"
-            ></i>
-          </button>
-        }
+      <div class="d-flex justify-content-end gap-2">
+        <button
+          type="button"
+          class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none action-btn"
+          (click)="toggleDocuments()"
+          style="width: 32px; height: 32px"
+          onkeypress
+          [title]="documentsButtonTitle"
+        >
+          <i
+            class="fa-solid"
+            [ngClass]="showDocuments ? 'fa-circle-info' : 'fa-folder-open'"
+            style="font-size: 0.8rem"
+          ></i>
+        </button>
         @if (canSell) {
           <button
             type="button"
@@ -392,6 +450,31 @@
         }
       </div>
     </div>
+  }
+</div>
+
+<!-- Documentos: mismo panel lateral que la ficha del vehiculo -->
+@if (isDocumentsOpen) {
+  <div
+    class="offcanvas-backdrop transition-all d-none d-md-block"
+    (click)="closeDocuments()"
+    onkeypress
+  ></div>
+}
+
+<div
+  class="custom-offcanvas shadow-lg border-start transition-all"
+  [class.open]="isDocumentsOpen"
+>
+  @if (isDocumentsOpen && vehicle.id) {
+    <g-vehicle-documents
+      [vehicleId]="vehicle.id"
+      [plate]="vehicle.plate || ''"
+      [canEdit]="canEditDocuments"
+      (changed)="setDocuments($event)"
+      (close)="closeDocuments()"
+      class="d-flex flex-column h-100"
+    ></g-vehicle-documents>
   }
 </div>
 

@@ -20,13 +20,15 @@ import {
 } from 'src/app/models/model-filter-table';
 import { map, of, Subscription, switchMap, distinctUntilChanged } from 'rxjs';
 import { computeRoute } from 'src/app/utils/google-routes';
+import { PlatePipe } from '../../pipes/plate.pipe';
+import { Formatters } from '../../utils/formatters';
 
 declare const google: any;
 
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PlatePipe],
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss'],
 })
@@ -401,7 +403,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
           };
           this.addMarker(
             currentPos,
-            vehicle.plate.toUpperCase(),
+            Formatters.formatPlate(vehicle.plate),
             'Ubicación Actual',
             vehicleColor,
           );

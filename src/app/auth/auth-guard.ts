@@ -9,7 +9,7 @@ import { TokenService } from '../services/utils/token.service';
 
 export const AuthGuard: CanActivateFn = (
   route: ActivatedRouteSnapshot,
-  state: RouterStateSnapshot
+  state: RouterStateSnapshot,
 ) => {
   const tokenService = inject(TokenService);
   const router = inject(Router);

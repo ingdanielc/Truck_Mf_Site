@@ -2,11 +2,12 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModelTrip } from '../../models/trip-model';
 import { Router } from '@angular/router';
+import { PlatePipe } from '../../pipes/plate.pipe';
 
 @Component({
   selector: 'g-trip-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PlatePipe],
   templateUrl: './g-trip-card.component.html',
   styleUrls: ['./g-trip-card.component.scss'],
 })

@@ -13,6 +13,25 @@
   letter-spacing: 1px;
 }
 
+/**
+ * En movil las tarjetas de contadores van a media fila: "Disponible" no cabe
+ * en una linea con el tamano por defecto de h5, asi que se baja 1px.
+ */
+.stat-status {
+  @media (max-width: 575.98px) {
+    font-size: calc(1.25rem - 1px);
+  }
+}
+
+/**
+ * "Disponible" es la etiqueta de estado mas larga: se le recorta el padding
+ * lateral para que quepa en una linea. El resto de estados conserva el px-4.
+ */
+.status-tile-tight {
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+}
+
 /* Mismo gesto de hover que owner-detail y driver-detail. */
 .hover-scale {
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);

@@ -1,11 +1,12 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModelVehicle } from '../../models/vehicle-model';
+import { PlatePipe } from '../../pipes/plate.pipe';
 
 @Component({
   selector: 'g-vehicle-mini-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PlatePipe],
   templateUrl: './g-vehicle-mini-card.component.html',
   styleUrls: ['./g-vehicle-mini-card.component.scss'],
 })

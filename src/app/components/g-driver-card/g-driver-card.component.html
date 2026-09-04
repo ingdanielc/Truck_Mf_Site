@@ -26,72 +26,90 @@
         ></span>
       </div>
 
-      <!-- Context menu - visible for all drivers -->
-      <div class="dropdown position-relative">
-        <button
-          class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center"
-          style="width: 36px; height: 36px"
-          type="button"
-          (click)="toggleMenu($event)"
-          aria-expanded="false"
-          aria-label="Menú de opciones"
-          onkeypress
+      <div class="d-flex align-items-center gap-2">
+        <span
+          class="badge assignment-badge px-3 py-2 rounded-pill small fw-bold text-center flex-shrink-0"
+          [ngClass]="assignmentClass"
+          [title]="
+            isAssignedToVehicle
+              ? 'Asignado al vehículo ' + assignmentLabel
+              : 'Sin vehículo asignado'
+          "
         >
-          <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
-        </button>
-        @if (isMenuOpen) {
-          <ul
-            class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
-          >
-            <!-- Edit - always visible -->
-            @if (canEdit) {
-              <li>
-                <button
-                  class="dropdown-item d-flex align-items-center gap-2 py-2"
-                  (click)="onEditClick($event)"
-                >
-                  <i class="fa-solid fa-pencil text-secondary"></i>
-                  <span>Editar conductor</span>
-                </button>
-              </li>
-            }
-            <!-- Options only for drivers with user -->
-            @if (driver.user) {
-              <li>
-                <button
-                  class="dropdown-item d-flex align-items-center gap-2 py-2"
-                  (click)="onChangePasswordClick($event)"
-                >
-                  <i class="fa-solid fa-key text-secondary"></i>
-                  <span>Cambiar contraseña</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  class="dropdown-item d-flex align-items-center gap-2 py-2"
-                  [ngClass]="isActive ? 'text-warning' : 'text-success'"
-                  (click)="onToggleStatusClick($event)"
-                >
-                  <i
-                    class="fa-solid"
-                    [ngClass]="isActive ? 'fa-ban' : 'fa-check'"
-                  ></i>
-                  <span>{{
-                    isActive ? "Desactivar conductor" : "Activar conductor"
-                  }}</span>
-                </button>
-              </li>
-            }
-          </ul>
-        }
-        <!-- Backdrop to close dropdown -->
-        @if (isMenuOpen) {
-          <div
-            class="dropdown-backdrop"
+          <i
+            class="fa-solid me-1"
+            [ngClass]="isAssignedToVehicle ? 'fa-truck' : 'fa-check'"
+          ></i>
+          {{ assignmentLabel }}
+        </span>
+
+        <!-- Context menu - visible for all drivers -->
+        <div class="dropdown position-relative">
+          <button
+            class="btn btn-light btn-sm rounded-circle opacity-75 d-flex align-items-center justify-content-center"
+            style="width: 36px; height: 36px"
+            type="button"
             (click)="toggleMenu($event)"
+            aria-expanded="false"
+            aria-label="Menú de opciones"
             onkeypress
-          ></div>
-        }
+          >
+            <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
+          </button>
+          @if (isMenuOpen) {
+            <ul
+              class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
+            >
+              <!-- Edit - always visible -->
+              @if (canEdit) {
+                <li>
+                  <button
+                    class="dropdown-item d-flex align-items-center gap-2 py-2"
+                    (click)="onEditClick($event)"
+                  >
+                    <i class="fa-solid fa-pencil text-secondary"></i>
+                    <span>Editar conductor</span>
+                  </button>
+                </li>
+              }
+              <!-- Options only for drivers with user -->
+              @if (driver.user) {
+                <li>
+                  <button
+                    class="dropdown-item d-flex align-items-center gap-2 py-2"
+                    (click)="onChangePasswordClick($event)"
+                  >
+                    <i class="fa-solid fa-key text-secondary"></i>
+                    <span>Cambiar contraseña</span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    class="dropdown-item d-flex align-items-center gap-2 py-2"
+                    [ngClass]="isActive ? 'text-warning' : 'text-success'"
+                    (click)="onToggleStatusClick($event)"
+                  >
+                    <i
+                      class="fa-solid"
+                      [ngClass]="isActive ? 'fa-ban' : 'fa-check'"
+                    ></i>
+                    <span>{{
+                      isActive ? "Desactivar conductor" : "Activar conductor"
+                    }}</span>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+          <!-- Backdrop to close dropdown -->
+          @if (isMenuOpen) {
+            <div
+              class="dropdown-backdrop"
+              (click)="toggleMenu($event)"
+              onkeypress
+            ></div>
+          }
+        </div>
       </div>
     </div>
 

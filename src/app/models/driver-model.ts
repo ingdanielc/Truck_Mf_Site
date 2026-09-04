@@ -28,5 +28,7 @@ export class ModelDriver {
       password?: string;
       status?: string;
     },
+    public currentVehicleId?: number | null,
+    public currentVehiclePlate?: string | null,
   ) {}
 }

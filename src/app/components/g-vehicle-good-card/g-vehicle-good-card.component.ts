@@ -1,11 +1,12 @@
 import { Component, Input } from '@angular/core';
 
 import { ModelVehicle } from '../../models/vehicle-model';
+import { PlatePipe } from '../../pipes/plate.pipe';
 
 @Component({
   selector: 'g-vehicle-good-card',
   standalone: true,
-  imports: [],
+  imports: [PlatePipe],
   templateUrl: './g-vehicle-good-card.component.html',
   styleUrls: ['./g-vehicle-good-card.component.scss'],
 })

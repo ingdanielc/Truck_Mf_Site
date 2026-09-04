@@ -27,6 +27,7 @@ import {
   needsRenewal,
 } from 'src/app/utils/document-utils';
 import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
+import { PlatePipe } from '../../pipes/plate.pipe';
 
 /** Lo que acepta `/common/upload-document`. */
 const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
@@ -52,7 +53,12 @@ export interface DocumentRow {
 @Component({
   selector: 'g-vehicle-documents',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, GDocumentViewerComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    GDocumentViewerComponent,
+    PlatePipe,
+  ],
   templateUrl: './g-vehicle-documents.component.html',
   styleUrls: ['./g-vehicle-documents.component.scss'],
 })
@@ -91,6 +97,11 @@ export class GVehicleDocumentsComponent implements OnInit {
   selectedFileName: string = '';
   /** URL del escaneo ya guardado, cuando se edita sin reemplazarlo. */
   currentFileUrl: string | null = null;
+  /**
+   * Observaciones del documento que se edita. El formulario ya no las expone,
+   * pero se conservan para no borrarlas al guardar.
+   */
+  currentObservations: string | null = null;
 
   /** Documento abierto en el visor; null cuando no hay ninguno. */
   viewerUrl: string | null = null;
@@ -115,7 +126,6 @@ export class GVehicleDocumentsComponent implements OnInit {
       issuer: [''],
       issueDate: [''],
       expiryDate: [''],
-      observations: [''],
     });
 
     this.loadDocumentTypes();
@@ -184,6 +194,23 @@ export class GVehicleDocumentsComponent implements OnInit {
   }
 
   /**
+   * El tipo es obligatorio. Falta se avisa bajo el campo, no en la alerta:
+   * el botón ya queda deshabilitado mientras no se elija uno.
+   */
+  get typeMissing(): boolean {
+    return !this.documentForm?.getRawValue().documentFileTypeId;
+  }
+
+  /**
+   * Guardar se habilita solo cuando el formulario pasa las mismas reglas que
+   * validaría el backend, para no ofrecer una acción que va a fallar.
+   */
+  get canSubmit(): boolean {
+    if (!this.documentForm) return false;
+    return !this.typeMissing && !this.validate();
+  }
+
+  /**
    * Documento vigente del tipo elegido, distinto del que se edita. Guardar
    * sobre él no lo borra: lo manda al histórico. Se avisa antes.
    */
@@ -234,6 +261,7 @@ export class GVehicleDocumentsComponent implements OnInit {
     this.formError = '';
     this.selectedFile = null;
     this.currentFileUrl = row.document.fileUrl || null;
+    this.currentObservations = row.document.observations || null;
     this.selectedFileName = this.currentFileUrl
       ? this.fileNameOf(this.currentFileUrl)
       : '';
@@ -243,7 +271,6 @@ export class GVehicleDocumentsComponent implements OnInit {
       issuer: row.document.issuer || '',
       issueDate: row.document.issueDate || '',
       expiryDate: row.document.expiryDate || '',
-      observations: row.document.observations || '',
     });
     this.showForm = true;
   }
@@ -261,13 +288,13 @@ export class GVehicleDocumentsComponent implements OnInit {
     this.selectedFile = null;
     this.selectedFileName = '';
     this.currentFileUrl = null;
+    this.currentObservations = null;
     this.documentForm.reset({
       documentFileTypeId: row.document.documentFileTypeId,
       documentNumber: row.document.documentNumber || '',
       issuer: row.document.issuer || '',
       issueDate: '',
       expiryDate: '',
-      observations: '',
     });
     this.documentForm.markAsUntouched();
     this.documentForm.get('documentFileTypeId')?.disable();
@@ -289,12 +316,12 @@ export class GVehicleDocumentsComponent implements OnInit {
       issuer: '',
       issueDate: '',
       expiryDate: '',
-      observations: '',
     });
     this.documentForm.markAsUntouched();
     this.selectedFile = null;
     this.selectedFileName = '';
     this.currentFileUrl = null;
+    this.currentObservations = null;
     this.formError = '';
   }
 
@@ -361,9 +388,6 @@ export class GVehicleDocumentsComponent implements OnInit {
    */
   private validate(): string {
     const value = this.documentForm.getRawValue();
-    if (!value.documentFileTypeId) {
-      return 'Selecciona el tipo de documento.';
-    }
     if (this.expiryRequired && !value.expiryDate) {
       return (
         'El documento "' +
@@ -388,6 +412,8 @@ export class GVehicleDocumentsComponent implements OnInit {
     if (this.isSaving) return;
 
     this.documentForm.markAllAsTouched();
+    if (this.typeMissing) return;
+
     const error = this.validate();
     if (error) {
       this.formError = error;
@@ -418,7 +444,7 @@ export class GVehicleDocumentsComponent implements OnInit {
         issueDate: value.issueDate || null,
         expiryDate: value.expiryDate || null,
         fileUrl: fileUrl,
-        observations: value.observations?.trim() || null,
+        observations: this.currentObservations,
         isActive: true,
       };
       if (this.editingId !== null) {

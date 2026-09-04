@@ -81,7 +81,7 @@
               class="status-dot"
               [style.background-color]="getVehicleColor(vehicle)"
             ></span>
-            {{ vehicle.plate }}
+            {{ vehicle.plate | plate }}
           </div>
         } @empty {
           @if (userRole !== "ADMINISTRADOR" || selectedOwnerFilterId !== null) {

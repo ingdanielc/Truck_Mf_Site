@@ -5,11 +5,12 @@ import { ModelTrip } from '../../models/trip-model';
 import { ModelExpense } from '../../models/expense-model';
 import { CommonService } from '../../services/common.service';
 import { Router } from '@angular/router';
+import { PlatePipe } from '../../pipes/plate.pipe';
 
 @Component({
   selector: 'g-vehicle-trip-exp-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PlatePipe],
   templateUrl: './g-vehicle-trip-exp-card.component.html',
   styleUrls: ['./g-vehicle-trip-exp-card.component.scss'],
 })

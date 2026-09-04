@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { ModelVehicle } from '../../models/vehicle-model';
 import { ModelTrip } from '../../models/trip-model';
 import { CommonService } from '../../services/common.service';
+import { PlatePipe } from '../../pipes/plate.pipe';
 
 @Component({
   selector: 'g-vehicle-trip-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PlatePipe],
   templateUrl: './g-vehicle-trip-card.component.html',
   styleUrls: ['./g-vehicle-trip-card.component.scss'],
 })

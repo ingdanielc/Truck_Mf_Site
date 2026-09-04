@@ -26,7 +26,7 @@ export interface ModelTrip {
   paidBalance?: boolean;
   creationDate?: string | Date;
   updateDate?: string | Date;
-
+  distanceKm?: number;
   tripType?: string;
   currentLeg?: 'IDA' | 'REGRESO';
 }

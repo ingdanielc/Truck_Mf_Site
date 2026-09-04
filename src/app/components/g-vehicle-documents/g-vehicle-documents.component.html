@@ -12,7 +12,7 @@
   </div>
   <p class="text-secondary small mb-0 mt-1">
     @if (plate) {
-      Documentos de <span class="fw-bold text-uppercase">{{ plate }}</span
+      Documentos de <span class="fw-bold">{{ plate | plate }}</span
       >.
     } @else {
       Cada cambio se guarda al momento.
@@ -213,7 +213,7 @@
         }
       </div>
     } @else if (!showForm) {
-      <div class="text-center py-5 text-secondary">
+      <div class="text-center py-4 text-secondary">
         <i class="fa-solid fa-folder-open fs-1 mb-3 opacity-25 d-block"></i>
         <p class="mb-0 fw-bold small">Este vehículo no tiene documentos.</p>
       </div>
@@ -278,16 +278,27 @@
                   No se pudo cargar el catálogo de documentos. Intenta más
                   tarde.
                 </div>
+              } @else if (
+                typeMissing && documentForm.get("documentFileTypeId")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Selecciona el tipo de documento.
+                </div>
               } @else if (typeBeingRenewed && !renewingFrom) {
                 <div class="text-warning small mt-1">
                   <i class="fa-solid fa-rotate me-1"></i>
                   Ya hay un documento vigente de este tipo. Al guardar pasa al
-                  histórico y este queda como el vigente.
+                  histórico y el nuevo queda vigente.
                 </div>
               } @else if (expiryRequired) {
                 <div class="text-body-secondary small mt-1">
                   <i class="fa-solid fa-circle-info me-1"></i>
                   Este documento exige fecha de vencimiento.
+                </div>
+              } @else if (selectedType) {
+                <div class="text-body-secondary small mt-1">
+                  <i class="fa-solid fa-circle-info me-1"></i>
+                  Este documento exige fecha de vencimiento o archivo.
                 </div>
               }
             </div>
@@ -411,7 +422,7 @@
               } @else {
                 <button
                   type="button"
-                  class="file-dropzone btn w-100 rounded-3 py-4 d-flex flex-column align-items-center justify-content-center gap-1"
+                  class="file-dropzone btn w-100 rounded-3 py-3 d-flex flex-column align-items-center justify-content-center gap-1"
                   (click)="triggerFileInput(documentInput)"
                 >
                   <i class="fa-solid fa-cloud-arrow-up fs-4 text-primary"></i>
@@ -421,20 +432,6 @@
                   </span>
                 </button>
               }
-            </div>
-
-            <div class="col-12 mb-1">
-              <label for="observations" class="form-label small fw-bold mb-2"
-                >Observaciones</label
-              >
-              <textarea
-                id="observations"
-                class="form-control rounded-3 py-2 px-3"
-                formControlName="observations"
-                rows="2"
-                maxlength="500"
-                placeholder="Notas del documento (opcional)"
-              ></textarea>
             </div>
           </div>
 
@@ -461,7 +458,7 @@
             <button
               type="submit"
               class="btn btn-primary btn-lg flex-fill py-3 rounded-3 fw-bold shadow-primary"
-              [disabled]="documentTypes.length === 0 || isSaving"
+              [disabled]="documentTypes.length === 0 || isSaving || !canSubmit"
             >
               @if (isSaving) {
                 <output class="spinner-border me-2" aria-hidden="true"></output>

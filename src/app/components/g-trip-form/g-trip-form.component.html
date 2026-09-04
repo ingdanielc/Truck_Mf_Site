@@ -67,7 +67,7 @@
             </option>
             @for (v of vehicles; track v) {
               <option [ngValue]="v.id">
-                {{ v.plate | uppercase }} - {{ v.vehicleBrandName }}
+                {{ v.plate | plate }} - {{ v.vehicleBrandName }}
               </option>
             }
           </select>

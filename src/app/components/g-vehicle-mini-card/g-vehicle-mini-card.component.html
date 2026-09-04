@@ -25,7 +25,7 @@
   <div class="flex-grow-1 min-width-0">
     <div class="d-flex align-items-center gap-2 mb-0">
       <span class="fw-bold text-body text-truncate"
-        >{{ vehicle.plate }} - {{ vehicle.vehicleBrandName || "N/A" }} -
+        >{{ vehicle.plate | plate }} - {{ vehicle.vehicleBrandName || "N/A" }} -
         {{ vehicle.model || "N/A" }}</span
       >
       <span class="small text-secondary opacity-75 flex-shrink-0"

@@ -22,8 +22,8 @@
           }
         </div>
         <div class="overflow-hidden">
-          <span class="badge plate-badge mb-1 text-uppercase">{{
-            vehicle.plate
+          <span class="badge plate-badge mb-1">{{
+            vehicle.plate | plate
           }}</span>
           <h5 class="fw-bold mb-0 text-truncate text-body">
             {{ vehicleBrand }} {{ vehicle.year }}

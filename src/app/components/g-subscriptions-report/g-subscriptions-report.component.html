@@ -207,7 +207,7 @@
 
     <!-- Movil: una tarjeta por propietario, para no desplazar de lado. -->
     <div class="owner-cards d-md-none">
-      @for (r of visibleRows; track r.id) {
+      @for (r of pagedRows; track r.id) {
         <div class="owner-card">
           <div class="d-flex justify-content-between align-items-start gap-2">
             <span class="fw-semibold text-truncate">{{ r.name }}</span>
@@ -281,7 +281,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (r of visibleRows; track r.id) {
+          @for (r of pagedRows; track r.id) {
             <tr>
               <td class="fw-semibold">{{ r.name }}</td>
               <td>
@@ -307,6 +307,93 @@
           }
         </tbody>
       </table>
+    </div>
+
+    <!-- Pie y paginacion: mismo gesto que las vistas de propietarios y conductores. -->
+    <div class="row align-items-center g-3 mt-2">
+      <div class="col-12 col-md-6 text-center text-md-start">
+        <p class="text-secondary small mb-0">
+          Mostrando {{ pagedRows.length }} de {{ visibleRows.length }}
+          suscripciones
+        </p>
+      </div>
+      @if (totalPages > 0) {
+        <div
+          class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end"
+        >
+          <nav aria-label="Navegación de páginas">
+            <!-- Desktop Pagination -->
+            <ul class="pagination mb-0 d-none d-md-flex">
+              <li class="page-item" [class.disabled]="page === 0">
+                <button
+                  class="page-link shadow-none px-3 py-2"
+                  (click)="changePage(page - 1)"
+                  aria-label="Anterior"
+                >
+                  <span aria-hidden="true">&laquo;</span>
+                </button>
+              </li>
+              @for (p of desktopPages; track p) {
+                <li class="page-item" [class.active]="p === page">
+                  <button
+                    class="page-link shadow-none px-3 py-2"
+                    (click)="changePage(p)"
+                  >
+                    {{ p + 1 }}
+                  </button>
+                </li>
+              }
+              <li
+                class="page-item"
+                [class.disabled]="page >= totalPages - 1 || totalPages === 0"
+              >
+                <button
+                  class="page-link shadow-none px-3 py-2"
+                  (click)="changePage(page + 1)"
+                  aria-label="Siguiente"
+                >
+                  <span aria-hidden="true">&raquo;</span>
+                </button>
+              </li>
+            </ul>
+
+            <!-- Mobile Pagination -->
+            <ul class="pagination mb-0 d-flex d-md-none">
+              <li class="page-item" [class.disabled]="page === 0">
+                <button
+                  class="page-link shadow-none px-3 py-2"
+                  (click)="changePage(page - 1)"
+                  aria-label="Anterior"
+                >
+                  <span aria-hidden="true">&laquo;</span>
+                </button>
+              </li>
+              @for (p of mobilePages; track p) {
+                <li class="page-item" [class.active]="p === page">
+                  <button
+                    class="page-link shadow-none px-3 py-2"
+                    (click)="changePage(p)"
+                  >
+                    {{ p + 1 }}
+                  </button>
+                </li>
+              }
+              <li
+                class="page-item"
+                [class.disabled]="page >= totalPages - 1 || totalPages === 0"
+              >
+                <button
+                  class="page-link shadow-none px-3 py-2"
+                  (click)="changePage(page + 1)"
+                  aria-label="Siguiente"
+                >
+                  <span aria-hidden="true">&raquo;</span>
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      }
     </div>
   }
 </div>

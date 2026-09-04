@@ -34,6 +34,7 @@ import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component
 import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-trip-mini-card.component';
 import { GVehicleDocumentsComponent } from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
 import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
+import { PlatePipe } from '../../../pipes/plate.pipe';
 
 /** Documento con nombre y vigencia resueltos, listo para pintar en la tarjeta. */
 interface DocumentRow {
@@ -56,6 +57,7 @@ interface DocumentRow {
     GTripMiniCardComponent,
     GVehicleDocumentsComponent,
     GDocumentViewerComponent,
+    PlatePipe,
   ],
   templateUrl: './vehicle-detail.component.html',
   styleUrls: ['./vehicle-detail.component.scss'],
@@ -198,10 +200,7 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
 
         this.loadTrips(vehicleId);
         this.loadExpenses(vehicleId);
-        // Los documentos son, por ahora, solo del administrador.
-        if (this.isAdmin) {
-          this.loadDocuments(vehicleId);
-        }
+        this.loadDocuments(vehicleId);
         this.loadLastLocation();
         this.resolveDriverName();
       },
@@ -459,6 +458,10 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
     return this.vehicle?.owners ?? [];
   }
 
+  get odometerKm(): string {
+    return Formatters.formatOdometer(this.vehicle?.totalKm);
+  }
+
   formatDocNumber(value: any): string {
     return Formatters.formatDocNumber(value);
   }
@@ -551,7 +554,8 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
 
   openDocuments(): void {
     this.isMenuOpen = false;
-    if (!this.isAdmin) return;
+    // Un conductor consulta los documentos en la seccion, pero no los edita.
+    if (!this.canEdit) return;
     this.isDocumentsOpen = true;
   }
 
@@ -603,7 +607,7 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
    */
   private buildDocumentsMessage(attached: Map<DocumentRow, File>): string {
     const header = [
-      `*Documentos ${this.vehicle?.plate ?? ''}*`,
+      `*Documentos ${Formatters.formatPlate(this.vehicle?.plate)}*`,
       [
         this.vehicle?.vehicleBrandName || '',
         this.vehicle?.model || '',

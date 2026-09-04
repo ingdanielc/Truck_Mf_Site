@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ModelOwner } from '../../models/owner-model';
 import { SubscriptionUtils } from '../../utils/subscription';
 import { Formatters } from '../../utils/formatters';
+import { PaginationUtils } from '../../utils/pagination-utils';
 
 /** En qué estado está la suscripción de un propietario. */
 type SubscriptionState = 'activa' | 'porVencer' | 'vencida' | 'sinFecha';
@@ -100,6 +101,7 @@ export class GSubscriptionsReportComponent implements OnChanges {
 
   ngOnChanges(): void {
     this.build();
+    this.page = 0;
   }
 
   private build(): void {
@@ -177,11 +179,43 @@ export class GSubscriptionsReportComponent implements OnChanges {
    *  entera. Es el gesto que ya tienen los contadores de propietarios. */
   public toggleFilter(state: SubscriptionState): void {
     this.filter = this.filter === state ? null : state;
+    this.page = 0;
   }
 
   get visibleRows(): SubscriptionRow[] {
     if (!this.filter) return this.rows;
     return this.rows.filter((r) => r.state === this.filter);
+  }
+
+  /* ---- Paginacion ---------------------------------------------------------
+     Las filas se calculan aqui sobre los propietarios que ya tiene el tablero,
+     asi que se pagina en memoria: no hay consulta que repetir por pagina. */
+
+  public page = 0;
+  public readonly rowsPerPage = 10;
+
+  get totalPages(): number {
+    return Math.ceil(this.visibleRows.length / this.rowsPerPage);
+  }
+
+  /** Filas de la pagina actual, las que realmente se pintan. */
+  get pagedRows(): SubscriptionRow[] {
+    const start = this.page * this.rowsPerPage;
+    return this.visibleRows.slice(start, start + this.rowsPerPage);
+  }
+
+  get desktopPages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 12);
+  }
+
+  get mobilePages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 4);
+  }
+
+  public changePage(newPage: number): void {
+    if (newPage >= 0 && newPage < this.totalPages && newPage !== this.page) {
+      this.page = newPage;
+    }
   }
 
   /* ---- Totales de lo que está en juego -----------------------------------

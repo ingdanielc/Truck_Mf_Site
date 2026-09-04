@@ -28,6 +28,10 @@ export interface ModelVehicle {
   owners?: VehicleOwnerRelation[];
   currentDriverId: number | null;
   currentDriverName?: string;
+  /** Kilometros con los que el vehiculo entro a CashTruck. */
+  initialKm?: number;
+  /** Suma de los kilometros de los viajes completados del vehiculo. */
+  totalKm?: number;
   lastTripStatus?: string;
   lastTripId?: number | null;
   occupied?: boolean;

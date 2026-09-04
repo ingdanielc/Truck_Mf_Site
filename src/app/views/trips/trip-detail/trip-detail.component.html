@@ -14,7 +14,7 @@
           <h1 class="h3 fw-bold mb-0 text-body">
             Viaje {{ trip.numberTrip || "N/A" }} -
             <span class="text-uppercase">{{
-              trip.vehicle?.plate || trip.vehiclePlate || ""
+              (trip.vehicle?.plate || trip.vehiclePlate | plate) || ""
             }}</span>
             <span class="d-none d-md-inline"> {{ vehicleBrandName }} </span>
           </h1>
@@ -267,7 +267,7 @@
                 <p class="text-secondary small mb-0">Vehículo</p>
                 <h6 class="fw-bold mb-0">
                   <span class="text-uppercase">{{
-                    trip.vehicle?.plate || trip.vehiclePlate || "N/A"
+                    (trip.vehicle?.plate || trip.vehiclePlate | plate) || "N/A"
                   }}</span>
                   {{ vehicleBrandName }}
                 </h6>

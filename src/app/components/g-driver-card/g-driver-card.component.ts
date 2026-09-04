@@ -85,6 +85,21 @@ export class GDriverCardComponent {
     return this.isActive ? 'Activo' : 'Inactivo';
   }
 
+  get isAssignedToVehicle(): boolean {
+    return !!this.driver.currentVehicleId || !!this.driver.currentVehiclePlate;
+  }
+
+  get assignmentClass(): string {
+    return this.isAssignedToVehicle ? 'badge-assigned' : 'badge-available';
+  }
+
+  get assignmentLabel(): string {
+    if (!this.isAssignedToVehicle) return 'Disponible';
+    return (
+      Formatters.formatPlate(this.driver.currentVehiclePlate) || 'Asignado'
+    );
+  }
+
   get formattedCellPhone(): string {
     return Formatters.formatPhone(this.driver.cellPhone);
   }

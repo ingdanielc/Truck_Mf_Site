@@ -41,6 +41,7 @@ import {
   ExpenseShortcut,
   buildExpenseShortcuts,
 } from 'src/app/utils/expense-shortcuts';
+import { PlatePipe } from '../../pipes/plate.pipe';
 
 @Component({
   selector: 'app-expenses',
@@ -52,6 +53,7 @@ import {
     GAddExpenseComponent,
     GTripMiniCardComponent,
     GVehicleTripCardComponent,
+    PlatePipe,
   ],
   templateUrl: './expenses.component.html',
   styleUrls: ['./expenses.component.scss'],

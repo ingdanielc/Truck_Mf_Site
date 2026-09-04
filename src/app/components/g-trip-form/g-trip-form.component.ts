@@ -36,6 +36,8 @@ import {
 } from 'src/app/models/model-filter-table';
 import { NgClass, UpperCasePipe } from '@angular/common';
 import { CustomValidators } from 'src/app/utils/custom-validators';
+import { computeRoute, routeDistanceKm } from 'src/app/utils/google-routes';
+import { PlatePipe } from '../../pipes/plate.pipe';
 
 @Component({
   selector: 'g-trip-form',
@@ -46,6 +48,7 @@ import { CustomValidators } from 'src/app/utils/custom-validators';
     DocumentNumberPipe,
     UpperCasePipe,
     NgClass,
+    PlatePipe,
   ],
   templateUrl: './g-trip-form.component.html',
   styleUrls: ['./g-trip-form.component.scss'],
@@ -786,7 +789,63 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     }
   }
 
-  onSubmit(): void {
+  /** Timeout de la ruta: guardar no puede quedar colgado de Google. */
+  private readonly ROUTE_TIMEOUT_MS = 8000;
+
+  /** Nombre de la ciudad tal como lo espera Google Routes. */
+  private cityName(cityId: any): string {
+    if (cityId === null || cityId === undefined || cityId === '') return '';
+    const city = this.cities.find((c) => String(c.id) === String(cityId));
+    return city?.name || '';
+  }
+
+  /**
+   * Kilometros de la ruta del viaje, con la misma forma que usa el panel de
+   * informacion: en un viaje redondo el destino de ida entra como parada
+   * intermedia, asi que la distancia cubre ida y regreso.
+   *
+   * Devuelve `undefined` si no se pudo calcular —sin ciudades, sin SDK de
+   * Maps o si Google no responde a tiempo—. Guardar nunca se bloquea por
+   * esto: el viaje se registra igual y el kilometraje queda sin sumar.
+   */
+  private async resolveDistanceKm(formValue: any): Promise<number | undefined> {
+    const originName = this.cityName(formValue.originId);
+    const destinationName = this.cityName(formValue.destinationId);
+    if (!originName || !destinationName) return undefined;
+
+    const returnName =
+      formValue.tripType === 'REDONDO'
+        ? this.cityName(formValue.returnDestinationId)
+        : '';
+    const isRoundTrip = !!returnName;
+
+    const request: any = {
+      origin: `${originName}, Colombia`,
+      destination: `${isRoundTrip ? returnName : destinationName}, Colombia`,
+      travelMode: 'DRIVING',
+      routingPreference: 'TRAFFIC_AWARE',
+      fields: ['distanceMeters'],
+    };
+    if (isRoundTrip) {
+      request.intermediates = [`${destinationName}, Colombia`];
+    }
+
+    try {
+      const route = await Promise.race([
+        computeRoute(request),
+        new Promise((resolve) =>
+          setTimeout(() => resolve(null), this.ROUTE_TIMEOUT_MS),
+        ),
+      ]);
+      const km = routeDistanceKm(route);
+      return km ? Number(km.toFixed(1)) : undefined;
+    } catch (error) {
+      console.error('No se pudo calcular la distancia del viaje:', error);
+      return undefined;
+    }
+  }
+
+  async onSubmit(): Promise<void> {
     if (this.tripForm.valid) {
       const { ownerId, balance, ...formData } = this.tripForm.getRawValue();
       const tripData: ModelTrip = {
@@ -823,6 +882,14 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       }
 
       this.isSaving = true;
+
+      const distanceKm = await this.resolveDistanceKm(
+        this.tripForm.getRawValue(),
+      );
+      if (distanceKm !== undefined) {
+        tripData.distanceKm = distanceKm;
+      }
+
       this.tripService.createTrip(tripData).subscribe({
         next: () => {
           // Guardar cambia la disponibilidad: la cache deja de ser valida.

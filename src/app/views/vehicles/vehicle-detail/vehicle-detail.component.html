@@ -37,7 +37,7 @@
               <ul
                 class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
               >
-                @if (isAdmin) {
+                @if (canEdit) {
                   <li>
                     <button
                       class="dropdown-item d-flex align-items-center gap-2 py-2"
@@ -155,26 +155,43 @@
           </div>
 
           <div class="col-12 col-md text-center text-md-start">
-            <h1 class="display-6 fw-bold mb-2 text-white text-uppercase">
-              {{ vehicle.plate }}
+            <h1 class="display-6 fw-bold mb-2 text-white">
+              {{ vehicle.plate | plate }}
             </h1>
+            <!--
+              En movil la ficha se lee en dos lineas: marca y ano arriba,
+              color y kilometraje abajo. Desde md los cuatro datos vuelven a
+              una sola fila.
+            -->
             <div
-              class="d-flex flex-wrap gap-1 gap-md-3 text-white text-opacity-75 justify-content-center justify-content-md-start"
+              class="d-flex flex-column flex-md-row flex-md-wrap gap-1 gap-md-3 text-white text-opacity-75"
             >
-              <div class="d-flex align-items-center gap-2">
-                <i class="fa-solid fa-truck-front"></i>
-                <span>
-                  {{ vehicle.vehicleBrandName || vehicle.vehicleBrandId }}
-                  {{ vehicle.model }}
-                </span>
+              <div
+                class="d-flex flex-wrap align-items-center gap-1 gap-md-3 justify-content-center justify-content-md-start"
+              >
+                <div class="d-flex align-items-center gap-2">
+                  <i class="fa-solid fa-truck-front"></i>
+                  <span>
+                    {{ vehicle.vehicleBrandName || vehicle.vehicleBrandId }}
+                    {{ vehicle.model }}
+                  </span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="fa-regular fa-calendar"></i>
+                  <span>{{ vehicle.year }}</span>
+                </div>
               </div>
-              <div class="d-flex align-items-center gap-2">
-                <i class="fa-regular fa-calendar"></i>
-                <span>{{ vehicle.year }}</span>
-              </div>
-              <div class="d-flex align-items-center gap-2">
-                <i class="fa-solid fa-palette"></i>
-                <span>{{ vehicle.color }}</span>
+              <div
+                class="d-flex flex-wrap align-items-center gap-1 gap-md-3 justify-content-center justify-content-md-start"
+              >
+                <div class="d-flex align-items-center gap-2">
+                  <i class="fa-solid fa-palette"></i>
+                  <span>{{ vehicle.color }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="fa-solid fa-gauge-high"></i>
+                  <span>{{ odometerKm }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -184,6 +201,7 @@
               <div class="col-6 col-sm-auto">
                 <div
                   class="card h-100 bg-dark bg-opacity-50 border-0 rounded-4 p-3 px-4 text-center"
+                  [class.status-tile-tight]="displayTripStatus === 'Disponible'"
                   style="min-width: 130px"
                 >
                   <p
@@ -191,39 +209,40 @@
                   >
                     Estado
                   </p>
-                  <h5 class="fw-bold mb-0" [ngClass]="statusTextClass">
+                  <h5
+                    class="fw-bold mb-0 stat-status"
+                    [ngClass]="statusTextClass"
+                  >
                     {{ displayTripStatus }}
                   </h5>
                 </div>
               </div>
-              @if (isAdmin) {
-                <div class="col-6 col-sm-auto">
-                  <div
-                    class="card h-100 bg-dark bg-opacity-50 border-0 rounded-4 p-3 px-4 text-center"
-                    style="min-width: 130px"
+              <div class="col-6 col-sm-auto">
+                <div
+                  class="card h-100 bg-dark bg-opacity-50 border-0 rounded-4 p-3 px-4 text-center"
+                  style="min-width: 130px"
+                >
+                  <p
+                    class="text-white text-opacity-50 small fw-bold mb-0 text-uppercase tracking-wider"
                   >
-                    <p
-                      class="text-white text-opacity-50 small fw-bold mb-0 text-uppercase tracking-wider"
-                    >
-                      <span class="d-none d-md-inline">Documentos</span>
-                      <span class="d-md-none">Docs</span>
-                    </p>
-                    <h5
-                      class="fw-bold mb-0"
-                      [ngClass]="
-                        documentsToRenew > 0 ? 'text-warning' : 'text-success'
-                      "
-                    >
-                      {{ documentRows.length }}
-                    </h5>
-                    @if (documentsToRenew > 0) {
-                      <small class="text-warning" style="font-size: 0.7rem">
-                        {{ documentsToRenew }} por renovar
-                      </small>
-                    }
-                  </div>
+                    <span class="d-none d-md-inline">Documentos</span>
+                    <span class="d-md-none">Docs</span>
+                  </p>
+                  <h5
+                    class="fw-bold mb-0"
+                    [ngClass]="
+                      documentsToRenew > 0 ? 'text-warning' : 'text-success'
+                    "
+                  >
+                    {{ documentRows.length }}
+                  </h5>
+                  @if (documentsToRenew > 0) {
+                    <small class="text-warning" style="font-size: 0.7rem">
+                      {{ documentsToRenew }} por renovar
+                    </small>
+                  }
                 </div>
-              }
+              </div>
             </div>
           </div>
         </div>
@@ -349,7 +368,7 @@
             <p class="text-secondary small fw-bold mb-1 text-uppercase">
               Placa
             </p>
-            <h6 class="fw-bold mb-0 text-uppercase">{{ vehicle.plate }}</h6>
+            <h6 class="fw-bold mb-0">{{ vehicle.plate | plate }}</h6>
           </div>
           <div class="col-12 col-sm-6 col-lg-4">
             <p class="text-secondary small fw-bold mb-1 text-uppercase">
@@ -455,6 +474,9 @@
                     {{ relation.ownershipPercentage }}%
                   </span>
                 }
+                @if (!isConductor) {
+                  <i class="fa-solid fa-chevron-right text-secondary"></i>
+                }
               </div>
             }
             @if (ownerRelations.length === 0) {
@@ -517,38 +539,38 @@
       </div>
     </div>
 
-    @if (isAdmin) {
-      <!-- Documentos -->
+    <!-- Documentos -->
+    <div
+      class="card border-0 rounded-4 shadow-sm bg-body-tertiary mb-4 hover-scale"
+    >
       <div
-        class="card border-0 rounded-4 shadow-sm bg-body-tertiary mb-4 hover-scale"
+        class="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center"
       >
-        <div
-          class="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center"
-        >
-          <h5 class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary">
-            <i class="fa-solid fa-folder-open"></i> Documentos
-          </h5>
-          <div class="d-flex align-items-center gap-3">
-            @if (documentRows.length > 0) {
-              <button
-                class="btn btn-link text-success p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
-                (click)="shareDocumentsByWhatsApp()"
-                [disabled]="sharingDocuments"
-                title="Compartir por WhatsApp"
-              >
-                @if (sharingDocuments) {
-                  <output
-                    class="spinner-border spinner-border-sm"
-                    aria-hidden="true"
-                  ></output>
-                } @else {
-                  <i class="fa-brands fa-whatsapp fs-5"></i>
-                }
-                <span class="d-none d-md-inline">
-                  {{ sharingDocuments ? "Preparando…" : "Compartir" }}
-                </span>
-              </button>
-            }
+        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary">
+          <i class="fa-solid fa-folder-open"></i> Documentos
+        </h5>
+        <div class="d-flex align-items-center gap-3">
+          @if (documentRows.length > 0) {
+            <button
+              class="btn btn-link text-success p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
+              (click)="shareDocumentsByWhatsApp()"
+              [disabled]="sharingDocuments"
+              title="Compartir por WhatsApp"
+            >
+              @if (sharingDocuments) {
+                <output
+                  class="spinner-border spinner-border-sm"
+                  aria-hidden="true"
+                ></output>
+              } @else {
+                <i class="fa-brands fa-whatsapp fs-5"></i>
+              }
+              <span class="d-none d-md-inline">
+                {{ sharingDocuments ? "Preparando…" : "Compartir" }}
+              </span>
+            </button>
+          }
+          @if (canEdit) {
             <button
               class="btn btn-link text-primary p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
               (click)="openDocuments()"
@@ -556,89 +578,89 @@
               <i class="fa-solid fa-pen-to-square d-inline d-md-none fs-5"></i>
               <span class="d-none d-md-inline">Gestionar</span>
             </button>
-          </div>
+          }
         </div>
-        <div class="card-body p-4">
-          @if (documentRows.length > 0) {
-            <div class="row g-3">
-              @for (row of documentRows; track trackByDocument($index, row)) {
-                <div class="col-12 col-md-6 col-xl-4">
-                  <div
-                    class="document-tile card border-0 rounded-4 shadow-sm p-3 h-100"
-                  >
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                      <span
-                        class="fw-bold text-truncate flex-grow-1"
-                        [title]="row.name"
-                      >
-                        {{ row.name }}
-                      </span>
-                      @if (row.document.fileUrl) {
-                        <button
-                          type="button"
-                          class="btn btn-link p-0 border-0 shadow-none text-primary flex-shrink-0"
-                          (click)="openDocumentFile(row, $event)"
-                          title="Abrir archivo"
-                          aria-label="Abrir archivo"
-                        >
-                          <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                        </button>
-                      }
-                    </div>
-
-                    <div
-                      class="d-flex flex-wrap gap-2 text-secondary mb-2"
-                      style="font-size: 0.75rem"
-                    >
-                      @if (row.document.documentNumber) {
-                        <span class="text-truncate">
-                          <i class="fa-solid fa-hashtag me-1 opacity-75"></i
-                          >{{ row.document.documentNumber }}
-                        </span>
-                      }
-                      @if (row.document.issuer) {
-                        <span class="text-truncate">
-                          <i class="fa-solid fa-building me-1 opacity-75"></i
-                          >{{ row.document.issuer }}
-                        </span>
-                      }
-                    </div>
-
-                    <div
-                      class="validity-track rounded-pill"
-                      [title]="row.validity.label"
-                    >
-                      <div
-                        class="validity-fill rounded-pill"
-                        [ngClass]="'state-' + row.validity.state"
-                        [style.width.%]="row.validity.percent"
-                      ></div>
-                    </div>
+      </div>
+      <div class="card-body p-4">
+        @if (documentRows.length > 0) {
+          <div class="row g-3">
+            @for (row of documentRows; track trackByDocument($index, row)) {
+              <div class="col-12 col-md-6 col-xl-4">
+                <div
+                  class="document-tile card border-0 rounded-4 shadow-sm p-3 h-100"
+                >
+                  <div class="d-flex align-items-center gap-2 mb-2">
                     <span
-                      class="d-block mt-1"
-                      style="font-size: 0.7rem"
-                      [ngClass]="{
-                        'text-danger':
-                          row.validity.state === 'vencido' ||
-                          row.validity.state === 'critico',
-                        'text-warning': row.validity.state === 'por-vencer',
-                        'text-secondary':
-                          row.validity.state === 'vigente' ||
-                          row.validity.state === 'sin-vigencia',
-                      }"
+                      class="fw-bold text-truncate flex-grow-1"
+                      [title]="row.name"
                     >
-                      {{ row.validity.label }}
+                      {{ row.name }}
                     </span>
+                    @if (row.document.fileUrl) {
+                      <button
+                        type="button"
+                        class="btn btn-link p-0 border-0 shadow-none text-primary flex-shrink-0"
+                        (click)="openDocumentFile(row, $event)"
+                        title="Abrir archivo"
+                        aria-label="Abrir archivo"
+                      >
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                      </button>
+                    }
                   </div>
+
+                  <div
+                    class="d-flex flex-wrap gap-2 text-secondary mb-2"
+                    style="font-size: 0.75rem"
+                  >
+                    @if (row.document.documentNumber) {
+                      <span class="text-truncate">
+                        <i class="fa-solid fa-hashtag me-1 opacity-75"></i
+                        >{{ row.document.documentNumber }}
+                      </span>
+                    }
+                    @if (row.document.issuer) {
+                      <span class="text-truncate">
+                        <i class="fa-solid fa-building me-1 opacity-75"></i
+                        >{{ row.document.issuer }}
+                      </span>
+                    }
+                  </div>
+
+                  <div
+                    class="validity-track rounded-pill"
+                    [title]="row.validity.label"
+                  >
+                    <div
+                      class="validity-fill rounded-pill"
+                      [ngClass]="'state-' + row.validity.state"
+                      [style.width.%]="row.validity.percent"
+                    ></div>
+                  </div>
+                  <span
+                    class="d-block mt-1"
+                    style="font-size: 0.7rem"
+                    [ngClass]="{
+                      'text-danger':
+                        row.validity.state === 'vencido' ||
+                        row.validity.state === 'critico',
+                      'text-warning': row.validity.state === 'por-vencer',
+                      'text-secondary':
+                        row.validity.state === 'vigente' ||
+                        row.validity.state === 'sin-vigencia',
+                    }"
+                  >
+                    {{ row.validity.label }}
+                  </span>
                 </div>
-              }
-            </div>
-          } @else {
-            <div class="text-center py-5 text-secondary">
-              <i
-                class="fa-solid fa-folder-open fs-1 mb-3 opacity-25 d-block"
-              ></i>
-              <p class="mb-3 fw-bold">Este vehículo no tiene documentos.</p>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="text-center py-4 text-secondary">
+            <i class="fa-solid fa-folder-open fs-1 mb-3 opacity-25 d-block"></i>
+            <p class="mb-3 fw-bold">Este vehículo no tiene documentos.</p>
+            @if (canEdit) {
               <button
                 class="btn btn-outline-primary rounded-3 px-4 py-2 fw-bold"
                 (click)="openDocuments()"
@@ -646,11 +668,11 @@
                 <i class="fa-solid fa-file-circle-plus me-2"></i>Cargar
                 documentos
               </button>
-            </div>
-          }
-        </div>
+            }
+          </div>
+        }
       </div>
-    }
+    </div>
 
     <!-- Últimos viajes -->
     <div class="card border-0 rounded-4 shadow-sm bg-body-tertiary hover-scale">
@@ -695,7 +717,7 @@
             }
           </div>
         } @else {
-          <div class="text-center py-5 text-secondary">
+          <div class="text-center py-4 text-secondary">
             <i class="fa-solid fa-route fs-1 mb-3 opacity-25 d-block"></i>
             <p class="mb-0 fw-bold">Este vehículo no tiene viajes.</p>
           </div>
@@ -732,11 +754,11 @@
   class="custom-offcanvas shadow-lg border-start transition-all"
   [class.open]="isDocumentsOpen"
 >
-  @if (isDocumentsOpen && vehicleId && isAdmin) {
+  @if (isDocumentsOpen && vehicleId) {
     <g-vehicle-documents
       [vehicleId]="vehicleId"
       [plate]="vehicle?.plate || ''"
-      [canEdit]="!isSold"
+      [canEdit]="canEdit"
       (changed)="setDocuments($event)"
       (close)="closeDocuments()"
       class="d-flex flex-column h-100"
@@ -767,7 +789,7 @@
       >
         <i class="fa-solid fa-hand-holding-dollar text-danger fs-1"></i>
       </div>
-      <h5 class="fw-bold mb-2">¿Vender el vehículo {{ vehicle?.plate }}?</h5>
+      <h5 class="fw-bold mb-2">¿Vender el vehículo {{ vehicle?.plate | plate }}?</h5>
       <p class="small text-secondary mb-4">
         ¿Está seguro de vender este vehículo? Esta acción es irreversible y
         restringirá futuras operaciones sobre el mismo.

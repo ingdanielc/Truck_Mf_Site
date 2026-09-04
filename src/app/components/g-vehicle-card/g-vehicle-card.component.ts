@@ -7,6 +7,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
 import { ModelDriverLocation } from 'src/app/models/location-model';
 import { VehicleService } from 'src/app/services/vehicle.service';
 import { ModelDocumentFile } from 'src/app/models/document-model';
+import { Formatters } from 'src/app/utils/formatters';
 import {
   DocumentValidity,
   getDocumentTypeName,
@@ -19,6 +20,8 @@ import {
   Sort,
 } from 'src/app/models/model-filter-table';
 import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
+import { GVehicleDocumentsComponent } from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
+import { PlatePipe } from '../../pipes/plate.pipe';
 
 /** Documento ya listo para pintar: nombre resuelto y vigencia calculada. */
 export interface VehicleDocumentRow {
@@ -30,7 +33,12 @@ export interface VehicleDocumentRow {
 @Component({
   selector: 'app-g-vehicle-card',
   standalone: true,
-  imports: [CommonModule, GDocumentViewerComponent],
+  imports: [
+    CommonModule,
+    GDocumentViewerComponent,
+    GVehicleDocumentsComponent,
+    PlatePipe,
+  ],
   templateUrl: './g-vehicle-card.component.html',
   styleUrls: ['./g-vehicle-card.component.scss'],
 })
@@ -41,6 +49,8 @@ export class GVehicleCardComponent implements OnInit {
   @Output() viewDetails = new EventEmitter<ModelVehicle>();
   @Output() maintenance = new EventEmitter<ModelVehicle>();
   @Output() sell = new EventEmitter<ModelVehicle>();
+  /** Abre el offcanvas de gestion de documentos, que vive en la vista padre. */
+  @Output() manageDocuments = new EventEmitter<ModelVehicle>();
 
   lastLocation: ModelDriverLocation | null = null;
   loadingLocation: boolean = true;
@@ -55,10 +65,10 @@ export class GVehicleCardComponent implements OnInit {
    */
   documentRows: VehicleDocumentRow[] = [];
   loadingDocuments: boolean = false;
-  /** userData$ puede emitir de nuevo; los documentos se piden una sola vez. */
-  private documentsRequested: boolean = false;
   /** Reverso de la tarjeta: misma foto, lista de documentos en lugar de datos. */
   showDocuments: boolean = false;
+  /** Panel lateral para cargar o gestionar los documentos del vehículo. */
+  isDocumentsOpen: boolean = false;
 
   /** Documento abierto en el visor; null cuando no hay ninguno. */
   viewerUrl: string | null = null;
@@ -76,15 +86,15 @@ export class GVehicleCardComponent implements OnInit {
       next: (user: any) => {
         if (user) {
           this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
-          // Los documentos son, por ahora, solo del administrador: ni se piden
-          // para los demás roles, así que la tarjeta no gasta la consulta.
-          if (this.isAdmin && this.vehicle.id && !this.documentsRequested) {
-            this.documentsRequested = true;
-            this.loadDocuments();
-          }
         }
       },
     });
+
+    // Los documentos los ve cualquier rol, así que se piden sin esperar al
+    // usuario: la tarjeta muestra la lista o el aviso de que no hay ninguno.
+    if (this.vehicle.id) {
+      this.loadDocuments();
+    }
 
     if (this.vehicle.id && this.vehicle.currentDriverId) {
       this.loadLastLocation();
@@ -123,18 +133,54 @@ export class GVehicleCardComponent implements OnInit {
     });
   }
 
-  get isAdmin(): boolean {
-    return this.userRole === 'ADMINISTRADOR';
-  }
-
   get hasDocuments(): boolean {
-    return this.isAdmin && this.documentRows.length > 0;
+    return this.documentRows.length > 0;
   }
 
+  /**
+   * El conductor consulta los documentos pero no los modifica, y un vehiculo
+   * vendido ya no recibe ninguno: en ambos casos el reverso solo muestra.
+   */
+  get canEditDocuments(): boolean {
+    return this.userRole !== 'CONDUCTOR' && !this.isSold;
+  }
+
+  /** El boton lleva al reverso: a la lista, o al aviso de que no hay nada. */
+  get documentsButtonTitle(): string {
+    if (this.showDocuments) return 'Ver información';
+    return this.hasDocuments ? 'Ver documentos' : 'Cargar documentos';
+  }
+
+  /** El reverso se abre siempre: sin documentos muestra cómo cargarlos. */
   toggleDocuments(event?: Event): void {
     event?.stopPropagation();
-    if (!this.hasDocuments) return;
     this.showDocuments = !this.showDocuments;
+  }
+
+  /**
+   * Abre el panel de carga. Sale del reverso al cerrarlo solo si sigue sin
+   * documentos: si se cargó alguno, la lista es lo que interesa ver.
+   */
+  openDocuments(event?: Event): void {
+    event?.stopPropagation();
+    if (!this.vehicle.id || !this.canEditDocuments) return;
+    this.isDocumentsOpen = true;
+  }
+
+  closeDocuments(): void {
+    this.isDocumentsOpen = false;
+    if (!this.hasDocuments) this.showDocuments = false;
+  }
+
+  /** Lista que devuelve el panel tras cada cambio, ya sin los inactivos. */
+  setDocuments(documents: ModelDocumentFile[]): void {
+    this.documentRows = documents
+      .filter((item) => item.isActive !== false)
+      .map((item) => ({
+        document: item,
+        name: getDocumentTypeName(item),
+        validity: getDocumentValidity(item),
+      }));
   }
 
   /**
@@ -251,6 +297,20 @@ export class GVehicleCardComponent implements OnInit {
 
   get isSold(): boolean {
     return this.vehicle.status === 'Vendido';
+  }
+
+  /** Gestionar documentos es de administrador y propietario; el conductor solo lee. */
+  get canManageDocuments(): boolean {
+    return this.userRole === 'ADMINISTRADOR' || this.userRole === 'PROPIETARIO';
+  }
+
+  onManageDocumentsClick(event: Event): void {
+    event.stopPropagation();
+    this.manageDocuments.emit(this.vehicle);
+  }
+
+  get odometerKm(): string {
+    return Formatters.formatOdometer(this.vehicle.totalKm);
   }
 
   get statusClass(): string {

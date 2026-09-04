@@ -40,6 +40,8 @@ import { ModelDriver } from 'src/app/models/driver-model';
 import { DocumentNumberPipe } from 'src/app/pipes/document-number.pipe';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
+import { GVehicleDocumentsComponent } from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
+import { PlatePipe } from '../../pipes/plate.pipe';
 
 export interface VehicleOwnerGroup {
   owner: ModelOwner;
@@ -56,6 +58,8 @@ export interface VehicleOwnerGroup {
     GVehicleOwnerCardComponent,
     DocumentNumberPipe,
     GCameraComponent,
+    GVehicleDocumentsComponent,
+    PlatePipe,
   ],
   templateUrl: './vehicles.component.html',
   styleUrls: ['./vehicles.component.scss'],
@@ -91,6 +95,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   // Offcanvas and Form
   isOffcanvasOpen: boolean = false;
+  /** Vehiculo cuyos documentos se estan gestionando; null con el panel cerrado. */
+  documentsVehicle: ModelVehicle | null = null;
   editingVehicle: ModelVehicle | null = null;
   vehicleForm: FormGroup;
   isSearchActive: boolean = false;
@@ -192,6 +198,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       motorNumber: [''],
       chassisNumber: [''],
       axleCount: [2, [Validators.min(1), Validators.max(6)]],
+      initialKm: [0, [Validators.min(0), Validators.max(99999999)]],
       photo: [''],
       ownerId: [null, [Validators.required]],
       driverId: [null, [Validators.required]],
@@ -324,6 +331,19 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.userSub?.unsubscribe();
     this.ownerChangeSub?.unsubscribe();
+  }
+
+  /**
+   * El odometro se corta en 8 digitos al escribir: `maxlength` no aplica a un
+   * input numerico, asi que el limite se impone aqui y tambien se valida por
+   * si el valor llega pegado desde el portapapeles.
+   */
+  onInitialKmInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.value.length > 8) {
+      input.value = input.value.slice(0, 8);
+      this.vehicleForm.get('initialKm')?.setValue(input.value);
+    }
   }
 
   toggleAxleHelp(event: Event): void {
@@ -689,6 +709,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           motorNumber: vehicle.engineNumber,
           chassisNumber: vehicle.chassisNumber,
           axleCount: vehicle.numberOfAxles,
+          initialKm: vehicle.initialKm ?? 0,
           ownerId: ownerId,
           driverId: vehicle.currentDriverId,
         });
@@ -706,6 +727,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         this.vehicleForm.reset({
           year: new Date().getFullYear(),
           axleCount: 2,
+          initialKm: 0,
           ownerId:
             this.userRole === 'ADMINISTRADOR' ? null : this.loggedInOwnerId,
         });
@@ -814,7 +836,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.isOffcanvasOpen = true;
     // Primero reseteamos sin emitir eventos para evitar doble disparo
     this.vehicleForm.reset(
-      { year: new Date().getFullYear(), axleCount: 2 },
+      { year: new Date().getFullYear(), axleCount: 2, initialKm: 0 },
       { emitEvent: false },
     );
 
@@ -864,6 +886,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             engineNumber: formValue.motorNumber,
             chassisNumber: formValue.chassisNumber,
             numberOfAxles: formValue.axleCount,
+            initialKm: Number(formValue.initialKm) || 0,
             status: this.editingVehicle.status || 'Activo',
             ownerId:
               this.userRole === 'ADMINISTRADOR'
@@ -925,6 +948,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
             engineNumber: formValue.motorNumber,
             chassisNumber: formValue.chassisNumber,
             numberOfAxles: formValue.axleCount,
+            initialKm: Number(formValue.initialKm) || 0,
             status: 'Activo',
             ownerId:
               this.userRole === 'ADMINISTRADOR'
@@ -1637,6 +1661,17 @@ export class VehiclesComponent implements OnInit, OnDestroy {
         queryParams: { vehicleId: vehicle.id },
       });
     }
+  }
+
+  // --- Documentos ---
+
+  openDocuments(vehicle: ModelVehicle): void {
+    if (!vehicle.id) return;
+    this.documentsVehicle = vehicle;
+  }
+
+  closeDocuments(): void {
+    this.documentsVehicle = null;
   }
 
   triggerPhotoInput(photoInput: HTMLInputElement): void {

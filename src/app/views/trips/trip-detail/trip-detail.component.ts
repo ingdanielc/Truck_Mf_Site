@@ -26,13 +26,19 @@ import {
   computeRoute,
   routeDurationSeconds,
 } from 'src/app/utils/google-routes';
+import { PlatePipe } from '../../../pipes/plate.pipe';
 
 declare var globalThis: any;
 
 @Component({
   selector: 'app-trip-detail',
   standalone: true,
-  imports: [CommonModule, GTripFormComponent, GTripInfoCardComponent],
+  imports: [
+    CommonModule,
+    GTripFormComponent,
+    GTripInfoCardComponent,
+    PlatePipe,
+  ],
   templateUrl: './trip-detail.component.html',
   styleUrls: ['./trip-detail.component.scss'],
 })
