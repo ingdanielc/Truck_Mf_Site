@@ -47,6 +47,20 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private markers: any[] = [];
   private polylines: any[] = [];
+
+  /* ---- Colores de los puntos de la ruta ----------------------------------
+     Verde el origen y rojo el final, como siempre. La parada intermedia del
+     viaje redondo va en naranja: el camion pasa por ahi, pero no termina ahi.
+     Se nombran aqui y la leyenda los lee de estas propiedades, para que los
+     marcadores y el recuadro no puedan discrepar. */
+  public readonly colorOrigin = '#28a745';
+  public readonly colorLegStop = '#fd7e14';
+  public readonly colorDestination = '#dc3545';
+
+  /* Cada `clearMap()` invalida lo que se estuviera dibujando. La ruta y el
+     geocoding son asincronos, y sin esto lo que quedara en vuelo al cambiar
+     de vehiculo terminaba pintandose sobre el mapa ya limpio. */
+  private renderId = 0;
   private geocoder: any;
   private userSub?: Subscription;
   private readonly coordCache: Map<string, any> = new Map();
@@ -313,57 +327,148 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     // for the first vehicle, or can be added as a separate logic if needed.
   }
 
+  /** La ciudad del catalogo, o `null` si el viaje no la trae o no esta. */
+  private findCity(cityId: any): any {
+    if (cityId === null || cityId === undefined || cityId === '') return null;
+    return this.citiesList.find((c) => String(c.id) === String(cityId)) ?? null;
+  }
+
+  /** La ciudad tal como la espera Google: nombre, departamento y pais. */
+  private cityQuery(city: any): string {
+    return city
+      ? locationQuery(`${city.name}, ${city.state}`, city)
+      : 'Colombia';
+  }
+
+  /** Los puntos de un `path` de la API de rutas, como objetos planos. */
+  private toLatLngs(path: any): any[] {
+    return (path ?? []).map((point: any) => ({
+      lat: typeof point.lat === 'function' ? point.lat() : point.lat,
+      lng: typeof point.lng === 'function' ? point.lng() : point.lng,
+    }));
+  }
+
+  /**
+   * El tramo que el vehiculo esta recorriendo ahora. En el viaje redondo el
+   * primer tramo es la ida y el segundo el regreso, y `currentLeg` dice en
+   * cual va; el otro —hecho o por hacer— se pinta tenue. Sin ese dato no se
+   * atenua nada: los dos tramos se ven igual, como estaba antes.
+   */
+  private isActiveLeg(trip: ModelTrip, legIndex: number): boolean {
+    if (!trip.currentLeg) return true;
+    return trip.currentLeg === 'REGRESO' ? legIndex >= 1 : legIndex === 0;
+  }
+
+  private addRoutePolyline(
+    path: any[],
+    color: string,
+    isActive: boolean,
+  ): void {
+    const polyline = new google.maps.Polyline({
+      path,
+      geodesic: true,
+      strokeColor: color,
+      strokeOpacity: isActive ? 0.8 : 0.3,
+      strokeWeight: 5,
+      map: this.map,
+    });
+    this.polylines.push(polyline);
+  }
+
   private drawVehicleRoute(
     vehicle: ModelVehicle,
     trip: ModelTrip,
     lastLocation: any,
   ): void {
+    const renderId = this.renderId;
     const vehicleColor = this.getVehicleColor(vehicle);
 
     // Resolve city names
-    const originCity = this.citiesList.find(
-      (c) => String(c.id) === String(trip.originId),
-    );
-    const destCity = this.citiesList.find(
-      (c) => String(c.id) === String(trip.destinationId),
-    );
+    const originCity = this.findCity(trip.originId);
+    const destCity = this.findCity(trip.destinationId);
+    const returnCity = this.findCity(trip.returnDestinationId);
 
-    const originName = originCity
-      ? locationQuery(`${originCity.name}, ${originCity.state}`, originCity)
-      : 'Colombia';
-    const destName = destCity
-      ? locationQuery(`${destCity.name}, ${destCity.state}`, destCity)
-      : 'Colombia';
+    const originName = this.cityQuery(originCity);
+    const destName = this.cityQuery(destCity);
+    const returnName = returnCity ? this.cityQuery(returnCity) : '';
+
+    /* El viaje redondo tiene dos destinos: el de ida queda como parada
+       intermedia y el de regreso cierra la ruta, asi que el trazo cubre los
+       dos tramos —la misma forma con la que el formulario calcula los
+       kilometros y el panel de informacion arma la ruta—. Se reconoce por el
+       destino de regreso, que solo lleva el REDONDO: el formulario lo limpia
+       en los demas tipos. */
+    const isRoundTrip = !!returnName;
+
+    /* Las paradas en orden de recorrido. La misma lista sirve para los
+       marcadores y para el trazo recto de respaldo, asi que el segundo
+       destino no hay que volver a resolverlo mas abajo. */
+    const stops = [
+      {
+        query: originName,
+        label: 'O',
+        title: `Origen: ${originCity?.name || trip.originId}`,
+        color: this.colorOrigin,
+      },
+      {
+        query: destName,
+        label: isRoundTrip ? 'I' : 'D',
+        title: isRoundTrip
+          ? `Destino de ida: ${destCity?.name || trip.destinationId}`
+          : `Destino: ${destCity?.name || trip.destinationId}`,
+        color: isRoundTrip ? this.colorLegStop : this.colorDestination,
+      },
+    ];
+    if (isRoundTrip) {
+      stops.push({
+        query: returnName,
+        label: 'R',
+        title: `Destino de regreso: ${returnCity?.name || trip.returnDestinationId}`,
+        color: this.colorDestination,
+      });
+    }
 
     const drawStraightLineFallback = (): void => {
-      Promise.all([
-        this.getCoordinates(originName),
-        this.getCoordinates(destName),
-      ]).then(([originPos, destPos]) => {
-        this.addMarker(originPos, 'O', `Origen`, '#28a745');
-        this.addMarker(destPos, 'D', `Destino`, '#dc3545');
-        const polyline = new google.maps.Polyline({
-          path: [originPos, destPos],
-          strokeColor: vehicleColor,
-          strokeWeight: 4,
-          map: this.map,
-        });
-        this.polylines.push(polyline);
-      });
+      Promise.all(stops.map((stop) => this.getCoordinates(stop.query))).then(
+        (positions) => {
+          if (renderId !== this.renderId) return;
+          positions.forEach((position, i) => {
+            this.addMarker(
+              position,
+              stops[i].label,
+              stops[i].title,
+              stops[i].color,
+            );
+          });
+          const polyline = new google.maps.Polyline({
+            path: positions,
+            strokeColor: vehicleColor,
+            strokeWeight: 4,
+            map: this.map,
+          });
+          this.polylines.push(polyline);
+        },
+      );
     };
 
-    computeRoute({
+    const request: any = {
       origin: originName,
-      destination: destName,
+      destination: isRoundTrip ? returnName : destName,
       travelMode: 'DRIVING',
-      fields: ['path'],
-    })
+      /* En el redondo se piden tambien los tramos: con ellos se ubica la
+         parada intermedia y se distingue la ida del regreso. */
+      fields: isRoundTrip ? ['path', 'legs'] : ['path'],
+    };
+    if (isRoundTrip) {
+      request.intermediates = [destName];
+    }
+
+    computeRoute(request)
       .then((route: any) => {
+        if (renderId !== this.renderId) return;
+
         // `path` reemplaza a `overview_path` del servicio anterior
-        const pathPoints = (route?.path ?? []).map((point: any) => ({
-          lat: typeof point.lat === 'function' ? point.lat() : point.lat,
-          lng: typeof point.lng === 'function' ? point.lng() : point.lng,
-        }));
+        const pathPoints = this.toLatLngs(route?.path);
 
         if (pathPoints.length === 0) {
           console.warn(`Route request returned no path for ${vehicle.plate}`);
@@ -371,30 +476,53 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
           return;
         }
 
+        const legPaths = (route?.legs ?? [])
+          .map((leg: any) => this.toLatLngs(leg?.path))
+          .filter((points: any[]) => points.length > 0);
+
         // Origin and Destination markers (taken from the route path for precision)
+        const lastStop = stops.at(-1)!;
         this.addMarker(
           pathPoints[0],
-          'O',
-          `Origen: ${originCity?.name || trip.originId}`,
-          '#28a745',
+          stops[0].label,
+          stops[0].title,
+          stops[0].color,
         );
         this.addMarker(
           pathPoints.at(-1),
-          'D',
-          `Destino: ${destCity?.name || trip.destinationId}`,
-          '#dc3545',
+          lastStop.label,
+          lastStop.title,
+          lastStop.color,
         );
 
+        /* La parada intermedia del redondo es donde termina el primer tramo.
+           Si la API no devolvio los tramos se geocodifica la ciudad: el punto
+           queda menos preciso, pero el destino de ida no puede faltar. */
+        if (isRoundTrip) {
+          const stop = stops[1];
+          const legEnd = legPaths[0]?.at(-1);
+          if (legEnd) {
+            this.addMarker(legEnd, stop.label, stop.title, stop.color);
+          } else {
+            this.getCoordinates(stop.query).then((position) => {
+              if (renderId !== this.renderId) return;
+              this.addMarker(position, stop.label, stop.title, stop.color);
+            });
+          }
+        }
+
         // Path Polyline
-        const polyline = new google.maps.Polyline({
-          path: pathPoints,
-          geodesic: true,
-          strokeColor: vehicleColor,
-          strokeOpacity: 0.8,
-          strokeWeight: 5,
-          map: this.map,
-        });
-        this.polylines.push(polyline);
+        if (isRoundTrip && legPaths.length > 1) {
+          legPaths.forEach((legPath: any[], i: number) => {
+            this.addRoutePolyline(
+              legPath,
+              vehicleColor,
+              this.isActiveLeg(trip, i),
+            );
+          });
+        } else {
+          this.addRoutePolyline(pathPoints, vehicleColor, true);
+        }
 
         // Current Location marker (if available)
         if (lastLocation?.latitude && lastLocation.longitude) {
@@ -423,7 +551,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       .catch((error: any) => {
         console.warn(`Route request failed for ${vehicle.plate}:`, error);
         // Fallback to straight line if the route cannot be computed
-        drawStraightLineFallback();
+        if (renderId === this.renderId) drawStraightLineFallback();
       });
   }
 
@@ -473,6 +601,19 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       },
     });
     this.markers.push(marker);
+  }
+
+  /**
+   * Si en el mapa hay algun viaje redondo. La leyenda solo nombra el destino
+   * de ida cuando existe: en un mapa de viajes sencillos seria un color que
+   * no aparece en ninguna parte.
+   */
+  get hasRoundTripOnMap(): boolean {
+    return this.activeVehicles.some(
+      (v) =>
+        (this.selectedVehicleId === null || this.selectedVehicleId === v.id) &&
+        !!(v as any).currentTrip?.returnDestinationId,
+    );
   }
 
   showAll(): void {
@@ -530,6 +671,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private clearMap(): void {
+    this.renderId++;
     this.markers.forEach((m) => m.setMap(null));
     this.polylines.forEach((p) => p.setMap(null));
     this.markers = [];
@@ -540,15 +682,66 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isPanelCollapsed = !this.isPanelCollapsed;
   }
 
+  /**
+   * Los propietarios del filtro: solo los que tienen algun viaje en curso.
+   *
+   * El mapa no pinta otra cosa, asi que el catalogo completo llenaba el
+   * desplegable de nombres que no llevan a ninguna parte: al elegir uno, el
+   * mapa quedaba vacio y no habia forma de saber de antemano cuales si tenian
+   * algo que mostrar.
+   *
+   * El backend no filtra viajes por propietario, asi que va en dos pasos —el
+   * mismo camino de la vista de viajes—: los viajes en curso traen anidada la
+   * relacion vehiculo-propietario, y con esos ids se piden los propietarios.
+   */
   loadOwners(): void {
-    const filter = new ModelFilterTable(
-      [],
+    const tripFilter = new ModelFilterTable(
+      [new Filter('status', '=', 'En Curso')],
       new Pagination(1000, 0),
-      new Sort('name', true),
+      new Sort('id', true),
     );
-    this.ownerService.getOwnerFilter(filter).subscribe((res) => {
-      this.owners = res?.data?.content || [];
-    });
+
+    this.tripService
+      .getTripFilter(tripFilter)
+      .pipe(
+        switchMap((tripsResp: any) => {
+          const trips: ModelTrip[] = tripsResp?.data?.content || [];
+          const ownerIds = [
+            ...new Set(trips.flatMap((trip) => this.ownerIdsOf(trip))),
+          ];
+          if (ownerIds.length === 0) return of({ data: { content: [] } });
+
+          const ownerFilter = new ModelFilterTable(
+            [new Filter('id', 'in', ownerIds.join(','))],
+            new Pagination(ownerIds.length, 0),
+            new Sort('name', true),
+          );
+          return this.ownerService.getOwnerFilter(ownerFilter);
+        }),
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.owners = res?.data?.content || [];
+        },
+        error: (err) => {
+          console.error('Map: Error loading owners:', err);
+          this.owners = [];
+        },
+      });
+  }
+
+  /**
+   * Los propietarios de un viaje. Un vehiculo puede tener varios —cada uno
+   * con su porcentaje— y el filtro del mapa lo encuentra por cualquiera de
+   * ellos, asi que entran todos. Si el viaje no trae la relacion, queda el
+   * propietario del conductor.
+   */
+  private ownerIdsOf(trip: ModelTrip): number[] {
+    const fromVehicle = (trip.vehicle?.owners ?? [])
+      .map((relation) => relation?.ownerId)
+      .filter((id): id is number => id != null);
+    if (fromVehicle.length > 0) return fromVehicle;
+    return trip.driver?.ownerId == null ? [] : [trip.driver.ownerId];
   }
 
   onOwnerFilterChange(): void {

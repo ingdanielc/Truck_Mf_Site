@@ -149,6 +149,16 @@
         border-radius: 50%;
       }
     }
+
+    /* La nota del viaje redondo: explica el trazo tenue, que es lo unico de
+       la leyenda que no es un color. Va en letra menor porque se lee una vez
+       y despues sobra. */
+    .legend-note {
+      margin-top: 0.5rem;
+      max-width: 12rem;
+      font-size: 0.75rem;
+      color: var(--bs-secondary-color);
+    }
   }
 }
 

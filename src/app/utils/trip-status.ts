@@ -113,10 +113,12 @@ export function applyTripStatusChange(
   }
 
   if (CLOSING_STATUSES.includes(newStatus)) {
-    /* Completado y Pendiente marcan la llegada ahora. La baja lógica respeta
-       la fecha que ya tuviera: no reescribe el cierre de un viaje que sí
-       ocurrió y que solo despues se dio de baja. */
-    if (!isCancelledTrip(newStatus) || !actualizado.endDate) {
+    /* La fecha de llegada que ya tuviera se respeta; solo se pone la de ahora
+       cuando no hay ninguna. Es lo mismo que hace el detalle, donde el campo
+       de fecha se rellena con `endDate` y solo cae en "hoy" si viene vacío:
+       sin esto, mover a Pendiente un viaje ya cerrado le reescribía la
+       llegada con la fecha del día. */
+    if (!actualizado.endDate) {
       actualizado.endDate = now.toISOString();
     }
 

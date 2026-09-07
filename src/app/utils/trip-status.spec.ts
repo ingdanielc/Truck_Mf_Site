@@ -154,25 +154,32 @@ describe('applyTripStatusChange', () => {
     expect(resultado.numberOfDays).toBe(2);
   });
 
-  /* Un viaje que llegó y solo después se dio de baja conserva su cierre: la
-     baja no reescribe cuándo terminó. */
-  it('respeta la fecha de fin que ya tuviera al cancelar', () => {
-    const resultado = applyTripStatusChange(
-      viaje({
-        startDate: '2026-03-08T15:00:00.000Z',
-        endDate: '2026-03-09T15:00:00.000Z',
-      }),
-      'Cancelado',
-      ahora,
-    );
+  /* La llegada ya registrada no se reescribe: ni al dar de baja un viaje que
+     sí llegó, ni al mover a Pendiente uno ya cerrado. Es lo mismo que hace el
+     detalle, donde el campo de fecha se rellena con la que trae el viaje. */
+  ['Cancelado', 'Pendiente', 'Completado'].forEach((estado) => {
+    it(`respeta la fecha de fin que ya tuviera al pasar a ${estado}`, () => {
+      const resultado = applyTripStatusChange(
+        viaje({
+          status: 'Completado',
+          startDate: '2026-03-08T15:00:00.000Z',
+          endDate: '2026-03-09T15:00:00.000Z',
+        }),
+        estado,
+        ahora,
+      );
 
-    expect(resultado.endDate).toBe('2026-03-09T15:00:00.000Z');
-    expect(resultado.numberOfDays).toBe(1);
+      expect(resultado.endDate).toBe('2026-03-09T15:00:00.000Z');
+      expect(resultado.numberOfDays).toBe(1);
+    });
   });
 
-  it('pone la fecha de fin al cancelar un viaje que no la tenía', () => {
-    const resultado = applyTripStatusChange(viaje(), 'Cancelado', ahora);
-    expect(resultado.endDate).toBe(ahora.toISOString());
+  it('pone la fecha de fin cuando el viaje no la tenía', () => {
+    ['Cancelado', 'Completado', 'Pendiente'].forEach((estado) => {
+      expect(applyTripStatusChange(viaje(), estado, ahora).endDate)
+        .withContext(estado)
+        .toBe(ahora.toISOString());
+    });
   });
 
   /* Volver a poner el viaje en ruta no lo cierra: si fijara fecha de fin, el

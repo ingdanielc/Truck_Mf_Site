@@ -41,11 +41,21 @@
           (change)="onOwnerFilterChange()"
         >
           <option [ngValue]="null" disabled>Seleccione un propietario</option>
-          <option [ngValue]="-1">Todos los Propietarios</option>
-          @for (owner of owners; track owner.id) {
-            <option [ngValue]="owner.id">
-              {{ owner.name || owner.user?.name || "Propietario " + owner.id }}
+          <!-- Solo se listan los propietarios con algun viaje en curso: son
+               los unicos que tienen algo que mostrar en el mapa. -->
+          @if (owners.length === 0) {
+            <option [ngValue]="null" disabled>
+              Ningún propietario tiene viajes en curso
             </option>
+          } @else {
+            <option [ngValue]="-1">Todos los Propietarios</option>
+            @for (owner of owners; track owner.id) {
+              <option [ngValue]="owner.id">
+                {{
+                  owner.name || owner.user?.name || "Propietario " + owner.id
+                }}
+              </option>
+            }
           }
         </select>
       </div>
@@ -100,12 +110,23 @@
   <!-- Legend -->
   <div class="map-legend">
     <div class="legend-item">
-      <div class="legend-icon" style="background-color: #28a745"></div>
+      <div class="legend-icon" [style.background-color]="colorOrigin"></div>
       <span>Origen</span>
     </div>
+    <!-- El viaje redondo tiene dos destinos: el de ida es una parada y el de
+         regreso cierra la ruta. Solo se nombra cuando hay alguno en el mapa. -->
+    @if (hasRoundTripOnMap) {
+      <div class="legend-item">
+        <div class="legend-icon" [style.background-color]="colorLegStop"></div>
+        <span>Destino de ida</span>
+      </div>
+    }
     <div class="legend-item">
-      <div class="legend-icon" style="background-color: #dc3545"></div>
-      <span>Destino</span>
+      <div
+        class="legend-icon"
+        [style.background-color]="colorDestination"
+      ></div>
+      <span>{{ hasRoundTripOnMap ? "Destino de regreso" : "Destino" }}</span>
     </div>
     <div class="legend-item">
       <div
@@ -114,5 +135,8 @@
       ></div>
       <span>Ubicación Actual</span>
     </div>
+    @if (hasRoundTripOnMap) {
+      <p class="legend-note mb-0">El tramo que no está en curso va tenue.</p>
+    }
   </div>
 </div>

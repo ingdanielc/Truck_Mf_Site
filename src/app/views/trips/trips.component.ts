@@ -55,6 +55,8 @@ export interface TripOwnerGroup {
 export class TripsComponent implements OnInit, OnDestroy {
   allTrips: ModelTrip[] = [];
   totalTrips: number = 0;
+  /** Filas del listado actual, con bajas lógicas. Solo pagina; no se muestra. */
+  listTotal: number = 0;
   inProgressTrips: number = 0;
   completedTrips: number = 0;
   pendingTrips: number = 0;
@@ -597,6 +599,12 @@ export class TripsComponent implements OnInit, OnDestroy {
     this.tripService.getTripFilter(filter).subscribe({
       next: (response: any) => {
         this.allTrips = response?.data?.content ?? [];
+        /* Total de filas que devuelve esta consulta, cancelados incluidos: es
+           lo que la lista pinta y lo que debe paginar. La tarjeta "Total
+           Viajes" cuenta otra cosa —viajes reales— y no sirve aquí: con ella,
+           las ultimas paginas de un listado con bajas se volvian
+           inalcanzables. */
+        this.listTotal = response?.data?.totalElements ?? this.allTrips.length;
         this.loadEmptyTripExpenses();
 
         // Identify missing owners needed for grouping
@@ -1018,7 +1026,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     if (this.selectedStatus === 'En Curso') return this.inProgressTrips;
     if (this.selectedStatus === 'Pendiente') return this.pendingTrips;
     if (this.selectedStatus === 'Completado') return this.completedTrips;
-    return this.totalTrips;
+    return this.listTotal;
   }
 
   get itemsShownCount(): number {
