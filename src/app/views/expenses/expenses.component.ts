@@ -42,6 +42,7 @@ import {
   buildExpenseShortcuts,
 } from 'src/app/utils/expense-shortcuts';
 import { PlatePipe } from '../../pipes/plate.pipe';
+import { isCancelledTrip } from 'src/app/utils/trip-status';
 
 @Component({
   selector: 'app-expenses',
@@ -742,6 +743,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     this.recentTrips = [];
 
     const filter = new ModelFilterTable(
+      /* Los viajes dados de baja siguen en el selector: sus gastos se pueden
+         consultar. Lo que se bloquea es registrar o editar —ver `readOnly`. */
       [new Filter('vehicle.id', '=', vehicleId.toString())],
       new Pagination(10, 0),
       new Sort('id', false), // Newest first
@@ -829,6 +832,16 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     );
   }
 
+  /**
+   * El viaje está dado de baja. Sus gastos quedan en solo lectura: se
+   * consultan, pero no se registran ni se editan. A diferencia del bloqueo de
+   * las 48 horas, este no depende del rol —un viaje que no existió no admite
+   * movimientos de nadie— ni caduca.
+   */
+  get isTripCancelled(): boolean {
+    return !this.isMaintenance && isCancelledTrip(this.selectedTrip?.status);
+  }
+
   get isTripLockedForDriver(): boolean {
     if (
       this.userRole !== 'CONDUCTOR' ||
@@ -868,6 +881,13 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       this.selectedVehicle && (!tripRequired || this.selectedTrip);
 
     if (canOpen) {
+      if (this.isTripCancelled) {
+        this.toastService.showError(
+          'Acción denegada',
+          'El viaje está cancelado: sus gastos son solo de consulta.',
+        );
+        return;
+      }
       if (this.isTripLockedForDriver) {
         this.toastService.showError(
           'Acción denegada',
@@ -897,6 +917,13 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   onEditExpense(expense: ModelExpense): void {
+    if (this.isTripCancelled) {
+      this.toastService.showError(
+        'Acción denegada',
+        'El viaje está cancelado: sus gastos son solo de consulta.',
+      );
+      return;
+    }
     if (this.isTripLockedForDriver) {
       this.toastService.showError(
         'Acción denegada',

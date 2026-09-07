@@ -76,7 +76,7 @@
         >
           <i class="fa-solid fa-chevron-down"></i>
         </span>
-      } @else {
+      } @else if (!readOnly) {
         <button
           class="btn btn-link text-primary p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2 transition-all edit-btn"
           (click)="edit.emit(single)"
@@ -106,15 +106,17 @@
           <span class="small fw-bold text-body flex-shrink-0">
             {{ item.amount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
           </span>
-          <button
-            class="btn btn-link text-primary p-0 text-decoration-none flex-shrink-0 detail-edit"
-            (click)="edit.emit(item)"
-            [attr.aria-label]="
-              'Editar gasto del ' + (item.expenseDate | date: 'd MMM, y')
-            "
-          >
-            <i class="fa-solid fa-pen-to-square"></i>
-          </button>
+          @if (!readOnly) {
+            <button
+              class="btn btn-link text-primary p-0 text-decoration-none flex-shrink-0 detail-edit"
+              (click)="edit.emit(item)"
+              [attr.aria-label]="
+                'Editar gasto del ' + (item.expenseDate | date: 'd MMM, y')
+              "
+            >
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+          }
         </li>
       }
     </ul>

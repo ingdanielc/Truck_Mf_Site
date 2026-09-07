@@ -44,6 +44,11 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
   /** Acceso rápido: abre el formulario con tipo y categoría ya elegidos */
   @Output() addExpenseShortcut = new EventEmitter<ExpenseShortcutEvent>();
   @Input() isMaintenance = false;
+  /**
+   * Solo consulta: el viaje está dado de baja. Se dejan las tarjetas de gasto
+   * y se retiran las de "¿Nuevo Gasto?" con sus atajos.
+   */
+  @Input() readOnly = false;
   @Input() monthsToQuery = 2;
   /** Categorías más usadas por tipo de gasto, calculadas en la vista padre */
   @Input() shortcuts: Record<number, ExpenseShortcut[]> = {};

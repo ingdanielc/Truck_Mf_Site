@@ -22,8 +22,17 @@ import { DriverService } from 'src/app/services/driver.service';
 import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
 import { GTripFormComponent } from '../../components/g-trip-form/g-trip-form.component';
 import { GTripInfoCardComponent } from '../../components/g-trip-info-card/g-trip-info-card.component';
+import { NotificationsService } from 'src/app/services/notifications.service';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
 import { locationQuery } from 'src/app/utils/city-geo';
+import {
+  applyTripStatusChange,
+  canChangeTripStatus,
+  canSetTripStatus,
+  excludeCancelledFilter,
+  isCancelledTrip,
+  statusNeedsConfirmation,
+} from 'src/app/utils/trip-status';
 
 export interface TripOwnerGroup {
   owner: ModelOwner;
@@ -143,6 +152,7 @@ export class TripsComponent implements OnInit, OnDestroy {
     private readonly vehicleService: VehicleService,
     private readonly driverService: DriverService,
     private readonly expenseService: ExpenseService,
+    private readonly notificationsService: NotificationsService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
   ) {}
@@ -455,9 +465,12 @@ export class TripsComponent implements OnInit, OnDestroy {
     }
 
     forkJoin({
+      /* El total no lleva estado, asi que es el unico que arrastraria las
+         bajas logicas: sin excluirlas dejaba de cuadrar con la suma de las
+         otras tres tarjetas. */
       total: this.tripService.getTripFilter(
         new ModelFilterTable(
-          filtros,
+          [...filtros, excludeCancelledFilter()],
           new Pagination(1, 0),
           new Sort('id', true),
         ),
@@ -644,7 +657,11 @@ export class TripsComponent implements OnInit, OnDestroy {
   }
 
   calculateStats(trips?: ModelTrip[]): void {
-    const source = trips ?? this.allTrips;
+    /* Las bajas logicas siguen en la lista, pero no en las tarjetas: el total
+       cuenta viajes reales, no filas. */
+    const source = (trips ?? this.allTrips).filter(
+      (t) => !isCancelledTrip(t.status),
+    );
 
     const inProgress = source.filter((t) => {
       const status = (t.status || '').toUpperCase();
@@ -1117,6 +1134,16 @@ export class TripsComponent implements OnInit, OnDestroy {
   }
 
   toggleOffcanvas(trip?: ModelTrip): void {
+    /* La tarjeta ya no ofrece "Editar" en un viaje dado de baja; esto cubre
+       las demas vias de llegar aqui con uno. */
+    if (trip && isCancelledTrip(trip.status)) {
+      this.toastService.showError(
+        'Acción denegada',
+        'El viaje está cancelado. Cambia su estado desde el detalle para poder editarlo.',
+      );
+      return;
+    }
+
     if (!this.isOffcanvasOpen && !trip) {
       // Sin vehículos registrados no hay viaje posible: se avisa antes de
       // evaluar el bloqueo por viaje en curso
@@ -1137,6 +1164,93 @@ export class TripsComponent implements OnInit, OnDestroy {
     if (this.isOffcanvasOpen) {
       this.editingTrip = trip ?? null;
     }
+  }
+
+  // ── Cambio de estado desde la etiqueta de la tarjeta ───────────────
+
+  /**
+   * Cambio elegido en una tarjeta y aún sin guardar. Mientras exista, el
+   * diálogo de confirmación está en pantalla.
+   */
+  pendingStatusChange: { trip: ModelTrip; status: string } | null = null;
+  isSavingStatus = false;
+
+  /** El texto del diálogo depende de a dónde va el viaje. */
+  get isConfirmingCancellation(): boolean {
+    return isCancelledTrip(this.pendingStatusChange?.status);
+  }
+
+  onTripStatusChange(event: { trip: ModelTrip; status: string }): void {
+    /* Un viaje dado de baja no lo revive quien no pudo darlo de baja: si no,
+       el conductor lo sacaría de Cancelado y lo volvería a dejar donde
+       quisiera. La tarjeta ya no le abre el menú; esto cubre lo demás. */
+    if (!canChangeTripStatus(event.trip.status, this.userRole)) {
+      this.toastService.showError(
+        'Acción denegada',
+        'No tienes permiso para cambiar el estado de este viaje.',
+      );
+      return;
+    }
+
+    /* El menú de la tarjeta no le ofrece "Cancelado" al conductor; esto cubre
+       el estado que llegue por cualquier otra vía. */
+    if (!canSetTripStatus(event.status, this.userRole)) {
+      this.toastService.showError(
+        'Acción denegada',
+        'Solo el propietario o un administrador pueden cancelar un viaje.',
+      );
+      return;
+    }
+
+    /* Completar y cancelar se confirman igual que en el detalle; el resto de
+       cambios se guardan directo, que es lo que hace útil el atajo. */
+    if (statusNeedsConfirmation(event.trip.status, event.status)) {
+      this.pendingStatusChange = event;
+      return;
+    }
+    this.saveStatusChange(event.trip, event.status);
+  }
+
+  confirmStatusChange(): void {
+    if (!this.pendingStatusChange) return;
+    const { trip, status } = this.pendingStatusChange;
+    this.saveStatusChange(trip, status);
+  }
+
+  cancelStatusChange(): void {
+    this.pendingStatusChange = null;
+  }
+
+  private saveStatusChange(trip: ModelTrip, status: string): void {
+    this.isSavingStatus = true;
+
+    this.tripService.createTrip(applyTripStatusChange(trip, status)).subscribe({
+      next: () => {
+        this.isSavingStatus = false;
+        this.pendingStatusChange = null;
+        this.toastService.showSuccess(
+          'Gestión de Viajes',
+          `Viaje actualizado a "${status}"`,
+        );
+        this.notificationsService.refreshNotifications();
+
+        /* Recarga completa: el cambio mueve los contadores de las tarjetas de
+           estado, y con un propietario abierto también su lista. */
+        this.loadTrips();
+        if (this.userRole === 'ADMINISTRADOR' && this.expandedOwnerId) {
+          this.loadTripsForAdmin(this.expandedOwnerId);
+        }
+      },
+      error: (err) => {
+        console.error('Error updating trip status:', err);
+        this.isSavingStatus = false;
+        this.pendingStatusChange = null;
+        this.toastService.showError(
+          'Error',
+          'No se pudo actualizar el estado del viaje',
+        );
+      },
+    });
   }
 
   dismissActiveTripWarning(): void {

@@ -38,6 +38,7 @@ import { NgClass, UpperCasePipe } from '@angular/common';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 import { computeRoute, routeDistanceKm } from 'src/app/utils/google-routes';
 import { locationQuery } from 'src/app/utils/city-geo';
+import { canSetTripStatus } from 'src/app/utils/trip-status';
 import { PlatePipe } from '../../pipes/plate.pipe';
 
 @Component({
@@ -185,10 +186,16 @@ export class GTripFormComponent implements OnInit, OnDestroy {
    * en el combo un estado distinto al real.
    */
   get availableStatuses(): string[] {
+    /* "Cancelado" es del propietario y del administrador; el conductor no lo
+       ve. Se aplica aqui tambien, aunque el selector esté oculto: es la misma
+       lista que veria si se mostrara. */
+    const estados = this.tripStatuses.filter(
+      (s) => canSetTripStatus(s, this.userRole) || s === this.trip?.status,
+    );
     if (!this.isEmptyTrip || this.trip?.status === 'Pendiente') {
-      return this.tripStatuses;
+      return estados;
     }
-    return this.tripStatuses.filter((s) => s !== 'Pendiente');
+    return estados.filter((s) => s !== 'Pendiente');
   }
 
   /**

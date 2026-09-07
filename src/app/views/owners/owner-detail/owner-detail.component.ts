@@ -18,6 +18,7 @@ import { Formatters } from '../../../utils/formatters';
 import { SubscriptionUtils } from '../../../utils/subscription';
 import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
 import { GOwnerFormComponent } from 'src/app/components/g-owner-form/g-owner-form.component';
+import { excludeCancelledFilter } from 'src/app/utils/trip-status';
 import {
   Filter,
   ModelFilterTable,
@@ -289,7 +290,10 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
 
   loadTripCountForVehicle(vehicleId: number): void {
     const filter = new ModelFilterTable(
-      [new Filter('vehicle.id', '=', vehicleId.toString())],
+      [
+        new Filter('vehicle.id', '=', vehicleId.toString()),
+        excludeCancelledFilter(),
+      ],
       new Pagination(1, 0),
       new Sort('id', true),
     );
@@ -335,7 +339,10 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
 
   loadTripCount(ownerId: number): void {
     const filter = new ModelFilterTable(
-      [new Filter('vehicle.owners.owner.id', '=', ownerId.toString())],
+      [
+        new Filter('vehicle.owners.owner.id', '=', ownerId.toString()),
+        excludeCancelledFilter(),
+      ],
       new Pagination(1, 0),
       new Sort('id', true),
     );

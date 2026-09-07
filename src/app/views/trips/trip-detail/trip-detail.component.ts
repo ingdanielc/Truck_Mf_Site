@@ -27,6 +27,11 @@ import {
   routeDurationSeconds,
 } from 'src/app/utils/google-routes';
 import { locationQuery } from 'src/app/utils/city-geo';
+import {
+  canCancelTrip,
+  canChangeTripStatus,
+  isCancelledTrip,
+} from 'src/app/utils/trip-status';
 import { PlatePipe } from '../../../pipes/plate.pipe';
 
 declare var globalThis: any;
@@ -549,6 +554,41 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Qué se está confirmando. El modal es el mismo para los dos cambios que no
+   * admiten deshacer solo, y de esto depende su texto.
+   */
+  /**
+   * Un viaje dado de baja no se edita: primero se le devuelve un estado vivo
+   * con el selector y se guarda.
+   *
+   * Mira `originalStatus` —lo que hay guardado— y no `trip.status`: mover el
+   * selector sin guardar no debe abrir el formulario, o se estaría editando un
+   * viaje que para el servidor sigue cancelado. El administrador tampoco se
+   * salta esto: la via es cambiar el estado, no un permiso.
+   */
+  /** Solo el propietario y el administrador dan de baja un viaje. */
+  get canCancel(): boolean {
+    return canCancelTrip(this.userRole);
+  }
+
+  /**
+   * Si el selector de estado admite cambios. Se mira contra `originalStatus`
+   * —lo guardado— y no contra el valor del control, que es justo lo que se
+   * está intentando mover.
+   */
+  get canChangeStatus(): boolean {
+    return canChangeTripStatus(this.originalStatus, this.userRole);
+  }
+
+  get isTripCancelled(): boolean {
+    return isCancelledTrip(this.originalStatus);
+  }
+
+  get isConfirmingCancellation(): boolean {
+    return isCancelledTrip(this.trip?.status);
+  }
+
   updateLogistics(): void {
     if (!this.trip) return;
 
@@ -557,6 +597,27 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       this.trip.status === 'Completado' &&
       this.originalStatus !== 'Completado'
     ) {
+      this.showConfirmModal = true;
+      return;
+    }
+
+    if (
+      isCancelledTrip(this.trip.status) &&
+      !isCancelledTrip(this.originalStatus)
+    ) {
+      /* La opcion no se le ofrece al conductor; esto cubre el estado que
+         llegue por cualquier otra via antes de mandarlo a guardar. */
+      if (!this.canCancel) {
+        this.trip.status = this.originalStatus;
+        this.toastService.showError(
+          'Acción denegada',
+          'Solo el propietario o un administrador pueden cancelar un viaje.',
+        );
+        return;
+      }
+
+      /* Dar de baja saca el viaje de todas las cifras: se confirma igual que
+         completarlo. */
       this.showConfirmModal = true;
       return;
     }
@@ -628,6 +689,9 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   get progressPercentage(): number {
     if (!this.trip) return 0;
+    /* Un viaje dado de baja no avanza. Sin esto se seguia pintando el avance
+       que calcula el GPS, y un viaje que nunca salio aparecia a medio camino. */
+    if (isCancelledTrip(this.trip.status)) return 0;
     if (['Completado', 'Pendiente'].includes(this.trip.status)) return 100;
     if (this.trip.status === 'Planeado') return 0;
     return this.calculatedProgressPercentage;
@@ -991,6 +1055,13 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   }
 
   editTrip(): void {
+    if (this.isTripCancelled) {
+      this.toastService.showError(
+        'Acción denegada',
+        'El viaje está cancelado. Cambia su estado y guarda para poder editarlo.',
+      );
+      return;
+    }
     this.toggleOffcanvas();
   }
 

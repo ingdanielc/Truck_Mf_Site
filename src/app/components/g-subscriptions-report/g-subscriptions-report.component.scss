@@ -140,3 +140,20 @@
     }
   }
 }
+
+/* Buscador del detalle: mismas medidas que el de propietarios y conductores.
+   En movil ocupa el renglon entero -por eso el 100%-, y a partir de `sm` se va
+   al extremo derecho del encabezado con un ancho fijo. El icono va por encima
+   del `input` para que no lo tape su fondo. */
+.search-wrapper {
+  width: 100%;
+
+  i {
+    z-index: 10;
+  }
+
+  @media (min-width: 576px) {
+    width: auto;
+    min-width: 300px;
+  }
+}

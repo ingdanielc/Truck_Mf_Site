@@ -19,7 +19,18 @@
   background-color: var(--card-bg);
   border: 1px solid var(--card-border) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Recorta a las esquinas redondeadas, y con el se llevaba por delante el
+     menu de estados. Se levanta solo mientras el menu esta abierto. */
   overflow: hidden;
+
+  &.status-menu-open {
+    overflow: visible;
+    /* El hover levanta la tarjeta con un transform, que crea contexto de
+       apilamiento: sin esto las tarjetas siguientes se pintaban sobre el
+       menu. */
+    z-index: 10;
+  }
 
   &:hover {
     transform: translateY(-5px);
@@ -38,6 +49,21 @@
   &.status-pending {
     --status-color: var(--bs-warning-text-emphasis);
     --status-color-rgb: var(--bs-warning-rgb);
+  }
+
+  /* Baja logica. Ademas del rojo se atenua la tarjeta entera: el viaje sigue
+     en la lista para poder consultarlo, pero no debe competir por la atencion
+     con los que si cuentan. */
+  &.status-cancelled {
+    --status-color: #dc3545;
+    --status-color-rgb: 220, 53, 69;
+
+    opacity: 0.65;
+
+    &:hover {
+      opacity: 1;
+      border-color: rgba(220, 53, 69, 0.3) !important;
+    }
   }
 }
 
@@ -78,6 +104,49 @@
   background-color: rgba(var(--bs-warning-rgb), 0.12);
   color: var(--bs-warning-text-emphasis);
   border: 1px solid rgba(var(--bs-warning-rgb), 0.5);
+}
+
+/* La etiqueta de estado que abre el menu: mismo aspecto que la estatica, con
+   la afordancia justa para que se lea como pulsable. */
+.status-badge-btn {
+  cursor: pointer;
+  transition: filter 0.2s ease;
+
+  &:hover {
+    filter: brightness(1.08);
+  }
+}
+
+.status-menu {
+  min-width: 11rem;
+  z-index: 5;
+
+  /* La etiqueta esta pegada al borde derecho de la tarjeta: alineado a ras
+     de ella, el menu quedaba mordido por ese borde. Se separa un poco hacia
+     dentro. */
+  right: 0.75rem;
+  left: auto;
+
+  .dropdown-item:disabled {
+    opacity: 0.5;
+  }
+}
+
+/* Punto de color con el que cada opcion se reconoce sin leerla. Reusa las
+   clases del badge, de las que solo toma el color de fondo del borde. */
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background-color: currentcolor;
+  border: 0 !important;
+}
+
+.badge-cancelled {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border: 1px solid #dc3545;
 }
 
 /* Iconos y acciones que siguen el color del estado. Lleva !important como

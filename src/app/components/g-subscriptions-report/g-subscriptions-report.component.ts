@@ -1,5 +1,6 @@
 import { Component, Input, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ModelOwner } from '../../models/owner-model';
 import { SubscriptionUtils } from '../../utils/subscription';
 import { Formatters } from '../../utils/formatters';
@@ -43,7 +44,7 @@ interface SubscriptionRow {
 @Component({
   selector: 'g-subscriptions-report',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './g-subscriptions-report.component.html',
   styleUrls: ['./g-subscriptions-report.component.scss'],
 })
@@ -71,6 +72,10 @@ export class GSubscriptionsReportComponent implements OnChanges {
 
   /** Estado abierto en el filtro, o `null` para todos. */
   public filter: SubscriptionState | null = null;
+
+  /** Lo escrito en el buscador del detalle. Filtra por nombre y en memoria:
+   *  las filas ya estan todas cargadas aqui, no hay consulta que repetir. */
+  public searchTerm = '';
 
   /* ---- Tarifa ------------------------------------------------------------
      La suscripción es anual: una base que ya incluye un vehículo, más un cargo
@@ -121,12 +126,19 @@ export class GSubscriptionsReportComponent implements OnChanges {
           fee: this.feeOf(o.vehicleCount ?? 0),
         };
       })
-      /* Lo más urgente arriba: primero lo vencido (días negativos), después lo
-         que está por caer. Sin fecha va al final — no hay nada que atender. */
+      /* Primero lo urgente: los dias restantes mandan -lo vencido (negativos)
+         arriba, despues lo que esta por caer-, y sin fecha al final, que no
+         hay nada que atender. Dentro del mismo vencimiento manda el nombre:
+         asi los que caen el mismo dia salen en orden alfabetico y no en el
+         azar en que vinieron del catalogo. `localeCompare` en es-CO para que
+         las tildes y la 'n' no queden al final. */
       .sort((a, b) => {
-        if (a.days === null) return 1;
-        if (b.days === null) return -1;
-        return a.days - b.days;
+        if (a.days !== b.days) {
+          if (a.days === null) return 1;
+          if (b.days === null) return -1;
+          return a.days - b.days;
+        }
+        return a.name.localeCompare(b.name, 'es-CO', { sensitivity: 'base' });
       });
 
     this.activas = this.rows.filter((r) => r.state === 'activa').length;
@@ -183,8 +195,28 @@ export class GSubscriptionsReportComponent implements OnChanges {
   }
 
   get visibleRows(): SubscriptionRow[] {
-    if (!this.filter) return this.rows;
-    return this.rows.filter((r) => r.state === this.filter);
+    const term = GSubscriptionsReportComponent.normalize(this.searchTerm);
+    return this.rows.filter(
+      (r) =>
+        (!this.filter || r.state === this.filter) &&
+        (!term ||
+          GSubscriptionsReportComponent.normalize(r.name).includes(term)),
+    );
+  }
+
+  /** Se busca sin tildes y sin mayusculas: quien escribe "nunez" espera
+   *  encontrar a "Nunez" con tilde, que es como suele estar registrado. */
+  private static normalize(text: string): string {
+    return (text ?? '')
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  /** Cada tecla puede dejar la pagina actual fuera de rango. */
+  public onSearch(): void {
+    this.page = 0;
   }
 
   /* ---- Paginacion ---------------------------------------------------------

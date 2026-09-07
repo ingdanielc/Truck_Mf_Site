@@ -6,6 +6,7 @@ import { ModelExpense } from '../../models/expense-model';
 import { CommonService } from '../../services/common.service';
 import { Router } from '@angular/router';
 import { PlatePipe } from '../../pipes/plate.pipe';
+import { isCancelledTrip } from '../../utils/trip-status';
 
 @Component({
   selector: 'g-vehicle-trip-exp-card',
@@ -123,6 +124,7 @@ export class GVehicleTripExpCardComponent implements OnInit {
   }
 
   getStatusClass(status: string): string {
+    if (isCancelledTrip(status)) return 'badge-cancelled';
     switch ((status || '').toUpperCase()) {
       case 'COMPLETADO':
         return 'badge-completed';

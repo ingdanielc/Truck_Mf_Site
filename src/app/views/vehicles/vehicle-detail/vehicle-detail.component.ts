@@ -35,6 +35,7 @@ import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-tr
 import { GVehicleDocumentsComponent } from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
 import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
 import { PlatePipe } from '../../../pipes/plate.pipe';
+import { excludeCancelledFilter } from 'src/app/utils/trip-status';
 
 /** Documento con nombre y vigencia resueltos, listo para pintar en la tarjeta. */
 interface DocumentRow {
@@ -255,7 +256,12 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
   private loadTrips(vehicleId: number): void {
     this.loadingTrips = true;
     const filter = new ModelFilterTable(
-      [new Filter('vehicle.id', '=', vehicleId.toString())],
+      /* Las bajas logicas no entran ni en el contador ni en los recientes: un
+         viaje de prueba ocupaba uno de los cinco huecos del resumen. */
+      [
+        new Filter('vehicle.id', '=', vehicleId.toString()),
+        excludeCancelledFilter(),
+      ],
       new Pagination(5, 0),
       new Sort('id', false),
     );

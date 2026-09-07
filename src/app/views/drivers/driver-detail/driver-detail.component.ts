@@ -18,6 +18,7 @@ import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-car
 import { Formatters } from '../../../utils/formatters';
 import { GDriverFormComponent } from 'src/app/components/g-driver-form/g-driver-form.component';
 import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
+import { excludeCancelledFilter } from 'src/app/utils/trip-status';
 import {
   Filter,
   ModelFilterTable,
@@ -212,7 +213,10 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
 
   loadTripCount(driverId: number): void {
     const filter = new ModelFilterTable(
-      [new Filter('driver.id', '=', driverId.toString())],
+      [
+        new Filter('driver.id', '=', driverId.toString()),
+        excludeCancelledFilter(),
+      ],
       new Pagination(1, 0),
       new Sort('id', true),
     );

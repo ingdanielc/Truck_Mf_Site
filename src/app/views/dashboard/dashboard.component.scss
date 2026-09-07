@@ -239,13 +239,15 @@
   min-width: 5.5rem;
 }
 
-/* El boton de volver arriba. */
+/* El boton de volver arriba. Mide lo mismo que el flotante de agregar de las
+   otras vistas -60x60, ver `.btn-fab` en styles.scss-: son el mismo gesto en
+   el mismo sitio de la pantalla, y venia dos tallas por debajo. */
 .scroll-top-btn {
   position: fixed;
   bottom: calc(1.5rem + env(safe-area-inset-bottom, 0));
   right: 1.25rem;
-  width: 46px;
-  height: 46px;
+  width: 60px;
+  height: 60px;
   border-radius: 50% !important;
   border: none;
   z-index: 1030;
@@ -266,8 +268,6 @@
   @media (min-width: 768px) {
     bottom: 2rem;
     right: 1.5rem;
-    width: 52px;
-    height: 52px;
   }
 }
 

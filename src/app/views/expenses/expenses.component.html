@@ -261,14 +261,29 @@
             {{ isMaintenance ? "Mantenimiento" : "Gastos" }} -
             <span>{{ selectedVehicle.plate | plate }}</span>
           </h5>
-          <button
-            class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
-            (click)="openAddExpense()"
-          >
-            <i class="fa-solid fa-plus me-2"></i>
-            {{ isMaintenance ? "Agregar Mantenimiento" : "Agregar Gasto" }}
-          </button>
+          @if (!isTripCancelled) {
+            <button
+              class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+              (click)="openAddExpense()"
+            >
+              <i class="fa-solid fa-plus me-2"></i>
+              {{ isMaintenance ? "Agregar Mantenimiento" : "Agregar Gasto" }}
+            </button>
+          }
         </div>
+
+        <!-- Sin este aviso la pantalla se limita a no traer los botones de
+             agregar, y no se entiende si falta un permiso o es el viaje. -->
+        @if (isTripCancelled) {
+          <div
+            class="alert alert-danger d-flex align-items-center border-0 rounded-4 shadow-sm small mb-0"
+            role="alert"
+          >
+            <i class="fa-solid fa-ban fs-4 me-2"></i>
+            Este viaje está cancelado. Sus gastos quedan como consulta: no se
+            pueden registrar nuevos ni editar los existentes.
+          </div>
+        }
 
         <div class="mt-4 animate__animated animate__fadeIn">
           <g-expenses-trip
@@ -277,6 +292,7 @@
             [budget]="selectedTrip.advancePayment"
             [isMaintenance]="isMaintenance"
             [shortcuts]="expenseShortcuts"
+            [readOnly]="isTripCancelled"
             (editExpense)="onEditExpense($event)"
             (addExpenseType)="openAddExpense($event)"
             (addExpenseShortcut)="onShortcutClick($event)"
@@ -289,7 +305,7 @@
   <!-- Mobile Floating Action Button -->
   <button
     class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
-    [class.d-none]="showAddExpense || !selectedTrip"
+    [class.d-none]="showAddExpense || !selectedTrip || isTripCancelled"
     [attr.aria-label]="
       isMaintenance ? 'Agregar Mantenimiento' : 'Agregar Gasto'
     "

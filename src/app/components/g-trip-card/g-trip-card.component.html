@@ -1,6 +1,7 @@
 <div
   class="card trip-card border-0 rounded-4 shadow-sm h-100 cursor-pointer hover-scale"
   [ngClass]="statusTheme"
+  [class.status-menu-open]="isStatusMenuOpen"
   (click)="navigateToDetail()"
   onkeypress
 >
@@ -17,12 +18,55 @@
           {{ trip.numberTrip || trip.manifestNumber }}
         </h3>
       </div>
-      <span
-        class="badge rounded-pill px-3 py-2 status-badge fw-bold"
-        [ngClass]="getStatusClass(trip.status)"
-      >
-        {{ trip.status }}
-      </span>
+      <!-- La etiqueta de estado es tambien el control para cambiarlo: en la
+           lista es el gesto mas frecuente y obligaba a entrar al detalle. -->
+      @if (canChangeStatus) {
+        <div class="dropdown position-relative">
+          <button
+            type="button"
+            class="badge rounded-pill px-3 py-2 status-badge fw-bold status-badge-btn"
+            [ngClass]="getStatusClass(trip.status)"
+            (click)="toggleStatusMenu($event)"
+            [attr.aria-expanded]="isStatusMenuOpen"
+            aria-label="Cambiar estado del viaje"
+          >
+            {{ trip.status }}
+            <i class="fa-solid fa-chevron-down ms-1 small"></i>
+          </button>
+          @if (isStatusMenuOpen) {
+            <ul
+              class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block status-menu"
+            >
+              @for (option of statusOptions; track option) {
+                <li>
+                  <button
+                    type="button"
+                    class="dropdown-item d-flex align-items-center gap-2 py-2"
+                    [disabled]="isStatusOptionDisabled(option)"
+                    (click)="onStatusOptionClick($event, option)"
+                  >
+                    <span
+                      class="status-dot"
+                      [ngClass]="getStatusClass(option)"
+                    ></span>
+                    <span>{{ option }}</span>
+                    @if (option === trip.status) {
+                      <i class="fa-solid fa-check ms-auto small"></i>
+                    }
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      } @else {
+        <span
+          class="badge rounded-pill px-3 py-2 status-badge fw-bold"
+          [ngClass]="getStatusClass(trip.status)"
+        >
+          {{ trip.status }}
+        </span>
+      }
     </div>
 
     <!-- Vehicle & Driver info -->
@@ -283,7 +327,12 @@
       >
         Gastos <i class="fa-solid fa-wallet"></i>
       </button>
-      @if (trip.status !== "Completado" || userRole === "ADMINISTRADOR") {
+      <!-- Un viaje dado de baja se edita desde su detalle, y solo despues de
+           devolverle un estado vivo. -->
+      @if (
+        !isCancelled &&
+        (trip.status !== "Completado" || userRole === "ADMINISTRADOR")
+      ) {
         <button
           class="btn btn-link text-status p-0 text-decoration-none fw-bold small d-flex align-items-center gap-2"
           (click)="onEditClick($event)"

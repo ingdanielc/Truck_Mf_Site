@@ -150,7 +150,26 @@ ya conoce.
 | Mantenimiento | `category.expenseTypeId = 4` |
 | Gasto de viaje | `expense.tripId` apunta a un viaje **del mismo periodo** |
 | Viajes activos | `status = 'En Curso'`, sin filtro de fecha |
+| Viaje dado de baja | `status = 'Cancelado'` — **se excluye de todo agregado** |
 | Grupo sin movimiento | aparece en cero; no se omite del eje |
+
+**Viajes cancelados.** "Cancelado" es la baja lógica de un viaje: se creó mal,
+era una prueba o nunca salió. La fila se conserva y el cliente la sigue
+mostrando en el listado —en rojo—, pero no representa transporte alguno, así que
+**ningún endpoint de reportes debe contarla**: ni en `freight`, ni en
+`tripsByType`, ni en `activity`, ni en las filas del Endpoint B. Su flete no es
+ingreso y sumarlo infla la utilidad de todo el mes.
+
+**Sus gastos tampoco cuentan.** Un gasto con `tripId` de un viaje cancelado
+queda fuera de todo agregado: no entra en `tripExpenses`, y **no se reclasifica
+como gasto suelto del periodo** —no debe acabar en `otherExpenses` ni en
+`expensesByType`—. El viaje no ocurrió, así que su gasto tampoco: dejarlo caer
+en la bolsa de gastos sueltos solo movería la cifra de sitio y seguiría
+restando utilidad al vehículo. El cliente ya impide registrar o editar gastos
+en un viaje cancelado.
+
+El cliente no puede aplicar esta regla por su cuenta: el tablero y el reporte de
+rentabilidad consumen las cifras ya agregadas.
 
 ---
 

@@ -42,6 +42,8 @@ export class GExpenseCardComponent {
   @Input({ required: true }) group!: ExpenseGroup;
   /** Total de la vista, para calcular el % que representa el grupo */
   @Input() totalAmount: number = 0;
+  /** Solo consulta: el gasto pertenece a un viaje dado de baja. */
+  @Input() readOnly = false;
   @Output() edit = new EventEmitter<ModelExpense>();
 
   expanded = false;

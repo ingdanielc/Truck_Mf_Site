@@ -1,5 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { isCancelledTrip } from '../../utils/trip-status';
 
 @Component({
   selector: 'g-trip-mini-card',
@@ -23,9 +24,9 @@ export class GTripMiniCardComponent {
 
   get statusClass(): string {
     const s = (this.status || '').toUpperCase();
+    if (isCancelledTrip(this.status)) return 'badge-cancelled';
     if (s.includes('COMPLETADO')) return 'badge-completed';
     if (s.includes('PENDIENTE')) return 'badge-pending';
-    if (s.includes('CANCELADO')) return 'badge-cancelled';
     return 'badge-in-progress';
   }
 

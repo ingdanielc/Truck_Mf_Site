@@ -191,3 +191,31 @@
     opacity: 1;
   }
 }
+
+/* Confirmacion del cambio de estado hecho desde la etiqueta de una tarjeta.
+   Mismos valores que el dialogo de venta de vehiculos y el del detalle del
+   viaje, que es de donde viene este flujo. */
+.confirm-card {
+  background-color: var(--bs-body-bg);
+  border-radius: 20px;
+  width: 90%;
+  max-width: 400px;
+  padding: 2rem !important;
+  transform: translateY(20px);
+  transition: transform 0.3s ease;
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+}
+
+.custom-offcanvas.open .confirm-card {
+  transform: translateY(0);
+}
+
+.confirm-icon-box {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
