@@ -1,0 +1,1309 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Prueba de descarga iOS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    />
+    <style>
+      :root {
+        --ground: #f1f4f7;
+        --surface: #ffffff;
+        --surface-sunk: #e8edf2;
+        --line: #d3dce4;
+        --line-soft: #e3eaf0;
+        --ink: #15212c;
+        --muted: #5b6d7d;
+        --accent: #0b6e99;
+        --accent-soft: rgba(11, 110, 153, 0.09);
+        --ok: #1c7a4f;
+        --ok-soft: rgba(28, 122, 79, 0.11);
+        --fail: #ad2a20;
+        --fail-soft: rgba(173, 42, 32, 0.1);
+        --warn: #8a5a00;
+        --warn-soft: rgba(138, 90, 0, 0.12);
+        --shadow:
+          0 1px 2px rgba(21, 33, 44, 0.06), 0 6px 18px rgba(21, 33, 44, 0.05);
+
+        --sans:
+          "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          system-ui, sans-serif;
+        --mono:
+          "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ground: #0d141b;
+          --surface: #16212c;
+          --surface-sunk: #101a23;
+          --line: #2a3947;
+          --line-soft: #223040;
+          --ink: #dde6ed;
+          --muted: #8698a8;
+          --accent: #4aa9d1;
+          --accent-soft: rgba(74, 169, 209, 0.14);
+          --ok: #55c08a;
+          --ok-soft: rgba(85, 192, 138, 0.14);
+          --fail: #f0857c;
+          --fail-soft: rgba(240, 133, 124, 0.14);
+          --warn: #d8a748;
+          --warn-soft: rgba(216, 167, 72, 0.15);
+          --shadow:
+            0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 18px rgba(0, 0, 0, 0.28);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        padding: 0 0 4rem;
+        background: var(--ground);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .wrap {
+        max-width: 40rem;
+        margin: 0 auto;
+        padding: 0 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.75rem;
+      }
+
+      /* ---------- cabecera ---------- */
+
+      .head {
+        padding: 2rem 0 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0;
+      }
+
+      .head h1 {
+        margin: 0;
+        font-size: 1.65rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
+        text-wrap: balance;
+      }
+
+      .head p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.94rem;
+      }
+
+      /* ---------- bloques ---------- */
+
+      section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+      }
+
+      .section-head {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+      }
+
+      .section-head h2 {
+        margin: 0;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .section-head p {
+        margin: 0;
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+
+      /* ---------- diagnóstico ---------- */
+
+      .facts {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .fact {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 1rem;
+        padding: 0.65rem 0.9rem;
+        border-bottom: 1px solid var(--line-soft);
+      }
+
+      .fact:last-child {
+        border-bottom: 0;
+      }
+
+      .fact dt {
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin: 0;
+      }
+
+      .fact dd {
+        margin: 0;
+        font-family: var(--mono);
+        font-size: 0.82rem;
+        font-weight: 500;
+        text-align: right;
+        word-break: break-word;
+      }
+
+      .fact dd.yes {
+        color: var(--ok);
+      }
+      .fact dd.no {
+        color: var(--fail);
+      }
+
+      .ua {
+        display: block;
+        padding: 0.65rem 0.9rem;
+        background: var(--surface-sunk);
+        border-top: 1px solid var(--line-soft);
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        line-height: 1.5;
+        color: var(--muted);
+        word-break: break-all;
+      }
+
+      /* ---------- vías de descarga ---------- */
+
+      .trial {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        padding: 0.9rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+      }
+
+      .trial-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.7rem;
+      }
+
+      .trial-id {
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-radius: 4px;
+        padding: 0.2rem 0.4rem;
+        flex: none;
+        margin-top: 0.1rem;
+      }
+
+      .trial-text {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+      }
+
+      .trial-text h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .trial-text p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .chip {
+        flex: none;
+        font-family: var(--mono);
+        font-size: 0.66rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.25rem 0.45rem;
+        border-radius: 4px;
+        background: var(--surface-sunk);
+        color: var(--muted);
+        margin-top: 0.1rem;
+      }
+
+      .chip.ok {
+        background: var(--ok-soft);
+        color: var(--ok);
+      }
+      .chip.fail {
+        background: var(--fail-soft);
+        color: var(--fail);
+      }
+      .chip.na {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+
+      /* ---------- controles ---------- */
+
+      button {
+        font-family: inherit;
+        font-size: 0.92rem;
+        font-weight: 600;
+        min-height: 44px;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition:
+          background-color 0.12s ease,
+          border-color 0.12s ease;
+      }
+
+      button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      .btn-run {
+        width: 100%;
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+
+      .btn-quiet {
+        background: var(--surface);
+        color: var(--ink);
+        border-color: var(--line);
+      }
+
+      .btn-quiet:hover:not(:disabled) {
+        background: var(--surface-sunk);
+      }
+
+      .verdict {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.7rem;
+        border-radius: 8px;
+        background: var(--surface-sunk);
+        border: 1px dashed var(--line);
+      }
+
+      .verdict p {
+        margin: 0;
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+
+      .verdict-buttons {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .verdict-buttons button {
+        flex: 1;
+      }
+
+      .btn-yes {
+        background: var(--ok-soft);
+        color: var(--ok);
+        border-color: transparent;
+      }
+      .btn-no {
+        background: var(--fail-soft);
+        color: var(--fail);
+        border-color: transparent;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      /* ---------- contextos ---------- */
+
+      .contexts {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+      }
+
+      .context {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.8rem 0.9rem;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .context.here {
+        border-left-color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .context-n {
+        font-family: var(--mono);
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--muted);
+        flex: none;
+        line-height: 1.4;
+      }
+
+      .context.here .context-n {
+        color: var(--accent);
+      }
+
+      .context-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        min-width: 0;
+      }
+
+      .context-body strong {
+        font-size: 0.94rem;
+        font-weight: 600;
+      }
+
+      .context-body span {
+        font-size: 0.84rem;
+        color: var(--muted);
+      }
+
+      .here-tag {
+        font-family: var(--mono);
+        font-size: 0.62rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-left: auto;
+        flex: none;
+        padding-top: 0.2rem;
+      }
+
+      /* ---------- resultado ---------- */
+
+      .report {
+        background: var(--surface-sunk);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.85rem;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        line-height: 1.65;
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-height: 17rem;
+        overflow: auto;
+        margin: 0;
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .actions button {
+        flex: 1 1 8rem;
+      }
+
+      .note {
+        font-size: 0.83rem;
+        color: var(--muted);
+        margin: 0;
+        padding-left: 0.7rem;
+        border-left: 2px solid var(--line);
+      }
+
+      .note code,
+      .note b {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        color: var(--ink);
+        font-weight: 500;
+      }
+
+      footer {
+        font-size: 0.78rem;
+        color: var(--muted);
+        text-align: center;
+        padding-top: 0.5rem;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="head">
+        <p class="eyebrow">CashTruck · diagnóstico</p>
+        <h1>¿Puede este iPhone descargar el reporte?</h1>
+        <p>
+          Genera un <b>.xlsx</b> real —una versión mínima del reporte de viajes—
+          e intenta bajarlo por cuatro vías distintas. Tú confirmas cuál
+          funcionó: el navegador no lo puede saber solo.
+        </p>
+      </header>
+
+      <section>
+        <div class="section-head">
+          <h2>Tu contexto</h2>
+          <p>Detectado automáticamente al abrir la página.</p>
+        </div>
+        <dl class="facts" id="facts"></dl>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>Las cuatro vías</h2>
+          <p>
+            Pulsa cada una y responde si el archivo llegó a Archivos o a
+            Descargas.
+          </p>
+        </div>
+        <div id="trials" class="contexts"></div>
+        <p class="note" id="fileNote">Preparando el archivo de prueba…</p>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>Dónde hay que probar</h2>
+          <p>De menor a mayor riesgo. Las tres, en el mismo iPhone.</p>
+        </div>
+        <div class="contexts" id="contexts"></div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>Resultado</h2>
+          <p>Envíame esto tal cual.</p>
+        </div>
+        <pre class="report" id="report">Sin pruebas todavía.</pre>
+        <div class="actions">
+          <button class="btn-quiet" id="copyBtn" type="button">Copiar</button>
+          <button class="btn-quiet" id="shareBtn" type="button" hidden>
+            Enviar
+          </button>
+          <button class="btn-quiet" id="resetBtn" type="button">Borrar</button>
+        </div>
+      </section>
+
+      <footer>
+        Archivo temporal ·
+        <span class="mono">src/assets/prueba-descarga.html</span> · bórralo
+        cuando termines
+      </footer>
+    </div>
+
+    <script
+      integrity=""
+      crossorigin="anonymous"
+      src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"
+    ></script>
+    <script>
+      (function () {
+        "use strict";
+
+        var XLSX_MIME =
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        var STORE_KEY = "cashtruck-prueba-descarga";
+
+        /* ------------------------------------------------------------------
+     Contexto del dispositivo
+     ------------------------------------------------------------------ */
+
+        var ua = navigator.userAgent;
+
+        var isIOS =
+          /iPad|iPhone|iPod/.test(ua) ||
+          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+        var standalone =
+          window.navigator.standalone === true ||
+          (window.matchMedia &&
+            window.matchMedia("(display-mode: standalone)").matches);
+
+        // Los webview embebidos (Facebook, Instagram) usan WKWebView sin "Safari/"
+        // en el UA. WhatsApp abre en Safari View Controller y sí lo trae: se
+        // comporta como Safari y por eso no se marca como webview.
+        var brandedWebview =
+          /FBAN|FBAV|Instagram|Line\/|MicroMessenger|Twitter/i.test(ua);
+        var barebonesWebview = isIOS && !standalone && !/Safari\//.test(ua);
+        var isWebview = brandedWebview || barebonesWebview;
+
+        var contextKey = isWebview
+          ? "webview"
+          : standalone
+            ? "standalone"
+            : "navegador";
+
+        var iosMatch = ua.match(/OS (\d+)[._](\d+)(?:[._](\d+))?/);
+        var iosVersion = iosMatch ? iosMatch[1] + "." + iosMatch[2] : null;
+
+        var supportsDownloadAttr = "download" in document.createElement("a");
+        var supportsBlobUrl =
+          typeof URL !== "undefined" &&
+          typeof URL.createObjectURL === "function";
+        var swActive = !!(
+          navigator.serviceWorker && navigator.serviceWorker.controller
+        );
+
+        /* ------------------------------------------------------------------
+     Persistencia — resultados por contexto, para acumular las tres pasadas
+     ------------------------------------------------------------------ */
+
+        function readStore() {
+          try {
+            return JSON.parse(localStorage.getItem(STORE_KEY) || "{}") || {};
+          } catch (e) {
+            return {};
+          }
+        }
+
+        function writeStore(data) {
+          try {
+            localStorage.setItem(STORE_KEY, JSON.stringify(data));
+          } catch (e) {
+            /* Modo privado o almacenamiento bloqueado: los resultados viven en
+         memoria y se pierden al recargar. La prueba sigue sirviendo. */
+          }
+        }
+
+        var store = readStore();
+        if (!store[contextKey]) store[contextKey] = {};
+
+        /* ------------------------------------------------------------------
+     El archivo de prueba
+     ------------------------------------------------------------------ */
+
+        var testFile = null; // { blob, name, kind, bytes }
+        var fileError = null;
+
+        var VEHICLE = {
+          plate: "WRT-455",
+          make: "Kenworth T800",
+          year: 2019,
+          axles: 3,
+          driver: "Hernán Ospina",
+        };
+
+        var TRIPS = [
+          {
+            n: "128",
+            manifest: "MC-40218",
+            route: "Bogotá → Cali",
+            income: 3800000,
+            expense: 940000,
+          },
+          {
+            n: "129",
+            manifest: "MC-40255",
+            route: "Cali → Buenaventura",
+            income: 1450000,
+            expense: 512000,
+          },
+          {
+            n: "130",
+            manifest: "MC-40301",
+            route: "Buenaventura → Medellín",
+            income: 4250000,
+            expense: 1180000,
+          },
+          {
+            n: "131",
+            manifest: "MC-40344",
+            route: "Medellín → Barranquilla",
+            income: 5100000,
+            expense: 1620000,
+          },
+        ];
+
+        function csvFallback() {
+          var lines = [
+            "Reporte de viajes - " + VEHICLE.plate,
+            VEHICLE.make +
+              " " +
+              VEHICLE.year +
+              " - " +
+              VEHICLE.axles +
+              " ejes - " +
+              VEHICLE.driver,
+            "",
+            "No. viaje;Manifiesto;Ruta;Ingresos;Gastos;Utilidad",
+          ];
+          TRIPS.forEach(function (t) {
+            lines.push(
+              [
+                t.n,
+                t.manifest,
+                t.route,
+                t.income,
+                t.expense,
+                t.income - t.expense,
+              ].join(";"),
+            );
+          });
+          return new Blob(["﻿" + lines.join("\r\n")], {
+            type: "text/csv;charset=utf-8",
+          });
+        }
+
+        function buildWorkbook() {
+          var wb = new ExcelJS.Workbook();
+          var ws = wb.addWorksheet(VEHICLE.plate);
+
+          ws.columns = [
+            { key: "n", width: 10 },
+            { key: "manifest", width: 14 },
+            { key: "route", width: 30 },
+            { key: "income", width: 16 },
+            { key: "expense", width: 16 },
+            { key: "profit", width: 16 },
+          ];
+
+          ws.mergeCells("A1:F1");
+          ws.getCell("A1").value = "Reporte de viajes · " + VEHICLE.plate;
+          ws.getCell("A1").font = { bold: true, size: 14 };
+
+          ws.mergeCells("A2:F2");
+          ws.getCell("A2").value =
+            VEHICLE.make +
+            " " +
+            VEHICLE.year +
+            " · " +
+            VEHICLE.axles +
+            " ejes · Conductor: " +
+            VEHICLE.driver;
+          ws.getCell("A2").font = { size: 10, color: { argb: "FF5B6D7D" } };
+
+          ws.addRow([]);
+
+          var header = ws.addRow([
+            "No. viaje",
+            "Manifiesto",
+            "Ruta",
+            "Ingresos",
+            "Gastos",
+            "Utilidad",
+          ]);
+          header.font = { bold: true };
+
+          TRIPS.forEach(function (t) {
+            ws.addRow([
+              t.n,
+              t.manifest,
+              t.route,
+              t.income,
+              t.expense,
+              t.income - t.expense,
+            ]);
+          });
+
+          var totalIncome = TRIPS.reduce(function (a, t) {
+            return a + t.income;
+          }, 0);
+          var totalExpense = TRIPS.reduce(function (a, t) {
+            return a + t.expense;
+          }, 0);
+          var total = ws.addRow([
+            "",
+            "",
+            "Total",
+            totalIncome,
+            totalExpense,
+            totalIncome - totalExpense,
+          ]);
+          total.font = { bold: true };
+
+          ws.getColumn("income").numFmt = '"$"#,##0';
+          ws.getColumn("expense").numFmt = '"$"#,##0';
+          ws.getColumn("profit").numFmt = '"$"#,##0';
+
+          return wb.xlsx.writeBuffer();
+        }
+
+        /* El archivo se arma AL CARGAR, no al pulsar. En iOS, un `await` entre el
+     toque y la descarga puede invalidar el gesto del usuario, y con él la
+     hoja de compartir. El export real tendrá el mismo problema si hace
+     `await import('exceljs')` dentro del handler del botón. */
+        function prepareFile() {
+          var note = document.getElementById("fileNote");
+
+          var done = function (blob, kind) {
+            testFile = {
+              blob: blob,
+              name:
+                kind === "xlsx"
+                  ? "reporte-viajes-WRT-455.xlsx"
+                  : "reporte-viajes-WRT-455.csv",
+              kind: kind,
+              bytes: blob.size,
+            };
+            note.innerHTML =
+              kind === "xlsx"
+                ? "Archivo listo: <b>" +
+                  testFile.name +
+                  "</b>, " +
+                  fmtBytes(blob.size) +
+                  ". Se genera al cargar la página, no al pulsar: en iOS un <code>await</code> entre el toque y la descarga invalida el gesto del usuario."
+                : "ExcelJS no cargó (" +
+                  fileError +
+                  "). Se probará con <b>" +
+                  testFile.name +
+                  "</b>, " +
+                  fmtBytes(blob.size) +
+                  ". El resultado sigue valiendo para el mecanismo de descarga, no para el formato.";
+            // Se repinta el diagnóstico: `canShareFile()` necesita el archivo, y
+            // antes de tenerlo respondía "No" a la hoja de compartir.
+            renderFacts();
+            renderTrials();
+            renderReport();
+          };
+
+          if (!window.ExcelJS) {
+            fileError = "sin ExcelJS";
+            done(csvFallback(), "csv");
+            return;
+          }
+
+          try {
+            buildWorkbook().then(
+              function (buffer) {
+                done(new Blob([buffer], { type: XLSX_MIME }), "xlsx");
+              },
+              function (err) {
+                fileError = String(err && err.message ? err.message : err);
+                done(csvFallback(), "csv");
+              },
+            );
+          } catch (err) {
+            fileError = String(err && err.message ? err.message : err);
+            done(csvFallback(), "csv");
+          }
+        }
+
+        function fmtBytes(n) {
+          return n < 1024 ? n + " B" : (n / 1024).toFixed(1) + " kB";
+        }
+
+        /* ------------------------------------------------------------------
+     Las cuatro vías
+     ------------------------------------------------------------------ */
+
+        function shareFile() {
+          if (!testFile) return null;
+          try {
+            return new File([testFile.blob], testFile.name, {
+              type: testFile.blob.type,
+            });
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function canShareFile() {
+          var f = shareFile();
+          if (!f || !navigator.canShare || !navigator.share) return false;
+          try {
+            return navigator.canShare({ files: [f] });
+          } catch (e) {
+            return false;
+          }
+        }
+
+        var TRIALS = [
+          {
+            id: "anchor-blob",
+            tag: "A",
+            title: "Enlace blob: con download",
+            blurb:
+              "La vía por defecto. Es lo que haría el export si no se toca nada.",
+            supported: function () {
+              return supportsBlobUrl && supportsDownloadAttr;
+            },
+            run: function () {
+              var url = URL.createObjectURL(testFile.blob);
+              var a = document.createElement("a");
+              a.href = url;
+              a.download = testFile.name;
+              a.rel = "noopener";
+              document.body.appendChild(a);
+              a.click();
+              // Revocar de inmediato corta la descarga en iOS: se espera.
+              setTimeout(function () {
+                URL.revokeObjectURL(url);
+                a.parentNode && a.parentNode.removeChild(a);
+              }, 8000);
+            },
+          },
+          {
+            id: "anchor-data",
+            tag: "B",
+            title: "Enlace data: en base64",
+            blurb: "Sin blob de por medio. A veces pasa donde el blob no.",
+            supported: function () {
+              return supportsDownloadAttr;
+            },
+            run: function () {
+              // El data: URI se prepara aquí porque FileReader es asíncrono; el
+              // gesto ya se gastó, así que esta vía no sirve para navigator.share.
+              var reader = new FileReader();
+              reader.onload = function () {
+                var a = document.createElement("a");
+                a.href = reader.result;
+                a.download = testFile.name;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function () {
+                  a.parentNode && a.parentNode.removeChild(a);
+                }, 2000);
+              };
+              reader.readAsDataURL(testFile.blob);
+            },
+          },
+          {
+            id: "window-open",
+            tag: "C",
+            title: "window.open sobre el blob",
+            blurb:
+              "Abre el archivo en una pestaña. En iOS suele previsualizar, no descargar.",
+            supported: function () {
+              return supportsBlobUrl;
+            },
+            run: function () {
+              var url = URL.createObjectURL(testFile.blob);
+              window.open(url, "_blank");
+              setTimeout(function () {
+                URL.revokeObjectURL(url);
+              }, 8000);
+            },
+          },
+          {
+            id: "web-share",
+            tag: "D",
+            title: "Hoja de compartir de iOS",
+            blurb:
+              'navigator.share con el archivo. El camino nativo: "Guardar en Archivos".',
+            supported: canShareFile,
+            run: function () {
+              var f = shareFile();
+              // Sin await antes de esta línea: el gesto del usuario sigue vivo.
+              return navigator.share({
+                files: [f],
+                title: "Reporte de viajes " + VEHICLE.plate,
+              });
+            },
+          },
+        ];
+
+        /* ------------------------------------------------------------------
+     Pintado
+     ------------------------------------------------------------------ */
+
+        function renderFacts() {
+          var rows = [
+            [
+              "Contexto",
+              contextKey === "webview"
+                ? "Webview embebido"
+                : contextKey === "standalone"
+                  ? "PWA en pantalla de inicio"
+                  : "Navegador",
+              null,
+            ],
+            [
+              "Sistema",
+              isIOS ? "iOS " + (iosVersion || "?") : "No es iOS",
+              isIOS ? null : "no",
+            ],
+            [
+              "Atributo download",
+              supportsDownloadAttr ? "Sí" : "No",
+              supportsDownloadAttr ? "yes" : "no",
+            ],
+            [
+              "URL.createObjectURL",
+              supportsBlobUrl ? "Sí" : "No",
+              supportsBlobUrl ? "yes" : "no",
+            ],
+            [
+              "Compartir archivos",
+              canShareFile() ? "Sí" : "No",
+              canShareFile() ? "yes" : "no",
+            ],
+            ["Service worker", swActive ? "Activo" : "Ninguno", null],
+          ];
+
+          var html = rows
+            .map(function (r) {
+              var cls = r[2] ? ' class="' + r[2] + '"' : "";
+              return (
+                '<div class="fact"><dt>' +
+                r[0] +
+                "</dt><dd" +
+                cls +
+                ">" +
+                r[1] +
+                "</dd></div>"
+              );
+            })
+            .join("");
+
+          document.getElementById("facts").innerHTML =
+            html + '<div class="ua">' + escapeHtml(ua) + "</div>";
+        }
+
+        function renderTrials() {
+          var host = document.getElementById("trials");
+          host.innerHTML = "";
+
+          TRIALS.forEach(function (trial) {
+            var supported = testFile ? trial.supported() : false;
+            var result = store[contextKey][trial.id] || null;
+
+            var chipClass =
+              result === "ok"
+                ? "ok"
+                : result === "fail"
+                  ? "fail"
+                  : !supported && testFile
+                    ? "na"
+                    : "";
+            var chipText =
+              result === "ok"
+                ? "Funciona"
+                : result === "fail"
+                  ? "Falla"
+                  : !supported && testFile
+                    ? "No soportado"
+                    : "Sin probar";
+
+            var card = document.createElement("div");
+            card.className = "trial";
+            card.innerHTML =
+              '<div class="trial-top">' +
+              '<span class="trial-id">' +
+              trial.tag +
+              "</span>" +
+              '<div class="trial-text"><h3>' +
+              trial.title +
+              "</h3><p>" +
+              trial.blurb +
+              "</p></div>" +
+              '<span class="chip ' +
+              chipClass +
+              '">' +
+              chipText +
+              "</span>" +
+              "</div>" +
+              '<button class="btn-run" type="button"' +
+              (supported ? "" : " disabled") +
+              ">" +
+              (supported
+                ? "Probar"
+                : testFile
+                  ? "No disponible aquí"
+                  : "Preparando…") +
+              "</button>" +
+              '<div class="verdict" hidden>' +
+              "<p>¿Quedó el archivo guardado en el iPhone?</p>" +
+              '<div class="verdict-buttons">' +
+              '<button class="btn-yes" type="button">Sí, se descargó</button>' +
+              '<button class="btn-no" type="button">No pasó nada</button>' +
+              "</div>" +
+              "</div>";
+
+            var runBtn = card.querySelector(".btn-run");
+            var verdict = card.querySelector(".verdict");
+
+            runBtn.addEventListener("click", function () {
+              try {
+                var maybe = trial.run();
+                if (maybe && typeof maybe.catch === "function") {
+                  maybe.catch(function (err) {
+                    // AbortError = el usuario cerró la hoja de compartir. No es fallo.
+                    if (err && err.name === "AbortError") return;
+                    record(trial.id, "fail");
+                  });
+                }
+              } catch (err) {
+                record(trial.id, "fail");
+                return;
+              }
+              verdict.hidden = false;
+            });
+
+            card
+              .querySelector(".btn-yes")
+              .addEventListener("click", function () {
+                record(trial.id, "ok");
+              });
+            card
+              .querySelector(".btn-no")
+              .addEventListener("click", function () {
+                record(trial.id, "fail");
+              });
+
+            host.appendChild(card);
+          });
+        }
+
+        function record(id, value) {
+          store[contextKey][id] = value;
+          writeStore(store);
+          renderTrials();
+          renderReport();
+        }
+
+        var CONTEXTS = [
+          {
+            key: "navegador",
+            title: "Safari normal",
+            hint: "Abre esta URL directo en Safari.",
+          },
+          {
+            key: "standalone",
+            title: "PWA en pantalla de inicio",
+            hint: "Compartir → Añadir a pantalla de inicio, y ábrela desde el ícono.",
+          },
+          {
+            key: "webview",
+            title: "Webview embebido",
+            hint: "Mándate la URL por WhatsApp o Instagram y ábrela dentro de la app.",
+          },
+        ];
+
+        function renderContexts() {
+          document.getElementById("contexts").innerHTML = CONTEXTS.map(
+            function (c, i) {
+              var here = c.key === contextKey;
+              var done = store[c.key] && Object.keys(store[c.key]).length > 0;
+              return (
+                '<div class="context' +
+                (here ? " here" : "") +
+                '">' +
+                '<span class="context-n">' +
+                (i + 1) +
+                "</span>" +
+                '<div class="context-body"><strong>' +
+                c.title +
+                "</strong><span>" +
+                c.hint +
+                "</span></div>" +
+                (here
+                  ? '<span class="here-tag">Aquí</span>'
+                  : done
+                    ? '<span class="here-tag">Hecho</span>'
+                    : "") +
+                "</div>"
+              );
+            },
+          ).join("");
+        }
+
+        function buildReport() {
+          var lines = [];
+          lines.push("PRUEBA DE DESCARGA — CashTruck");
+          lines.push("Fecha: " + new Date().toISOString());
+          lines.push(
+            "Sistema: " + (isIOS ? "iOS " + (iosVersion || "?") : "no iOS"),
+          );
+          lines.push(
+            "Archivo: " +
+              (testFile
+                ? testFile.name + " (" + fmtBytes(testFile.bytes) + ")"
+                : "no generado"),
+          );
+          if (fileError) lines.push("ExcelJS: falló — " + fileError);
+          lines.push(
+            "download attr: " +
+              (supportsDownloadAttr ? "sí" : "no") +
+              " | blob URL: " +
+              (supportsBlobUrl ? "sí" : "no") +
+              " | share files: " +
+              (canShareFile() ? "sí" : "no") +
+              " | SW: " +
+              (swActive ? "sí" : "no"),
+          );
+          lines.push("");
+
+          CONTEXTS.forEach(function (c) {
+            var results = store[c.key] || {};
+            var tested = Object.keys(results).length > 0;
+            lines.push(
+              "[" + c.title + "]" + (c.key === contextKey ? "  <- actual" : ""),
+            );
+            if (!tested) {
+              lines.push("  sin probar");
+            } else {
+              TRIALS.forEach(function (t) {
+                var r = results[t.id];
+                lines.push(
+                  "  " +
+                    t.tag +
+                    ". " +
+                    t.title +
+                    ": " +
+                    (r === "ok" ? "FUNCIONA" : r === "fail" ? "FALLA" : "—"),
+                );
+              });
+            }
+            lines.push("");
+          });
+
+          lines.push("UA: " + ua);
+          return lines.join("\n");
+        }
+
+        function renderReport() {
+          document.getElementById("report").textContent = buildReport();
+        }
+
+        /* ------------------------------------------------------------------
+     Acciones
+     ------------------------------------------------------------------ */
+
+        document
+          .getElementById("copyBtn")
+          .addEventListener("click", function () {
+            var btn = this;
+            var text = buildReport();
+            var ok = function () {
+              btn.textContent = "Copiado";
+              setTimeout(function () {
+                btn.textContent = "Copiar";
+              }, 1600);
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text).then(ok, function () {
+                legacyCopy(text, ok);
+              });
+            } else {
+              legacyCopy(text, ok);
+            }
+          });
+
+        function legacyCopy(text, ok) {
+          var ta = document.createElement("textarea");
+          ta.value = text;
+          ta.setAttribute("readonly", "");
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          ta.setSelectionRange(0, text.length);
+          try {
+            document.execCommand("copy");
+            ok();
+          } catch (e) {
+            /* queda visible para copiar a mano */
+          }
+          document.body.removeChild(ta);
+        }
+
+        if (navigator.share) {
+          var shareBtn = document.getElementById("shareBtn");
+          shareBtn.hidden = false;
+          shareBtn.addEventListener("click", function () {
+            navigator
+              .share({ title: "Prueba de descarga", text: buildReport() })
+              .catch(function () {});
+          });
+        }
+
+        document
+          .getElementById("resetBtn")
+          .addEventListener("click", function () {
+            store = {};
+            store[contextKey] = {};
+            writeStore(store);
+            renderTrials();
+            renderContexts();
+            renderReport();
+          });
+
+        function escapeHtml(s) {
+          return String(s).replace(/[&<>"]/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+          });
+        }
+
+        /* ------------------------------------------------------------------ */
+
+        renderFacts();
+        renderTrials();
+        renderContexts();
+        renderReport();
+        prepareFile();
+      })();
+    </script>
+  </body>
+</html>

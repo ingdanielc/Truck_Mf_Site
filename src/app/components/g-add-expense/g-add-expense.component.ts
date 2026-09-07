@@ -88,6 +88,13 @@ export class GAddExpenseComponent implements OnInit {
   salaryTypes: any[] = [];
   currentDriverSalaryTypeId: number | null = null;
 
+  /**
+   * Remuneración del conductor del vehículo. Según su tipo de salario es el
+   * sueldo mensual en pesos o el porcentaje del flete que se lleva de cada
+   * viaje; de aquí sale el monto sugerido de una y otra categoría.
+   */
+  private currentDriverSalary: number | null = null;
+
   /** El 4x1000 son 4 pesos por cada 1000 del flete */
   private readonly TAX_4X1000_RATE = 0.004;
   /** Último monto precargado, para saber si el usuario lo cambió */
@@ -214,6 +221,9 @@ export class GAddExpenseComponent implements OnInit {
     this.commonService.getSalaryTypes().subscribe({
       next: (resp: any) => {
         if (resp?.data) this.salaryTypes = resp.data;
+        // El catálogo decide qué categorías de remuneración se ven y con qué
+        // monto: mientras no llega, el filtro corrió contra una lista vacía.
+        this.refreshDriverDependentState();
       },
     });
 
@@ -230,11 +240,89 @@ export class GAddExpenseComponent implements OnInit {
           if (vehicle) {
             this.currentDriverSalaryTypeId =
               vehicle.driver?.salaryTypeId || null;
-            this.filterCategories(); // Re-filter once we have driver info
+            this.currentDriverSalary = this.toAmount(vehicle.driver?.salary);
+            this.refreshDriverDependentState();
+
+            if (this.currentDriverSalary == null) {
+              this.loadDriverSalary(
+                vehicle.driver?.id ?? vehicle.currentDriverId,
+              );
+            }
           }
         },
       });
     }
+  }
+
+  /**
+   * Salario del conductor cuando el vehículo no lo trae anidado.
+   *
+   * `/vehicle/filter` devuelve el conductor, pero el salario no está
+   * garantizado en esa respuesta, y sin él las categorías de remuneración
+   * quedarían sin monto sugerido justo en el caso que las necesita.
+   */
+  private loadDriverSalary(driverId: number | null | undefined): void {
+    if (!driverId) return;
+
+    const filter = new ModelFilterTable(
+      [new Filter('id', '=', driverId.toString())],
+      new Pagination(1, 0),
+      new Sort('id', true),
+    );
+    this.driverService.getDriverFilter(filter).subscribe({
+      next: (resp: any) => {
+        const driver = resp?.data?.content?.[0];
+        if (!driver) return;
+
+        this.currentDriverSalary = this.toAmount(driver.salary);
+        this.currentDriverSalaryTypeId ??= driver.salaryTypeId ?? null;
+        this.refreshDriverDependentState();
+      },
+      error: () => {
+        /* Sin salario no hay sugerencia: el usuario escribe el monto. */
+      },
+    });
+  }
+
+  /**
+   * Vuelve a aplicar lo que depende del conductor: qué categorías se ven y qué
+   * monto traen.
+   *
+   * El tipo de salario y el vehículo llegan en dos peticiones aparte, y
+   * cualquiera puede caer después de que un acceso rápido ya eligió la
+   * categoría. Sin repetir filtro y sugerencia, la categoría se quedaría
+   * oculta o el monto en blanco.
+   */
+  private refreshDriverDependentState(): void {
+    this.filterCategories();
+    if (!this.editingExpense && this.selectedCategoryId != null) {
+      this.applySuggestedAmount(this.selectedCategoryId);
+    }
+  }
+
+  /** Nombre del tipo de salario del conductor, en mayúsculas. */
+  private get driverSalaryTypeName(): string {
+    const type = this.salaryTypes.find(
+      (t) => t.id === Number(this.currentDriverSalaryTypeId),
+    );
+    return (type?.name || '').toUpperCase();
+  }
+
+  /** Conductor que cobra un porcentaje del flete de cada viaje. */
+  private get isPercentageDriver(): boolean {
+    return this.driverSalaryTypeName.includes('PORCENTAJE');
+  }
+
+  /** Conductor con sueldo fijo mensual. */
+  private get isMonthlySalaryDriver(): boolean {
+    return this.driverSalaryTypeName.includes('SALARIO MENSUAL');
+  }
+
+  /** El salario puede llegar como texto: se normaliza a número o a null. */
+  private toAmount(value: any): number | null {
+    if (value == null || value === '') return null;
+    const amount = Number(value);
+    return Number.isFinite(amount) ? amount : null;
   }
 
   loadCategories(): void {
@@ -349,19 +437,12 @@ export class GAddExpenseComponent implements OnInit {
       .filter((cat) => {
         const catName = cat.name.toUpperCase();
         if (catName.includes('SALARIO')) {
-          const salaryType = this.salaryTypes.find(
-            (t) => t.id === Number(this.currentDriverSalaryTypeId),
-          );
           if (this.isMaintenance) {
             // Mantenimiento: hidden if Salary Type is NOT "Salario mensual"
-            if (!salaryType?.name.toUpperCase().includes('SALARIO MENSUAL')) {
-              return false;
-            }
+            if (!this.isMonthlySalaryDriver) return false;
           } else {
             // Gasto (Viaje/Conductor/Vehículo): hidden if Salary Type is NOT "Porcentaje"
-            if (!salaryType?.name.toUpperCase().includes('PORCENTAJE')) {
-              return false;
-            }
+            if (!this.isPercentageDriver) return false;
           }
         }
 
@@ -449,27 +530,77 @@ export class GAddExpenseComponent implements OnInit {
   }
 
   /**
-   * Solo el impuesto 4x1000 trae monto sugerido: el 0,4% del flete total del
-   * viaje. No aplica al viaje vacío, que no tiene flete.
+   * Categorías que traen monto sugerido: el impuesto 4x1000 y la remuneración
+   * del conductor. Las demás se escriben a mano.
    */
   private suggestedAmountFor(categoryId: number): string | null {
     const category = this.categories.find((c) => c.id === categoryId);
-    if (!category || !this.isTax4x1000(category.name)) return null;
+    if (!category) return null;
 
+    if (this.isTax4x1000(category.name)) {
+      return this.roundedAmount(this.tripFreight() * this.TAX_4X1000_RATE);
+    }
+
+    if (this.isDriverPayCategory(category.name)) {
+      return this.suggestedDriverPay();
+    }
+
+    return null;
+  }
+
+  /**
+   * Monto sugerido de la remuneración del conductor, que se calcula distinto
+   * según cómo cobre:
+   *
+   *   Salario mensual → el mantenimiento trae el sueldo tal cual.
+   *   Porcentaje      → el gasto del viaje trae ese porcentaje del flete.
+   *
+   * Es el mismo criterio con el que `filterCategories` decide cuál de las dos
+   * categorías se ve, así que la que esté a la vista es siempre la que aquí
+   * tiene monto.
+   */
+  private suggestedDriverPay(): string | null {
+    const salary = this.currentDriverSalary;
+    if (salary == null || salary <= 0) return null;
+
+    if (this.isMaintenance) {
+      return this.isMonthlySalaryDriver ? this.roundedAmount(salary) : null;
+    }
+
+    if (!this.isPercentageDriver) return null;
+    return this.roundedAmount((this.tripFreight() * salary) / 100);
+  }
+
+  /**
+   * Flete sobre el que se calculan los montos proporcionales. El viaje vacío no
+   * tiene flete, y sin viaje elegido no hay de dónde sacarlo.
+   */
+  private tripFreight(): number {
     const tripType = this.trip?.tripType;
-    if (tripType !== 'CARGADO' && tripType !== 'REDONDO') return null;
+    if (tripType !== 'CARGADO' && tripType !== 'REDONDO') return 0;
+    return Number(this.trip?.freight) || 0;
+  }
 
-    const freight = Number(this.trip?.freight) || 0;
-    if (freight <= 0) return null;
-
-    return this.applyAmountMask(
-      String(Math.round(freight * this.TAX_4X1000_RATE)),
-    );
+  /** Redondea a peso. El cero no se sugiere: no es un monto, es un campo vacío. */
+  private roundedAmount(value: number): string | null {
+    const amount = Math.round(value);
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+    return this.applyAmountMask(String(amount));
   }
 
   /** El nombre de la categoría viene del backend: se compara sin espacios */
   private isTax4x1000(name: string): boolean {
     return name.toLowerCase().replaceAll(/[\s.]/g, '').includes('4x1000');
+  }
+
+  /**
+   * Categoría con la que se paga al conductor. El backend la nombra "SALARIO"
+   * o "PORCENTAJE POR VIAJE" según el caso; cuál de las dos está visible ya lo
+   * decidió `filterCategories` con el tipo de salario del conductor.
+   */
+  private isDriverPayCategory(name: string): boolean {
+    const clean = normalizeCategoryName(name);
+    return clean.includes('salario') || clean.includes('porcentaje');
   }
 
   onSave(): void {

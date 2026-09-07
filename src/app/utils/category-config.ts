@@ -210,6 +210,16 @@ export const CATEGORY_UI_CONFIG: Record<string, CategoryConfig> = {
     icon: 'fa-solid fa-route',
     colorClass: 'text-primary bg-primary',
   },
+  'salario': {
+    name: 'SALARIO',
+    icon: 'fa-solid fa-sack-dollar',
+    colorClass: 'text-primary bg-primary',
+  },
+  'porcentaje por viaje': {
+    name: 'PORCENTAJE POR VIAJE',
+    icon: 'fa-solid fa-sack-dollar',
+    colorClass: 'text-primary bg-primary',
+  },
   otro: {
     name: 'OTRO',
     icon: 'fa-solid fa-ellipsis',
