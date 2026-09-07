@@ -49,6 +49,7 @@ import { GVehicleTripExpCardComponent } from '../../components/g-vehicle-trip-ex
 import { GProfitabilityReportComponent } from '../../components/g-profitability-report/g-profitability-report.component';
 import { GExpensesReportComponent } from '../../components/g-expenses-report/g-expenses-report.component';
 import { GSubscriptionsReportComponent } from '../../components/g-subscriptions-report/g-subscriptions-report.component';
+import { findScroller, scrollToTop } from '../../utils/scroll';
 
 Chart.register(...registerables);
 
@@ -1269,7 +1270,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.scroller = this.findScroller();
+    this.scroller = findScroller(this.host?.nativeElement);
     /* Fuera de la zona de Angular: el scroll dispara decenas de eventos por
        segundo y cada uno provocaría un ciclo de detección de cambios sobre las
        nueve gráficas. Solo se vuelve a entrar cuando el botón cambia de estado,
@@ -1312,26 +1313,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   private static readonly SCROLL_UMBRAL = 500;
 
-  /**
-   * Quién se desplaza realmente.
-   *
-   * Esta vista es un micro-frontend: la ventana puede no moverse porque el
-   * contenedor del shell es el que lleva el scroll. Se busca el primer
-   * antecesor que lo tenga y, si no hay ninguno, se usa la ventana.
-   */
+  /** Quién se desplaza realmente — ver `findScroller`. */
   private scroller: HTMLElement | Window = window;
-
-  private findScroller(): HTMLElement | Window {
-    let el = this.host?.nativeElement?.parentElement ?? null;
-    while (el && el !== document.body) {
-      const overflow = getComputedStyle(el).overflowY;
-      /* No se comprueba la altura: al montar la vista el contenido aún no ha
-         crecido, y el contenedor bueno todavía no desborda. */
-      if (overflow === 'auto' || overflow === 'scroll') return el;
-      el = el.parentElement;
-    }
-    return window;
-  }
 
   private get scrollTop(): number {
     return this.scroller instanceof Window
@@ -1421,11 +1404,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public scrollToTop(): void {
-    /* Quien pidió menos movimiento sube de golpe: un recorrido animado de
-       varias pantallas es justo lo que ese ajuste evita. */
-    const suave = !window.matchMedia('(prefers-reduced-motion: reduce)')
-      .matches;
-    this.scroller.scrollTo({ top: 0, behavior: suave ? 'smooth' : 'auto' });
+    scrollToTop(this.scroller);
   }
 
   private updateCurrentMonthName(): void {

@@ -9,7 +9,7 @@
   --status-color-rgb: var(--bs-primary-rgb);
 
   --card-bg: var(--bs-body-bg);
-  --card-hover-bg: rgba(var(--bs-primary-rgb), 0.02);
+  --card-hover-bg: rgba(var(--status-color-rgb), 0.02);
   --card-border: rgba(var(--bs-emphasis-color-rgb), 0.05);
 
   [data-bs-theme="dark"] & {
@@ -36,7 +36,10 @@
     transform: translateY(-5px);
     background-color: var(--card-hover-bg);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
-    border-color: rgba(var(--bs-primary-rgb), 0.2) !important;
+    /* El borde toma el color del estado, el mismo de la etiqueta. Estaba fijo
+       en el azul de "En Curso", asi que un viaje completado o pendiente se
+       encendia del color de otro estado al pasar por encima. */
+    border-color: rgba(var(--status-color-rgb), 0.2) !important;
   }
 
   &.status-completed {
@@ -51,18 +54,33 @@
     --status-color-rgb: var(--bs-warning-rgb);
   }
 
-  /* Baja logica. Ademas del rojo se atenua la tarjeta entera: el viaje sigue
-     en la lista para poder consultarlo, pero no debe competir por la atencion
-     con los que si cuentan. */
+  /* Baja logica. Ademas del rojo se atenua el contenido: el viaje sigue en la
+     lista para poder consultarlo, pero no debe competir por la atencion con
+     los que si cuentan.
+
+     La atenuacion va al contenido y no a la tarjeta entera. Sobre la tarjeta
+     aclaraba tambien el borde, que quedaba mas debil que el de las demas
+     —visible en los dos temas—, y el borde no es informacion que haya que
+     apagar: delimita la tarjeta igual que en cualquier otro estado. */
   &.status-cancelled {
     --status-color: #dc3545;
     --status-color-rgb: 220, 53, 69;
 
-    opacity: 0.65;
+    > .card-body,
+    > .card-footer {
+      opacity: 0.65;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-    &:hover {
+    &:hover > .card-body,
+    &:hover > .card-footer {
       opacity: 1;
-      border-color: rgba(220, 53, 69, 0.3) !important;
+    }
+
+    /* En tactil no hay hover: sin esto el menu de estados se desplegaba
+       atenuado sobre la tarjeta que se acaba de tocar. */
+    &.status-menu-open > .card-body {
+      opacity: 1;
     }
   }
 }

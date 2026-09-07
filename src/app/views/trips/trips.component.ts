@@ -1,4 +1,10 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription, forkJoin } from 'rxjs';
@@ -25,6 +31,7 @@ import { GTripInfoCardComponent } from '../../components/g-trip-info-card/g-trip
 import { GConfirmSheetComponent } from '../../components/g-confirm-sheet/g-confirm-sheet.component';
 import { NotificationsService } from 'src/app/services/notifications.service';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
+import { findScroller, scrollToTop } from 'src/app/utils/scroll';
 import { locationQuery } from 'src/app/utils/city-geo';
 import {
   applyTripStatusChange,
@@ -54,11 +61,14 @@ export interface TripOwnerGroup {
   templateUrl: './trips.component.html',
   styleUrls: ['./trips.component.scss'],
 })
-export class TripsComponent implements OnInit, OnDestroy {
+export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
   allTrips: ModelTrip[] = [];
   totalTrips: number = 0;
   /** Filas del listado actual, con bajas lógicas. Solo pagina; no se muestra. */
   listTotal: number = 0;
+
+  /** Quién se desplaza realmente — ver `findScroller`. */
+  private scroller: HTMLElement | Window = window;
   inProgressTrips: number = 0;
   completedTrips: number = 0;
   pendingTrips: number = 0;
@@ -159,7 +169,12 @@ export class TripsComponent implements OnInit, OnDestroy {
     private readonly notificationsService: NotificationsService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
+    private readonly host: ElementRef<HTMLElement>,
   ) {}
+
+  ngAfterViewInit(): void {
+    this.scroller = findScroller(this.host?.nativeElement);
+  }
 
   ngOnInit(): void {
     const rawOwnerId = this.route.snapshot.queryParamMap.get('ownerId');
@@ -1160,11 +1175,13 @@ export class TripsComponent implements OnInit, OnDestroy {
       if (this.hasNoVehicles) {
         this.showingNoVehiclesWarning = true;
         this.showingActiveTripWarning = false;
+        this.revealWarning();
         return;
       }
       // If opening for a NEW trip, check if there's already an active one
       if (this.showActiveTripAlert) {
         this.showingActiveTripWarning = true;
+        this.revealWarning();
         return;
       }
     }
@@ -1261,6 +1278,17 @@ export class TripsComponent implements OnInit, OnDestroy {
         );
       },
     });
+  }
+
+  /**
+   * Sube la pantalla al aviso que se acaba de mostrar.
+   *
+   * Los avisos van sobre las tarjetas de estado, y al viaje se le da a crear
+   * desde el botón flotante o desde el final de la lista: sin esto la acción
+   * no hacía nada visible y el motivo quedaba fuera de pantalla.
+   */
+  private revealWarning(): void {
+    scrollToTop(this.scroller);
   }
 
   dismissActiveTripWarning(): void {

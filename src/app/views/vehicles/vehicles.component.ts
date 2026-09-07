@@ -1,4 +1,10 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+} from '@angular/core';
 import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 
 import { ActivatedRoute, Router } from '@angular/router';
@@ -43,6 +49,7 @@ import { PaginationUtils } from 'src/app/utils/pagination-utils';
 import { GVehicleDocumentsComponent } from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
 import { PlatePipe } from '../../pipes/plate.pipe';
 import { GConfirmSheetComponent } from '../../components/g-confirm-sheet/g-confirm-sheet.component';
+import { findScroller, scrollToTop } from 'src/app/utils/scroll';
 
 export interface VehicleOwnerGroup {
   owner: ModelOwner;
@@ -66,7 +73,7 @@ export interface VehicleOwnerGroup {
   templateUrl: './vehicles.component.html',
   styleUrls: ['./vehicles.component.scss'],
 })
-export class VehiclesComponent implements OnInit, OnDestroy {
+export class VehiclesComponent implements OnInit, AfterViewInit, OnDestroy {
   allVehicles: ModelVehicle[] = [];
   totalVehicles: number = 0;
   totalVehiclesPagination: number = 0;
@@ -120,6 +127,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   /** Vehículo que la ficha de detalle pidió editar al navegar hasta aquí. */
   private pendingEditVehicleId: number | null = null;
   showingVehicleLimitWarning: boolean = false;
+
+  /** Quién se desplaza realmente — ver `findScroller`. */
+  private scroller: HTMLElement | Window = window;
   /**
    * Vehículos activos por propietario, sin los filtros de búsqueda ni estado de
    * la vista. Es el conteo que se compara contra `maxVehicles`; si no está
@@ -189,6 +199,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     private readonly driverService: DriverService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
+    private readonly host: ElementRef<HTMLElement>,
   ) {
     this.generateYears();
     this.vehicleForm = this.fb.group({
@@ -233,6 +244,10 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           this.loadDriversByOwner(ownerId);
         }
       });
+  }
+
+  ngAfterViewInit(): void {
+    this.scroller = findScroller(this.host?.nativeElement);
   }
 
   ngOnInit(): void {
@@ -760,7 +775,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       owner.id != null ? this.ownerVehicleCounts.get(owner.id) : undefined;
     const current = known ?? this.totalVehicles;
     if (max != null && current >= max) {
-      this.showingVehicleLimitWarning = true;
+      this.revealVehicleLimitWarning();
       return true;
     }
     return false;
@@ -823,6 +838,18 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       console.error('Error validating vehicle limit:', err);
       return false;
     }
+  }
+
+  /**
+   * Muestra el aviso del límite del plan y sube la pantalla hasta él.
+   *
+   * El aviso va sobre las tarjetas de estado, y al vehículo se le da a crear
+   * desde el botón flotante o desde el final de la lista: sin subir, la acción
+   * no hacía nada visible y el motivo quedaba fuera de pantalla.
+   */
+  private revealVehicleLimitWarning(): void {
+    this.showingVehicleLimitWarning = true;
+    scrollToTop(this.scroller);
   }
 
   dismissVehicleLimitWarning(): void {
@@ -935,7 +962,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
               // Cerrar primero: `toggleOffcanvas` apaga la alerta al cerrar
               this.toggleOffcanvas();
             }
-            this.showingVehicleLimitWarning = true;
+            this.revealVehicleLimitWarning();
             return;
           }
 
