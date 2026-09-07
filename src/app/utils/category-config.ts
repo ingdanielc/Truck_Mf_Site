@@ -210,7 +210,7 @@ export const CATEGORY_UI_CONFIG: Record<string, CategoryConfig> = {
     icon: 'fa-solid fa-route',
     colorClass: 'text-primary bg-primary',
   },
-  'salario': {
+  salario: {
     name: 'SALARIO',
     icon: 'fa-solid fa-sack-dollar',
     colorClass: 'text-primary bg-primary',
@@ -231,6 +231,17 @@ export const CATEGORY_UI_CONFIG: Record<string, CategoryConfig> = {
     colorClass: 'text-secondary bg-secondary',
   },
 };
+
+/**
+ * Los colores que usan las categorías, sin repetir y en su orden de aparición.
+ *
+ * Son muchas menos que categorías —siete para más de cuarenta—, así que dos
+ * categorías distintas comparten color a menudo. Quien las pinte juntas
+ * necesita esta lista para desempatar.
+ */
+export const CATEGORY_COLOR_CLASSES: string[] = [
+  ...new Set(Object.values(CATEGORY_UI_CONFIG).map((c) => c.colorClass)),
+];
 
 export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
   name: 'OTRO',

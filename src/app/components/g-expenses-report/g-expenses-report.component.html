@@ -35,8 +35,12 @@
 
          Responde de un vistazo lo que la lista responde en detalle —quien se
          lleva la mayor parte—, y por eso no hay ademas un circular: seria la
-         misma informacion dos veces. Los segmentos se separan 2 px para que dos
-         categorias contiguas del mismo tono no se lean como una. -->
+         misma informacion dos veces.
+
+         Dos categorias contiguas nunca comparten tono: los 2 px de separacion
+         no bastaban —a esa escala dos tramos del mismo color se siguen leyendo
+         como uno—, asi que el color se desempata al armar las filas. Ver
+         `separateAdjacentColors`. -->
     <div
       class="storage-bar mb-2"
       role="img"

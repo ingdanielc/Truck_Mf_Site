@@ -13,6 +13,7 @@ import { Formatters } from '../../utils/formatters';
 import {
   getCategoryConfigByName,
   CategoryConfig,
+  CATEGORY_COLOR_CLASSES,
 } from '../../utils/category-config';
 
 /** Una categoría del desglose, ya sumada y con su parte del total. */
@@ -26,6 +27,38 @@ export interface ExpenseSlice {
   textClass: string;
   /** `bg-warning` — el segmento de la barra. */
   bgClass: string;
+}
+
+/**
+ * Separa los colores repetidos de una serie que se pinta seguida.
+ *
+ * Las categorías comparten color —siete tonos para más de cuarenta—, así que
+ * dos contiguas caían del mismo y en la barra se leían como un solo tramo. A la
+ * segunda de un par igual se le da otro tono de la paleta.
+ *
+ * Solo se desvía la que choca: el color de cada categoría se respeta siempre
+ * que se pueda, y las filas se ordenan por importe, así que el desvío recae en
+ * la más pequeña de las dos. Al elegir el sustituto se mira también la fila
+ * siguiente, para no resolver un choque creando el de después.
+ */
+export function separateAdjacentColors(colors: string[]): string[] {
+  const resultado: string[] = [];
+
+  colors.forEach((color, i) => {
+    const anterior = resultado[i - 1];
+    if (color !== anterior) {
+      resultado.push(color);
+      return;
+    }
+
+    const siguiente = colors[i + 1];
+    const libres = CATEGORY_COLOR_CLASSES.filter((c) => c !== anterior);
+    /* El que además no choque con el siguiente; si no hay ninguno, basta con
+       no repetir el anterior —el de después ya se resolverá en su turno. */
+    resultado.push(libres.find((c) => c !== siguiente) ?? libres[0] ?? color);
+  });
+
+  return resultado;
 }
 
 /**
@@ -232,14 +265,24 @@ export class GExpensesReportComponent implements OnChanges {
 
     this.total = total;
     this.count = count;
-    this.slices = filas.map((c) => {
-      const cfg: CategoryConfig = getCategoryConfigByName(c.name);
-      const [textClass, bgClass] = cfg.colorClass.split(' ');
+
+    const configs: CategoryConfig[] = filas.map((c) =>
+      getCategoryConfigByName(c.name),
+    );
+    /* El desvío se aplica a la fila entera, no solo a su tramo de la barra: el
+       punto de la lista lleva el mismo color, y si difirieran no habría forma
+       de saber qué tramo es cuál. */
+    const colores = separateAdjacentColors(
+      configs.map((cfg) => cfg.colorClass),
+    );
+
+    this.slices = filas.map((c, i) => {
+      const [textClass, bgClass] = colores[i].split(' ');
       return {
         name: Formatters.titleCase(c.name),
         amount: c.amount,
         share: total > 0 ? (c.amount / total) * 100 : 0,
-        icon: cfg.icon,
+        icon: configs[i].icon,
         textClass,
         bgClass,
       };
