@@ -94,8 +94,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
    * que no ve rentabilidad, lo recibe "Gráficos" — ver `loadData`.
    */
   public activeTab:
-    'rentabilidad' | 'gastos' | 'suscripciones' | 'graficos' | 'viajes' =
-    'rentabilidad';
+    | 'rentabilidad'
+    | 'gastos'
+    | 'suscripciones'
+    | 'graficos'
+    | 'viajes' = 'rentabilidad';
   userRole: string = '';
   owners: ModelOwner[] = [];
   selectedOwnerId: number | null = null;
@@ -2015,10 +2018,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
          aquí no se conocía: el tema se reaplica ya sabiéndolo. */
       this.updateChartTheme();
 
-      /* Cada rol tiene sus pestañas: el administrador no ve rentabilidad hasta
-         elegir propietario ni tiene gastos, y los otros dos no ven
-         suscripciones. Sin esto el tablero abriría en una pestaña que no existe
-         y no se vería ninguna sección. */
+      /* Cada rol tiene sus pestañas: el administrador no ve rentabilidad ni
+         gastos hasta elegir propietario, y los otros dos no ven suscripciones.
+         Sin esto el tablero abriría en una pestaña que no existe y no se vería
+         ninguna sección —y es justo lo que pasa al soltar el propietario
+         estando en Gastos. */
       if (!this.isTabAvailable(this.activeTab)) {
         this.activeTab = this.groupByOwner ? 'suscripciones' : 'graficos';
       }
@@ -2328,19 +2332,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
        elegido. El desglose del gasto de toda la plataforma junta camiones de
        dueños distintos y no responde por ninguno. */
     return this.groupByOwner && this.selectedOwnerId != null;
-  }
-
-  /* La pestaña de gastos cambia de sitio con el rol, y es a propósito. Al
-     propietario le va pegada a Rentabilidad: son la misma pregunta —cuánto dejé
-     y por qué—. Al administrador le va al final, después de las gráficas: entra
-     por el estado de la plataforma, y el detalle del gasto de un propietario es
-     lo último a lo que baja. */
-  get showExpensesBeforeCharts(): boolean {
-    return this.showExpensesReport && !this.groupByOwner;
-  }
-
-  get showExpensesAfterCharts(): boolean {
-    return this.showExpensesReport && this.groupByOwner;
   }
 
   /** Las suscripciones son del negocio que sostiene la plataforma: solo el

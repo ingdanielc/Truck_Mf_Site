@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GNotificationCardComponent } from '../g-notification-card/g-notification-card.component';
+import { GConfirmSheetComponent } from '../g-confirm-sheet/g-confirm-sheet.component';
 import { NotificationsService } from '../../services/notifications.service';
 import { SecurityService } from '../../services/security/security.service';
 import { PushService } from '../../services/push.service';
@@ -20,7 +21,7 @@ const PUSH_DISMISSED_KEY = 'cashtruck.push.dismissed';
 @Component({
   selector: 'app-g-notifications',
   standalone: true,
-  imports: [CommonModule, GNotificationCardComponent],
+  imports: [CommonModule, GNotificationCardComponent, GConfirmSheetComponent],
   templateUrl: './g-notifications.component.html',
   styleUrl: './g-notifications.component.scss',
 })

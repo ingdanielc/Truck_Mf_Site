@@ -74,22 +74,53 @@
   }
 }
 
+// Alto reservado para la ruta: siempre dos renglones, con interlineado bajo,
+// para que la card mida lo mismo con una ruta corta que con un viaje redondo.
+// El holgura extra evita que se recorten las colas/tildes del segundo renglon,
+// que con un line-height apretado se salen de la caja de linea.
+$route-font-size: 0.925rem;
+$route-line-height: 1.1;
+$route-block-slack: 0.25rem;
+// En movil se aprieta un poco mas para ganar espacio.
+$route-font-size-sm: 0.875rem;
+$route-line-height-sm: 0.9;
+$route-block-height: $route-font-size * $route-line-height * 2 +
+  $route-block-slack;
+
 .header-label {
   color: var(--bs-secondary-color);
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  line-height: 1.1;
+}
+
+// La ruta se parte en dos filas cuando no cabe en una (nombres largos o el
+// tercer punto del viaje redondo). El bloque tiene alto fijo y lo que exceda
+// de dos renglones se recorta.
+.route-line {
+  flex-wrap: wrap;
+  row-gap: 0;
+  align-content: flex-start;
+  height: $route-block-height;
+  overflow: hidden;
 }
 
 .location-text {
-  font-size: 1.1rem;
+  font-size: $route-font-size;
   font-weight: 700;
+  line-height: $route-line-height;
+  max-width: 100%;
+  // Necesario para que el text-truncate funcione dentro del flex.
+  min-width: 0;
 }
 
 .trip-number {
   color: var(--bs-secondary-color);
   font-size: 0.75rem;
+  line-height: 1.2;
+  margin-top: 0.125rem;
 }
 
 .arrow-icon {
@@ -131,6 +162,17 @@
 // Responsive adjustments
 @media (max-width: 576px) {
   .location-text {
-    font-size: 1rem;
+    font-size: $route-font-size-sm;
+    line-height: $route-line-height-sm;
+  }
+
+  .route-line {
+    // Alto fijo en movil: los dos renglones apretados (1.8375rem) mas la
+    // holgura justa para que el segundo se vea completo.
+    height: 2.1rem;
+  }
+
+  .status-badge {
+    font-size: 0.64rem;
   }
 }

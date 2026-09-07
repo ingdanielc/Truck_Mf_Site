@@ -649,79 +649,30 @@
       (routeUnavailable)="onRouteUnavailable()"
     ></g-trip-info-card>
 
-    <!-- Confirmation Backdrop -->
-    @if (showConfirmModal) {
-      <div
-        class="offcanvas-backdrop"
-        (click)="cancelLogisticsUpdate()"
-        onkeypress
-      ></div>
-    }
-
-    <!-- Confirmation Offcanvas -->
-    <div
-      class="custom-offcanvas offcanvas-above shadow-lg"
-      [class.open]="showConfirmModal"
-    >
-      <div
-        class="offcanvas-body d-flex align-items-center justify-content-center"
-        style="
-          background-color: rgba(var(--bs-body-bg-rgb), 0.85);
-          backdrop-filter: blur(4px);
-        "
-      >
-        <div class="confirm-card shadow-lg p-3 text-center">
-          <div class="icon-box mb-3 mx-auto">
-            @if (isConfirmingCancellation) {
-              <i class="fa-solid fa-ban text-danger fs-1"></i>
-            } @else {
-              <i class="fa-solid fa-circle-exclamation text-warning fs-1"></i>
-            }
-          </div>
-          @if (isConfirmingCancellation) {
-            <h6 class="fw-bold mb-2">¿Cancelar el viaje?</h6>
-            <p class="small text-secondary mb-4">
-              El viaje se da de baja: deja de contar en los totales y en los
-              reportes, y no admitirá nuevos gastos. Se seguirá viendo en el
-              listado, marcado en rojo.
-            </p>
-          } @else {
-            <h6 class="fw-bold mb-2">¿Completar viaje?</h6>
-            <p class="small text-secondary mb-4">
-              ¿Está seguro de completar el viaje? Una vez completado, no se
-              podrán realizar más ajustes ni ediciones a la información del
-              trayecto.
-            </p>
-          }
-          <div
-            class="d-flex flex-column-reverse flex-sm-row gap-2 justify-content-center"
-          >
-            <!-- "Cancelar" a secas se lee como "cancelar el viaje" justo en el
-                 dialogo que pregunta si cancelarlo: aqui el boton de cerrar
-                 dice "Volver". -->
-            <button
-              class="btn btn-outline-secondary w-100 w-sm-auto px-5 py-2"
-              (click)="cancelLogisticsUpdate()"
-            >
-              {{ isConfirmingCancellation ? "Volver" : "Cancelar" }}
-            </button>
-            <button
-              class="btn w-100 w-sm-auto px-5 py-2"
-              [class.btn-danger]="isConfirmingCancellation"
-              [class.btn-primary]="!isConfirmingCancellation"
-              (click)="confirmLogisticsUpdate()"
-              [disabled]="isSavingLogistics"
-            >
-              @if (isSavingLogistics) {
-                <output class="spinner-border me-2" aria-hidden="true"></output>
-              } @else {
-                {{ isConfirmingCancellation ? "Confirmar" : "Confirmar" }}
-              }
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Confirmacion. Bajarla equivale a "Volver": no se guarda nada y el
+         estado vuelve al que tenia, igual que el boton. -->
+    <g-confirm-sheet
+      [open]="showConfirmModal"
+      [busy]="isSavingLogistics"
+      [title]="
+        isConfirmingCancellation ? '¿Cancelar el viaje?' : '¿Completar viaje?'
+      "
+      [message]="
+        isConfirmingCancellation
+          ? 'El viaje se da de baja: deja de contar en los totales y en los reportes, y no admitirá nuevos gastos. Se seguirá viendo en el listado, marcado en rojo.'
+          : '¿Está seguro de completar el viaje? Una vez completado, no se podrán realizar más ajustes ni ediciones a la información del trayecto.'
+      "
+      [icon]="
+        isConfirmingCancellation
+          ? 'fa-solid fa-ban'
+          : 'fa-solid fa-circle-exclamation'
+      "
+      [variant]="isConfirmingCancellation ? 'danger' : 'warning'"
+      [confirmLabel]="isConfirmingCancellation ? 'Confirmar' : 'Confirmar'"
+      [cancelLabel]="isConfirmingCancellation ? 'Volver' : 'Cancelar'"
+      (confirm)="confirmLogisticsUpdate()"
+      (cancel)="cancelLogisticsUpdate()"
+    ></g-confirm-sheet>
   </div>
 } @else {
   <div

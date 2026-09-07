@@ -101,11 +101,15 @@
 
          El orden lo marca la pregunta con la que entra cada rol. Al
          administrador lo recibe Suscripciones: su trabajo es el estado de la
-         plataforma, y la rentabilidad de un propietario concreto viene despues
-         y solo si lo elige. Al propietario y al conductor los recibe
-         Rentabilidad —cuanto dejo—, con Gastos al lado explicando por que; las
-         graficas son el desglose de las dos. Los viajes en curso van al final
-         en los tres casos: son la operacion del dia, no el resultado del
+         plataforma, y lo de un propietario concreto viene despues y solo si lo
+         elige. Al propietario y al conductor los recibe Rentabilidad —cuanto
+         dejo—.
+
+         De ahi en adelante el orden es el mismo para todos: Rentabilidad,
+         Gastos y Graficos. Rentabilidad y Gastos son la misma pregunta en dos
+         mitades —cuanto dejo y por que—, asi que van juntas; las graficas son
+         el desglose de ambas y van detras. Los viajes en curso van al final en
+         los tres casos: son la operacion del dia, no el resultado del
          periodo. -->
     <div class="tabs-wrap mb-4">
       <ul #tabBar class="nav nav-underline dashboard-tabs mb-0" role="tablist">
@@ -137,7 +141,7 @@
             </button>
           </li>
         }
-        @if (showExpensesBeforeCharts) {
+        @if (showExpensesReport) {
           <li class="nav-item" role="presentation">
             <button
               type="button"
@@ -163,20 +167,6 @@
             <i class="fa-solid fa-chart-pie me-2"></i>Gráficos
           </button>
         </li>
-        @if (showExpensesAfterCharts) {
-          <li class="nav-item" role="presentation">
-            <button
-              type="button"
-              class="nav-link"
-              role="tab"
-              [class.active]="activeTab === 'gastos'"
-              [attr.aria-selected]="activeTab === 'gastos'"
-              (click)="activeTab = 'gastos'"
-            >
-              <i class="fa-solid fa-money-bill-wave me-2"></i>Gastos
-            </button>
-          </li>
-        }
         <li class="nav-item" role="presentation">
           <button
             type="button"

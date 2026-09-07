@@ -1,0 +1,93 @@
+:host {
+  display: contents;
+}
+
+/* Propio y no el `.offcanvas-backdrop` global: este tiene que quedar por
+   encima del panel de edición, que ya usa el z-index alto. */
+.confirm-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1320;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Sube desde abajo y mide lo que mide su contenido. Sin tarjeta interior: el
+   fondo de la hoja es el del diálogo. */
+.confirm-sheet {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1330;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 32rem;
+  background-color: var(--bs-body-bg);
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+  border-bottom: 0;
+  box-shadow: 0 -0.5rem 2rem rgba(0, 0, 0, 0.2);
+  transform: translateY(110%);
+  /* Fuera de la vista tampoco debe capturar clics. Al cerrar, `visibility`
+     espera a que termine el deslizamiento; si cambiara a la vez, la hoja
+     desaparecería de golpe en vez de bajar. */
+  visibility: hidden;
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s linear 0.3s;
+
+  &.open {
+    transform: translateY(0);
+    visibility: visible;
+    transition:
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0s;
+  }
+
+  /* Mientras el dedo la arrastra manda el transform en línea; la transición
+     la haría ir por detrás del gesto. */
+  &.dragging {
+    transition: none;
+  }
+
+  /* En pantallas anchas se despega del borde y queda como una tarjeta baja. */
+  @media (min-width: 576px) {
+    bottom: 1.5rem;
+    border-radius: 20px;
+    border-bottom: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+  }
+}
+
+.confirm-sheet-grabber {
+  display: block;
+  width: 2.5rem;
+  height: 4px;
+  margin: 0.75rem auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background-color: rgba(var(--bs-emphasis-color-rgb), 0.2);
+  cursor: grab;
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.confirm-sheet-body {
+  padding: 1.25rem 1.5rem 1.5rem;
+  /* El teclado y las barras del móvil se comen el borde inferior. */
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+.confirm-sheet-icon {
+  width: 48px;
+  height: 48px;
+}
+
+.min-width-0 {
+  min-width: 0;
+}

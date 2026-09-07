@@ -42,6 +42,7 @@ import { CustomValidators } from 'src/app/utils/custom-validators';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
 import { GVehicleDocumentsComponent } from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
 import { PlatePipe } from '../../pipes/plate.pipe';
+import { GConfirmSheetComponent } from '../../components/g-confirm-sheet/g-confirm-sheet.component';
 
 export interface VehicleOwnerGroup {
   owner: ModelOwner;
@@ -60,6 +61,7 @@ export interface VehicleOwnerGroup {
     GCameraComponent,
     GVehicleDocumentsComponent,
     PlatePipe,
+    GConfirmSheetComponent,
   ],
   templateUrl: './vehicles.component.html',
   styleUrls: ['./vehicles.component.scss'],

@@ -1,0 +1,65 @@
+@if (open) {
+  <div class="confirm-sheet-backdrop" (click)="onCancel()" onkeypress></div>
+}
+
+<section
+  class="confirm-sheet"
+  [class.open]="open"
+  [style.transform]="dragOffset ? 'translateY(' + dragOffset + 'px)' : null"
+  [class.dragging]="!!dragOffset"
+  [attr.aria-hidden]="!open"
+  [attr.inert]="!open ? '' : null"
+  role="alertdialog"
+  [attr.aria-label]="title"
+>
+  <!-- La barrita es el asidero del gesto y, a la vez, lo que anuncia que la
+       hoja se puede bajar. -->
+  <button
+    type="button"
+    class="confirm-sheet-grabber"
+    aria-label="Cerrar sin guardar"
+    (pointerdown)="onDragStart($event)"
+    (pointermove)="onDragMove($event)"
+    (pointerup)="onDragEnd()"
+    (pointercancel)="onDragEnd()"
+    (click)="onGrabberClick()"
+  ></button>
+
+  <div class="confirm-sheet-body">
+    <div class="d-flex align-items-start gap-3">
+      <span
+        class="confirm-sheet-icon flex-shrink-0 rounded-circle d-flex align-items-center justify-content-center bg-opacity-10"
+        [ngClass]="[iconBackgroundClass, iconColorClass]"
+      >
+        <i [class]="icon" class="fs-4"></i>
+      </span>
+      <div class="min-width-0">
+        <h5 class="fw-bold mb-1">{{ title }}</h5>
+        <p class="small text-secondary mb-0">{{ message }}</p>
+      </div>
+    </div>
+
+    <div class="d-flex flex-column-reverse flex-sm-row gap-2 mt-4">
+      <button
+        type="button"
+        class="btn btn-outline-secondary flex-fill py-2 rounded-3"
+        (click)="onCancel()"
+        [disabled]="busy"
+      >
+        {{ cancelLabel }}
+      </button>
+      <button
+        type="button"
+        class="btn flex-fill py-2 rounded-3 d-flex align-items-center justify-content-center"
+        [ngClass]="confirmButtonClass"
+        (click)="onConfirm()"
+        [disabled]="busy"
+      >
+        @if (busy) {
+          <output class="spinner-border spinner-border-sm me-2"></output>
+        }
+        {{ confirmLabel }}
+      </button>
+    </div>
+  </div>
+</section>

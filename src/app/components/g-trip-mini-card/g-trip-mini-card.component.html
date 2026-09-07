@@ -18,7 +18,7 @@
       <!-- En el viaje redondo la ruta pasa a tres puntos:
            origen → destino de ida → destino de regreso -->
       <div
-        class="d-flex align-items-center gap-2"
+        class="d-flex align-items-center gap-2 route-line"
         [class.route-round-trip]="isRoundTrip"
       >
         <span class="location-text text-truncate" [title]="origin">{{
@@ -38,7 +38,7 @@
         }
       </div>
       @if (numberTrip) {
-        <p class="text-secondary small mb-0 mt-1 trip-number">
+        <p class="text-secondary small mb-0 trip-number">
           Viaje Nº {{ numberTrip }}
         </p>
       }

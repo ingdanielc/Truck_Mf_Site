@@ -8,6 +8,7 @@ import { ModelTrip } from 'src/app/models/trip-model';
 import { ToastService } from 'src/app/services/toast.service';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { GTripFormComponent } from '../../../components/g-trip-form/g-trip-form.component';
+import { GConfirmSheetComponent } from '../../../components/g-confirm-sheet/g-confirm-sheet.component';
 import { GTripInfoCardComponent } from '../../../components/g-trip-info-card/g-trip-info-card.component';
 import { NotificationsService } from 'src/app/services/notifications.service';
 import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
@@ -42,6 +43,7 @@ declare var globalThis: any;
   imports: [
     CommonModule,
     GTripFormComponent,
+    GConfirmSheetComponent,
     GTripInfoCardComponent,
     PlatePipe,
   ],

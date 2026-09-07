@@ -35,6 +35,7 @@ import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-tr
 import { GVehicleDocumentsComponent } from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
 import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
 import { PlatePipe } from '../../../pipes/plate.pipe';
+import { GConfirmSheetComponent } from '../../../components/g-confirm-sheet/g-confirm-sheet.component';
 import { excludeCancelledFilter } from 'src/app/utils/trip-status';
 
 /** Documento con nombre y vigencia resueltos, listo para pintar en la tarjeta. */
@@ -59,6 +60,7 @@ interface DocumentRow {
     GVehicleDocumentsComponent,
     GDocumentViewerComponent,
     PlatePipe,
+    GConfirmSheetComponent,
   ],
   templateUrl: './vehicle-detail.component.html',
   styleUrls: ['./vehicle-detail.component.scss'],
