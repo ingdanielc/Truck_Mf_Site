@@ -644,6 +644,7 @@
       [destinationQuery]="destinationQuery"
       [returnDestinationQuery]="returnDestinationQuery"
       [vehicleAxles]="trip.vehicle?.numberOfAxles || 2"
+      [tripContext]="tollTripContext"
       (close)="closeTripInfo()"
       (routeReady)="onRouteReady()"
       (routeUnavailable)="onRouteUnavailable()"

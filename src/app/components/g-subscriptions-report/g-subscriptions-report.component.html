@@ -13,7 +13,7 @@
       <div class="col-12 col-md-4">
         <button
           type="button"
-          class="kpi-tile w-100 h-100"
+          class="kpi-tile kpi-success w-100 h-100"
           [class.kpi-selected]="filter === 'activa'"
           [attr.aria-pressed]="filter === 'activa'"
           (click)="toggleFilter('activa')"
@@ -34,7 +34,7 @@
       <div class="col-12 col-md-4">
         <button
           type="button"
-          class="kpi-tile w-100 h-100"
+          class="kpi-tile kpi-warning w-100 h-100"
           [class.kpi-selected]="filter === 'porVencer'"
           [attr.aria-pressed]="filter === 'porVencer'"
           (click)="toggleFilter('porVencer')"
@@ -57,7 +57,7 @@
       <div class="col-12 col-md-4">
         <button
           type="button"
-          class="kpi-tile w-100 h-100"
+          class="kpi-tile kpi-danger w-100 h-100"
           [class.kpi-selected]="filter === 'vencida'"
           [attr.aria-pressed]="filter === 'vencida'"
           (click)="toggleFilter('vencida')"

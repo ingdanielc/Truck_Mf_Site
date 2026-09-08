@@ -15,6 +15,15 @@ import {
 } from 'src/app/utils/google-routes';
 import { createPinMarker, removeMarker } from 'src/app/utils/google-markers';
 import { locationQuery } from 'src/app/utils/city-geo';
+import { encodeRoutePath } from 'src/app/utils/polyline';
+import { toIsoDate } from 'src/app/utils/toll-context';
+import { TollService } from 'src/app/services/toll.service';
+import {
+  TollEstimate,
+  TollEstimateRequest,
+  TollPoint,
+  TollTripContext,
+} from 'src/app/models/toll-model';
 import { environment } from 'src/environments/environment';
 
 declare var globalThis: any;
@@ -41,6 +50,11 @@ export class GTripInfoCardComponent implements OnChanges {
   @Input() destinationQuery: string = '';
   @Input() returnDestinationQuery: string = '';
   @Input() vehicleAxles: number = 2;
+  /**
+   * Datos del viaje para la estimación de peajes del backend. Si el padre no lo
+   * informa, ese bloque no se consulta y la pantalla queda como estaba.
+   */
+  @Input() tripContext: TollTripContext | null = null;
   @Output() close = new EventEmitter<void>();
   /** Se emite cuando no hay ruta que mostrar, para que el padre cierre el panel */
   @Output() routeUnavailable = new EventEmitter<void>();
@@ -73,11 +87,44 @@ export class GTripInfoCardComponent implements OnChanges {
   readonly CARGO_DURATION_FACTOR = 1.35; // 35% more time for heavy vehicles
   readonly ROUTE_TIMEOUT_MS = 8000;
 
+  /**
+   * Peajes con la tarifa de la tabla del backend. Se pide después de que el
+   * panel ya abrió y, cuando llega con datos, reemplaza en pantalla al estimado
+   * de Google. En `null` —sin respuesta, error o lista vacía— manda el de Google.
+   */
+  apiTolls: TollEstimate | null = null;
+  showApiTolls: boolean = false;
+
   /** Descarta respuestas de un cálculo anterior si se cerró o se volvió a abrir */
   private requestId: number = 0;
 
+  constructor(private readonly tollService: TollService) {}
+
+  /**
+   * Entradas que definen el trayecto. Si alguna cambia con el panel abierto,
+   * lo que se está mostrando dejó de corresponder al viaje.
+   */
+  private static readonly TRIP_INPUTS = [
+    'originName',
+    'destinationName',
+    'returnDestinationName',
+    'originQuery',
+    'destinationQuery',
+    'returnDestinationQuery',
+    'vehicleAxles',
+    'tripContext',
+  ];
+
   ngOnChanges(changes: SimpleChanges): void {
-    if (!changes['isOpen']) return;
+    if (!changes['isOpen']) {
+      // Al guardar la edición el viaje se recarga del servidor, así que los
+      // datos llegan después de abrir el panel: sin esto se quedaría mostrando
+      // la ruta y los peajes del viaje anterior
+      if (this.isOpen && this.tripInputsChanged(changes)) {
+        this.calculateRoute();
+      }
+      return;
+    }
 
     if (this.isOpen) {
       this.isVisible = false;
@@ -87,6 +134,14 @@ export class GTripInfoCardComponent implements OnChanges {
       this.isVisible = false;
       this.clearRouteOverlays();
     }
+  }
+
+  /** Alguna entrada del trayecto cambió de valor, no solo de referencia. */
+  private tripInputsChanged(changes: SimpleChanges): boolean {
+    return GTripInfoCardComponent.TRIP_INPUTS.some((input) => {
+      const change = changes[input];
+      return !!change && change.previousValue !== change.currentValue;
+    });
   }
 
   /** Un viaje redondo se distingue por tener destino de regreso */
@@ -120,6 +175,8 @@ export class GTripInfoCardComponent implements OnChanges {
     this.tollsList = [];
     this.tollsTotalCost = 0;
     this.showTolls = false;
+    this.apiTolls = null;
+    this.showApiTolls = false;
 
     if (!this.originName || !this.destinationName) {
       this.markRouteUnavailable();
@@ -187,6 +244,10 @@ export class GTripInfoCardComponent implements OnChanges {
       this.isVisible = true;
       this.routeReady.emit();
       this.renderRouteOnMap(route);
+
+      // Va al final y sin await: el panel ya está abierto, así que la segunda
+      // fuente llega cuando llegue y nunca demora la apertura
+      this.loadApiTolls(route, currentRequest);
     } catch (error) {
       console.error('Error in computeRoutes:', error);
       if (currentRequest === this.requestId) {
@@ -263,6 +324,80 @@ export class GTripInfoCardComponent implements OnChanges {
 
   toggleTolls(): void {
     this.showTolls = !this.showTolls;
+  }
+
+  toggleApiTolls(): void {
+    this.showApiTolls = !this.showApiTolls;
+  }
+
+  /**
+   * Pide la estimación con las tarifas de la tabla del backend.
+   *
+   * No se espera ni se encadena con nada: cualquier demora o error deja la
+   * tarjeta de Google en pantalla, que es como se comportaba antes.
+   */
+  private loadApiTolls(route: any, currentRequest: number): void {
+    const request = this.buildTollRequest(route);
+    if (!request) return;
+
+    this.tollService.estimate(request).subscribe((estimate) => {
+      // Se cerró el panel o llegó otra solicitud mientras se consultaba
+      if (currentRequest !== this.requestId) return;
+
+      this.apiTolls = estimate?.tolls?.length ? estimate : null;
+    });
+  }
+
+  /**
+   * Arma la consulta con lo que ya se calculó para el mapa. Devuelve `null`
+   * cuando falta lo mínimo —los dos extremos del trayecto—, porque sin eso el
+   * backend no puede responder.
+   */
+  private buildTollRequest(route: any): TollEstimateRequest | null {
+    const positions = this.waypointPositions(route);
+    if (positions.length < 2) return null;
+
+    const context = this.tripContext ?? {};
+    // En el viaje redondo el destino de ida es la parada intermedia y el punto
+    // final es el destino de regreso
+    const destinationIndex = this.isRoundTrip ? 1 : positions.length - 1;
+    const destination = positions[destinationIndex] ?? positions.at(-1)!;
+
+    const request: TollEstimateRequest = {
+      origin: this.tollPoint(positions[0], context.originId),
+      destination: this.tollPoint(destination, context.destinationId),
+      vehicleId: context.vehicleId ?? null,
+      travelDate: context.travelDate || toIsoDate(),
+      tripType: context.tripType ?? null,
+      tripId: context.tripId ?? null,
+      axles: context.axles ?? this.vehicleAxles ?? null,
+    };
+
+    if (this.isRoundTrip) {
+      request.returnDestination = this.tollPoint(
+        positions.at(-1)!,
+        context.returnDestinationId,
+      );
+    }
+
+    // El trazado es opcional: sin él la respuesta sale por corredor
+    const encodedPolyline = encodeRoutePath(route?.path ?? []);
+    if (encodedPolyline) {
+      request.route = {
+        provider: 'GOOGLE_ROUTES',
+        encodedPolyline: encodedPolyline,
+        distanceMeters: route?.distanceMeters,
+      };
+    }
+
+    return request;
+  }
+
+  private tollPoint(
+    position: { lat: number; lng: number },
+    cityId?: string | null,
+  ): TollPoint {
+    return { lat: position.lat, lng: position.lng, cityId: cityId ?? null };
   }
 
   private mockTollPrice(): number {

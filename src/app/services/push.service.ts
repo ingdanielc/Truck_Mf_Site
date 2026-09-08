@@ -71,6 +71,17 @@ export class PushService {
     return isIos && !this.isInstalled;
   }
 
+  /**
+   * Android abierto en el navegador, sin instalar. A diferencia de iOS esto no
+   * impide el push -Chrome lo soporta en una pestana normal-, asi que es una
+   * sugerencia y no un requisito: instalada, el service worker sobrevive al
+   * cierre del navegador y los avisos llegan con mas constancia.
+   */
+  get needsAndroidInstall(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    return /android/i.test(navigator.userAgent) && !this.isInstalled;
+  }
+
   /** La app corre como PWA instalada (pantalla de inicio), no en el navegador. */
   get isInstalled(): boolean {
     const iosStandalone = (navigator as any).standalone === true;
@@ -78,6 +89,11 @@ export class PushService {
       '(display-mode: standalone)',
     )?.matches;
     return iosStandalone || displayMode === true;
+  }
+
+  /** El permiso esta concedido: los push ya llegan a este navegador. */
+  get isGranted(): boolean {
+    return this.permissionSubject.value === 'granted';
   }
 
   /** Ya se decidio el permiso: no hay nada que preguntarle al usuario. */

@@ -1,0 +1,9 @@
+:host {
+  display: block;
+}
+
+/* Misma medida que el resto del panel de notificaciones, de donde salio este
+   bloque. Va aqui porque los estilos de componente no cruzan de uno a otro. */
+.smallest {
+  font-size: 0.75rem;
+}

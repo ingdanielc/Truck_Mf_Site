@@ -28,6 +28,8 @@ import {
   routeDurationSeconds,
 } from 'src/app/utils/google-routes';
 import { locationQuery } from 'src/app/utils/city-geo';
+import { tollContextFromTrip } from 'src/app/utils/toll-context';
+import { TollTripContext } from 'src/app/models/toll-model';
 import {
   canCancelTrip,
   canChangeTripStatus,
@@ -67,6 +69,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   // UI State
   isOffcanvasOpen: boolean = false;
   isTripInfoOpen: boolean = false;
+  /** Datos del viaje para la estimación de peajes del panel del trayecto */
+  tollTripContext: TollTripContext | null = null;
   showConfirmModal: boolean = false;
   isSavingLogistics: boolean = false;
   estimatedArrivalTime: string = '--:--';
@@ -209,6 +213,9 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   processTripData(tripData: any): void {
     this.trip = tripData;
+    // El contexto de peajes se rearma con cada carga del viaje: al guardar una
+    // edición el servidor responde después de abrir el panel del trayecto
+    this.tollTripContext = tollContextFromTrip(tripData);
     if (this.trip) {
       this.originalStatus = this.trip.status;
       this.originalPaidBalance = this.trip.paidBalance ?? false;
@@ -1074,6 +1081,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (this.originName !== 'N/A' && this.destinationName !== 'N/A') {
       // El formulario se mantiene abierto mientras se calcula la ruta, para
       // no dejar la pantalla vacía; lo cierra `onRouteReady`
+      this.tollTripContext = tollContextFromTrip(savedTrip ?? this.trip);
       this.isTripInfoOpen = true;
       return;
     }

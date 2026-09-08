@@ -12,6 +12,16 @@
       </div>
     </div>
 
+    <!-- Solo en telefono y tablet: es donde la notificacion push sirve -el
+         aviso llega al bolsillo- y donde hay una pantalla de inicio a la que
+         instalar la app. En escritorio el aviso se queda en el panel de la
+         campana, para no ocupar la pantalla de trabajo. -->
+    <div class="row justify-content-center d-lg-none">
+      <div class="col-12 col-xl-10">
+        <app-g-push-prompt variant="banner"></app-g-push-prompt>
+      </div>
+    </div>
+
     @if (showOnboarding) {
       <div class="row mb-4 justify-content-center">
         <div class="col-12 col-xl-10">

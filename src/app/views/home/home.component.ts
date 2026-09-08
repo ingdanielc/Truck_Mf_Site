@@ -14,13 +14,14 @@ import {
   Pagination,
   Sort,
 } from '../../models/model-filter-table';
+import { GPushPromptComponent } from '../../components/g-push-prompt/g-push-prompt.component';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   standalone: true,
-  imports: [],
+  imports: [GPushPromptComponent],
 })
 export class HomeComponent implements OnInit, OnDestroy {
   /**

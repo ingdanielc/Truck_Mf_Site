@@ -33,6 +33,8 @@ import { NotificationsService } from 'src/app/services/notifications.service';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
 import { findScroller, scrollToTop } from 'src/app/utils/scroll';
 import { locationQuery } from 'src/app/utils/city-geo';
+import { tollContextFromTrip } from 'src/app/utils/toll-context';
+import { TollTripContext } from 'src/app/models/toll-model';
 import {
   applyTripStatusChange,
   canChangeTripStatus,
@@ -123,6 +125,8 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
   latestTripDestinationQuery: string = '';
   latestTripReturnDestinationQuery: string = '';
   latestTripAxles: number = 2;
+  /** Datos del viaje para la estimación de peajes del panel del trayecto */
+  latestTripTollContext: TollTripContext | null = null;
 
   // Selection Lists for parent context
   owners: ModelOwner[] = [];
@@ -1359,6 +1363,10 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
           : null);
 
       this.latestTripAxles = fullVehicle?.numberOfAxles || 2;
+      this.latestTripTollContext = tollContextFromTrip(
+        savedTrip,
+        fullVehicle?.numberOfAxles,
+      );
 
       // Sin ciudades no hay ruta posible: se evita la consulta
       if (originName !== 'N/A' && destName !== 'N/A') {
