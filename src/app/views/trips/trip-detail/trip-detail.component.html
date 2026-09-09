@@ -655,22 +655,12 @@
     <g-confirm-sheet
       [open]="showConfirmModal"
       [busy]="isSavingLogistics"
-      [title]="
-        isConfirmingCancellation ? '¿Cancelar el viaje?' : '¿Completar viaje?'
-      "
-      [message]="
-        isConfirmingCancellation
-          ? 'El viaje se da de baja: deja de contar en los totales y en los reportes, y no admitirá nuevos gastos. Se seguirá viendo en el listado, marcado en rojo.'
-          : '¿Está seguro de completar el viaje? Una vez completado, no se podrán realizar más ajustes ni ediciones a la información del trayecto.'
-      "
-      [icon]="
-        isConfirmingCancellation
-          ? 'fa-solid fa-ban'
-          : 'fa-solid fa-circle-exclamation'
-      "
-      [variant]="isConfirmingCancellation ? 'danger' : 'warning'"
-      [confirmLabel]="isConfirmingCancellation ? 'Confirmar' : 'Confirmar'"
-      [cancelLabel]="isConfirmingCancellation ? 'Volver' : 'Cancelar'"
+      [title]="statusConfirmation?.title ?? ''"
+      [message]="statusConfirmation?.message ?? ''"
+      [icon]="statusConfirmation?.icon ?? ''"
+      [variant]="statusConfirmation?.variant ?? 'warning'"
+      [confirmLabel]="statusConfirmation?.confirmLabel ?? 'Confirmar'"
+      [cancelLabel]="statusConfirmation?.cancelLabel ?? 'Cancelar'"
       (confirm)="confirmLogisticsUpdate()"
       (cancel)="cancelLogisticsUpdate()"
     ></g-confirm-sheet>

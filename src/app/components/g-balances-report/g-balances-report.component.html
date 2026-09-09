@@ -1,0 +1,319 @@
+<div class="balances-report">
+  @if (loading) {
+    <div class="section-loader">
+      <output class="spinner-border text-primary">
+        <span class="visually-hidden">Cargando...</span>
+      </output>
+      <p class="mt-1 text-body-secondary fw-medium mb-0">
+        Obteniendo saldos por cobrar...
+      </p>
+    </div>
+  } @else if (loadError) {
+    <p class="text-body-secondary small mb-0">
+      <i class="fa-solid fa-triangle-exclamation me-2 text-warning"></i>
+      No se pudieron cargar los saldos por cobrar.
+    </p>
+  } @else if (!visibleRows.length) {
+    <p class="text-body-secondary small mb-0">
+      <i class="fa-solid fa-circle-check me-2 text-success"></i>
+      @if (rows.length) {
+        Este vehículo no tiene saldos pendientes por cobrar.
+      } @else {
+        No hay saldos pendientes por cobrar.
+      }
+    </p>
+  } @else {
+    <!-- El total va arriba y tambien al pie de la tabla: arriba es la
+         respuesta -cuanto me deben-, y abajo cierra la lista que se acaba de
+         leer. -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6">
+        <div class="kpi-tile h-100">
+          <span class="kpi-text">
+            <span class="kpi-label">Saldos pendientes</span>
+            <span class="kpi-value text-warning">{{ visibleRows.length }}</span>
+            <span class="kpi-note">
+              {{ currentMonthCount }}
+              en
+              {{ currentMonthLabel }}
+            </span>
+          </span>
+          <span
+            class="icon-shape bg-warning bg-opacity-10 text-warning rounded-3"
+          >
+            <i class="fa-solid fa-clock-rotate-left"></i>
+          </span>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <div class="kpi-tile h-100">
+          <span class="kpi-text">
+            <span class="kpi-label">Total por cobrar</span>
+            <span class="kpi-value text-warning">
+              {{ total | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+            </span>
+            <span class="kpi-note">
+              En {{ visibleRows.length }}
+              {{
+                visibleRows.length === 1
+                  ? "viaje Pendiente"
+                  : "viajes Pendientes"
+              }}
+            </span>
+          </span>
+          <span
+            class="icon-shape bg-warning bg-opacity-10 text-warning rounded-3"
+          >
+            <i class="fa-solid fa-hand-holding-dollar"></i>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <h6 class="fw-bold mb-0">
+        <i
+          class="fa-solid fa-file-invoice-dollar me-2 text-primary opacity-75"
+        ></i>
+        Detalle por viaje
+      </h6>
+      <span
+        class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill"
+      >
+        {{ visibleRows.length }}
+      </span>
+    </div>
+
+    <!-- Movil: una tarjeta por viaje, para no desplazar de lado. -->
+    <div class="balance-cards d-md-none">
+      @for (r of pagedRows; track r.id) {
+        <div class="balance-card">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <span class="fw-semibold text-truncate">{{ r.company }}</span>
+            <span class="fw-bold text-warning text-nowrap flex-shrink-0">
+              {{ r.balance | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+            </span>
+          </div>
+          @if (r.tripNumber || r.route) {
+            <div class="text-body-secondary small mt-1 trip-cell">
+              @if (r.tripNumber) {
+                <span class="fw-semibold text-body me-1">
+                  {{ r.tripNumber }}
+                </span>
+              }
+              {{ r.route }}
+            </div>
+          }
+          <div
+            class="d-flex justify-content-between align-items-center gap-2 mt-2 pt-2 border-top"
+          >
+            <span class="text-body-secondary small">
+              <i class="fa-solid fa-calendar-day me-1 opacity-75"></i>
+              {{ r.date ? (r.date | date: "d MMM, yyyy") : "Sin fecha" }}
+            </span>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-success rounded-3 text-nowrap"
+              (click)="askPaid(r)"
+            >
+              <i class="fa-solid fa-check me-1"></i>Pagado
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="table-responsive balance-table d-none d-md-block">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th scope="col" role="button" (click)="sortBy('company')">
+              Empresa
+              <i
+                class="fa-solid ms-1 opacity-50"
+                [ngClass]="sortIcon('company')"
+              ></i>
+            </th>
+            <th scope="col" role="button" (click)="sortBy('trip')">
+              Viaje
+              <i
+                class="fa-solid ms-1 opacity-50"
+                [ngClass]="sortIcon('trip')"
+              ></i>
+            </th>
+            <th scope="col" role="button" (click)="sortBy('date')">
+              Fecha de Viaje
+              <i
+                class="fa-solid ms-1 opacity-50"
+                [ngClass]="sortIcon('date')"
+              ></i>
+            </th>
+            <th
+              scope="col"
+              class="text-end"
+              role="button"
+              (click)="sortBy('balance')"
+            >
+              Saldo pendiente
+              <i
+                class="fa-solid ms-1 opacity-50"
+                [ngClass]="sortIcon('balance')"
+              ></i>
+            </th>
+            <th scope="col" class="text-end">Cobro</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of pagedRows; track r.id) {
+            <tr>
+              <td class="fw-semibold">{{ r.company }}</td>
+              <td class="trip-cell text-body-secondary">
+                @if (r.tripNumber) {
+                  <span class="fw-semibold text-body me-1">
+                    {{ r.tripNumber }}
+                  </span>
+                }
+                {{ r.route }}
+              </td>
+              <td class="text-body-secondary text-nowrap">
+                {{ r.date ? (r.date | date: "d MMM, yyyy") : "Sin fecha" }}
+              </td>
+              <td class="text-end text-nowrap fw-semibold text-warning">
+                {{ r.balance | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+              </td>
+              <td class="text-end">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-success rounded-3 text-nowrap"
+                  (click)="askPaid(r)"
+                >
+                  <i class="fa-solid fa-check me-1"></i>Pagado
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <th scope="row" colspan="3" class="fw-bold">Total por cobrar</th>
+            <td class="text-end text-nowrap fw-bold text-warning">
+              {{ total | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+            </td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- El pie de la tabla no existe en movil, donde son tarjetas: el total se
+         repite aqui para que la cifra no dependa de la pantalla. -->
+    <div
+      class="balance-card total-row d-flex d-md-none justify-content-between align-items-center gap-2 mt-2"
+    >
+      <span class="fw-bold">Total por cobrar</span>
+      <span class="fw-bold text-warning text-nowrap">
+        {{ total | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+      </span>
+    </div>
+
+    <!-- Pie y paginacion: mismo gesto que las demas listas del tablero. -->
+    <div class="row align-items-center g-3 mt-2">
+      <div class="col-12 col-md-6 text-center text-md-start">
+        <p class="text-secondary small mb-0">
+          Mostrando {{ pagedRows.length }} de {{ visibleRows.length }} saldos
+        </p>
+      </div>
+      @if (totalPages > 0) {
+        <div
+          class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end"
+        >
+          <nav aria-label="Navegación de páginas">
+            <!-- Desktop Pagination -->
+            <ul class="pagination mb-0 d-none d-md-flex">
+              <li class="page-item" [class.disabled]="page === 0">
+                <button
+                  class="page-link shadow-none px-3 py-2"
+                  (click)="changePage(page - 1)"
+                  aria-label="Anterior"
+                >
+                  <span aria-hidden="true">&laquo;</span>
+                </button>
+              </li>
+              @for (p of desktopPages; track p) {
+                <li class="page-item" [class.active]="p === page">
+                  <button
+                    class="page-link shadow-none px-3 py-2"
+                    (click)="changePage(p)"
+                  >
+                    {{ p + 1 }}
+                  </button>
+                </li>
+              }
+              <li
+                class="page-item"
+                [class.disabled]="page >= totalPages - 1 || totalPages === 0"
+              >
+                <button
+                  class="page-link shadow-none px-3 py-2"
+                  (click)="changePage(page + 1)"
+                  aria-label="Siguiente"
+                >
+                  <span aria-hidden="true">&raquo;</span>
+                </button>
+              </li>
+            </ul>
+
+            <!-- Mobile Pagination -->
+            <ul class="pagination mb-0 d-flex d-md-none">
+              <li class="page-item" [class.disabled]="page === 0">
+                <button
+                  class="page-link shadow-none px-3 py-2"
+                  (click)="changePage(page - 1)"
+                  aria-label="Anterior"
+                >
+                  <span aria-hidden="true">&laquo;</span>
+                </button>
+              </li>
+              @for (p of mobilePages; track p) {
+                <li class="page-item" [class.active]="p === page">
+                  <button
+                    class="page-link shadow-none px-3 py-2"
+                    (click)="changePage(p)"
+                  >
+                    {{ p + 1 }}
+                  </button>
+                </li>
+              }
+              <li
+                class="page-item"
+                [class.disabled]="page >= totalPages - 1 || totalPages === 0"
+              >
+                <button
+                  class="page-link shadow-none px-3 py-2"
+                  (click)="changePage(page + 1)"
+                  aria-label="Siguiente"
+                >
+                  <span aria-hidden="true">&raquo;</span>
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<g-confirm-sheet
+  [open]="!!pendingPaid"
+  [busy]="isSaving"
+  title="¿Ya te pagaron este saldo?"
+  [message]="confirmMessage"
+  icon="fa-solid fa-hand-holding-dollar"
+  variant="warning"
+  confirmLabel="Confirmar"
+  cancelLabel="Cancelar"
+  (confirm)="confirmPaid()"
+  (cancel)="cancelPaid()"
+></g-confirm-sheet>

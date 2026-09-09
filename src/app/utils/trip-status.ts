@@ -46,19 +46,99 @@ export const TRIP_STATUSES = [
  */
 const CLOSING_STATUSES: string[] = ['Completado', 'Cancelado', 'Pendiente'];
 
+/** Qué se está confirmando. Cada uno tiene su texto y su color. */
+export type TripStatusConfirmationKind = 'completar' | 'cancelar' | 'reabrir';
+
+/** Lo que se le muestra a quien hace el cambio, tal cual lo pide la hoja de
+ *  confirmación. */
+export interface TripStatusConfirmation {
+  kind: TripStatusConfirmationKind;
+  title: string;
+  message: string;
+  icon: string;
+  variant: 'primary' | 'danger' | 'warning';
+  confirmLabel: string;
+  cancelLabel: string;
+}
+
+/**
+ * El diálogo que corresponde al cambio, o `null` si el cambio no se pregunta.
+ *
+ * Los tres textos viven aquí y no en cada plantilla porque el mismo cambio se
+ * hace desde dos sitios —la etiqueta de la tarjeta y el selector del detalle—
+ * y antes cada uno llevaba su propia cadena de condiciones: añadir un caso
+ * obligaba a tocar los dos, y bastaba olvidar uno para que el mismo cambio se
+ * explicara distinto según por dónde se hiciera.
+ */
+export function tripStatusConfirmation(
+  currentStatus: string | null | undefined,
+  newStatus: string,
+): TripStatusConfirmation | null {
+  /* Completar cierra el viaje a la edición. */
+  if (newStatus === 'Completado' && currentStatus !== 'Completado') {
+    return {
+      kind: 'completar',
+      title: '¿Completar viaje?',
+      message:
+        '¿Está seguro de completar el viaje? Una vez completado, no se podrán realizar más ajustes ni ediciones a la información del trayecto.',
+      icon: 'fa-solid fa-circle-exclamation',
+      variant: 'warning',
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar',
+    };
+  }
+
+  /* Cancelar lo saca de las cifras. */
+  if (isCancelledTrip(newStatus) && !isCancelledTrip(currentStatus)) {
+    return {
+      kind: 'cancelar',
+      title: '¿Cancelar el viaje?',
+      message:
+        'El viaje se da de baja: deja de contar en los totales y en los reportes, y no admitirá nuevos gastos. Se seguirá viendo en el listado, marcado en rojo.',
+      icon: 'fa-solid fa-ban',
+      variant: 'danger',
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Volver',
+    };
+  }
+
+  /* Devolver a "Pendiente" un viaje completado deshace un cobro: el saldo que
+     estaba dado por recibido vuelve a deberse. Es plata, y desde la etiqueta
+     de la tarjeta se llega con un solo clic. */
+  if (newStatus === 'Pendiente' && currentStatus === 'Completado') {
+    return {
+      kind: 'reabrir',
+      title: '¿El saldo sigue sin cobrarse?',
+      message:
+        'El viaje deja de estar completado y su saldo vuelve a contar como pendiente por cobrar: reaparecerá en el reporte de saldos hasta que se registre el pago.',
+      icon: 'fa-solid fa-hand-holding-dollar',
+      variant: 'warning',
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar',
+    };
+  }
+
+  return null;
+}
+
 /**
  * Cambios que no se guardan sin preguntar: completar cierra el viaje a la
- * edición y cancelar lo saca de las cifras. Los dos son difíciles de deshacer,
- * y desde la lista se llega a ellos con un solo clic.
+ * edición, cancelar lo saca de las cifras y devolverlo a "Pendiente" deshace
+ * un cobro. Los tres son difíciles de deshacer, y desde la lista se llega a
+ * ellos con un solo clic.
  */
 export function statusNeedsConfirmation(
   currentStatus: string | null | undefined,
   newStatus: string,
 ): boolean {
-  if (newStatus === 'Completado') return currentStatus !== 'Completado';
-  if (isCancelledTrip(newStatus)) return !isCancelledTrip(currentStatus);
-  return false;
+  return tripStatusConfirmation(currentStatus, newStatus) !== null;
 }
+
+/**
+ * Los dos roles que responden por las cifras del viaje: son los únicos que lo
+ * dan de baja y los únicos que reabren uno ya completado.
+ */
+const OWNER_ROLES: string[] = ['ADMINISTRADOR', 'PROPIETARIO'];
 
 /**
  * Dar de baja un viaje lo saca de las cifras del propietario, así que la
@@ -66,7 +146,7 @@ export function statusNeedsConfirmation(
  * pone en curso, lo completa, lo deja pendiente de saldo— pero no lo borra.
  */
 export function canCancelTrip(userRole: string): boolean {
-  return userRole === 'ADMINISTRADOR' || userRole === 'PROPIETARIO';
+  return OWNER_ROLES.includes(userRole);
 }
 
 /** Si este rol puede llevar el viaje a ese estado. */
@@ -77,16 +157,16 @@ export function canSetTripStatus(status: string, userRole: string): boolean {
 /**
  * Si este rol puede mover el viaje del estado en que está.
  *
- * Dos estados quedan cerrados: el completado, que solo reabre el
- * administrador, y el cancelado, que solo mueve quien pudo darlo de baja. Un
- * conductor que no puede cancelar tampoco puede descancelar; si no, la
- * restricción se saltaría en dos pasos.
+ * Dos estados quedan cerrados al conductor: el completado, que reabren el
+ * propietario y el administrador, y el cancelado, que solo mueve quien pudo
+ * darlo de baja. Un conductor que no puede cancelar tampoco puede
+ * descancelar; si no, la restricción se saltaría en dos pasos.
  */
 export function canChangeTripStatus(
   currentStatus: string | null | undefined,
   userRole: string,
 ): boolean {
-  if (currentStatus === 'Completado') return userRole === 'ADMINISTRADOR';
+  if (currentStatus === 'Completado') return OWNER_ROLES.includes(userRole);
   if (isCancelledTrip(currentStatus)) return canCancelTrip(userRole);
   return true;
 }

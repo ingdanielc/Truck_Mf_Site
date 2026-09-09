@@ -5,7 +5,7 @@
       <div class="d-flex justify-content-between align-items-center mb-1">
         <h1 class="h2 fw-bold mb-0 text-body tracking-tight">Reportes</h1>
         <div class="d-flex align-items-center gap-2">
-          <!-- Un solo control para TODO lo que hay debajo: las gráficas y el
+          <!-- Un solo control para lo que hay debajo: las gráficas y el
                reporte de rentabilidad.
 
                El botón muestra el periodo en vez de un ícono mudo: si no, el
@@ -47,7 +47,7 @@
     </div>
   } @else {
     <!-- Selector de vehiculo. Junto al de periodo son los dos controles que
-         acotan TODO lo de abajo: la rentabilidad y las nueve graficas hablan
+         acotan lo de abajo: la rentabilidad y las nueve graficas hablan
          siempre del mismo camion y del mismo mes.
 
          El rotulo "Vehiculo" lleva la tipografia de las pestañas de abajo, sin
@@ -105,7 +105,7 @@
          elige. Al propietario y al conductor los recibe Rentabilidad —cuanto
          dejo—.
 
-         De ahi en adelante el orden es el mismo para todos: Rentabilidad,
+         De ahi en adelante el orden es el mismo para las secciones: Rentabilidad,
          Gastos y Graficos. Rentabilidad y Gastos son la misma pregunta en dos
          mitades —cuanto dejo y por que—, asi que van juntas; las graficas son
          el desglose de ambas y van detras. Los viajes en curso van al final en
@@ -167,6 +167,20 @@
             <i class="fa-solid fa-chart-pie me-2"></i>Gráficos
           </button>
         </li>
+        @if (showBalancesReport) {
+          <li class="nav-item" role="presentation">
+            <button
+              type="button"
+              class="nav-link"
+              role="tab"
+              [class.active]="activeTab === 'saldos'"
+              [attr.aria-selected]="activeTab === 'saldos'"
+              (click)="activeTab = 'saldos'"
+            >
+              <i class="fa-solid fa-hand-holding-dollar me-2"></i>Saldos
+            </button>
+          </li>
+        }
         <li class="nav-item" role="presentation">
           <button
             type="button"
@@ -286,6 +300,27 @@
             </p>
           </div>
         }
+      </div>
+    }
+
+    <!-- Saldos por cobrar. Se oculta en vez de destruirse por lo mismo que
+         rentabilidad y gastos: cuesta tres peticiones, y con `@if` cada ida y
+         vuelta entre pestañas las repetiria. No sale a pedir nada hasta que
+         alguien abre la pestaña — de ahi el `active`.
+
+         No recibe ni el año ni el mes: una deuda no deja de deberse porque el
+         panel de periodo este mirando otro mes. La lista muestra lo pendiente. -->
+    @if (showBalancesReport) {
+      <div
+        [class.d-none]="activeTab !== 'saldos'"
+        class="animate__animated animate__fadeIn mb-4"
+      >
+        <g-balances-report
+          [userId]="balancesUserId"
+          [vehicleId]="balancesVehicleId"
+          [active]="activeTab === 'saldos'"
+          (paid)="onBalancePaid()"
+        ></g-balances-report>
       </div>
     }
 
@@ -1106,7 +1141,7 @@
       </button>
     </div>
 
-    <!-- Todo el año. Es el antiguo botón "Año" de la cabecera, traído aquí:
+    <!-- El año. Es el antiguo botón "Año" de la cabecera, traído aquí:
          elegir el alcance y elegir el mes son la misma decisión —qué periodo
          se mira—, y separarlas en dos controles dejaba estados que no se
          podían leer de un vistazo. -->

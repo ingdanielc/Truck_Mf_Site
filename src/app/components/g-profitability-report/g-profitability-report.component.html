@@ -264,9 +264,7 @@
         <div class="trip-card trip-card-total">
           @if (unassignedExpenses > 0) {
             <div class="d-flex justify-content-between gap-2 route-text mb-1">
-              <span class="text-body-secondary">
-                Mantenimiento y gastos sin viaje
-              </span>
+              <span class="text-body-secondary">Mantenimientos</span>
               <span class="text-danger text-nowrap">
                 -{{
                   unassignedExpenses
@@ -276,7 +274,7 @@
             </div>
           }
           <div class="d-flex justify-content-between gap-2 fw-bold">
-            <span>Utilidad de {{ periodLabel | lowercase }}</span>
+            <span>Utilidad {{ periodLabel | lowercase }}</span>
             <span
               class="text-nowrap"
               [class.text-profit]="!isLoss"
@@ -420,9 +418,7 @@
                 <!-- Sin `small`: es una de las tres lineas que restan hasta la
                      utilidad del periodo, no un pie de pagina, y a 0,81 rem se
                      leia como una nota al margen frente a las otras dos. -->
-                <td class="text-body-secondary" colspan="3">
-                  Mantenimiento y gastos sin viaje
-                </td>
+                <td class="text-body-secondary" colspan="3">Mantenimientos</td>
                 <td class="text-end text-nowrap text-danger">
                   -{{
                     unassignedExpenses
@@ -434,7 +430,7 @@
             }
             <tr class="border-top">
               <td class="fw-bold" colspan="3">
-                Utilidad de {{ periodLabel | lowercase }}
+                Utilidad {{ periodLabel | lowercase }}
               </td>
               <td
                 class="text-end text-nowrap fw-bold"

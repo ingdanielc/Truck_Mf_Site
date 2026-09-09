@@ -33,6 +33,9 @@ import { TollTripContext } from 'src/app/models/toll-model';
 import {
   canCancelTrip,
   canChangeTripStatus,
+  statusNeedsConfirmation,
+  TripStatusConfirmation,
+  tripStatusConfirmation,
   isCancelledTrip,
 } from 'src/app/utils/trip-status';
 import { PlatePipe } from '../../../pipes/plate.pipe';
@@ -594,39 +597,33 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return isCancelledTrip(this.originalStatus);
   }
 
-  get isConfirmingCancellation(): boolean {
-    return isCancelledTrip(this.trip?.status);
+  /** El diálogo que toca —qué se pregunta y de qué color— según a dónde va el
+   *  viaje. Los textos son los mismos que muestra el listado. */
+  get statusConfirmation(): TripStatusConfirmation | null {
+    return tripStatusConfirmation(this.originalStatus, this.trip?.status ?? '');
   }
 
   updateLogistics(): void {
     if (!this.trip) return;
 
-    // If status is being changed to "Completado", show confirmation
-    if (
-      this.trip.status === 'Completado' &&
-      this.originalStatus !== 'Completado'
-    ) {
-      this.showConfirmModal = true;
-      return;
-    }
-
     if (
       isCancelledTrip(this.trip.status) &&
-      !isCancelledTrip(this.originalStatus)
+      !isCancelledTrip(this.originalStatus) &&
+      !this.canCancel
     ) {
       /* La opcion no se le ofrece al conductor; esto cubre el estado que
          llegue por cualquier otra via antes de mandarlo a guardar. */
-      if (!this.canCancel) {
-        this.trip.status = this.originalStatus;
-        this.toastService.showError(
-          'Acción denegada',
-          'Solo el propietario o un administrador pueden cancelar un viaje.',
-        );
-        return;
-      }
+      this.trip.status = this.originalStatus;
+      this.toastService.showError(
+        'Acción denegada',
+        'Solo el propietario o un administrador pueden cancelar un viaje.',
+      );
+      return;
+    }
 
-      /* Dar de baja saca el viaje de todas las cifras: se confirma igual que
-         completarlo. */
+    /* Qué cambios se preguntan lo decide la misma regla que usa el listado:
+       completar, cancelar y devolver a "Pendiente" un viaje ya cobrado. */
+    if (statusNeedsConfirmation(this.originalStatus, this.trip.status)) {
       this.showConfirmModal = true;
       return;
     }

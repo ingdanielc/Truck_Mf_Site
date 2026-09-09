@@ -42,6 +42,8 @@ import {
   excludeCancelledFilter,
   isCancelledTrip,
   statusNeedsConfirmation,
+  TripStatusConfirmation,
+  tripStatusConfirmation,
 } from 'src/app/utils/trip-status';
 
 export interface TripOwnerGroup {
@@ -113,6 +115,45 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
   editingTrip: ModelTrip | null = null;
   showingActiveTripWarning: boolean = false;
   showingNoVehiclesWarning: boolean = false;
+  showingStatusHelp: boolean = false;
+
+  /**
+   * Qué significa cada estado
+   * El color y el icono son los mismos de las tarjetas de contador y de la
+   * etiqueta de cada viaje, para que la ayuda se lea contra lo que ya está en
+   * pantalla.
+   */
+  readonly tripStatusHelp: readonly {
+    status: string;
+    icon: string;
+    tone: string;
+    description: string;
+  }[] = [
+    {
+      status: 'En Curso',
+      icon: 'fa-truck-fast',
+      tone: 'primary',
+      description: 'Salió a ruta y todavía no llega al destino.',
+    },
+    {
+      status: 'Pendiente',
+      icon: 'fa-clock-rotate-left',
+      tone: 'warning',
+      description: 'Llegó al destino, pero falta cobrar el saldo del flete.',
+    },
+    {
+      status: 'Completado',
+      icon: 'fa-circle-check',
+      tone: 'success',
+      description: 'Llegó al destino y el saldo del flete ya se pagó.',
+    },
+    {
+      status: 'Cancelado',
+      icon: 'fa-ban',
+      tone: 'danger',
+      description: 'Dado de baja: no cuenta en reportes ni en la utilidad.',
+    },
+  ];
 
   // Maps info card state
   isTripInfoOpen: boolean = false;
@@ -1206,9 +1247,13 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
   pendingStatusChange: { trip: ModelTrip; status: string } | null = null;
   isSavingStatus = false;
 
-  /** El texto del diálogo depende de a dónde va el viaje. */
-  get isConfirmingCancellation(): boolean {
-    return isCancelledTrip(this.pendingStatusChange?.status);
+  /** El diálogo que toca —qué se pregunta y de qué color— según a dónde va el
+   *  viaje. Los textos son los mismos que muestra el detalle. */
+  get statusConfirmation(): TripStatusConfirmation | null {
+    const cambio = this.pendingStatusChange;
+    return cambio
+      ? tripStatusConfirmation(cambio.trip.status, cambio.status)
+      : null;
   }
 
   onTripStatusChange(event: { trip: ModelTrip; status: string }): void {
@@ -1301,6 +1346,14 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   dismissNoVehiclesWarning(): void {
     this.showingNoVehiclesWarning = false;
+  }
+
+  toggleStatusHelp(): void {
+    this.showingStatusHelp = !this.showingStatusHelp;
+  }
+
+  dismissStatusHelp(): void {
+    this.showingStatusHelp = false;
   }
 
   filterByStatus(status: string | null): void {

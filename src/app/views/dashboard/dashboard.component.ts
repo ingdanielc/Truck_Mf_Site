@@ -49,6 +49,7 @@ import { GVehicleTripExpCardComponent } from '../../components/g-vehicle-trip-ex
 import { GProfitabilityReportComponent } from '../../components/g-profitability-report/g-profitability-report.component';
 import { GExpensesReportComponent } from '../../components/g-expenses-report/g-expenses-report.component';
 import { GSubscriptionsReportComponent } from '../../components/g-subscriptions-report/g-subscriptions-report.component';
+import { GBalancesReportComponent } from '../../components/g-balances-report/g-balances-report.component';
 import { findScroller, scrollToTop } from '../../utils/scroll';
 
 Chart.register(...registerables);
@@ -74,6 +75,7 @@ interface ProfitStats {
     GProfitabilityReportComponent,
     GExpensesReportComponent,
     GSubscriptionsReportComponent,
+    GBalancesReportComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
@@ -99,6 +101,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     | 'gastos'
     | 'suscripciones'
     | 'graficos'
+    | 'saldos'
     | 'viajes' = 'rentabilidad';
   userRole: string = '';
   owners: ModelOwner[] = [];
@@ -1966,6 +1969,17 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return Formatters.titleCase(owner?.name);
   }
 
+  /**
+   * Se cobró un saldo: el viaje pasó a Completado y su utilidad ya no está
+   * pendiente. El tablero se recarga porque las gráficas y la rentabilidad
+   * cuentan ese viaje, y quedarían contando el estado anterior.
+   */
+  onBalancePaid(): void {
+    if (this.currentUser) {
+      this.loadData(this.currentUser);
+    }
+  }
+
   onOwnerChange() {
     /* Los vehículos en alcance son los del propietario anterior hasta que el
        reporte cargue los del nuevo. Se vacían aquí para que la sección de
@@ -2319,11 +2333,47 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.groupByOwner;
   }
 
+  /**
+   * Los saldos por cobrar son del dueño de la plata: quien entregó la carga y
+   * no ha visto el dinero. El conductor gestiona el viaje pero no cobra, y el
+   * administrador no es parte del trato entre el propietario y la empresa que
+   * contrató el flete.
+   *
+   * Es además la única pestaña que actúa sobre los datos —marca un saldo como
+   * cobrado—, y esa decisión no es de nadie más.
+   */
+  get showBalancesReport(): boolean {
+    return this.userRole === 'PROPIETARIO';
+  }
+
+  /** El usuario del que son los saldos. La pestaña solo existe para su propio
+   *  rol, así que no hay a quién más elegir; el reporte resuelve por su cuenta
+   *  la ficha de propietario, que es otro registro con otro `id`. */
+  get balancesUserId(): number | null {
+    return this.showBalancesReport ? (this.currentUser?.id ?? null) : null;
+  }
+
+  /**
+   * El camión elegido en el panel de periodo, para la lista de cobro.
+   *
+   * Se saca de la misma `key` que consume el reporte de rentabilidad —
+   * `vehicle:14` — para que las dos secciones hablen del mismo camión sin
+   * sincronizar nada. `null` es el "Todos" del selector, y también lo que hay
+   * cuando el propietario tiene un solo camión y no hay selector.
+   */
+  get balancesVehicleId(): number | null {
+    const key = this.selectedVehicleKey;
+    if (!key) return null;
+    const id = Number(key.split(':').pop());
+    return Number.isFinite(id) && id > 0 ? id : null;
+  }
+
   /** Qué pestañas existen para el rol y el estado actuales. */
   private isTabAvailable(tab: string): boolean {
     if (tab === 'rentabilidad') return this.showProfitabilityReport;
     if (tab === 'gastos') return this.showExpensesReport;
     if (tab === 'suscripciones') return this.showSubscriptions;
+    if (tab === 'saldos') return this.showBalancesReport;
     return true;
   }
 

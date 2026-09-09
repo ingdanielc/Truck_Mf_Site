@@ -40,8 +40,8 @@ export class GTripCardComponent {
 
   /**
    * La etiqueta de estado abre un menú para cambiarlo sin entrar al detalle.
-   * Un viaje completado solo lo reabre el administrador, igual que en el
-   * detalle; para el resto la etiqueta se queda como estaba.
+   * Un viaje completado lo reabren el propietario y el administrador, igual
+   * que en el detalle; para el conductor la etiqueta se queda como estaba.
    */
   get canChangeStatus(): boolean {
     return canChangeTripStatus(this.trip.status, this.userRole);

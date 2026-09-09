@@ -8,6 +8,7 @@ import {
   excludeCancelledFilter,
   isCancelledTrip,
   statusNeedsConfirmation,
+  tripStatusConfirmation,
 } from './trip-status';
 
 const viaje = (extra: Partial<ModelTrip> = {}): ModelTrip =>
@@ -74,6 +75,13 @@ describe('statusNeedsConfirmation', () => {
     expect(statusNeedsConfirmation('Pendiente', 'Cancelado')).toBeTrue();
   });
 
+  /* Devolver a "Pendiente" un viaje completado deshace un cobro: el saldo que
+     estaba dado por recibido vuelve a deberse y reaparece en el reporte de
+     saldos. Desde "En Curso" no hay nada que deshacer. */
+  it('pregunta al devolver a pendiente un viaje ya cobrado', () => {
+    expect(statusNeedsConfirmation('Completado', 'Pendiente')).toBeTrue();
+  });
+
   it('no pregunta por los cambios que se deshacen solos', () => {
     expect(statusNeedsConfirmation('Cancelado', 'En Curso')).toBeFalse();
     expect(statusNeedsConfirmation('En Curso', 'Pendiente')).toBeFalse();
@@ -87,10 +95,38 @@ describe('statusNeedsConfirmation', () => {
   });
 });
 
+describe('tripStatusConfirmation', () => {
+  it('da un texto distinto a cada cambio', () => {
+    expect(tripStatusConfirmation('En Curso', 'Completado')?.kind).toBe(
+      'completar',
+    );
+    expect(tripStatusConfirmation('En Curso', 'Cancelado')?.kind).toBe(
+      'cancelar',
+    );
+    expect(tripStatusConfirmation('Completado', 'Pendiente')?.kind).toBe(
+      'reabrir',
+    );
+  });
+
+  it('no da diálogo para los cambios que no se preguntan', () => {
+    expect(tripStatusConfirmation('En Curso', 'Pendiente')).toBeNull();
+    expect(tripStatusConfirmation('Completado', 'Completado')).toBeNull();
+  });
+
+  /* Los dos sitios que confirman leen de aquí: si el texto viniera vacío, la
+     hoja saldría sin decir qué se está aceptando. */
+  it('nombra siempre la acción', () => {
+    const dialogo = tripStatusConfirmation('Completado', 'Pendiente');
+    expect(dialogo?.title.length).toBeGreaterThan(0);
+    expect(dialogo?.message.length).toBeGreaterThan(0);
+    expect(dialogo?.confirmLabel.length).toBeGreaterThan(0);
+  });
+});
+
 describe('canChangeTripStatus', () => {
-  it('cierra el estado de un viaje completado salvo al administrador', () => {
+  it('cierra el estado de un viaje completado solo al conductor', () => {
     expect(canChangeTripStatus('Completado', 'CONDUCTOR')).toBeFalse();
-    expect(canChangeTripStatus('Completado', 'PROPIETARIO')).toBeFalse();
+    expect(canChangeTripStatus('Completado', 'PROPIETARIO')).toBeTrue();
     expect(canChangeTripStatus('Completado', 'ADMINISTRADOR')).toBeTrue();
   });
 

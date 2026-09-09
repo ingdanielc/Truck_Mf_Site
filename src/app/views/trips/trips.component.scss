@@ -163,6 +163,35 @@
   }
 }
 
+/* Bootstrap reserva 3rem a la derecha para la X de cerrar. En movil eso se
+   come el ancho util del aviso y parte las frases en columnas de dos
+   palabras, asi que se recorta a 1rem: la X sigue cabiendo sobre la primera
+   linea, que en estos avisos es corta. */
+.alert-dismissible {
+  @media (max-width: 576px) {
+    padding-right: 1rem;
+  }
+}
+
+/* La X de cerrar en el color del aviso —el mismo del titulo— y no en el negro
+   que trae Bootstrap con su propio icono. La posicion repite la que da
+   `.alert-dismissible .btn-close`, que este boton ya no hereda. */
+.alert-dismissible .alert-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  padding: 1.25rem 1rem;
+  color: inherit;
+  text-decoration: none;
+
+  &:hover,
+  &:focus {
+    color: inherit;
+    opacity: 0.7;
+  }
+}
+
 .h-divider {
   border-radius: 10px;
 }

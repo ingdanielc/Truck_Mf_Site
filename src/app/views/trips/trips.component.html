@@ -13,6 +13,16 @@
           </button>
         }
         <h1 class="h3 fw-bold mb-0 text-body">Gestión de Viajes</h1>
+        <button
+          class="btn btn-link p-0 shadow-none lh-1"
+          [class.text-primary]="showingStatusHelp"
+          [class.text-body-secondary]="!showingStatusHelp"
+          (click)="toggleStatusHelp()"
+          title="Qué significa cada estado"
+          aria-label="Ayuda sobre los estados de un viaje"
+        >
+          <i class="fa-solid fa-circle-question fs-5 pt-1"></i>
+        </button>
       </div>
       <p class="text-secondary mb-0 small">
         Administra y monitorea los viajes de tus vehículos
@@ -193,6 +203,43 @@
         aria-label="Cerrar"
         (click)="dismissActiveTripWarning()"
       ></button>
+    </div>
+  }
+
+  <!-- Trip Status Help -->
+  @if (showingStatusHelp) {
+    <div
+      class="alert alert-info alert-dismissible rounded-4 shadow-sm mb-4 animate__animated animate__fadeIn"
+      role="alert"
+    >
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="fa-solid fa-circle-info fs-5 flex-shrink-0"></i>
+        <strong>Estados de un viaje</strong>
+      </div>
+      <div class="row g-2 pe-4">
+        @for (item of tripStatusHelp; track item.status) {
+          <div class="col-12 col-lg-6">
+            <div class="d-flex align-items-start gap-2 small">
+              <i class="fa-solid {{ item.icon }} text-{{ item.tone }} mt-1"></i>
+              <div>
+                <span class="fw-bold text-{{ item.tone }}">{{
+                  item.status
+                }}</span>
+                <i class="fa-solid fa-angle-right mx-2 opacity-50"></i>
+                <span class="text-body-secondary">{{ item.description }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+      <button
+        type="button"
+        class="btn btn-link alert-close shadow-none lh-1"
+        aria-label="Cerrar"
+        (click)="dismissStatusHelp()"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
     </div>
   }
 
@@ -781,22 +828,12 @@
 <g-confirm-sheet
   [open]="!!pendingStatusChange"
   [busy]="isSavingStatus"
-  [title]="
-    isConfirmingCancellation ? '¿Cancelar el viaje?' : '¿Completar viaje?'
-  "
-  [message]="
-    isConfirmingCancellation
-      ? 'El viaje se da de baja: deja de contar en los totales y en los reportes, y no admitirá nuevos gastos. Se seguirá viendo en el listado, marcado en rojo.'
-      : '¿Está seguro de completar el viaje? Una vez completado, no se podrán realizar más ajustes ni ediciones a la información del trayecto.'
-  "
-  [icon]="
-    isConfirmingCancellation
-      ? 'fa-solid fa-ban'
-      : 'fa-solid fa-circle-exclamation'
-  "
-  [variant]="isConfirmingCancellation ? 'danger' : 'warning'"
-  [confirmLabel]="isConfirmingCancellation ? 'Confirmar' : 'Confirmar'"
-  [cancelLabel]="isConfirmingCancellation ? 'Volver' : 'Cancelar'"
+  [title]="statusConfirmation?.title ?? ''"
+  [message]="statusConfirmation?.message ?? ''"
+  [icon]="statusConfirmation?.icon ?? ''"
+  [variant]="statusConfirmation?.variant ?? 'warning'"
+  [confirmLabel]="statusConfirmation?.confirmLabel ?? 'Confirmar'"
+  [cancelLabel]="statusConfirmation?.cancelLabel ?? 'Cancelar'"
   (confirm)="confirmStatusChange()"
   (cancel)="cancelStatusChange()"
 ></g-confirm-sheet>

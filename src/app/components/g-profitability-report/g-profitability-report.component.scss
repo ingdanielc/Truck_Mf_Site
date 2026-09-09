@@ -32,7 +32,7 @@
   &:hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
-    border-color: rgba(var(--bs-primary-rgb), 0.25);
+    border-color: var(--bs-primary);
 
     /* El mismo giro que hacen los contadores de propietarios y conductores
        (`.card.stat-card:hover .icon-shape` en `styles.scss`). Se repite aquí
