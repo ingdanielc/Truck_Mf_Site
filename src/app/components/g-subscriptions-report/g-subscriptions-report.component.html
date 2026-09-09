@@ -258,8 +258,8 @@
             </span>
             <span
               class="text-body-secondary"
-              title="Viajes del periodo"
-              [attr.aria-label]="r.trips + ' viajes en el periodo'"
+              [title]="'Viajes · ' + periodLabel"
+              [attr.aria-label]="r.trips + ' viajes en ' + periodLabel"
             >
               <i class="fa-solid fa-route me-1 opacity-75"></i>
               <span class="fw-semibold text-body">{{ r.trips }}</span>
@@ -281,19 +281,71 @@
 
     <div class="table-responsive owner-table d-none d-md-block">
       <table class="table table-sm table-hover align-middle mb-0">
+        <!-- Los encabezados ordenan: el mismo gesto que la lista de saldos.
+             Tocar el que ya manda invierte el sentido, y la flecha dice cual
+             es y hacia donde. Ordena el detalle entero, no la pagina que se
+             esta viendo. -->
         <thead>
           <tr>
-            <th scope="col">Propietario</th>
-            <th scope="col">Suscripción</th>
-            <th scope="col" class="text-end">Conductores</th>
-            <th scope="col" class="text-end">Vehículos</th>
-            <th scope="col" class="text-end">
+            <th scope="col" role="button" (click)="sortBy('name')">
+              Propietario
+              <i class="fa-solid ms-1 opacity-50" [ngClass]="sortIcon('name')">
+              </i>
+            </th>
+            <th scope="col" role="button" (click)="sortBy('subscription')">
+              Suscripción
+              <i
+                class="fa-solid ms-1 opacity-50"
+                [ngClass]="sortIcon('subscription')"
+              ></i>
+            </th>
+            <th
+              scope="col"
+              class="text-end"
+              role="button"
+              (click)="sortBy('drivers')"
+            >
+              Conductores
+              <i
+                class="fa-solid ms-1 opacity-50"
+                [ngClass]="sortIcon('drivers')"
+              ></i>
+            </th>
+            <th
+              scope="col"
+              class="text-end"
+              role="button"
+              (click)="sortBy('vehicles')"
+            >
+              Vehículos
+              <i
+                class="fa-solid ms-1 opacity-50"
+                [ngClass]="sortIcon('vehicles')"
+              ></i>
+            </th>
+            <th
+              scope="col"
+              class="text-end"
+              role="button"
+              (click)="sortBy('trips')"
+            >
               Viajes
               <span class="fw-normal text-lowercase">
                 ({{ periodLabel }})
               </span>
+              <i class="fa-solid ms-1 opacity-50" [ngClass]="sortIcon('trips')">
+              </i>
             </th>
-            <th scope="col" class="text-end">Suscripción / año</th>
+            <th
+              scope="col"
+              class="text-end"
+              role="button"
+              (click)="sortBy('fee')"
+            >
+              Suscripción / año
+              <i class="fa-solid ms-1 opacity-50" [ngClass]="sortIcon('fee')">
+              </i>
+            </th>
           </tr>
         </thead>
         <tbody>

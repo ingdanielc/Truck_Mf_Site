@@ -15,7 +15,15 @@ export const EVENT_TRANSLATIONS: { [key: string]: string } = {
   BIRTHDAY_EVENT: 'CUMPLEAÑOS',
   EXPIRATION_EVENT: 'VENCIMIENTO',
   SYSTEM_EVENT: 'SISTEMA',
-  TRIP_INACTIVITY_ALERT: 'INACTIVIDAD',
+
+  /* Las tres alertas de inactividad. Cada una dice qué falta, y no solo que
+     algo falta: con "INACTIVIDAD" para las tres, la tarjeta obligaba a leer el
+     mensaje entero para saber de cuál de ellas se trataba. El rótulo es el
+     mismo título con el que llega el push, así que el aviso del celular y el
+     del panel se reconocen como el mismo. */
+  EXPENSE_INACTIVITY_ALERT: 'VIAJE SIN GASTOS',
+  TRIP_INACTIVITY_ALERT: 'SIN VIAJE EN CURSO',
+  TRIP_STALLED_ALERT: 'VIAJE SIN CERRAR',
 };
 
 export interface GNotification {

@@ -25,6 +25,7 @@ import {
   Pagination,
   Sort,
 } from '../../models/model-filter-table';
+import { supportWhatsappUrl } from '../../utils/support-link';
 
 @Component({
   selector: 'g-sidebar',
@@ -38,11 +39,9 @@ export class GSidebarComponent implements OnInit, OnDestroy {
   @Input() userRole: string = 'Administrador';
   @Output() toggleMenu = new EventEmitter<void>();
 
-  readonly whatsappUrl: string =
-    'https://wa.me/573147235739?text=' +
-    encodeURIComponent(
-      'Hola Ing. Daniel, te escribo desde la app CashTruck. Necesito soporte.',
-    );
+  /** Soporte por WhatsApp. Se rehace con el nombre y el rol en cuanto se
+   *  conocen, que es lo mismo que el menú ya muestra bajo el avatar. */
+  whatsappUrl: string = supportWhatsappUrl();
 
   isNotificationsOpen = false;
   unreadCount$ = this.notificationsService.unreadCount$;
@@ -83,6 +82,7 @@ export class GSidebarComponent implements OnInit, OnDestroy {
           if (user) {
             this.userName = user.name || this.userName;
             this.userRole = user.userRoles?.[0]?.role?.name || 'Sin Rol';
+            this.whatsappUrl = supportWhatsappUrl(this.userName, this.userRole);
             const roleName = this.userRole.toUpperCase();
             if (roleName === 'PROPIETARIO' || roleName === 'CONDUCTOR') {
               this.loadUserPhoto(roleName, user.id!.toString());

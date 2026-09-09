@@ -15,6 +15,7 @@ import {
   Sort,
 } from '../../models/model-filter-table';
 import { GPushPromptComponent } from '../../components/g-push-prompt/g-push-prompt.component';
+import { supportWhatsappUrl } from '../../utils/support-link';
 
 @Component({
   selector: 'app-home',
@@ -51,11 +52,14 @@ export class HomeComponent implements OnInit, OnDestroy {
     },
   ];
 
-  readonly whatsappUrl: string =
-    'https://wa.me/573147235739?text=' +
-    encodeURIComponent(
-      'Hola Ing. Daniel, te escribo desde la app CashTruck. Necesito soporte.',
-    );
+  /**
+   * Soporte por WhatsApp, con el saludo ya escrito.
+   *
+   * Arranca sin identificar: la sesión resuelve al usuario después de pintar la
+   * pantalla, y un enlace con el hueco a medio llenar es peor que el saludo a
+   * secas. Se rehace en cuanto llega el usuario —ver `subscribeToUserContext`.
+   */
+  whatsappUrl: string = supportWhatsappUrl();
 
   private readonly allCards: any = [
     {
@@ -181,6 +185,7 @@ export class HomeComponent implements OnInit, OnDestroy {
             }
 
             this.filterCards(displayRole);
+            this.whatsappUrl = supportWhatsappUrl(user.name, displayRole);
 
             if (hasConductorRole && user.id) {
               this.handleDriverLocation(user.id);

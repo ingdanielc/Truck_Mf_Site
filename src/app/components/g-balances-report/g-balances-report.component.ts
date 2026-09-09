@@ -47,7 +47,8 @@ interface BalanceRow {
 }
 
 /**
- * Saldos pendientes por cobrar. Solo para el propietario.
+ * Saldos pendientes por cobrar: los del propietario, mirados por él mismo o
+ * por el administrador que lo eligió en el panel de periodo.
  *
  * Un viaje en "Pendiente" llegó a destino pero no se ha cobrado el saldo del
  * flete: la carga está entregada y la plata sin recibir. Esta pestaña es esa
@@ -77,6 +78,19 @@ export class GBalancesReportComponent implements OnChanges {
    * saldos.
    */
   @Input({ required: true }) userId: number | null = null;
+
+  /**
+   * La ficha de propietario, cuando quien mira es el administrador.
+   *
+   * El administrador no es dueño de ningun saldo: los que ve son los del
+   * propietario que eligio en el panel de periodo, y de ese propietario el
+   * tablero tiene la ficha —no la cuenta—. Asi que llega el `id` de la ficha
+   * ya resuelto y el primero de los tres saltos se salta.
+   *
+   * Manda sobre `userId`: si viene, la lista es de este propietario y la
+   * cuenta en sesion no pinta nada.
+   */
+  @Input() ownerId: number | null = null;
 
   /**
    * La pestaña está abierta.
@@ -137,7 +151,7 @@ export class GBalancesReportComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     /* Solo cambiar de propietario invalida lo cargado. El camión elegido no:
        se resuelve filtrando lo que ya está en memoria. */
-    if (changes['userId']) this.pending = true;
+    if (changes['userId'] || changes['ownerId']) this.pending = true;
     if (changes['vehicleId']) this.page = 0;
 
     if (!this.active || !this.pending) return;
@@ -156,6 +170,9 @@ export class GBalancesReportComponent implements OnChanges {
    * propietario en una sola consulta. Es el mismo camino que hace el listado
    * de viajes para acotar lo que ve un propietario.
    *
+   * Con el administrador son dos: la ficha llega elegida en `ownerId` y el
+   * primer salto sobra.
+   *
    * Sin filtro de fechas, y a proposito: una deuda no deja de deberse porque
    * el tablero este mirando otro mes. Aqui salen todos los pendientes, del
    * primero al ultimo, sea cual sea el periodo elegido arriba.
@@ -163,7 +180,9 @@ export class GBalancesReportComponent implements OnChanges {
   private async load(): Promise<void> {
     const token = ++this.token;
 
-    if (this.userId == null) {
+    /* Sin dueño del que hablar no hay lista: ni la ficha que manda el
+       administrador ni la cuenta en sesión del propietario. */
+    if (this.ownerId == null && this.userId == null) {
       this.apply([]);
       return;
     }
@@ -172,16 +191,26 @@ export class GBalancesReportComponent implements OnChanges {
     this.loadError = false;
 
     try {
+      /* La ficha ya resuelta ahorra la primera consulta: es el caso del
+         administrador, que elige al propietario en el panel de periodo. */
       const [ownerResp, citiesResp]: any[] = await Promise.all([
-        lastValueFrom(
-          this.ownerService.getOwnerFilter(
-            new ModelFilterTable(
-              [new Filter('user.id', '=', this.userId.toString())],
-              new Pagination(1, 0),
-              new Sort('id', true),
+        this.ownerId != null
+          ? Promise.resolve(null)
+          : lastValueFrom(
+              this.ownerService.getOwnerFilter(
+                new ModelFilterTable(
+                  [
+                    new Filter(
+                      'user.id',
+                      '=',
+                      (this.userId as number).toString(),
+                    ),
+                  ],
+                  new Pagination(1, 0),
+                  new Sort('id', true),
+                ),
+              ),
             ),
-          ),
-        ),
         lastValueFrom(this.commonService.getCities()),
       ]);
       if (token !== this.token) return;
@@ -190,7 +219,8 @@ export class GBalancesReportComponent implements OnChanges {
         (citiesResp?.data ?? []).map((c: any) => [String(c?.id), c?.name]),
       );
 
-      const ownerId: number | null = ownerResp?.data?.content?.[0]?.id ?? null;
+      const ownerId: number | null =
+        this.ownerId ?? ownerResp?.data?.content?.[0]?.id ?? null;
       if (ownerId == null) {
         this.apply([]);
         return;

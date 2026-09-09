@@ -2,6 +2,10 @@
   <div class="confirm-sheet-backdrop" (click)="onCancel()" onkeypress></div>
 }
 
+<!-- El gesto se escucha en la hoja entera y no solo en la barrita: en un
+     teléfono esa barrita mide cuatro píxeles de alto y acertarle con el pulgar
+     es cuestión de suerte. `onDragStart` deja fuera los botones, que son lo
+     único de aquí dentro que no debe arrastrar. -->
 <section
   class="confirm-sheet"
   [class.open]="open"
@@ -11,17 +15,17 @@
   [attr.inert]="!open ? '' : null"
   role="alertdialog"
   [attr.aria-label]="title"
+  (pointerdown)="onDragStart($event)"
+  (pointermove)="onDragMove($event)"
+  (pointerup)="onDragEnd()"
+  (pointercancel)="onDragEnd()"
 >
-  <!-- La barrita es el asidero del gesto y, a la vez, lo que anuncia que la
-       hoja se puede bajar. -->
+  <!-- La barrita anuncia que la hoja se puede bajar. Sigue respondiendo al
+       clic para quien no arrastra —teclado incluido—. -->
   <button
     type="button"
     class="confirm-sheet-grabber"
     aria-label="Cerrar sin guardar"
-    (pointerdown)="onDragStart($event)"
-    (pointermove)="onDragMove($event)"
-    (pointerup)="onDragEnd()"
-    (pointercancel)="onDragEnd()"
     (click)="onGrabberClick()"
   ></button>
 

@@ -1,13 +1,26 @@
 import { GConfirmSheetComponent } from './g-confirm-sheet.component';
 
+/**
+ * Un `PointerEvent` de mentira sobre la hoja. `closest` contesta lo que
+ * contestaría en la hoja misma —fuera de los botones—, que es de donde sale
+ * casi todo gesto.
+ */
+const evento = (clientY: number, dentroDeUnBoton = false): PointerEvent =>
+  ({
+    clientY,
+    pointerId: 1,
+    target: { closest: () => (dentroDeUnBoton ? {} : null) },
+    currentTarget: null,
+  }) as unknown as PointerEvent;
+
 /** Arrastre desde `desde` hasta `hasta`, en píxeles de pantalla. */
 const arrastrar = (
   sheet: GConfirmSheetComponent,
   desde: number,
   hasta: number,
 ): void => {
-  sheet.onDragStart({ clientY: desde, target: {} } as unknown as PointerEvent);
-  sheet.onDragMove({ clientY: hasta } as PointerEvent);
+  sheet.onDragStart(evento(desde));
+  sheet.onDragMove(evento(hasta));
   sheet.onDragEnd();
 };
 
@@ -56,10 +69,33 @@ describe('GConfirmSheetComponent', () => {
   });
 
   it('tirar hacia arriba no la mueve', () => {
-    sheet.onDragStart({ clientY: 300, target: {} } as unknown as PointerEvent);
-    sheet.onDragMove({ clientY: 200 } as PointerEvent);
+    sheet.onDragStart(evento(300));
+    sheet.onDragMove(evento(200));
 
     expect(sheet.dragOffset).toBe(0);
+  });
+
+  /* El gesto se toma de toda la hoja, así que un dedo que solo toca —y nunca
+     está del todo quieto— no debe moverla ni comerse el toque. */
+  it('un temblor de unos pocos píxeles no cuenta como arrastre', () => {
+    sheet.onDragStart(evento(300));
+    sheet.onDragMove(evento(303));
+    expect(sheet.dragOffset).toBe(0);
+
+    sheet.onDragEnd();
+    sheet.onGrabberClick();
+    expect(cancelaciones).toBe(1);
+  });
+
+  /* Bajar la hoja desde "Confirmar" y soltar a medio camino tenía que poder no
+     confirmar nada: por eso el gesto no empieza en los botones. */
+  it('el gesto no empieza en un botón', () => {
+    sheet.onDragStart(evento(300, true));
+    sheet.onDragMove(evento(500));
+    sheet.onDragEnd();
+
+    expect(sheet.dragOffset).toBe(0);
+    expect(cancelaciones).toBe(0);
   });
 
   /* Mientras se guarda no hay vuelta atrás: la petición ya salió. */

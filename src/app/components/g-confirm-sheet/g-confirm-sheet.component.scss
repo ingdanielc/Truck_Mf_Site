@@ -30,6 +30,17 @@
   border-bottom: 0;
   box-shadow: 0 -0.5rem 2rem rgba(0, 0, 0, 0.2);
   transform: translateY(110%);
+  /* El gesto de bajar la hoja es nuestro, no del navegador. Sin esto, en iOS
+     el dedo hacia abajo se lo queda Safari para desplazar la página de detrás:
+     el `pointermove` deja de llegar, salta un `pointercancel` y la hoja se
+     queda quieta. No estorba a los botones — `touch-action` gobierna el
+     desplazamiento y el zoom, no el toque. */
+  touch-action: none;
+  /* Arrastrar sobre el texto seleccionaba palabras y sacaba la lupa de iOS en
+     mitad del gesto. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   /* Fuera de la vista tampoco debe capturar clics. Al cerrar, `visibility`
      espera a que termine el deslizamiento; si cambiara a la vez, la hoja
      desaparecería de golpe en vez de bajar. */
@@ -60,17 +71,30 @@
   }
 }
 
+/* La barrita se ve de 2.5rem × 4px, pero el botón que la envuelve mide lo que
+   hay que medir para que un pulgar le acierte: cuatro píxeles de alto no son
+   un objetivo táctil. Lo que se pinta es el `::before`. */
 .confirm-sheet-grabber {
-  display: block;
-  width: 2.5rem;
-  height: 4px;
-  margin: 0.75rem auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 1.75rem;
+  margin: 0 auto;
   padding: 0;
   border: 0;
-  border-radius: 2px;
-  background-color: rgba(var(--bs-emphasis-color-rgb), 0.2);
+  background: none;
   cursor: grab;
   touch-action: none;
+
+  &::before {
+    content: "";
+    display: block;
+    width: 2.5rem;
+    height: 4px;
+    border-radius: 2px;
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.2);
+  }
 
   &:active {
     cursor: grabbing;
@@ -78,7 +102,7 @@
 }
 
 .confirm-sheet-body {
-  padding: 1.25rem 1.5rem 1.5rem;
+  padding: 0.75rem 1.5rem 1.5rem;
   /* El teclado y las barras del móvil se comen el borde inferior. */
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
 }

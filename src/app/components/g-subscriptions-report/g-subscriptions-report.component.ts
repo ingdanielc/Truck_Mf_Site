@@ -9,6 +9,10 @@ import { PaginationUtils } from '../../utils/pagination-utils';
 /** En qué estado está la suscripción de un propietario. */
 type SubscriptionState = 'activa' | 'porVencer' | 'vencida' | 'sinFecha';
 
+/** Por qué columna se ordena el detalle. */
+type SortField =
+  'name' | 'subscription' | 'drivers' | 'vehicles' | 'trips' | 'fee';
+
 /** Una fila del detalle: el propietario y lo que tiene montado encima. */
 interface SubscriptionRow {
   id: number | null;
@@ -52,8 +56,16 @@ export class GSubscriptionsReportComponent implements OnChanges {
   /** El catálogo que el tablero carga para su filtro de propietario. */
   @Input({ required: true }) owners: ModelOwner[] = [];
 
-  /** Viajes del periodo por `id` de propietario. Los saca el tablero de su
-   *  propio reporte, así que cuentan el mismo periodo que las gráficas. */
+  /**
+   * Viajes del periodo por `id` de propietario. Los saca el tablero de su
+   * propio reporte, así que cuentan el mismo periodo que las gráficas: el mes
+   * abierto en el panel, o el año si ese es el alcance.
+   *
+   * Los cuenta por fecha de creación del viaje. No cuadran entonces con el
+   * menú de Viajes, que los lista todos sin filtrar por fecha: ahí un
+   * propietario con un viaje de agosto y otro de septiembre muestra dos, y
+   * aquí muestra uno por mes. La columna se rotula con el periodo por eso.
+   */
   @Input({ required: true }) tripsByOwnerId: Record<number, number> = {};
 
   /** El periodo, solo para rotular de qué son los viajes. */
@@ -110,36 +122,23 @@ export class GSubscriptionsReportComponent implements OnChanges {
   }
 
   private build(): void {
-    this.rows = (this.owners ?? [])
-      .map((o) => {
-        const days = SubscriptionUtils.daysRemaining(o.subscriptionEndDate);
-        return {
-          id: o.id ?? null,
-          name: Formatters.titleCase(o.name) || 'Sin nombre',
-          state: this.stateOf(o.subscriptionEndDate),
-          endDate: SubscriptionUtils.toDateOnly(o.subscriptionEndDate),
-          label: SubscriptionUtils.label(o.subscriptionEndDate),
-          days,
-          vehicles: o.vehicleCount ?? 0,
-          drivers: o.driverCount ?? 0,
-          trips: o.id != null ? (this.tripsByOwnerId[o.id] ?? 0) : 0,
-          fee: this.feeOf(o.vehicleCount ?? 0),
-        };
-      })
-      /* Primero lo urgente: los dias restantes mandan -lo vencido (negativos)
-         arriba, despues lo que esta por caer-, y sin fecha al final, que no
-         hay nada que atender. Dentro del mismo vencimiento manda el nombre:
-         asi los que caen el mismo dia salen en orden alfabetico y no en el
-         azar en que vinieron del catalogo. `localeCompare` en es-CO para que
-         las tildes y la 'n' no queden al final. */
-      .sort((a, b) => {
-        if (a.days !== b.days) {
-          if (a.days === null) return 1;
-          if (b.days === null) return -1;
-          return a.days - b.days;
-        }
-        return a.name.localeCompare(b.name, 'es-CO', { sensitivity: 'base' });
-      });
+    this.rows = (this.owners ?? []).map((o) => {
+      const days = SubscriptionUtils.daysRemaining(o.subscriptionEndDate);
+      return {
+        id: o.id ?? null,
+        name: Formatters.titleCase(o.name) || 'Sin nombre',
+        state: this.stateOf(o.subscriptionEndDate),
+        endDate: SubscriptionUtils.toDateOnly(o.subscriptionEndDate),
+        label: SubscriptionUtils.label(o.subscriptionEndDate),
+        days,
+        vehicles: o.vehicleCount ?? 0,
+        drivers: o.driverCount ?? 0,
+        trips: o.id != null ? (this.tripsByOwnerId[o.id] ?? 0) : 0,
+        fee: this.feeOf(o.vehicleCount ?? 0),
+      };
+    });
+
+    this.applySort();
 
     this.activas = this.rows.filter((r) => r.state === 'activa').length;
     this.porVencer = this.rows.filter((r) => r.state === 'porVencer').length;
@@ -217,6 +216,78 @@ export class GSubscriptionsReportComponent implements OnChanges {
   /** Cada tecla puede dejar la pagina actual fuera de rango. */
   public onSearch(): void {
     this.page = 0;
+  }
+
+  /* ---- Orden ---------------------------------------------------------------
+     Se ordena aqui y no en el servidor por lo mismo que se busca y se pagina
+     aqui: las filas ya estan todas en memoria. */
+
+  /**
+   * Por omision manda el vencimiento, que es la urgencia: lo vencido arriba y
+   * despues lo que esta por caer. Es con lo que se entra a la seccion —a quien
+   * hay que llamar—; el resto de columnas responden otras preguntas —quien
+   * tiene mas camiones, quien viaja mas, quien factura mas— y se piden
+   * tocandolas.
+   */
+  public sortField: SortField = 'subscription';
+  public sortAsc = true;
+
+  public sortBy(field: SortField): void {
+    if (this.sortField === field) {
+      this.sortAsc = !this.sortAsc;
+    } else {
+      this.sortField = field;
+      /* Los conteos y la tarifa se leen de mayor a menor —lo gordo primero— y
+         el nombre y el vencimiento de menor a mayor: en los dos casos, lo
+         primero es lo que se busca. */
+      this.sortAsc = field === 'name' || field === 'subscription';
+    }
+    this.applySort();
+    this.page = 0;
+  }
+
+  public sortIcon(field: SortField): string {
+    if (this.sortField !== field) return 'fa-sort';
+    return this.sortAsc ? 'fa-sort-up' : 'fa-sort-down';
+  }
+
+  /**
+   * Ordena el detalle entero, no la pagina: si ordenara lo que se pinta, cada
+   * pagina saldria ordenada por su cuenta y la primera no traeria a los
+   * primeros.
+   *
+   * En los empates manda el nombre, y por eso el orden no depende de en que
+   * orden vinieron los propietarios del catalogo: sin fecha son varios, con
+   * cero viajes tambien, y la tarifa se repite en todos los que tienen los
+   * mismos camiones. `localeCompare` en es-CO para que las tildes y la 'n' no
+   * queden al final.
+   *
+   * Las suscripciones sin fecha van siempre al final, en los dos sentidos: no
+   * son ni las mas urgentes ni las que mas lejos quedan, y colarlas en un
+   * extremo sugeriria un dato que no existe.
+   */
+  private applySort(): void {
+    const dir = this.sortAsc ? 1 : -1;
+    const campo = this.sortField;
+
+    const porNombre = (a: SubscriptionRow, b: SubscriptionRow) =>
+      a.name.localeCompare(b.name, 'es-CO', { sensitivity: 'base' });
+
+    this.rows = [...this.rows].sort((a, b) => {
+      if (campo === 'name') return dir * porNombre(a, b);
+
+      if (campo === 'subscription') {
+        if (a.days === b.days) return porNombre(a, b);
+        if (a.days === null) return 1;
+        if (b.days === null) return -1;
+        return dir * (a.days - b.days);
+      }
+
+      const av = a[campo];
+      const bv = b[campo];
+      if (av === bv) return porNombre(a, b);
+      return dir * (av - bv);
+    });
   }
 
   /* ---- Paginacion ---------------------------------------------------------

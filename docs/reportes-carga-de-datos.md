@@ -144,7 +144,7 @@ ya conoce.
 | Dimensión del eje | rol contiene `ADMINISTRADOR` → propietario; otro → vehículo |
 | Propietario de un viaje | `trip.driver.ownerId ?? trip.vehicle.owners[0].ownerId` |
 | Vehículo de un gasto | `expense.vehicleId` — no hay otra vía |
-| Fecha del viaje | `trip.startDate`, hora local |
+| Fecha del viaje | `trip.creationDate`, hora local — **ver 6.4** |
 | Fecha del gasto | `expense.creationDate`, hora local — **ver 6.1** |
 | Viaje vacío | `tripType = 'VACIO'`; nulo o desconocido cuenta como `CARGADO` |
 | Mantenimiento | `category.expenseTypeId = 4` |
@@ -187,6 +187,17 @@ del último día del mes a partir de las 19:00 se corren al mes siguiente.
 **6.3 Nombres de rol.** El cliente detecta el rol con
 `includes('ADMINISTRADOR')`. Conviene exponer un identificador estable en lugar
 de comparar cadenas.
+
+**6.4 `creationDate` contra `startDate` en el viaje.** El mes de un viaje se
+agrupa por `trip.creationDate`: cuándo se registró, no cuándo salió el camión.
+Es la única fecha que existe siempre y que no se mueve —`endDate` solo aparece
+al completar el viaje, y un viaje pendiente se quedaría sin mes—, y así un
+viaje entra en un mes y no cambia nunca de sitio.
+
+Afecta a **todo el agregado**, no solo al conteo de suscripciones: hay una sola
+fecha por viaje en el Endpoint A, así que las nueve gráficas, la rentabilidad y
+el detalle del Endpoint B agrupan por la misma. Un viaje registrado el 30 de
+agosto que sale el 2 de septiembre cuenta en agosto en todo el tablero.
 
 ---
 

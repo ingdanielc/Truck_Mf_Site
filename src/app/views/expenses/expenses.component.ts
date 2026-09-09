@@ -834,14 +834,35 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   /**
    * El viaje está dado de baja. Sus gastos quedan en solo lectura: se
-   * consultan, pero no se registran ni se editan. A diferencia del bloqueo de
-   * las 48 horas, este no depende del rol —un viaje que no existió no admite
+   * consultan, pero no se registran ni se editan. A diferencia de los plazos
+   * de abajo, este no depende del rol —un viaje que no existió no admite
    * movimientos de nadie— ni caduca.
    */
   get isTripCancelled(): boolean {
     return !this.isMaintenance && isCancelledTrip(this.selectedTrip?.status);
   }
 
+  /* ---- Plazos para registrar y editar -------------------------------------
+     Un viaje no se toca para siempre: pasado su plazo, sus gastos quedan como
+     quedaron. Cada rol tiene el suyo y se cuenta desde un hito distinto,
+     porque distinto es lo que cada uno hace con el viaje: el conductor lo
+     cierra y liquida lo del camino, el propietario cuadra las cuentas del mes.
+     El administrador no tiene plazo. */
+
+  /** Horas del conductor, contadas desde que el viaje se cerró. */
+  private static readonly DRIVER_HOURS = 72;
+
+  /** Meses del propietario, contados desde que el viaje se registró. */
+  private static readonly OWNER_MONTHS = 1;
+
+  /**
+   * El plazo del conductor: 72 horas desde que el viaje se cerró.
+   *
+   * Solo corre sobre viajes ya cerrados —Completado o Pendiente—: mientras el
+   * viaje está En Curso el conductor registra sin plazo, que es justo cuando
+   * ocurren los gastos. Un viaje cerrado sin fecha de fin tampoco lo bloquea:
+   * sin ese dato no hay desde cuándo contar.
+   */
   get isTripLockedForDriver(): boolean {
     if (
       this.userRole !== 'CONDUCTOR' ||
@@ -850,15 +871,95 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     )
       return false;
 
-    if (['Completado', 'Pendiente'].includes(this.selectedTrip.status || '')) {
-      if (this.selectedTrip.endDate) {
-        const end = new Date(this.selectedTrip.endDate);
-        const now = new Date();
-        const diffHours = (now.getTime() - end.getTime()) / (1000 * 60 * 60);
-        return diffHours > 48;
-      }
+    if (!['Completado', 'Pendiente'].includes(this.selectedTrip.status || '')) {
+      return false;
     }
-    return false;
+    if (!this.selectedTrip.endDate) return false;
+
+    const end = new Date(this.selectedTrip.endDate);
+    if (Number.isNaN(end.getTime())) return false;
+
+    const horas = (Date.now() - end.getTime()) / (1000 * 60 * 60);
+    return horas > ExpensesComponent.DRIVER_HOURS;
+  }
+
+  /**
+   * El plazo del propietario: un mes desde que el viaje se registró.
+   *
+   * Se cuenta desde el registro y no desde el cierre —que es el hito del
+   * conductor— porque lo que el propietario cuadra es el mes en que el viaje
+   * entró a sus cuentas. No mira el estado: un viaje viejo está cerrado o
+   * abandonado, y en los dos casos sus gastos ya se contaron en un periodo que
+   * los reportes dan por cerrado.
+   *
+   * Sin fecha de registro no bloquea, por lo mismo que en el conductor: no hay
+   * desde cuándo contar.
+   */
+  get isTripLockedForOwner(): boolean {
+    if (
+      this.userRole !== 'PROPIETARIO' ||
+      this.isMaintenance ||
+      !this.selectedTrip
+    )
+      return false;
+
+    const registro =
+      this.selectedTrip.creationDate ?? this.selectedTrip.startDate;
+    if (!registro) return false;
+
+    const fecha = new Date(registro);
+    if (Number.isNaN(fecha.getTime())) return false;
+
+    return (
+      fecha.getTime() <
+      ExpensesComponent.monthsAgo(ExpensesComponent.OWNER_MONTHS).getTime()
+    );
+  }
+
+  /**
+   * La fecha de hace N meses.
+   *
+   * El día se fija al final y no antes: restarle un mes al 31 de marzo da el 3
+   * de marzo —febrero no tiene 31— y el plazo saldría corto justo en los meses
+   * largos. Se pone el día 1 para restar el mes y después se recorta al último
+   * día que ese mes tenga.
+   */
+  private static monthsAgo(months: number): Date {
+    const hoy = new Date();
+    const limite = new Date(hoy.getTime());
+
+    limite.setDate(1);
+    limite.setMonth(limite.getMonth() - months);
+
+    const ultimoDia = new Date(
+      limite.getFullYear(),
+      limite.getMonth() + 1,
+      0,
+    ).getDate();
+    limite.setDate(Math.min(hoy.getDate(), ultimoDia));
+
+    return limite;
+  }
+
+  /**
+   * El aviso del plazo vencido, o `null` si el viaje todavía se puede tocar.
+   *
+   * Registrar y editar comparten los dos plazos y solo cambian en el verbo, y
+   * el aviso dice cuál venció: "no se puede" sin decir por qué deja al usuario
+   * pensando que le falta un permiso.
+   */
+  private expiredWindowMessage(
+    verbo: 'registrar' | 'modificar',
+  ): string | null {
+    if (this.isTripLockedForDriver) {
+      return `El periodo de ${ExpensesComponent.DRIVER_HOURS} horas para ${verbo} gastos en este viaje ha expirado.`;
+    }
+    if (this.isTripLockedForOwner) {
+      const meses = ExpensesComponent.OWNER_MONTHS;
+      const plazo = meses === 1 ? 'un mes' : `${meses} meses`;
+      return `El plazo de ${plazo} desde que se registró el viaje para ${verbo} sus gastos ha expirado.`;
+    }
+    return null;
   }
 
   // ── Add Expense Offcanvas ──────────────────────────────────────────
@@ -888,11 +989,9 @@ export class ExpensesComponent implements OnInit, OnDestroy {
         );
         return;
       }
-      if (this.isTripLockedForDriver) {
-        this.toastService.showError(
-          'Acción denegada',
-          'El periodo de 48 horas para registrar gastos en este viaje ha expirado.',
-        );
+      const plazoVencido = this.expiredWindowMessage('registrar');
+      if (plazoVencido) {
+        this.toastService.showError('Acción denegada', plazoVencido);
         return;
       }
       this.editingExpense = null;
@@ -924,11 +1023,9 @@ export class ExpensesComponent implements OnInit, OnDestroy {
       );
       return;
     }
-    if (this.isTripLockedForDriver) {
-      this.toastService.showError(
-        'Acción denegada',
-        'El periodo de 48 horas para modificar gastos en este viaje ha expirado.',
-      );
+    const plazoVencido = this.expiredWindowMessage('modificar');
+    if (plazoVencido) {
+      this.toastService.showError('Acción denegada', plazoVencido);
       return;
     }
     this.editingExpense = expense;

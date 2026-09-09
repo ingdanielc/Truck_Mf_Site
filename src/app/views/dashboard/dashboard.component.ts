@@ -2022,13 +2022,48 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
       /* `ownerId` solo lo manda el administrador filtrando por un propietario;
          para los demas roles el alcance sale del token. */
-      const report = await lastValueFrom(
-        this.reportService.getDashboard({
-          year: this.selectedYear,
-          groupBy: this.groupByOwner ? 'owner' : 'vehicle',
-          ownerId: this.groupByOwner ? this.selectedOwnerId : null,
-        }),
-      );
+      const filtradoPorPropietario =
+        this.groupByOwner && this.selectedOwnerId != null;
+
+      /* Las suscripciones son de TODOS los propietarios, tambien cuando el
+         tablero esta filtrado por uno: ese filtro deja el reporte con un solo
+         grupo, y los conteos de viajes de los demas se irian a cero. El
+         segundo reporte —el mismo, sin `ownerId`— existe solo para eso, y se
+         pide una vez por año: los conteos quedan en `ownerTripMonths` y mover
+         el mes o el propietario no vuelve a pedirlo. */
+      const necesitaConteos =
+        filtradoPorPropietario && this.ownerTripsYear !== this.selectedYear;
+
+      const [report, conteos] = await Promise.all([
+        lastValueFrom(
+          this.reportService.getDashboard({
+            year: this.selectedYear,
+            groupBy: this.groupByOwner ? 'owner' : 'vehicle',
+            ownerId: this.groupByOwner ? this.selectedOwnerId : null,
+          }),
+        ),
+        necesitaConteos
+          ? lastValueFrom(
+              this.reportService.getDashboard({
+                year: this.selectedYear,
+                groupBy: 'owner',
+                ownerId: null,
+              }),
+            ).catch((error) => {
+              /* Los conteos son un extra de una pestaña: si fallan, el resto
+                 del tablero se pinta igual. */
+              console.error('Error loading owner trip counts:', error);
+              return null;
+            })
+          : Promise.resolve(null),
+      ]);
+
+      if (this.groupByOwner) {
+        const sinFiltrar = filtradoPorPropietario ? conteos : report;
+        if (sinFiltrar) {
+          this.indexOwnerTrips(sinFiltrar.groups ?? [], this.selectedYear);
+        }
+      }
 
       this.indexReport(report?.groups ?? []);
       this.rebuildCharts();
@@ -2052,6 +2087,46 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       /* El rol —y con él las pestañas— solo se conoce aquí. */
       this.scheduleTabsCheck();
     }
+  }
+
+  /**
+   * Viajes de cada propietario, mes a mes, para la pestaña de suscripciones.
+   *
+   * Se guarda el año entero y no el conteo ya sumado porque el alcance del
+   * tablero se mueve —de un mes al año y de vuelta— sin volver a pedir nada:
+   * teniendo los doce, cambiar de mes es sumar distinto sobre lo mismo.
+   *
+   * Se llena siempre desde un reporte SIN filtrar por propietario: es una
+   * tabla de todos los propietarios, y con el filtro puesto solo vendría uno.
+   */
+  private ownerTripMonths = new Map<number, number[]>();
+
+  /** El año del que son los conteos guardados. Mientras no cambie, elegir
+   *  propietario o mes no cuesta ninguna petición. */
+  private ownerTripsYear: number | null = null;
+
+  /** Indexa los viajes por propietario y mes. `groups` tiene que venir del
+   *  reporte sin `ownerId` — ver `ownerTripMonths`. */
+  private indexOwnerTrips(groups: DashboardGroup[], year: number): void {
+    const porId = new Map<number, number[]>();
+
+    groups.forEach((g) => {
+      /* Solo los grupos que son propietarios: con otra dimensión el `id` del
+         `key` sería el de un vehículo y contaría viajes del dueño equivocado. */
+      if (!g?.key?.startsWith('owner:')) return;
+      const id = Number(g.key.split(':').pop());
+      if (!Number.isFinite(id) || id <= 0) return;
+
+      const meses = new Array(12).fill(0);
+      (g.months ?? []).forEach((m) => {
+        if (m?.month == null || m.month < 0 || m.month > 11) return;
+        meses[m.month] = this.tripCount(m);
+      });
+      porId.set(id, meses);
+    });
+
+    this.ownerTripMonths = porId;
+    this.ownerTripsYear = year;
   }
 
   /**
@@ -2232,6 +2307,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedVehicleLabel = null;
     this.scopedVehicleIds = [];
     this.tripsByOwnerId = {};
+    this.ownerTripMonths = new Map();
+    this.ownerTripsYear = null;
     this.invalidateGroupDetail();
 
     this.tripsByVehicleData.labels = [];
@@ -2335,22 +2412,33 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /**
    * Los saldos por cobrar son del dueño de la plata: quien entregó la carga y
-   * no ha visto el dinero. El conductor gestiona el viaje pero no cobra, y el
-   * administrador no es parte del trato entre el propietario y la empresa que
-   * contrató el flete.
+   * no ha visto el dinero. El conductor gestiona el viaje pero no cobra, así
+   * que la pestaña no existe para él.
    *
-   * Es además la única pestaña que actúa sobre los datos —marca un saldo como
-   * cobrado—, y esa decisión no es de nadie más.
+   * El administrador la ve con el mismo criterio que la rentabilidad y el
+   * gasto: solo tras elegir un propietario en el panel de periodo. Sin filtro
+   * la lista juntaría deudas de dueños distintos y no sería la de nadie; con
+   * uno elegido es la lista de cobro de ese propietario, que es lo que el
+   * administrador necesita para hacerle seguimiento.
    */
   get showBalancesReport(): boolean {
-    return this.userRole === 'PROPIETARIO';
+    if (this.userRole === 'PROPIETARIO') return true;
+    return this.groupByOwner && this.selectedOwnerId != null;
   }
 
-  /** El usuario del que son los saldos. La pestaña solo existe para su propio
-   *  rol, así que no hay a quién más elegir; el reporte resuelve por su cuenta
-   *  la ficha de propietario, que es otro registro con otro `id`. */
+  /** El usuario del que son los saldos. Solo lo manda el propietario, que mira
+   *  los suyos: el reporte resuelve por su cuenta la ficha de propietario, que
+   *  es otro registro con otro `id`. Con el administrador la ficha ya viene
+   *  elegida y este `id` sobra — ver `balancesOwnerId`. */
   get balancesUserId(): number | null {
+    if (this.groupByOwner) return null;
     return this.showBalancesReport ? (this.currentUser?.id ?? null) : null;
+  }
+
+  /** La ficha de propietario elegida por el administrador. Es lo mismo que
+   *  recibe la rentabilidad, para que las dos pestañas hablen del mismo dueño. */
+  get balancesOwnerId(): number | null {
+    return this.showBalancesReport ? this.reportOwnerId : null;
   }
 
   /**
@@ -2360,8 +2448,13 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
    * `vehicle:14` — para que las dos secciones hablen del mismo camión sin
    * sincronizar nada. `null` es el "Todos" del selector, y también lo que hay
    * cuando el propietario tiene un solo camión y no hay selector.
+   *
+   * Con el administrador no hay camión que sacar: sus grupos son propietarios
+   * y la `key` trae el `id` de la ficha, no el de un vehículo. Leerla ahí
+   * filtraría la lista por un camión que no existe.
    */
   get balancesVehicleId(): number | null {
+    if (this.groupByOwner) return null;
     const key = this.selectedVehicleKey;
     if (!key) return null;
     const id = Number(key.split(':').pop());
@@ -2418,20 +2511,20 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         .filter((id) => Number.isFinite(id) && id > 0);
     }
 
+    /* Los conteos salen de `ownerTripMonths` y no de los grupos en pantalla:
+       con un propietario elegido esos grupos son uno solo, y la tabla de
+       suscripciones —que lista a todos— dejaba a los demás en cero.
+
+       Siguen el alcance del panel, como el resto del tablero: el mes abierto,
+       o los doce si el alcance es el año. La columna se rotula con el periodo
+       para que la cifra no se lea como un histórico. */
     const porId: Record<number, number> = {};
     if (this.groupByOwner) {
-      Object.entries(this.groupKeyByLabel).forEach(([label, key]) => {
-        const id = Number(key?.split(':').pop());
-        if (!Number.isFinite(id) || id <= 0) return;
-        porId[id] = this.scopedMonths(label).reduce(
-          (a, m) =>
-            a +
-            Object.values(m.tripsByType ?? {}).reduce(
-              (x, v) => x + (v || 0),
-              0,
-            ),
-          0,
-        );
+      const soloUnMes = this.scope === 'mes';
+      this.ownerTripMonths.forEach((meses, id) => {
+        porId[id] = soloUnMes
+          ? (meses[this.selectedMonth] ?? 0)
+          : meses.reduce((a, n) => a + n, 0);
       });
     }
     this.tripsByOwnerId = porId;
