@@ -10,9 +10,12 @@ import {
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import {
+  AbstractControl,
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -124,6 +127,16 @@ export class GAddExpenseComponent implements OnInit {
       this.expenseForm.get('description')?.updateValueAndValidity();
     }
 
+    if (this.showExpenseDate) {
+      /* El `min` y el `max` del campo frenan el selector, pero no lo que se
+         escriba a mano ni lo que llegue precargado: el validador es lo que
+         mantiene Guardar apagado con una fecha fuera de rango. */
+      this.expenseForm
+        .get('expenseDate')
+        ?.setValidators([Validators.required, this.expenseDateRange()]);
+      this.expenseForm.get('expenseDate')?.updateValueAndValidity();
+    }
+
     if (this.editingExpense) {
       this.patchFormForEdit();
     } else if (this.preselectedTypeId) {
@@ -131,6 +144,141 @@ export class GAddExpenseComponent implements OnInit {
         this.selectedType = this.preselectedTypeId;
       }
     }
+
+    /* La fecha del viaje, ya puesta: es la respuesta correcta casi siempre, y
+       quien carga viajes viejos no tiene que escribirla gasto a gasto. Se
+       vuelve a capturar el estado inicial para que el formulario no nazca
+       "modificado" y habilite Guardar sin que nadie haya tocado nada. */
+    if (this.showExpenseDate && !this.editingExpense) {
+      this.expenseForm.patchValue({ expenseDate: this.defaultExpenseDate });
+      this.captureInitialState();
+    }
+  }
+
+  /**
+   * Con que fecha abre el campo.
+   *
+   * **Hoy si el viaje sigue vivo.** En Curso y Pendiente son viajes que estan
+   * pasando: el camion rueda o la plata no ha entrado, y el gasto que se
+   * registra ahora es de ahora, aunque el viaje haya salido hace tres semanas.
+   *
+   * **La fecha del viaje si ya se cerro.** Un Completado que alguien esta
+   * cargando de semanas atras no tiene gastos de hoy: los tuvo cuando ocurrio,
+   * y esa es la respuesta correcta casi siempre.
+   *
+   * En los dos casos es solo el valor de partida: el campo se cambia.
+   */
+  private get defaultExpenseDate(): string {
+    const fecha = this.isTripOpen
+      ? new Date()
+      : (this.pastTripDate ?? new Date());
+    return GAddExpenseComponent.toInputDate(fecha);
+  }
+
+  /** El viaje sigue vivo: rodando, o entregado y sin cobrar. */
+  private get isTripOpen(): boolean {
+    const estado = (this.trip?.status ?? '').trim().toLowerCase();
+    return estado === 'en curso' || estado === 'pendiente';
+  }
+
+  /* ======================================================================
+     Fecha del gasto
+     ====================================================================== */
+
+  /**
+   * El campo de fecha solo sale cuando hace falta: en un viaje registrado con
+   * fechas pasadas.
+   *
+   * En el viaje del dia el gasto es de hoy y preguntarlo sobra -un campo mas
+   * que atravesar en el celular, en un formulario que se llena con el camion
+   * en marcha-. En el viaje que alguien esta cargando de semanas atras, en
+   * cambio, "hoy" es la respuesta equivocada y no habia forma de corregirla.
+   *
+   * El mantenimiento no lo lleva: no cuelga de ningun viaje, asi que no hay
+   * fecha de la que salga el valor por omision.
+   */
+  get showExpenseDate(): boolean {
+    return !this.isMaintenance && this.pastTripDate !== null;
+  }
+
+  /** La fecha del viaje, solo si es de un dia anterior a hoy. `null` si el
+   *  viaje es de hoy, si no hay viaje o si la fecha no se entiende. */
+  private get pastTripDate(): Date | null {
+    const cruda = this.trip?.startDate ?? this.trip?.creationDate;
+    if (!cruda) return null;
+
+    const fecha = new Date(cruda);
+    if (isNaN(fecha.getTime())) return null;
+
+    const dia = (d: Date) =>
+      new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    return dia(fecha) < dia(new Date()) ? fecha : null;
+  }
+
+  /**
+   * Lo mas temprano que admite el campo: cuando el viaje empieza a existir.
+   *
+   * Un gasto no puede ser anterior al viaje al que se le imputa. Se toma la
+   * mas temprana de las dos fechas que trae el viaje -cuando se registro y
+   * cuando salio- porque no siempre van en ese orden: quien carga un viaje de
+   * semanas atras lo crea hoy con una salida anterior, y quedarse solo con la
+   * de creacion dejaria fuera justo la fecha que el campo viene a poner.
+   */
+  get expenseDateMin(): string {
+    const fechas = [this.trip?.creationDate, this.trip?.startDate]
+      .map((valor) => (valor ? new Date(valor) : null))
+      .filter((d): d is Date => d !== null && !isNaN(d.getTime()));
+    if (!fechas.length) return '';
+
+    const primera = fechas.reduce((a, b) =>
+      a.getTime() <= b.getTime() ? a : b,
+    );
+    return GAddExpenseComponent.toInputDate(primera);
+  }
+
+  /** Fuera de rango, con cual de los dos topes se paso: el mensaje de abajo
+   *  nombra el que corresponde en vez de decir "fecha invalida". */
+  private expenseDateRange(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const valor = control.value;
+      if (!valor) return null;
+      /* `YYYY-MM-DD` se ordena igual como texto que como fecha, asi que la
+         comparacion directa basta y no hay que construir dos `Date`. */
+      if (this.expenseDateMin && valor < this.expenseDateMin) {
+        return { antesDelViaje: true };
+      }
+      return null;
+    };
+  }
+
+  /** Lo que dice el campo cuando la fecha se sale del rango. */
+  get expenseDateError(): string {
+    const errores = this.expenseForm.get('expenseDate')?.errors;
+    if (!errores) return '';
+    if (errores['required']) return 'La fecha es obligatoria';
+    if (errores['antesDelViaje'])
+      return 'El gasto no puede ser anterior al viaje';
+    return '';
+  }
+
+  /** `YYYY-MM-DD` con las partes locales. `toISOString` no sirve: pasa por UTC
+   *  y en Bogota corre un dia las fechas de la tarde. */
+  private static toInputDate(date: Date): string {
+    const mes = String(date.getMonth() + 1).padStart(2, '0');
+    const dia = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${mes}-${dia}`;
+  }
+
+  /**
+   * De `YYYY-MM-DD` a lo que guarda la API.
+   *
+   * Se fija al mediodia local y no a medianoche: a medianoche, el paso a UTC
+   * deja el instante en el dia anterior, y el gasto acababa contando en otro
+   * mes. Al mediodia el dia sobrevive a la conversion mire quien mire.
+   */
+  private static fromInputDate(value: string): string {
+    const [anio, mes, dia] = value.split('-').map(Number);
+    return new Date(anio, mes - 1, dia, 12, 0, 0).toISOString();
   }
 
   patchFormForEdit(): void {
@@ -139,8 +287,14 @@ export class GAddExpenseComponent implements OnInit {
     this.selectedType = this.editingExpense.category?.expenseTypeId || 1;
     this.selectedCategoryId = this.editingExpense.categoryId;
 
+    const fecha = new Date(this.editingExpense.expenseDate);
+
     this.expenseForm.patchValue({
       categoryId: this.editingExpense.categoryId,
+      /* La suya, no la del viaje: editando se corrige lo que se guardo. */
+      expenseDate: isNaN(fecha.getTime())
+        ? ''
+        : GAddExpenseComponent.toInputDate(fecha),
       amount: this.applyAmountMask(this.editingExpense.amount.toString()),
       description: this.editingExpense.description,
     });
@@ -389,6 +543,9 @@ export class GAddExpenseComponent implements OnInit {
   initForm(): void {
     this.expenseForm = this.fb.group({
       categoryId: [null, Validators.required],
+      /* Solo se usa -y solo se pide- cuando el viaje es de dias pasados. Ver
+         `showExpenseDate`. */
+      expenseDate: [''],
       amount: [
         '',
         [Validators.required, Validators.min(1), Validators.max(999999999)],
@@ -510,6 +667,11 @@ export class GAddExpenseComponent implements OnInit {
     this.expenseForm.patchValue({ categoryId: id });
     this.expenseForm.markAsDirty();
     this.applySuggestedAmount(id);
+
+    /* Elegir la categoría es el paso anterior a escribir cuánto: el teclado se
+       abre solo, sin un toque de más para llegar al campo. Vale igual para el
+       gasto y para el mantenimiento, que comparten este formulario. */
+    this.focusAmount();
   }
 
   /**
@@ -613,9 +775,7 @@ export class GAddExpenseComponent implements OnInit {
           this.expenseForm.value.amount.toString().replaceAll(/\D/g, ''),
         ),
         description: this.expenseForm.value.description,
-        expenseDate: this.editingExpense
-          ? this.editingExpense.expenseDate
-          : new Date().toISOString(),
+        expenseDate: this.resolveExpenseDate(),
       };
       if (this.editingExpense?.id) {
         expenseData.id = this.editingExpense.id;
@@ -629,6 +789,22 @@ export class GAddExpenseComponent implements OnInit {
         this.expenseForm.get(key)?.markAsTouched();
       });
     }
+  }
+
+  /**
+   * Con que fecha se guarda el gasto.
+   *
+   * Manda lo que diga el campo, cuando el campo esta; si no, se conserva lo que
+   * ya tenia el gasto que se edita, y para uno nuevo es hoy -que es lo que
+   * hacia siempre-.
+   */
+  private resolveExpenseDate(): string | Date {
+    const elegida = this.showExpenseDate
+      ? this.expenseForm.value.expenseDate
+      : '';
+    if (elegida) return GAddExpenseComponent.fromInputDate(elegida);
+    if (this.editingExpense) return this.editingExpense.expenseDate;
+    return new Date().toISOString();
   }
 
   dismiss(): void {

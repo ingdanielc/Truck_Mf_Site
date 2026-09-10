@@ -17,6 +17,10 @@
   background-color: var(--bs-body-bg);
 }
 
+.card.plan-card {
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.2) !important;
+}
+
 /* Los cuatro datos del plan se leen como una ficha: rótulo menudo arriba y el
    dato en grande debajo, igual que las cifras del tablero. */
 .field-label {

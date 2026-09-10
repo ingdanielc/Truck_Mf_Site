@@ -116,3 +116,17 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* En el telefono, Safari centra el contenido de un campo de fecha y lo deja
+   descolgado del resto del formulario, que va todo pegado a la izquierda. Es
+   la misma regla que ya lleva el formulario del conductor. */
+@media (max-width: 767.98px) {
+  input[type="date"] {
+    text-align: left !important;
+
+    &::-webkit-date-and-time-value {
+      text-align: left !important;
+      min-height: 1.5em;
+    }
+  }
+}

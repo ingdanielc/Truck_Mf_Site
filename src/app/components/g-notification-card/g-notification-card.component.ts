@@ -43,6 +43,10 @@ export class GNotificationCardComponent {
 
     if (type.includes('BIRTHDAY')) return 'fa-cake-candles text-primary';
     if (type.includes('EXPIRATION')) return 'fa-calendar-xmark text-danger';
+    /* La suscripcion es lo que se paga por usar la plataforma: el signo de
+       pesos, y no el billete que mueve el gasto de un viaje. Va antes que
+       EXPENSE por si algun dia llega un nombre que lleve las dos palabras. */
+    if (type.includes('SUBSCRIPTION')) return 'fa-dollar-sign text-primary';
     if (type.includes('TRIP')) return 'fa-truck-fast text-info';
     if (type.includes('EXPENSE')) return 'fa-money-bill-transfer text-success';
     if (type.includes('VEHICLE')) return 'fa-car text-secondary';

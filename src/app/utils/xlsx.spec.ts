@@ -6,6 +6,11 @@ import {
   XlsxSheet,
 } from './xlsx';
 
+/* Los cuatro bytes con los que abre todo ZIP. Se arma con `fromCharCode` y no
+   escritos tal cual: los dos de control dejarian este archivo contando como
+   binario para git, para `grep` y para el editor. */
+const FIRMA_ZIP = 'PK' + String.fromCharCode(3, 4);
+
 /** Lee el ZIP como texto para poder buscar dentro. Las entradas van sin
  *  comprimir, así que el XML está ahí tal cual. */
 async function contenido(blob: Blob): Promise<string> {
@@ -38,7 +43,7 @@ describe('buildXlsx', () => {
     expect(blob.type).toBe(
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     );
-    expect((await contenido(blob)).startsWith('PK')).toBeTrue();
+    expect((await contenido(blob)).startsWith(FIRMA_ZIP)).toBeTrue();
   });
 
   it('lleva las seis partes que Excel espera', async () => {
@@ -70,6 +75,21 @@ describe('buildXlsx', () => {
     expect(texto).toContain('Coordinadora &amp; C');
     expect(texto).toContain('Env');
     expect(texto).not.toContain('<S.A.S>');
+  });
+
+  /* Un carácter de control deja el XML roto y Excel se niega a abrir el
+     archivo. Llegan pegados en texto que alguien copió de otro sitio.
+
+     Se comprueba sobre el texto ya limpio y no buscando los caracteres en el
+     archivo: el ZIP lleva los suyos en las cabeceras, y ahí son la estructura
+     del formato, no basura de una celda. */
+  it('quita los caracteres de control del texto', async () => {
+    const sucio = 'Envia' + String.fromCharCode(0, 7, 31) + 'SAS';
+    const texto = await contenido(
+      buildXlsx({ ...HOJA, rows: [[sucio, null, 0]] }),
+    );
+
+    expect(texto).toContain('EnviaSAS');
   });
 
   /* Excel cuenta los días desde el 30 de diciembre de 1899. El 30 de agosto de

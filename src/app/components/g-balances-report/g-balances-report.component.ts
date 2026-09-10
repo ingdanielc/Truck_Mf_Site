@@ -395,7 +395,7 @@ export class GBalancesReportComponent implements OnChanges {
           this.total,
         ],
         notes: [
-          'Viajes entregados y sin cobrar, de cualquier fecha.',
+          'Viajes entregados y sin cobrar.',
           `Generado el ${new Date().toLocaleString('es-CO')}`,
         ],
       });
@@ -432,20 +432,11 @@ export class GBalancesReportComponent implements OnChanges {
     this.exportBlob = null;
   }
 
-  /**
-   * Lo que dice la hoja de confirmación.
-   *
-   * Nombra el periodo, como las otras dos, y aquí el periodo es que no lo hay:
-   * una deuda no deja de deberse porque el tablero esté mirando otro mes, así
-   * que el archivo lleva todos los pendientes. Decirlo evita que alguien lo
-   * lea como los saldos del mes en curso.
-   */
+  /** Lo que dice la hoja de confirmación: cuántos saldos van en el archivo. */
   get exportMessage(): string {
-    const saldos =
-      this.exportCount === 1
-        ? '1 saldo pendiente'
-        : `${this.exportCount} saldos pendientes`;
-    return `${saldos}, de cualquier fecha.`;
+    return this.exportCount === 1
+      ? '1 saldo pendiente'
+      : `${this.exportCount} saldos pendientes`;
   }
 
   /** Las filas del camión elegido, o todas si no hay ninguno. */

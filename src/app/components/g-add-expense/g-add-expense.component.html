@@ -121,6 +121,46 @@
       }
     </div>
 
+    <!-- Fecha del gasto. Solo en los viajes de dias pasados: en el viaje de
+         hoy el gasto es de hoy, y un campo mas que atravesar en el celular no
+         aporta nada. En mantenimiento no sale: no cuelga de ningun viaje. -->
+    @if (showExpenseDate) {
+      <div class="mb-4">
+        <label for="expenseDate" class="form-label fw-bold small text-body mb-2"
+          >Fecha del gasto*</label
+        >
+        <div
+          class="input-group input-group-lg no-border-input-group rounded-3 overflow-hidden shadow-sm border transition-all"
+          [class.is-invalid-group]="
+            expenseForm.get('expenseDate')?.touched &&
+            expenseForm.get('expenseDate')?.invalid
+          "
+        >
+          <span
+            class="input-group-text bg-transparent border-0 text-primary ps-4"
+          >
+            <i class="fa-solid fa-calendar-day"></i>
+          </span>
+          <input
+            id="expenseDate"
+            type="date"
+            class="form-control border-0 shadow-none text-secondary py-3"
+            formControlName="expenseDate"
+            [min]="expenseDateMin"
+          />
+        </div>
+        @if (
+          expenseForm.get("expenseDate")?.touched &&
+          expenseForm.get("expenseDate")?.invalid
+        ) {
+          <div class="small text-danger mt-1">
+            <i class="fa-solid fa-circle-exclamation me-1"></i>
+            {{ expenseDateError }}
+          </div>
+        }
+      </div>
+    }
+
     <!-- Amount Input -->
     <div class="mb-4">
       <label for="" class="form-label fw-bold small text-body mb-2"

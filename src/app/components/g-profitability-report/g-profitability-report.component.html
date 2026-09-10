@@ -476,7 +476,7 @@
   [message]="exportMessage"
   icon="fa-solid fa-file-excel"
   variant="primary"
-  [confirmLabel]="exportError ? 'Cerrar' : 'Compartir'"
+  [confirmLabel]="exportError ? 'Cerrar' : 'Exportar'"
   cancelLabel="Cancelar"
   (confirm)="exportError ? cancelExport() : confirmExport()"
   (cancel)="cancelExport()"

@@ -14,6 +14,7 @@ export const EVENT_TRANSLATIONS: { [key: string]: string } = {
   OWNER_EVENT: 'PROPIETARIO',
   BIRTHDAY_EVENT: 'CUMPLEAÑOS',
   EXPIRATION_EVENT: 'VENCIMIENTO',
+  SUBSCRIPTION_EVENT: 'SUSCRIPCIÓN',
   SYSTEM_EVENT: 'SISTEMA',
 
   /* Las tres alertas de inactividad. Cada una dice qué falta, y no solo que

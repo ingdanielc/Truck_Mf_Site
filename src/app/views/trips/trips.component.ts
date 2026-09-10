@@ -39,6 +39,7 @@ import {
   applyTripStatusChange,
   canChangeTripStatus,
   canSetTripStatus,
+  CANCELLED_TRIP_STATUS,
   excludeCancelledFilter,
   isCancelledTrip,
   statusNeedsConfirmation,
@@ -46,6 +47,7 @@ import {
   tripStatusConfirmation,
 } from 'src/app/utils/trip-status';
 import { xlsxFileName } from 'src/app/utils/xlsx';
+import { Formatters } from 'src/app/utils/formatters';
 import { buildTripsSheet, toSheetDate } from 'src/app/utils/trips-sheet';
 import { shareOrDownloadFile } from 'src/app/utils/file-share';
 
@@ -510,7 +512,9 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
 
       if (!viajes.length) {
         this.exportError =
-          'No hay viajes registrados en ' + this.exportYear + '.';
+          this.selectedStatus === CANCELLED_TRIP_STATUS
+            ? 'Los viajes cancelados no se exportan: no representan transporte.'
+            : 'No hay viajes registrados en ' + this.exportYear + '.';
         return;
       }
 
@@ -518,6 +522,7 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.exportBlob = this.buildExportSheet(viajes, gastos);
       this.exportName = xlsxFileName(
         'Viajes',
+        TripsComponent.singlePlate(viajes),
         this.exportYear,
         new Date().toISOString().slice(0, 10),
       );
@@ -581,7 +586,11 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
    * grande -la misma que usa la busqueda- y se descarta lo que no es del anio.
    */
   private async fetchYearTrips(): Promise<ModelTrip[]> {
-    const filtros = this.getBaseFilters();
+    /* Los cancelados quedan fuera. Un viaje cancelado se creo mal, era una
+       prueba o nunca salio: no representa transporte alguno, y su flete
+       inflaria el total del archivo. Es el mismo criterio que ya aplica la
+       tarjeta "Total Viajes" y que siguen los reportes. */
+    const filtros = [...this.getBaseFilters(), excludeCancelledFilter()];
 
     if (this.selectedStatus) {
       filtros.push(new Filter('status', '=', this.selectedStatus));
@@ -675,6 +684,24 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
     return totales;
   }
 
+  /**
+   * La placa, para el nombre del archivo, cuando todo lo exportado es de un
+   * mismo camion.
+   *
+   * Sale de los viajes y no del filtro de vehiculo: asi tambien la lleva el
+   * propietario que tiene uno solo y nunca toca ese filtro. Con varios camiones
+   * devuelve vacio, y el nombre se queda en "Viajes - 2026": poner ahi una de
+   * las placas haria pasar por de un camion lo que es de toda la flota.
+   */
+  private static singlePlate(trips: ModelTrip[]): string {
+    const placas = new Set(
+      trips
+        .map((t) => Formatters.formatPlate(t.vehiclePlate ?? t.vehicle?.plate))
+        .filter((placa) => placa !== ''),
+    );
+    return placas.size === 1 ? [...placas][0] : '';
+  }
+
   /** Arma la hoja con el constructor que comparte con Rentabilidad: las dos
    *  pantallas exportan el mismo archivo, y solo cambia el periodo. */
   private buildExportSheet(
@@ -689,7 +716,8 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
         'Viajes creados en ' + this.exportYear + ', hasta hoy.',
         this.selectedStatus
           ? 'Filtro de estado: ' + this.selectedStatus
-          : 'Todos los estados, cancelados incluidos.',
+          : 'Todos los estados.',
+        'Los viajes cancelados quedan fuera: no representan transporte.',
         'El gasto es el imputado a cada viaje; la utilidad, el flete menos ese gasto.',
         'Generado el ' + new Date().toLocaleString('es-CO'),
       ],
