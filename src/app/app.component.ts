@@ -5,7 +5,6 @@ import { GMenuComponent } from './components/g-menu/g-menu.component';
 import { GSidebarComponent } from './components/g-sidebar/g-sidebar.component';
 import { GFooterComponent } from './components/g-footer/g-footer.component';
 import { ToastContainerComponent } from './components/toast-container/toast-container.component';
-import { PullToRefreshDirective } from './components/pull-to-refresh/pull-to-refresh.directive';
 import { NotificationsService } from './services/notifications.service';
 import { SecurityService } from './services/security/security.service';
 import { PushService } from './services/push.service';
@@ -20,7 +19,6 @@ import { Subscription, interval, filter, distinctUntilChanged } from 'rxjs';
     GSidebarComponent,
     GFooterComponent,
     ToastContainerComponent,
-    PullToRefreshDirective,
   ],
   standalone: true,
 })
