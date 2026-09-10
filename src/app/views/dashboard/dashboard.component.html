@@ -274,6 +274,7 @@
           [owners]="owners"
           [tripsByOwnerId]="tripsByOwnerId"
           [periodLabel]="periodLabel"
+          (paymentResolved)="loadOwners()"
         ></g-subscriptions-report>
       </div>
     }

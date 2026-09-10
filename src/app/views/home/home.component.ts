@@ -125,6 +125,13 @@ export class HomeComponent implements OnInit, OnDestroy {
         'Edita catálogos, preferencias y ajusta el comportamiento general de la aplicación.',
     },
     {
+      routing: '/site/subscription',
+      title: 'Mi suscripción',
+      icon: 'fa-solid fa-id-badge',
+      descriptions:
+        'Consulta tu plan, su vencimiento y renueva tu suscripción cuando la necesites.',
+    },
+    {
       routing: '/site/security',
       title: 'Seguridad',
       icon: 'fa-solid fa-shield-halved',
@@ -206,8 +213,12 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private filterCards(role: string): void {
+    /* "Mi suscripción" es solo del propietario, por lo mismo que en el menú
+       lateral: es su trato con la plataforma. */
     if (role.includes('ADMINISTRADOR')) {
-      this.listCard = [...this.allCards];
+      this.listCard = this.allCards.filter(
+        (card: any) => card.title !== 'Mi suscripción',
+      );
     } else if (role.includes('PROPIETARIO')) {
       this.listCard = this.allCards.filter(
         (card: any) =>
@@ -219,7 +230,8 @@ export class HomeComponent implements OnInit, OnDestroy {
           card.title !== 'Propietarios' &&
           card.title !== 'Seguridad' &&
           card.title !== 'Conductores' &&
-          card.title !== 'Configuración',
+          card.title !== 'Configuración' &&
+          card.title !== 'Mi suscripción',
       );
     }
   }

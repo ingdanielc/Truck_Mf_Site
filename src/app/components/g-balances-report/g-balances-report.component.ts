@@ -24,6 +24,8 @@ import { NotificationsService } from '../../services/notifications.service';
 import { Formatters } from '../../utils/formatters';
 import { PaginationUtils } from '../../utils/pagination-utils';
 import { applyTripStatusChange } from '../../utils/trip-status';
+import { buildXlsx, SHEET_COLORS, xlsxFileName } from '../../utils/xlsx';
+import { shareOrDownloadFile } from '../../utils/file-share';
 import { GConfirmSheetComponent } from '../g-confirm-sheet/g-confirm-sheet.component';
 
 /** Por qué columna se ordena la lista. */
@@ -293,6 +295,13 @@ export class GBalancesReportComponent implements OnChanges {
     this.page = 0;
   }
 
+  /** El nombre de una ciudad por su `id`, para la hoja de cálculo. Vacío si el
+   *  catálogo no la tiene: en una columna propia, un `id` suelto no dice nada
+   *  y encima se ordenaría entre nombres. */
+  private cityLabel(id: string | undefined): string {
+    return id ? (this.cityNames.get(String(id)) ?? '') : '';
+  }
+
   /** "Cali → Barranquilla". Si alguna ciudad no está en el catálogo se deja el
    *  hueco en blanco antes que pintar un `id` que no dice nada. */
   private routeOf(trip: ModelTrip): string {
@@ -314,6 +323,130 @@ export class GBalancesReportComponent implements OnChanges {
   /* ======================================================================
      Cobro
      ====================================================================== */
+
+  /* ======================================================================
+     Exportar
+     ====================================================================== */
+
+  /** La hoja de confirmación de la exportación está abierta. */
+  public exportOpen = false;
+
+  private exportBlob: Blob | null = null;
+  private exportName = '';
+  public exportCount = 0;
+
+  /**
+   * Prepara la exportación y pide confirmación.
+   *
+   * El archivo se arma aquí, antes de abrir la hoja: los saldos ya están en
+   * memoria, así que no cuesta nada, y el toque que confirma queda libre para
+   * abrir la hoja de compartir del sistema —en iOS solo se abre con el gesto
+   * vivo—. Es el mismo camino que siguen Viajes y Rentabilidad, que sí tienen
+   * que ir al servidor y por eso arman el archivo mientras la hoja está en
+   * pantalla.
+   *
+   * Se exporta lo que está en pantalla —`visibleRows`, ya filtrado por el
+   * camión elegido—, no la página que se está viendo: quien exporta quiere la
+   * lista entera.
+   */
+  public askExport(): void {
+    if (!this.visibleRows.length) return;
+
+    try {
+      const filas = this.visibleRows;
+      this.exportCount = filas.length;
+
+      /* Las mismas columnas que la hoja de Viajes y en el mismo orden, hasta
+         donde llegan: quien abre las dos no tiene que volver a buscar dónde
+         está la placa. Origen y destino van separados y no como una ruta en un
+         solo texto, para poder filtrar por cualquiera de los dos. */
+      this.exportBlob = buildXlsx({
+        name: 'Saldos por cobrar',
+        headerColor: SHEET_COLORS.saldos,
+        columns: [
+          { header: 'Viaje', width: 10 },
+          { header: 'Manifiesto', width: 16 },
+          { header: 'Estado', width: 13 },
+          { header: 'Tipo', width: 12 },
+          { header: 'Placa', width: 11 },
+          { header: 'Conductor', width: 24 },
+          { header: 'Empresa', width: 26 },
+          { header: 'Origen', width: 24 },
+          { header: 'Destino', width: 24 },
+          { header: 'Fecha', width: 14, format: 'date' },
+          { header: 'Saldo', width: 16, format: 'money' },
+        ],
+        rows: filas.map((r) => [
+          r.tripNumber,
+          r.trip.manifestNumber,
+          r.trip.status,
+          Formatters.titleCase(r.trip.tripType) || 'Cargado',
+          Formatters.formatPlate(r.trip.vehiclePlate ?? r.trip.vehicle?.plate),
+          Formatters.titleCase(r.trip.driver?.name),
+          r.company,
+          this.cityLabel(r.trip.originId),
+          this.cityLabel(r.trip.destinationId),
+          r.date,
+          r.balance,
+        ]),
+        totals: [
+          `Total por cobrar (${filas.length})`,
+          ...new Array(9).fill(null),
+          this.total,
+        ],
+        notes: [
+          'Viajes entregados y sin cobrar, de cualquier fecha.',
+          `Generado el ${new Date().toLocaleString('es-CO')}`,
+        ],
+      });
+
+      this.exportName = xlsxFileName(
+        'Saldos por cobrar',
+        new Date().toISOString().slice(0, 10),
+      );
+      this.exportOpen = true;
+    } catch (error) {
+      console.error('Error preparing balances export:', error);
+      this.toastService.showError('Error', 'No se pudo generar el archivo');
+    }
+  }
+
+  /** Entrega el archivo. Sin nada que esperar antes: el toque que confirma es
+   *  el que abre la hoja de compartir del sistema. */
+  public confirmExport(): void {
+    const blob = this.exportBlob;
+    if (!blob) return;
+
+    this.exportOpen = false;
+    void shareOrDownloadFile(blob, this.exportName, 'Saldos por cobrar').then(
+      (salida) => {
+        if (salida === 'failed') {
+          this.toastService.showError('Error', 'No se pudo generar el archivo');
+        }
+      },
+    );
+  }
+
+  public cancelExport(): void {
+    this.exportOpen = false;
+    this.exportBlob = null;
+  }
+
+  /**
+   * Lo que dice la hoja de confirmación.
+   *
+   * Nombra el periodo, como las otras dos, y aquí el periodo es que no lo hay:
+   * una deuda no deja de deberse porque el tablero esté mirando otro mes, así
+   * que el archivo lleva todos los pendientes. Decirlo evita que alguien lo
+   * lea como los saldos del mes en curso.
+   */
+  get exportMessage(): string {
+    const saldos =
+      this.exportCount === 1
+        ? '1 saldo pendiente'
+        : `${this.exportCount} saldos pendientes`;
+    return `${saldos}, de cualquier fecha.`;
+  }
 
   /** Las filas del camión elegido, o todas si no hay ninguno. */
   get visibleRows(): BalanceRow[] {

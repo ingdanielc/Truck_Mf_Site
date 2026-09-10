@@ -140,6 +140,18 @@
       <span class="text-body-secondary small ms-auto d-none d-md-inline">
         {{ periodLabel }}
       </span>
+
+      <!-- En un telefono abre la hoja de compartir del sistema —Archivos,
+           WhatsApp, correo—; en escritorio baja el archivo. -->
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-primary rounded-3 text-nowrap ms-auto ms-md-0"
+        (click)="askExport()"
+        [disabled]="exportPreparing || !tripRows.length"
+      >
+        <i class="fa-solid fa-file-excel me-1"></i>
+        Exportar
+      </button>
     </div>
 
     <!-- Los tres promedios. El gasto promedio reparte tambien el
@@ -453,3 +465,19 @@
     }
   }
 </div>
+
+<!-- El archivo se arma mientras esta hoja esta abierta, y el toque que
+     confirma es el que abre la hoja de compartir del sistema: en iOS solo se
+     abre con el gesto vivo. Ver `askExport`. -->
+<g-confirm-sheet
+  [open]="exportOpen"
+  [busy]="exportPreparing"
+  title="Exportar viajes"
+  [message]="exportMessage"
+  icon="fa-solid fa-file-excel"
+  variant="primary"
+  [confirmLabel]="exportError ? 'Cerrar' : 'Compartir'"
+  cancelLabel="Cancelar"
+  (confirm)="exportError ? cancelExport() : confirmExport()"
+  (cancel)="cancelExport()"
+></g-confirm-sheet>

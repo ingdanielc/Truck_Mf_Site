@@ -184,6 +184,105 @@
       </p>
     </div>
 
+    <!-- ================================================================
+         Comprobantes por revisar
+         ================================================================
+         Va justo antes del detalle por propietario: es la misma lista de
+         propietarios, pero la parte que pide una decisión hoy. Cuando no queda
+         ninguno por resolver, la sección entera desaparece. -->
+    @if (pending.length) {
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h6 class="fw-bold mb-0">
+          <i class="fa-solid fa-inbox me-2 text-warning"></i>
+          Comprobantes por revisar
+        </h6>
+        <span
+          class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill"
+        >
+          {{ pending.length }}
+        </span>
+      </div>
+
+      <div class="mb-4">
+        @for (payment of pending; track payment.id) {
+          <div class="pending-card">
+            <div
+              class="d-flex flex-wrap justify-content-between align-items-start gap-2"
+            >
+              <div class="min-width-0">
+                <p class="fw-semibold mb-0 text-truncate">
+                  {{ payerName(payment) }}
+                </p>
+                <p class="smaller text-body-secondary mb-0">
+                  {{ payment.creationDate | date: "d MMM, yyyy" }} ·
+                  {{ methodName(payment.method) }}
+                  @if (payment.years > 1) {
+                    · {{ payment.years }} años
+                  }
+                  @if (payment.reference) {
+                    · Ref. {{ payment.reference }}
+                  }
+                </p>
+              </div>
+              <!-- Sin monto informado no se pinta un "$ 0": el comprobante es
+                   lo que dice cuánto entró, y el cero invita a aprobar algo que
+                   nadie verificó. -->
+              <p class="fw-bold text-nowrap mb-0">
+                @if (payment.amount > 0) {
+                  {{
+                    payment.amount | currency: "COP" : "symbol-narrow" : "1.0-0"
+                  }}
+                } @else {
+                  <span class="smaller text-body-secondary fw-normal">
+                    Monto no informado
+                  </span>
+                }
+              </p>
+            </div>
+
+            <!-- En móvil los tres botones no caben con su texto y se
+                 apilaban en tres renglones. Se quedan en el ícono, que es el
+                 mismo gesto en una fila; el nombre sigue ahí para el lector de
+                 pantalla y para el texto emergente. -->
+            <div class="d-flex flex-wrap gap-2 mt-3">
+              @if (payment.receiptUrl) {
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                  title="Ver comprobante"
+                  aria-label="Ver comprobante"
+                  (click)="openReceipt(payment)"
+                >
+                  <i class="fa-solid fa-file-invoice me-sm-2"></i>
+                  <span class="d-none d-sm-inline">Ver comprobante</span>
+                </button>
+              }
+              <button
+                type="button"
+                class="btn btn-sm btn-success rounded-pill px-3 ms-auto"
+                title="Aprobar"
+                aria-label="Aprobar"
+                (click)="askConfirm(payment)"
+              >
+                <i class="fa-solid fa-check me-sm-2"></i>
+                <span class="d-none d-sm-inline">Aprobar</span>
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                title="Rechazar"
+                aria-label="Rechazar"
+                (click)="askReject(payment)"
+              >
+                <i class="fa-solid fa-xmark me-sm-2"></i>
+                <span class="d-none d-sm-inline">Rechazar</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
       <h6 class="fw-bold mb-0">
         <i class="fa-solid fa-user-tie me-2 text-primary opacity-75"></i>
@@ -250,11 +349,22 @@
             </span>
             <span
               class="text-body-secondary"
-              title="Vehículos"
-              [attr.aria-label]="r.vehicles + ' vehículos'"
+              [attr.title]="
+                r.maxVehicles
+                  ? 'Vehículos: ' + r.vehicles + ' de ' + r.maxVehicles
+                  : 'Vehículos'
+              "
+              [attr.aria-label]="
+                r.maxVehicles
+                  ? r.vehicles + ' de ' + r.maxVehicles + ' vehículos'
+                  : r.vehicles + ' vehículos'
+              "
             >
               <i class="fa-solid fa-truck me-1 opacity-75"></i>
               <span class="fw-semibold text-body">{{ r.vehicles }}</span>
+              @if (r.maxVehicles) {
+                <span>/{{ r.maxVehicles }}</span>
+              }
             </span>
             <span
               class="text-body-secondary"
@@ -366,7 +476,22 @@
                 }
               </td>
               <td class="text-end">{{ r.drivers }}</td>
-              <td class="text-end">{{ r.vehicles }}</td>
+              <!-- Los que tiene sobre el tope que tiene contratado: el
+                   contador solo no dice si le queda cupo, que es lo que se
+                   mira antes de dejarlo registrar otro camión. -->
+              <td
+                class="text-end"
+                [attr.title]="
+                  r.maxVehicles
+                    ? r.vehicles + ' de ' + r.maxVehicles + ' vehículos'
+                    : null
+                "
+              >
+                {{ r.vehicles }}
+                @if (r.maxVehicles) {
+                  <span class="text-body-secondary">/{{ r.maxVehicles }}</span>
+                }
+              </td>
               <td class="text-end">{{ r.trips }}</td>
               <td class="text-end text-nowrap fw-semibold">
                 {{ r.fee | currency: "COP" : "symbol-narrow" : "1.0-0" }}
@@ -465,3 +590,46 @@
     </div>
   }
 </div>
+
+<!-- Una sola hoja para las dos acciones: preguntan lo mismo y solo cambian el
+     tono, el verbo y, en el rechazo, el motivo que se proyecta dentro. -->
+<g-confirm-sheet
+  [open]="!!actionPayment"
+  [title]="actionTitle"
+  [message]="actionMessage"
+  [icon]="
+    action === 'rechazar' ? 'fa-solid fa-ban' : 'fa-solid fa-circle-check'
+  "
+  [variant]="action === 'rechazar' ? 'danger' : 'primary'"
+  [confirmLabel]="action === 'rechazar' ? 'Rechazar' : 'Aprobar'"
+  [busy]="actionBusy"
+  (confirm)="submitAction()"
+  (cancel)="cancelAction()"
+>
+  @if (action === "rechazar") {
+    <label for="rejectReason" class="form-label fw-bold small mb-1">
+      Motivo del rechazo*
+    </label>
+    <textarea
+      id="rejectReason"
+      class="form-control rounded-3"
+      rows="3"
+      maxlength="300"
+      placeholder="Ej.: el comprobante no corresponde al valor de la suscripción."
+      [(ngModel)]="rejectReason"
+    ></textarea>
+  }
+  @if (actionError) {
+    <p class="text-danger small mb-0 mt-2">
+      <i class="fa-solid fa-triangle-exclamation me-2"></i>{{ actionError }}
+    </p>
+  }
+</g-confirm-sheet>
+
+@if (receiptUrl) {
+  <g-document-viewer
+    [url]="receiptUrl"
+    name="Comprobante de pago"
+    (close)="receiptUrl = null"
+  ></g-document-viewer>
+}

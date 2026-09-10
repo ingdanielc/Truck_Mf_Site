@@ -55,6 +55,17 @@
           >
             <i class="fa-solid fa-filter"></i>
           </button>
+          <!-- En un telefono abre la hoja de compartir del sistema -Archivos,
+               WhatsApp, correo-; en escritorio baja el archivo. -->
+          <button
+            class="btn btn-outline-primary d-flex align-items-center"
+            (click)="askExport()"
+            [disabled]="exportPreparing"
+            title="Exportar los viajes del año"
+            aria-label="Exportar los viajes del año"
+          >
+            <i class="fa-solid fa-file-excel"></i>
+          </button>
         </div>
         <button
           class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
@@ -825,6 +836,22 @@
 <!-- Confirmacion del cambio de estado hecho desde la etiqueta de una tarjeta.
      Mismos textos que en el detalle: es el mismo cambio, solo que sin abrir el
      viaje. Bajarla equivale a "Volver": el estado no llega a guardarse. -->
+<!-- El archivo se arma mientras esta hoja esta abierta, y el toque que
+     confirma es el que abre la hoja de compartir del sistema: en iOS solo se
+     abre con el gesto vivo. Ver `askExport`. -->
+<g-confirm-sheet
+  [open]="exportOpen"
+  [busy]="exportPreparing"
+  title="Exportar viajes"
+  [message]="exportMessage"
+  icon="fa-solid fa-file-excel"
+  variant="primary"
+  [confirmLabel]="exportError ? 'Cerrar' : 'Compartir'"
+  cancelLabel="Cancelar"
+  (confirm)="exportError ? cancelExport() : confirmExport()"
+  (cancel)="cancelExport()"
+></g-confirm-sheet>
+
 <g-confirm-sheet
   [open]="!!pendingStatusChange"
   [busy]="isSavingStatus"

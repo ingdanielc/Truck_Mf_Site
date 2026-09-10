@@ -29,5 +29,8 @@ export class ModelOwner {
       email?: string;
       status?: string;
     },
+    /** Cuándo se registró la cuenta. Es el arranque de la primera suscripción
+     *  mientras el backend no devuelva una fecha de inicio propia. */
+    public creationDate?: any,
   ) {}
 }

@@ -54,6 +54,18 @@
                 </button>
               </li>
 
+              @if (isOwnerSelf) {
+                <li>
+                  <button
+                    class="dropdown-item d-flex align-items-center gap-2 py-2"
+                    (click)="toggleMenu($event); goToSubscription()"
+                  >
+                    <i class="fa-solid fa-id-badge text-secondary"></i>
+                    <span>Mi suscripción</span>
+                  </button>
+                </li>
+              }
+
               @if (isAdmin) {
                 <li>
                   <button
@@ -258,6 +270,20 @@
                     >
                       {{ subscriptionLabel }}
                     </small>
+                  }
+                  <!-- El vencimiento se lee aquí y la renovación se hace en
+                       otra pantalla: el paso de una a otra va donde nace la
+                       pregunta, y no escondido en el menú de opciones. -->
+                  @if (isOwnerSelf) {
+                    <button
+                      type="button"
+                      class="btn btn-link btn-sm p-0 mt-1 text-white text-opacity-75 text-decoration-none"
+                      style="font-size: 0.75rem"
+                      (click)="goToSubscription()"
+                    >
+                      Ver y renovar
+                      <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </button>
                   }
                 </div>
               </div>

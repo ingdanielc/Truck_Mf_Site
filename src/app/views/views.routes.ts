@@ -107,6 +107,15 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'subscription',
+    canActivate: [RoleGuard],
+    data: { allowedRoles: ['PROPIETARIO'] },
+    loadComponent: () =>
+      import('./subscription/subscription.component').then(
+        (m) => m.SubscriptionComponent,
+      ),
+  },
+  {
     path: 'map',
     loadComponent: () =>
       import('./map/map.component').then((m) => m.MapComponent),

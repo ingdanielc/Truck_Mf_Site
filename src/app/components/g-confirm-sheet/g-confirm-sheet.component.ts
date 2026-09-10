@@ -98,11 +98,20 @@ export class GConfirmSheetComponent {
   onDragStart(event: PointerEvent): void {
     if (this.busy || this.dragStartY !== null) return;
 
-    /* Los dos botones son lo único que no arrastra: bajar la hoja desde
-       "Confirmar" y soltar a medio camino tenía que poder no confirmar nada, y
-       para eso el gesto no puede empezar ahí. La barrita sí arrastra. */
+    /* Los botones no arrastran: bajar la hoja desde "Confirmar" y soltar a
+       medio camino tenía que poder no confirmar nada, y para eso el gesto no
+       puede empezar ahí. La barrita sí arrastra.
+
+       Los campos tampoco, y por lo mismo: en el motivo de un rechazo, elegir
+       texto con el dedo bajaba la hoja en vez de seleccionar. */
     const origen = event.target as HTMLElement | null;
-    if (origen?.closest('button:not(.confirm-sheet-grabber)')) return;
+    if (
+      origen?.closest(
+        'button:not(.confirm-sheet-grabber), input, textarea, select, label',
+      )
+    ) {
+      return;
+    }
 
     this.dragStartY = event.clientY;
     this.dragPointerId = event.pointerId;

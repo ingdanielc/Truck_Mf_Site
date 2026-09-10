@@ -1,0 +1,125 @@
+.plan-block {
+  position: relative;
+  background-color: rgba(var(--bs-primary-rgb), 0.07);
+  border: 1px solid rgba(var(--bs-primary-rgb), 0.15);
+}
+
+/* Dentro del relleno inferior que la tarjeta ya tenía: el enlace se apoya en
+   espacio que estaba vacío, así que la tarjeta mide lo mismo que antes de
+   ofrecer el detalle. */
+.detail-toggle {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.35rem;
+  line-height: 1;
+}
+
+/* El total es la cifra con la que se sale a pagar: se lee de una y desde
+   lejos, sin tener que buscarla entre los renglones del desglose. */
+.plan-total {
+  font-size: 2rem;
+  line-height: 1.1;
+  color: var(--bs-primary);
+}
+
+/* Mismas medidas que las tarjetas del detalle por propietario del reporte de
+   suscripciones: el borde, el radio y la separación son los de allí, para que
+   los dos desgloses de la aplicación se lean como el mismo componente. */
+.quote-card {
+  padding: 0.75rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--bs-border-color);
+  font-size: 0.925rem;
+}
+
+/* Los conceptos comparten tarjeta, así que se separan entre ellos con una
+   línea: el borde de la tarjeta ya no hace ese trabajo. */
+.quote-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+
+  & + & {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--bs-border-color);
+  }
+}
+
+.quote-total {
+  background-color: rgba(var(--bs-primary-rgb), 0.07);
+  border-color: rgba(var(--bs-primary-rgb), 0.15);
+}
+
+/* Los cinco caben en una fila en escritorio y en dos en móvil; el ancho fijo
+   evita que "1 año" quede notoriamente más angosto que "5 años". */
+.year-chip {
+  min-width: 5rem;
+}
+
+.method-card {
+  border: 1px solid var(--bs-border-color);
+  background-color: var(--bs-body-bg);
+}
+
+/* La tarjeta es pulsable: se comporta como tal al pasar por encima y al
+   tocarla, para que el aviso de "toca para copiar" no sea la única pista. */
+.method-card-action {
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+
+  &:hover,
+  &:focus-visible {
+    border-color: rgba(var(--bs-primary-rgb), 0.5);
+    box-shadow: 0 4px 12px rgba(var(--bs-primary-rgb), 0.12);
+  }
+
+  &:active {
+    transform: scale(0.99);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .method-card-action {
+    transition: none;
+
+    &:active {
+      transform: none;
+    }
+  }
+}
+
+/* El número se copia a mano en la aplicación del banco: monoespaciado y con
+   aire entre cifras para no equivocar un dígito. */
+.account-number {
+  font-family: var(--bs-font-monospace);
+  letter-spacing: 0.04em;
+}
+
+.report-block {
+  background-color: var(--bs-body-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+}
+
+.file-drop {
+  border: 1px dashed var(--bs-border-color);
+  color: var(--bs-secondary-color);
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+
+  &:hover {
+    border-color: var(--bs-primary);
+    color: var(--bs-primary);
+  }
+}
+
+.file-chip {
+  border: 1px solid var(--bs-border-color);
+  background-color: var(--bs-body-bg);
+  font-size: 0.9rem;
+}
+
+.smaller {
+  font-size: 0.8rem;
+}

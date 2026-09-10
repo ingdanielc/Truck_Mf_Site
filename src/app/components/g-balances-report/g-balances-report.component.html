@@ -83,6 +83,18 @@
       >
         {{ visibleRows.length }}
       </span>
+
+      <!-- En un telefono esto abre la hoja de compartir del sistema, que es
+           donde estan Archivos y WhatsApp; en escritorio baja el archivo. -->
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-primary rounded-3 ms-auto text-nowrap"
+        (click)="askExport()"
+        [disabled]="!visibleRows.length"
+      >
+        <i class="fa-solid fa-file-excel me-1"></i>
+        Exportar
+      </button>
     </div>
 
     <!-- Movil: una tarjeta por viaje, para no desplazar de lado. -->
@@ -316,4 +328,18 @@
   cancelLabel="Cancelar"
   (confirm)="confirmPaid()"
   (cancel)="cancelPaid()"
+></g-confirm-sheet>
+
+<!-- El toque que confirma es el que abre la hoja de compartir del sistema: en
+     iOS solo se abre con el gesto vivo. Ver `askExport`. -->
+<g-confirm-sheet
+  [open]="exportOpen"
+  title="Exportar saldos"
+  [message]="exportMessage"
+  icon="fa-solid fa-file-excel"
+  variant="primary"
+  confirmLabel="Compartir"
+  cancelLabel="Cancelar"
+  (confirm)="confirmExport()"
+  (cancel)="cancelExport()"
 ></g-confirm-sheet>

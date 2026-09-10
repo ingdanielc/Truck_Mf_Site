@@ -1,17 +1,36 @@
-import { Component, Input, OnChanges } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnInit,
+  Output,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { ModelOwner } from '../../models/owner-model';
+import { SubscriptionPayment } from '../../models/subscription-model';
+import { SubscriptionService } from '../../services/subscription.service';
+import { ToastService } from '../../services/toast.service';
 import { SubscriptionUtils } from '../../utils/subscription';
 import { Formatters } from '../../utils/formatters';
 import { PaginationUtils } from '../../utils/pagination-utils';
+import { paymentMethodName } from '../../utils/payment-methods';
+import { GConfirmSheetComponent } from '../g-confirm-sheet/g-confirm-sheet.component';
+import { GDocumentViewerComponent } from '../g-document-viewer/g-document-viewer.component';
 
 /** En qué estado está la suscripción de un propietario. */
 type SubscriptionState = 'activa' | 'porVencer' | 'vencida' | 'sinFecha';
 
 /** Por qué columna se ordena el detalle. */
 type SortField =
-  'name' | 'subscription' | 'drivers' | 'vehicles' | 'trips' | 'fee';
+  | 'name'
+  | 'subscription'
+  | 'drivers'
+  | 'vehicles'
+  | 'trips'
+  | 'fee';
 
 /** Una fila del detalle: el propietario y lo que tiene montado encima. */
 interface SubscriptionRow {
@@ -25,6 +44,8 @@ interface SubscriptionRow {
   /** Días restantes; negativo si venció. Ordena la lista. */
   days: number | null;
   vehicles: number;
+  /** Tope de vehículos que tiene contratado. `0` si no se le fijó ninguno. */
+  maxVehicles: number;
   drivers: number;
   trips: number;
   /** Lo que paga al año por esos vehículos — ver `TARIFA_BASE`. */
@@ -48,11 +69,16 @@ interface SubscriptionRow {
 @Component({
   selector: 'g-subscriptions-report',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    GConfirmSheetComponent,
+    GDocumentViewerComponent,
+  ],
   templateUrl: './g-subscriptions-report.component.html',
   styleUrls: ['./g-subscriptions-report.component.scss'],
 })
-export class GSubscriptionsReportComponent implements OnChanges {
+export class GSubscriptionsReportComponent implements OnInit, OnChanges {
   /** El catálogo que el tablero carga para su filtro de propietario. */
   @Input({ required: true }) owners: ModelOwner[] = [];
 
@@ -70,6 +96,10 @@ export class GSubscriptionsReportComponent implements OnChanges {
 
   /** El periodo, solo para rotular de qué son los viajes. */
   @Input({ required: true }) periodLabel: string = '';
+
+  /** Se resolvió un comprobante: el vencimiento de ese propietario cambió y el
+   *  tablero tiene que releer su catálogo. */
+  @Output() paymentResolved = new EventEmitter<void>();
 
   public rows: SubscriptionRow[] = [];
 
@@ -116,9 +146,159 @@ export class GSubscriptionsReportComponent implements OnChanges {
   /** Lo que dejó de entrar: suscripciones ya vencidas. */
   public ingresoVencido = 0;
 
+  constructor(
+    private readonly subscriptionService: SubscriptionService,
+    private readonly toastService: ToastService,
+  ) {}
+
+  ngOnInit(): void {
+    void this.loadPending();
+  }
+
   ngOnChanges(): void {
     this.build();
     this.page = 0;
+  }
+
+  /* ======================================================================
+     Comprobantes por revisar
+     ======================================================================
+     Es lo unico de esta seccion que pide datos, y lo unico que actua sobre
+     ellos: aprobar renueva la suscripcion del propietario y dispara su aviso.
+     Va arriba del todo porque es trabajo pendiente y no una lectura: mientras
+     haya un comprobante sin revisar, hay alguien esperando su acceso. */
+
+  public pending: SubscriptionPayment[] = [];
+  public loadingPending = false;
+
+  /** El comprobante sobre el que se esta decidiendo, y que se le va a hacer. */
+  public actionPayment: SubscriptionPayment | null = null;
+  public action: 'confirmar' | 'rechazar' | null = null;
+  public rejectReason = '';
+  public actionError = '';
+  public actionBusy = false;
+
+  /** El comprobante abierto en el visor. */
+  public receiptUrl: string | null = null;
+
+  private async loadPending(): Promise<void> {
+    this.loadingPending = true;
+    try {
+      this.pending = await firstValueFrom(
+        this.subscriptionService.getPendingPayments(),
+      );
+    } catch (error) {
+      console.error('Error cargando los comprobantes pendientes:', error);
+      this.pending = [];
+    } finally {
+      this.loadingPending = false;
+    }
+  }
+
+  /** El nombre del propietario. Si el pago no lo trae, sale del catalogo que
+   *  el tablero ya tiene cargado. */
+  public payerName(payment: SubscriptionPayment): string {
+    if (payment.ownerName) return Formatters.titleCase(payment.ownerName);
+    const owner = (this.owners ?? []).find((o) => o.id === payment.ownerId);
+    return Formatters.titleCase(owner?.name) || 'Propietario';
+  }
+
+  public methodName(id: string): string {
+    return paymentMethodName(id);
+  }
+
+  public openReceipt(payment: SubscriptionPayment): void {
+    if (payment.receiptUrl) this.receiptUrl = payment.receiptUrl;
+  }
+
+  public askConfirm(payment: SubscriptionPayment): void {
+    this.actionPayment = payment;
+    this.action = 'confirmar';
+    this.rejectReason = '';
+    this.actionError = '';
+  }
+
+  public askReject(payment: SubscriptionPayment): void {
+    this.actionPayment = payment;
+    this.action = 'rechazar';
+    this.rejectReason = '';
+    this.actionError = '';
+  }
+
+  public cancelAction(): void {
+    if (this.actionBusy) return;
+    this.actionPayment = null;
+    this.action = null;
+    this.rejectReason = '';
+    this.actionError = '';
+  }
+
+  get actionTitle(): string {
+    return this.action === 'rechazar'
+      ? '¿Rechazar el comprobante?'
+      : '¿Aprobar el pago?';
+  }
+
+  get actionMessage(): string {
+    if (!this.actionPayment) return '';
+    const quien = this.payerName(this.actionPayment);
+    return this.action === 'rechazar'
+      ? `${quien} vera el motivo en su pantalla y podra enviar otro comprobante.`
+      : `Se renueva la suscripcion de ${quien} y se le avisa por WhatsApp.`;
+  }
+
+  /**
+   * Aprueba o rechaza, segun lo que se haya pedido.
+   *
+   * El rechazo exige motivo y se valida aqui antes de salir: es lo unico que el
+   * propietario va a leer para saber que corregir, y un rechazo sin explicacion
+   * lo deja mandando el mismo comprobante otra vez.
+   */
+  public async submitAction(): Promise<void> {
+    const payment = this.actionPayment;
+    if (!payment?.id || this.actionBusy) return;
+
+    const motivo = this.rejectReason.trim();
+    if (this.action === 'rechazar' && !motivo) {
+      this.actionError = 'Escribe el motivo del rechazo.';
+      return;
+    }
+
+    this.actionBusy = true;
+    this.actionError = '';
+    try {
+      if (this.action === 'rechazar') {
+        await firstValueFrom(
+          this.subscriptionService.rejectPayment(payment.id, motivo),
+        );
+        this.toastService.showSuccess(
+          'Comprobante rechazado',
+          `Se le aviso a ${this.payerName(payment)}.`,
+        );
+      } else {
+        await firstValueFrom(
+          this.subscriptionService.confirmPayment(payment.id),
+        );
+        this.toastService.showSuccess(
+          'Pago aprobado',
+          `La suscripcion de ${this.payerName(payment)} quedo renovada.`,
+        );
+      }
+
+      this.actionPayment = null;
+      this.action = null;
+      this.rejectReason = '';
+      await this.loadPending();
+      /* El vencimiento del propietario cambio: el detalle de abajo y los
+         contadores salen del catalogo del tablero, que hay que releer. */
+      this.paymentResolved.emit();
+    } catch (error) {
+      console.error('Error resolviendo el comprobante:', error);
+      this.actionError =
+        'No se pudo completar la accion. Intentalo de nuevo en un momento.';
+    } finally {
+      this.actionBusy = false;
+    }
   }
 
   private build(): void {
@@ -132,6 +312,7 @@ export class GSubscriptionsReportComponent implements OnChanges {
         label: SubscriptionUtils.label(o.subscriptionEndDate),
         days,
         vehicles: o.vehicleCount ?? 0,
+        maxVehicles: o.maxVehicles ?? 0,
         drivers: o.driverCount ?? 0,
         trips: o.id != null ? (this.tripsByOwnerId[o.id] ?? 0) : 0,
         fee: this.feeOf(o.vehicleCount ?? 0),

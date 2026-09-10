@@ -24,6 +24,10 @@ import {
   DashboardGroupTrips,
   DashboardMonth,
 } from '../../models/dashboard-report-model';
+import { xlsxFileName } from '../../utils/xlsx';
+import { buildTripsSheet } from '../../utils/trips-sheet';
+import { shareOrDownloadFile } from '../../utils/file-share';
+import { GConfirmSheetComponent } from '../g-confirm-sheet/g-confirm-sheet.component';
 
 /** Un vehículo del selector. */
 interface VehicleOption {
@@ -85,7 +89,7 @@ type SortField = 'label' | 'income' | 'expenses' | 'profit' | 'margin';
 @Component({
   selector: 'g-profitability-report',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, GConfirmSheetComponent],
   templateUrl: './g-profitability-report.component.html',
   styleUrls: ['./g-profitability-report.component.scss'],
 })
@@ -711,6 +715,157 @@ export class GProfitabilityReportComponent implements OnChanges {
       if (bv == null) return -1;
       return dir * (av - bv);
     });
+  }
+
+  /* ---- Exportar --------------------------------------------------------- */
+
+  /** La hoja de exportacion esta abierta. */
+  public exportOpen = false;
+
+  /** Se esta armando el archivo. Mientras dure, la hoja no deja confirmar. */
+  public exportPreparing = false;
+
+  private exportBlob: Blob | null = null;
+  private exportName = '';
+  public exportCount = 0;
+  public exportError = '';
+
+  /**
+   * El mismo archivo que exporta la pantalla de Viajes, acotado al periodo y
+   * al vehiculo que el tablero tiene elegidos.
+   *
+   * **Por que en dos pasos.** La tabla de aqui sale del reporte agregado, que
+   * trae el flete y el gasto de cada viaje pero no su manifiesto, su estado ni
+   * su conductor: eso vive en el viaje, y hay que ir por el. En iOS la hoja de
+   * compartir solo se abre mientras el toque sigue vivo, asi que el archivo se
+   * arma mientras la hoja de confirmacion esta en pantalla y el toque de
+   * "Compartir" llega con todo listo.
+   */
+  public async askExport(): Promise<void> {
+    if (this.exportPreparing || !this.tripRows.length) return;
+
+    this.exportOpen = true;
+    this.exportPreparing = true;
+    this.exportError = '';
+    this.exportBlob = null;
+    this.exportCount = this.tripRows.length;
+
+    try {
+      const viajes = await this.fetchTripsOfRows();
+      if (!viajes.length) {
+        this.exportError = 'No se pudieron cargar los viajes del periodo.';
+        return;
+      }
+
+      /* Las cifras las manda el reporte, no el viaje: son las que estan en la
+         tabla que el usuario acaba de mirar, y el archivo tiene que cerrar en
+         el mismo numero. */
+      const gastos: Record<number, number> = {};
+      const fletes: Record<number, number> = {};
+      this.tripRows.forEach((r) => {
+        gastos[r.id] = r.expenses;
+        fletes[r.id] = r.income;
+      });
+
+      const notas = [
+        `Vehiculo: ${this.selectedPlate}`,
+        `Periodo: ${this.periodLabel}`,
+      ];
+      if (this.unassignedExpenses > 0) {
+        notas.push(
+          'Ademas, gasto del periodo sin viaje asignado (mantenimiento y gastos sueltos): ' +
+            this.unassignedExpenses,
+        );
+      }
+      notas.push(
+        'El gasto es el imputado a cada viaje; la utilidad, el flete menos ese gasto.',
+      );
+      notas.push('Generado el ' + new Date().toLocaleString('es-CO'));
+
+      this.exportBlob = buildTripsSheet(viajes, {
+        periodLabel: this.sheetPeriodLabel,
+        expensesByTripId: gastos,
+        freightByTripId: fletes,
+        cityName: (id) => (id ? this.cityName(id) : ''),
+        notes: notas,
+      });
+
+      this.exportName = xlsxFileName(
+        'Viajes',
+        this.selectedPlate,
+        this.periodLabel,
+      );
+    } catch (error) {
+      console.error('Error preparing profitability export:', error);
+      this.exportError = 'No se pudieron cargar los viajes del periodo.';
+    } finally {
+      this.exportPreparing = false;
+    }
+  }
+
+  /** Entrega el archivo. Sin nada que esperar antes: el toque que confirma es
+   *  el que abre la hoja de compartir del sistema. */
+  public confirmExport(): void {
+    const blob = this.exportBlob;
+    if (!blob) return;
+
+    this.exportOpen = false;
+    void shareOrDownloadFile(blob, this.exportName, 'Viajes');
+  }
+
+  public cancelExport(): void {
+    this.exportOpen = false;
+    this.exportBlob = null;
+  }
+
+  /** Lo que dice la hoja mientras se prepara y cuando ya esta lista. */
+  get exportMessage(): string {
+    if (this.exportPreparing) return 'Preparando el archivo...';
+    if (this.exportError) return this.exportError;
+    const viajes =
+      this.exportCount === 1 ? '1 viaje' : `${this.exportCount} viajes`;
+    return `${viajes} de ${this.periodLabel}, ${this.selectedPlate}.`;
+  }
+
+  /** El periodo tal como nombra la pestana del archivo: "2026", "Agosto 2026".
+   *  Sin la palabra "Ano", que en la pestana sobra. */
+  private get sheetPeriodLabel(): string {
+    return this.month === this.ANIO
+      ? String(this.year)
+      : `${this.monthNames[this.month]} ${this.year}`;
+  }
+
+  /**
+   * Los viajes de la tabla, tal como los guarda `/trip/filter`.
+   *
+   * Es la misma consulta que ya se hace por el tramo de regreso -`id in` sobre
+   * las filas en pantalla-, y por lo mismo: el reporte agregado no trae el
+   * manifiesto, el estado, el conductor ni el anticipo, y la hoja los lleva.
+   */
+  private async fetchTripsOfRows(): Promise<ModelTrip[]> {
+    const ids = this.tripRows.map((r) => r.id).filter((id) => id != null);
+    if (!ids.length) return [];
+
+    const resp: any = await lastValueFrom(
+      this.tripService.getTripFilter(
+        new ModelFilterTable(
+          [new Filter('id', 'in', ids.join(','))],
+          new Pagination(ids.length, 0),
+          new Sort('id', false),
+        ),
+      ),
+    );
+
+    /* En el orden de la tabla y no en el que conteste el servidor: quien
+       ordeno por utilidad y exporta espera abrir el archivo y encontrarlo
+       igual. */
+    const porId = new Map<number, ModelTrip>();
+    (resp?.data?.content ?? []).forEach((t: ModelTrip) => {
+      if (t?.id != null) porId.set(t.id, t);
+    });
+    return this.tripRows
+      .map((r) => porId.get(r.id))
+      .filter((t): t is ModelTrip => t != null);
   }
 
   /* ---- Totales del pie de la tabla -------------------------------------- */

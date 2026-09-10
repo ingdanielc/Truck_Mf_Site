@@ -1,0 +1,263 @@
+<div
+  class="subscription-container py-4 bg-body animate__animated animate__fadeIn"
+>
+  <!-- Header.
+
+       Con un comprobante en revisión no aparece ninguno de los dos: mandar un
+       segundo pago del mismo periodo no adelanta nada y deja al administrador
+       con dos que cuadrar. -->
+  <div class="row mb-4 gy-3 align-items-center">
+    <div class="col-12 col-md">
+      <h1 class="h2 fw-bold mb-1 text-body tracking-tight">Mi suscripción</h1>
+      <p class="text-secondary mb-0">
+        Consulta tu plan, su vencimiento y renueva cuando lo necesites.
+      </p>
+    </div>
+    @if (canRenew) {
+      <div class="col-12 col-md-auto">
+        <button
+          class="btn btn-primary d-none d-sm-flex align-items-center justify-content-center px-4 py-2 rounded-3 shadow-primary text-nowrap"
+          (click)="showRenew = true"
+        >
+          <i class="fa-solid fa-rotate me-2"></i>{{ renewLabel }}
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (loading) {
+    <div class="section-loader min-vh-50">
+      <output class="spinner-border text-primary">
+        <span class="visually-hidden">Cargando...</span>
+      </output>
+      <p class="mt-1 text-body-secondary fw-medium">Cargando tu plan...</p>
+    </div>
+  } @else if (loadError) {
+    <div
+      class="alert alert-danger d-flex align-items-center border-0 rounded-4 shadow-sm small"
+      role="alert"
+    >
+      <i class="fa-solid fa-triangle-exclamation fs-4 me-2"></i>
+      No pudimos cargar tu suscripción. Inténtalo de nuevo en un momento.
+    </div>
+  } @else {
+    <!-- El estado, arriba y solo. Es lo que se viene a mirar: hasta cuándo
+         tengo acceso.
+
+         Sin plan comprado no hay nada que renovar: el propietario está usando
+         el acceso gratuito, y se le dice así en vez de mostrarle la ficha de un
+         plan que no ha contratado. -->
+    <div class="card border-0 rounded-4 shadow-sm mb-4 state-card">
+      <div class="card-body p-4">
+        @if (isFreePlan) {
+          <h2 class="h4 fw-bold mb-1">Estás usando CashTruck Gratis 🚛</h2>
+          <p class="text-body-secondary mb-3">
+            Disfruta de las funciones disponibles en tu plan gratuito.
+          </p>
+
+          @if (endDate) {
+            <p class="field-label mb-1">Tu acceso es gratuito hasta:</p>
+            <p class="free-until fw-bold mb-0">
+              {{ endDate | date: "dd/MM/yyyy" : "UTC" }}
+            </p>
+            <p class="smaller text-body-secondary mb-0">{{ expiryLabel }}</p>
+          }
+        } @else {
+          <div
+            class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3"
+          >
+            <div>
+              <p class="text-body-secondary small text-uppercase fw-bold mb-1">
+                Plan actual
+              </p>
+              <h2 class="h4 fw-bold mb-0">{{ planName }}</h2>
+            </div>
+            <span class="badge rounded-pill px-3 py-2" [ngClass]="stateClass">
+              {{ stateLabel }}
+            </span>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-6 col-md-3">
+              <p class="field-label mb-1">Fecha de inicio</p>
+              <p class="field-value mb-0">
+                @if (startDate) {
+                  {{ startDate | date: "d MMM, yyyy" : "UTC" }}
+                } @else {
+                  No registrada
+                }
+              </p>
+            </div>
+
+            <div class="col-6 col-md-3">
+              <p class="field-label mb-1">
+                <span class="d-sm-none">Vencimiento</span>
+                <span class="d-none d-sm-inline">Fecha de vencimiento</span>
+              </p>
+              <p class="field-value mb-0">
+                @if (endDate) {
+                  {{ endDate | date: "d MMM, yyyy" : "UTC" }}
+                } @else {
+                  Sin vencimiento
+                }
+              </p>
+              @if (endDate) {
+                <p class="smaller text-body-secondary mb-0">
+                  {{ expiryLabel }}
+                </p>
+              }
+            </div>
+
+            <div class="col-6 col-md-3">
+              <p class="field-label mb-1">Vehículos incluidos</p>
+              <p class="field-value mb-0">
+                {{ vehicleCount }}
+                {{ vehicleCount === 1 ? "vehículo" : "vehículos" }}
+              </p>
+            </div>
+
+            <div class="col-6 col-md-3">
+              <p class="field-label mb-1">
+                <span class="d-sm-none">Precio</span>
+                <span class="d-none d-sm-inline">Precio de renovación</span>
+              </p>
+              <p class="field-value mb-0">
+                {{ renewalPrice | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+              </p>
+              <p class="smaller text-body-secondary mb-0">al año</p>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Lo que incluye el plan. Va en la pantalla y no en el panel de pago:
+         es la descripción del producto, se consulta en cualquier momento y no
+         solo cuando se va a transferir. -->
+    <div class="card border-0 rounded-4 shadow-sm mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3">
+          <i class="fa-solid fa-circle-check me-2 text-success opacity-75"></i>
+          Tu plan incluye
+        </h5>
+        <ul class="feature-list list-unstyled row g-2 mb-0">
+          @for (feature of planFeatures; track feature) {
+            <li class="col-12 col-md-6">
+              <i class="fa-solid fa-check text-success me-2"></i>{{ feature }}
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
+
+    <!-- Un comprobante en revisión reemplaza al botón: mandar otro del mismo
+         periodo no adelanta nada y deja dos pagos que cuadrar. -->
+    @if (pendingPayment) {
+      <div
+        class="alert alert-warning d-flex align-items-start border-0 rounded-4 shadow-sm mb-4"
+        role="alert"
+      >
+        <i class="fa-solid fa-hourglass-half fs-4 me-3 mt-1"></i>
+        <div>
+          <p class="fw-bold mb-1">Tu comprobante está en revisión</p>
+          <p class="small mb-0">
+            @if (pendingPayment.years > 1) {
+              Renovación por {{ pendingPayment.years }} años.
+            }
+            Lo enviaste el
+            {{ pendingPayment.creationDate | date: "d MMM, yyyy" }} por
+            {{ methodName(pendingPayment.method) }}. Te avisamos apenas se
+            confirme.
+          </p>
+        </div>
+      </div>
+    } @else if (lastRejected?.rejectionReason) {
+      <div
+        class="alert alert-danger d-flex align-items-start border-0 rounded-4 shadow-sm mb-4"
+        role="alert"
+      >
+        <i class="fa-solid fa-circle-exclamation fs-4 me-3 mt-1"></i>
+        <div>
+          <p class="fw-bold mb-1">Tu último pago fue rechazado</p>
+          <p class="small mb-0">{{ lastRejected?.rejectionReason }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- ================================================================
+         El histórico. Es el respaldo del propietario: qué mandó, cuándo y en
+         qué quedó.
+         ================================================================ -->
+    @if (payments.length) {
+      <h5 class="section-title fw-bold mb-3">
+        <i
+          class="fa-solid fa-clock-rotate-left me-2 text-primary opacity-75"
+        ></i>
+        Pagos reportados
+      </h5>
+
+      <div class="payment-list">
+        @for (payment of payments; track payment.id) {
+          <div class="payment-row d-flex flex-wrap align-items-center gap-2">
+            <div class="flex-grow-1">
+              <p class="fw-semibold mb-0">
+                {{
+                  paymentAmount(payment)
+                    | currency: "COP" : "symbol-narrow" : "1.0-0"
+                }}
+                <span class="text-body-secondary smaller">
+                  · {{ methodName(payment.method) }}
+                  @if (payment.years > 1) {
+                    · {{ payment.years }} años
+                  }
+                </span>
+              </p>
+              <p class="smaller text-body-secondary mb-0">
+                {{ payment.creationDate | date: "d MMM, yyyy" }}
+                @if (payment.reference) {
+                  · Ref. {{ payment.reference }}
+                }
+              </p>
+            </div>
+            <span
+              class="badge rounded-pill"
+              [ngClass]="paymentClass(payment.status)"
+            >
+              {{ paymentLabel(payment.status) }}
+            </span>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- Mobile Floating Action Button -->
+  @if (canRenew) {
+    <button
+      class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
+      [class.d-none]="showRenew"
+      [attr.aria-label]="renewLabel"
+      (click)="showRenew = true"
+    >
+      <i class="fa-solid fa-rotate fs-4"></i>
+      <span class="btn-fab-label" aria-hidden="true">{{ renewLabel }}</span>
+    </button>
+  }
+</div>
+
+<!-- Panel de renovación -->
+<div
+  class="custom-offcanvas shadow-lg border-start transition-all"
+  [class.open]="showRenew"
+>
+  @if (showRenew) {
+    <g-subscription-renew
+      [quote]="quote"
+      [ownerId]="owner?.id ?? null"
+      [currentEndDate]="endDate"
+      [isFree]="isFreePlan"
+      (close)="onRenewClosed($event)"
+      class="d-flex flex-column h-100"
+    ></g-subscription-renew>
+  }
+</div>

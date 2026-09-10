@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subscription, forkJoin } from 'rxjs';
+import { Subscription, forkJoin, lastValueFrom } from 'rxjs';
 import { ModelTrip } from 'src/app/models/trip-model';
 import {
   Filter,
@@ -45,6 +45,9 @@ import {
   TripStatusConfirmation,
   tripStatusConfirmation,
 } from 'src/app/utils/trip-status';
+import { xlsxFileName } from 'src/app/utils/xlsx';
+import { buildTripsSheet, toSheetDate } from 'src/app/utils/trips-sheet';
+import { shareOrDownloadFile } from 'src/app/utils/file-share';
 
 export interface TripOwnerGroup {
   owner: ModelOwner;
@@ -460,6 +463,236 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
       error: () => {
         if (this.userRole === 'ADMINISTRADOR') this.loading = false;
       },
+    });
+  }
+
+  /* ======================================================================
+     Exportar
+     ====================================================================== */
+
+  /** La hoja de exportacion esta abierta. */
+  public exportOpen = false;
+
+  /** Se esta armando el archivo. Mientras dure, la hoja no deja confirmar. */
+  public exportPreparing = false;
+
+  /** El archivo, ya listo para entregar. */
+  private exportBlob: Blob | null = null;
+  private exportName = '';
+
+  /** Cuantos viajes trae el archivo, para nombrarlo en la hoja. */
+  public exportCount = 0;
+  public exportError = '';
+
+  /**
+   * Pide la exportacion y prepara el archivo mientras la hoja esta abierta.
+   *
+   * **Por que en dos pasos.** En iOS la hoja de compartir del sistema solo se
+   * abre mientras el toque que la pidio sigue vivo, y aqui hay que ir al
+   * servidor por los viajes del anio: para cuando la respuesta llega, el toque
+   * ya se gasto y el sistema rechaza la llamada. Con la hoja de confirmacion
+   * de por medio el archivo se arma mientras el usuario la lee, y el toque de
+   * "Compartir" llega con todo listo. Los otros dos reportes no la necesitan:
+   * sus datos ya estan en memoria y comparten de un toque.
+   */
+  public async askExport(): Promise<void> {
+    if (this.exportPreparing) return;
+
+    this.exportOpen = true;
+    this.exportPreparing = true;
+    this.exportError = '';
+    this.exportBlob = null;
+    this.exportCount = 0;
+
+    try {
+      const viajes = await this.fetchYearTrips();
+      this.exportCount = viajes.length;
+
+      if (!viajes.length) {
+        this.exportError =
+          'No hay viajes registrados en ' + this.exportYear + '.';
+        return;
+      }
+
+      const gastos = await this.fetchTripExpenses(viajes);
+      this.exportBlob = this.buildExportSheet(viajes, gastos);
+      this.exportName = xlsxFileName(
+        'Viajes',
+        this.exportYear,
+        new Date().toISOString().slice(0, 10),
+      );
+    } catch (error) {
+      console.error('Error preparing trips export:', error);
+      this.exportError = 'No se pudieron cargar los viajes del anio.';
+    } finally {
+      this.exportPreparing = false;
+    }
+  }
+
+  /**
+   * Entrega el archivo. Sin nada que esperar antes de la llamada: el toque que
+   * confirma es el que abre la hoja de compartir del sistema.
+   */
+  public confirmExport(): void {
+    const blob = this.exportBlob;
+    if (!blob) return;
+
+    this.exportOpen = false;
+    void shareOrDownloadFile(blob, this.exportName, 'Viajes').then((salida) => {
+      if (salida === 'failed') {
+        this.toastService.showError('Error', 'No se pudo generar el archivo');
+      }
+    });
+  }
+
+  public cancelExport(): void {
+    this.exportOpen = false;
+    this.exportBlob = null;
+  }
+
+  /** El anio que se exporta: el que corre. */
+  get exportYear(): number {
+    return new Date().getFullYear();
+  }
+
+  /** Lo que dice la hoja mientras se prepara y cuando ya esta lista. */
+  get exportMessage(): string {
+    if (this.exportPreparing) return 'Preparando el archivo...';
+    if (this.exportError) return this.exportError;
+    const viajes =
+      this.exportCount === 1 ? '1 viaje' : this.exportCount + ' viajes';
+    return (
+      viajes +
+      ' de ' +
+      this.exportYear +
+      ', con los filtros que tienes puestos.'
+    );
+  }
+
+  /**
+   * Los viajes del anio en curso, con el mismo alcance que la lista.
+   *
+   * Arrastra los filtros de la pantalla -estado, busqueda, origen y destino, y
+   * los que impone el rol- porque exportar tiene que dar lo que se esta
+   * mirando; y les anade el anio, que la lista no filtra.
+   *
+   * El anio se recorta aqui y no en la consulta: el servicio de viajes filtra
+   * por igualdad y por pertenencia, no por rango de fechas. Se pide una pagina
+   * grande -la misma que usa la busqueda- y se descarta lo que no es del anio.
+   */
+  private async fetchYearTrips(): Promise<ModelTrip[]> {
+    const filtros = this.getBaseFilters();
+
+    if (this.selectedStatus) {
+      filtros.push(new Filter('status', '=', this.selectedStatus));
+    }
+    if (this.searchTerm) {
+      filtros.push(new Filter('manifestNumber', 'like', this.searchTerm));
+    }
+    if (this.originFilter) {
+      filtros.push(new Filter('originId', '=', this.originFilter.toString()));
+    }
+    if (this.destinationFilter) {
+      filtros.push(
+        new Filter('destinationId', '=', this.destinationFilter.toString()),
+      );
+    }
+
+    const response: any = await lastValueFrom(
+      this.tripService.getTripFilter(
+        new ModelFilterTable(
+          filtros,
+          new Pagination(20000, 0),
+          new Sort('startDate', false),
+        ),
+      ),
+    );
+
+    const anio = this.exportYear;
+    return (response?.data?.content ?? []).filter((t: ModelTrip) => {
+      const fecha = toSheetDate(t.creationDate ?? t.startDate);
+      return fecha != null && fecha.getFullYear() === anio;
+    });
+  }
+
+  /** El nombre de una ciudad por su `id`, o el `id` si el catalogo no la
+   *  tiene: en la hoja vale mas un numero que un hueco. */
+  private cityLabel(id: string | undefined): string {
+    if (!id) return '';
+    const city = this.cities.find((c: any) => String(c.id) === String(id));
+    return city ? city.name + ' (' + city.state + ')' : String(id);
+  }
+
+  /**
+   * El gasto de cada viaje, sumado por `id`.
+   *
+   * El gasto cuelga del gasto y no del viaje, asi que hay que ir a buscarlo:
+   * es la misma consulta que ya hace la lista para los viajes vacios, pero por
+   * todos los del anio. Va en tandas porque los `id` viajan en la URL y un
+   * anio entero no cabe en una sola.
+   *
+   * Si una tanda falla, sus viajes salen con gasto cero y utilidad igual al
+   * flete. Vaciar el archivo entero por eso seria peor: el resto de la hoja
+   * -las fechas, la ruta, el flete- no depende de esta consulta.
+   */
+  private async fetchTripExpenses(
+    trips: ModelTrip[],
+  ): Promise<Record<number, number>> {
+    const ids = trips.map((t) => t.id).filter((id): id is number => id != null);
+    if (!ids.length) return {};
+
+    const TANDA = 200;
+    const tandas: number[][] = [];
+    for (let i = 0; i < ids.length; i += TANDA) {
+      tandas.push(ids.slice(i, i + TANDA));
+    }
+
+    const totales: Record<number, number> = {};
+
+    await Promise.all(
+      tandas.map(async (tanda) => {
+        try {
+          const resp: any = await lastValueFrom(
+            this.expenseService.getExpenseFilter(
+              new ModelFilterTable(
+                [new Filter('tripId', 'in', tanda.join(','))],
+                new Pagination(5000, 0),
+                new Sort('id', false),
+              ),
+            ),
+          );
+          (resp?.data?.content ?? []).forEach((e: any) => {
+            const id = e?.tripId;
+            if (id == null) return;
+            totales[id] = (totales[id] || 0) + (e.amount || 0);
+          });
+        } catch (error) {
+          console.error('Error loading trip expenses for export:', error);
+        }
+      }),
+    );
+
+    return totales;
+  }
+
+  /** Arma la hoja con el constructor que comparte con Rentabilidad: las dos
+   *  pantallas exportan el mismo archivo, y solo cambia el periodo. */
+  private buildExportSheet(
+    trips: ModelTrip[],
+    expensesByTripId: Record<number, number>,
+  ): Blob {
+    return buildTripsSheet(trips, {
+      periodLabel: String(this.exportYear),
+      expensesByTripId,
+      cityName: (id) => this.cityLabel(id),
+      notes: [
+        'Viajes creados en ' + this.exportYear + ', hasta hoy.',
+        this.selectedStatus
+          ? 'Filtro de estado: ' + this.selectedStatus
+          : 'Todos los estados, cancelados incluidos.',
+        'El gasto es el imputado a cada viaje; la utilidad, el flete menos ese gasto.',
+        'Generado el ' + new Date().toLocaleString('es-CO'),
+      ],
     });
   }
 

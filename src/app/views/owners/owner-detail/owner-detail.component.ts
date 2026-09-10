@@ -164,6 +164,22 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     return SubscriptionUtils.label(this.owner?.subscriptionEndDate);
   }
 
+  /**
+   * El propietario está mirando su propio perfil.
+   *
+   * A esta pantalla llegan tres roles y solo uno paga la suscripción. Al
+   * propietario `validateAccess` ya le impide abrir un perfil ajeno, así que
+   * no ser administrador ni conductor equivale a estar en el suyo.
+   */
+  get isOwnerSelf(): boolean {
+    return !this.isAdmin && !this.isConductor;
+  }
+
+  /** Su plan, con el vencimiento y la renovación. */
+  goToSubscription(): void {
+    this.router.navigate(['/site/subscription']);
+  }
+
   validateAccess(ownerId: number, user: any): void {
     const roleName = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
     this.userRole = roleName;

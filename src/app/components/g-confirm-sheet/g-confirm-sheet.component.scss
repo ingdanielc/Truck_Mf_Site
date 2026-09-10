@@ -115,3 +115,9 @@
 .min-width-0 {
   min-width: 0;
 }
+
+/* Solo separa cuando hay algo proyectado: vacío no debe abrir un hueco entre el
+   mensaje y los botones. */
+.confirm-sheet-extra:not(:empty) {
+  margin-top: 1rem;
+}

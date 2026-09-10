@@ -57,6 +57,11 @@ export class GMenuComponent implements OnInit, OnDestroy {
       route: '/site/map',
     },
     {
+      label: 'Mi suscripción',
+      icon: 'fa-solid fa-id-badge',
+      route: '/site/subscription',
+    },
+    {
       label: 'Configuración',
       icon: 'fa-solid fa-gear',
       route: '/site/configuration',
@@ -117,8 +122,13 @@ export class GMenuComponent implements OnInit, OnDestroy {
   }
 
   private filterMenu(role: string): void {
+    /* La suscripción es el trato entre el propietario y la plataforma: solo la
+       ve él. El conductor no paga, y el administrador cobra —lo suyo es la
+       bandeja de comprobantes, no su propio plan—. */
     if (role.includes('ADMINISTRADOR')) {
-      this.menuItems = this.allMenuItems;
+      this.menuItems = this.allMenuItems.filter(
+        (item) => item.label !== 'Mi suscripción',
+      );
     } else if (role.includes('PROPIETARIO')) {
       this.menuItems = this.allMenuItems.filter(
         (item) => item.label !== 'Propietarios' && item.label !== 'Seguridad',
@@ -129,7 +139,8 @@ export class GMenuComponent implements OnInit, OnDestroy {
           item.label !== 'Propietarios' &&
           item.label !== 'Seguridad' &&
           item.label !== 'Conductores' &&
-          item.label !== 'Configuración',
+          item.label !== 'Configuración' &&
+          item.label !== 'Mi suscripción',
       );
     }
   }

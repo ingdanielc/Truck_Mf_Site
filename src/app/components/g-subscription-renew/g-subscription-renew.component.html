@@ -1,0 +1,303 @@
+<div class="offcanvas-header p-4 pb-2 d-flex flex-column border-bottom">
+  <div class="d-flex justify-content-between align-items-start w-100">
+    <h2 class="h4 fw-bold mb-0 text-body">
+      <i class="fa-solid fa-truck-fast me-2 text-primary"></i>
+      {{ isFree ? "Activa tu plan" : "Renueva tu suscripción" }}
+    </h2>
+    <button
+      type="button"
+      class="btn btn-link text-body p-0 border-0 shadow-none mt-n2"
+      (click)="dismiss()"
+      aria-label="Cerrar"
+    >
+      <i class="fa-solid fa-xmark fs-3"></i>
+    </button>
+  </div>
+  <p class="text-secondary small mb-0 mt-1">
+    Paga por Nequi o Bancolombia y envía el comprobante.
+  </p>
+</div>
+
+<div class="offcanvas-body p-4 custom-scrollbar">
+  <!-- ================================================================
+       1. Qué se paga
+       ================================================================
+       El total va arriba y grande: es lo que el propietario necesita para ir a
+       su aplicación de banco, y el desglose está debajo para quien quiera
+       verificarlo. -->
+  <div class="plan-block rounded-4 p-4 mb-4 text-center">
+    <p class="text-body-secondary small text-uppercase fw-bold mb-1">
+      {{ quote?.planName || "Plan anual" }}
+    </p>
+    <p class="plan-total fw-bold mb-0">
+      {{ total | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+    </p>
+    <p class="text-body-secondary small mb-0">
+      @if (years === 1) {
+        al año
+      } @else {
+        por {{ years }} años ·
+        {{ annualTotal | currency: "COP" : "symbol-narrow" : "1.0-0" }} al año
+      }
+    </p>
+
+    <!-- El desglose se pide, no se impone, y se pide desde la cifra que
+         explica: va en la esquina de esta misma tarjeta, no suelto entre los
+         pasos. Recogido, el método de pago queda a la vista sin desplazar.
+
+         Va posicionado sobre el relleno de la tarjeta —ver `detail-toggle`—
+         para que ofrecerlo no le haya sumado alto a un bloque que ya estaba
+         medido. -->
+    @if (quote?.items?.length) {
+      <div class="detail-toggle">
+        <button
+          type="button"
+          class="btn btn-link btn-sm p-0 text-decoration-none"
+          [attr.aria-expanded]="showDetail"
+          (click)="showDetail = !showDetail"
+        >
+          {{ showDetail ? "Ocultar detalle" : "Ver detalle" }}
+          <i
+            class="fa-solid ms-1 small"
+            [ngClass]="showDetail ? 'fa-chevron-up' : 'fa-chevron-down'"
+          ></i>
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- Cuántos años. Va antes que el método de pago porque cambia la cifra con
+       la que se sale a transferir: elegirlo después obligaría a volver.
+
+       La vigencia resultante se dice debajo, y no solo el número de años: es
+       lo que el propietario está comprando, y sale de sumar sobre el
+       vencimiento que ya tiene, no sobre hoy. -->
+  <div class="years-block mb-4">
+    <h6 class="fw-bold mb-2">
+      <i class="fa-solid fa-calendar-check me-2 text-primary opacity-75"></i>
+      {{
+        isFree
+          ? "¿Por cuántos años lo quieres?"
+          : "¿Cuántos años quieres renovar?"
+      }}
+    </h6>
+    <div
+      class="d-flex flex-wrap gap-2"
+      role="group"
+      aria-label="Años a renovar"
+    >
+      @for (option of yearOptions; track option) {
+        <button
+          type="button"
+          class="btn btn-sm rounded-pill px-3 year-chip"
+          [class.btn-primary]="option === years"
+          [class.btn-outline-secondary]="option !== years"
+          [attr.aria-pressed]="option === years"
+          (click)="selectYears(option)"
+        >
+          {{ option }} {{ option === 1 ? "año" : "años" }}
+        </button>
+      }
+    </div>
+    @if (newEndDate) {
+      <p class="text-body-secondary small mb-0 mt-2">
+        <i class="fa-regular fa-calendar-check me-2"></i>
+        Tu suscripción quedaría vigente hasta el
+        {{ newEndDate | date: "d MMM, yyyy" : "UTC" }}.
+      </p>
+    }
+  </div>
+
+  <!-- El desglose, en tarjeta y no en tabla, como el detalle por propietario
+       del reporte de suscripciones. Los conceptos van juntos en una sola
+       tarjeta —son las partes de una misma cuenta— y el total va aparte: no es
+       otro concepto, es lo que suman todos. -->
+  @if (showDetail && quote?.items?.length) {
+    <div class="mb-4">
+      <div class="quote-card">
+        @for (item of quote?.items; track item.concept) {
+          <div class="quote-row">
+            <span>
+              {{ item.concept }}
+              @if (item.quantity && item.quantity > 1) {
+                <span class="text-body-secondary small">
+                  &times; {{ item.quantity }}
+                </span>
+              }
+              <!-- En la misma línea que el concepto. En móvil la nota se
+                   recorta a "(1 vehículo)": el ancho no da para la frase
+                   entera. -->
+              @if (isBaseItem(item.concept)) {
+                <span class="text-body-secondary smaller text-nowrap">
+                  <span class="d-none d-sm-inline">(Incluye 1 vehículo)</span>
+                  <span class="d-sm-none">(1 vehículo)</span>
+                </span>
+              }
+            </span>
+            <span class="fw-semibold text-nowrap">
+              {{ item.amount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+            </span>
+          </div>
+        }
+
+        @if (years > 1) {
+          <div class="quote-row">
+            <span class="text-body-secondary">Subtotal por año</span>
+            <span class="text-nowrap">
+              {{ annualTotal | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+            </span>
+          </div>
+          <div class="quote-row">
+            <span class="text-body-secondary">Años a renovar</span>
+            <span class="text-nowrap">&times; {{ years }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="quote-card quote-total mt-2">
+        <div class="quote-row">
+          <span class="fw-bold">Total a pagar</span>
+          <span class="fw-bold text-nowrap">
+            {{ total | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+          </span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ================================================================
+       2. A dónde se paga
+       ================================================================ -->
+  <h6 class="fw-bold mb-3">
+    <i class="fa-solid fa-wallet me-2 text-primary opacity-75"></i>
+    Método de pago
+  </h6>
+
+  <div class="row g-3 mb-4">
+    @for (method of methods; track method.id) {
+      <div class="col-12" [class.col-sm-6]="methods.length > 1">
+        <!-- La tarjeta entera es el gesto: copia el número sin espacios y abre
+             la aplicación. Es lo que se hace a continuación —pegar y
+             transferir—, y a mano el número se equivoca. -->
+        <div
+          class="method-card method-card-action h-100 rounded-4 p-3"
+          role="button"
+          tabindex="0"
+          [attr.aria-label]="
+            'Copiar el número de ' + method.name + ' y abrir la aplicación'
+          "
+          (click)="openMethodApp(method)"
+          onkeypress
+        >
+          <p class="fw-bold mb-1">
+            <i class="me-2 text-primary" [ngClass]="method.icon"></i>
+            {{ method.name }}
+          </p>
+          <p class="text-body-secondary smaller mb-1">
+            {{ method.accountLabel }}
+          </p>
+          <p class="account-number fw-bold mb-1">{{ method.account }}</p>
+          <p class="text-body-secondary smaller mb-2">{{ method.holder }}</p>
+
+          <p class="text-primary smaller mb-1">
+            <i class="fa-solid fa-copy me-1"></i>
+            Toca para copiar el número y abrir {{ method.name }}
+          </p>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- ================================================================
+       3. Avisar que ya se pagó
+       ================================================================
+       El pago se hace fuera de la aplicación, así que sin este paso nadie se
+       entera: el comprobante es lo que le llega al administrador para
+       confirmar la renovación. -->
+  <div class="report-block rounded-4 p-4">
+    <h6 class="fw-bold mb-1">¿Ya realizaste el pago?</h6>
+    <p class="text-body-secondary small mb-3">
+      Envía el comprobante y lo revisamos para renovar tu suscripción.
+    </p>
+
+    @if (!reporting) {
+      <button
+        type="button"
+        class="btn btn-primary rounded-3 w-100 py-2"
+        (click)="startReport()"
+      >
+        <i class="fa-solid fa-paper-plane me-2"></i>Enviar comprobante
+      </button>
+    } @else {
+      <div class="mb-3">
+        <label for="paymentReference" class="form-label fw-bold small mb-1">
+          Número de referencia
+        </label>
+        <input
+          id="paymentReference"
+          type="text"
+          class="form-control rounded-3"
+          placeholder="Opcional"
+          maxlength="60"
+          [(ngModel)]="reference"
+        />
+      </div>
+
+      <div class="mb-3">
+        <span class="form-label fw-bold small mb-1 d-block">Comprobante*</span>
+        @if (selectedFileName) {
+          <div
+            class="file-chip d-flex align-items-center gap-2 rounded-3 px-3 py-2"
+          >
+            <i class="fa-solid fa-file-lines text-primary"></i>
+            <span class="text-truncate flex-grow-1">{{
+              selectedFileName
+            }}</span>
+            <button
+              type="button"
+              class="btn btn-link btn-sm p-0 text-danger shadow-none"
+              (click)="removeFile()"
+              aria-label="Quitar el archivo"
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        } @else {
+          <label class="file-drop rounded-3 w-100 text-center py-3 mb-0">
+            <input
+              type="file"
+              class="d-none"
+              accept=".pdf,.jpg,.jpeg,.png,.webp"
+              (change)="onFileSelected($event)"
+            />
+            <i class="fa-solid fa-cloud-arrow-up fs-4 d-block mb-1"></i>
+            <span class="small">Toca para adjuntar</span>
+          </label>
+          <p class="text-body-secondary smaller mb-0 mt-1">
+            PDF o imagen, hasta {{ maxFileSizeMb }} MB.
+          </p>
+        }
+      </div>
+
+      @if (formError) {
+        <p class="text-danger small mb-3">
+          <i class="fa-solid fa-triangle-exclamation me-2"></i>{{ formError }}
+        </p>
+      }
+
+      <button
+        type="button"
+        class="btn btn-primary rounded-3 w-100 py-2"
+        [disabled]="!canSend"
+        (click)="sendReceipt()"
+      >
+        @if (isSaving) {
+          <span class="spinner-border spinner-border-sm me-2"></span>
+          Enviando...
+        } @else {
+          <i class="fa-solid fa-paper-plane me-2"></i>Enviar comprobante
+        }
+      </button>
+    }
+  </div>
+</div>

@@ -161,7 +161,11 @@ export function simplifyPath(
   let tolerance = Math.max(0, toleranceMeters);
   let simplified = douglasPeucker(points, tolerance);
 
-  for (let attempt = 0; attempt < 6 && simplified.length > maxPoints; attempt++) {
+  for (
+    let attempt = 0;
+    attempt < 6 && simplified.length > maxPoints;
+    attempt++
+  ) {
     tolerance = tolerance > 0 ? tolerance * 2 : DEFAULT_TOLERANCE_METERS;
     simplified = douglasPeucker(points, tolerance);
   }

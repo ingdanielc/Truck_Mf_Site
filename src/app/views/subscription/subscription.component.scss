@@ -1,0 +1,79 @@
+/* Los mismos márgenes que el resto de las vistas: 0,8 rem en móvil y 3 rem en
+   escritorio. Es lo que alinea el título de esta pantalla con el de Reportes o
+   Viajes al pasar de una a otra por el menú. */
+.subscription-container {
+  min-height: 100vh;
+  padding-left: 0.8rem;
+  padding-right: 0.8rem;
+  transition: all 0.3s ease;
+
+  @media (min-width: 768px) {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+.state-card {
+  background-color: var(--bs-body-bg);
+}
+
+/* Los cuatro datos del plan se leen como una ficha: rótulo menudo arriba y el
+   dato en grande debajo, igual que las cifras del tablero. */
+.field-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--bs-secondary-color);
+}
+
+.field-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--bs-body-color);
+}
+
+/* La fecha hasta la que el acceso es gratuito es el dato de la tarjeta: se lee
+   como la cifra del plan, no como un renglón más de la ficha. */
+.free-until {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  color: var(--bs-primary);
+}
+
+/* 16 px: el encabezado del histórico no compite con el título de la pantalla,
+   que es lo único que va en grande aquí. */
+.section-title {
+  font-size: 1rem;
+}
+
+.feature-list li {
+  font-size: 0.925rem;
+}
+
+.smaller {
+  font-size: 0.8rem;
+}
+
+.payment-list {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.payment-row {
+  padding: 0.75rem 1rem;
+  background-color: var(--bs-body-bg);
+
+  & + .payment-row {
+    border-top: 1px solid var(--bs-border-color);
+  }
+}
+
+.section-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 0;
+}
