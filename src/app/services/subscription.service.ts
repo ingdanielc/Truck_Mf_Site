@@ -53,7 +53,13 @@ export class SubscriptionService {
   getOwnerPayments(ownerId: number): Observable<SubscriptionPayment[]> {
     return this.http
       .get<any>(`${this.basePath}/payments/owner/${ownerId}`)
-      .pipe(map((resp) => SubscriptionService.toPayments(resp)));
+      .pipe(
+        map((resp) =>
+          SubscriptionService.toPayments(resp).sort(
+            SubscriptionService.byRecency,
+          ),
+        ),
+      );
   }
 
   /* ======================================================================
@@ -210,6 +216,36 @@ export class SubscriptionService {
       items,
       total,
     };
+  }
+
+  /**
+   * Del más reciente al más viejo.
+   *
+   * El orden no es cosmético. La pantalla del propietario lee el primero para
+   * saber en qué quedó su último comprobante, y el endpoint no promete ningún
+   * orden: si devuelve los pagos como se le ocurra, un rechazo viejo pasa por
+   * ser el último y el aviso rojo se queda puesto aunque el envío siguiente ya
+   * se haya confirmado.
+   *
+   * Cuando falta la fecha manda el id, que también crece con el tiempo.
+   */
+  private static byRecency(
+    a: SubscriptionPayment,
+    b: SubscriptionPayment,
+  ): number {
+    const fecha = (p: SubscriptionPayment): number | null => {
+      const instante = p.creationDate
+        ? new Date(p.creationDate).getTime()
+        : NaN;
+      return Number.isNaN(instante) ? null : instante;
+    };
+
+    const primera = fecha(a);
+    const segunda = fecha(b);
+    if (primera !== null && segunda !== null && primera !== segunda) {
+      return segunda - primera;
+    }
+    return (b.id ?? 0) - (a.id ?? 0);
   }
 
   private static toPayments(resp: any): SubscriptionPayment[] {

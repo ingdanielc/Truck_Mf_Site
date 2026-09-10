@@ -23,6 +23,7 @@ import { GPasswordCardComponent } from '../../components/g-password-card/g-passw
 import { ToastService } from '../../services/toast.service';
 import { CustomValidators } from '../../utils/custom-validators';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
+import { PullToRefreshService } from '../../services/pull-to-refresh.service';
 
 @Component({
   selector: 'app-security',
@@ -71,6 +72,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
     private readonly securityService: SecurityService,
     private readonly toastService: ToastService,
     private readonly fb: FormBuilder,
+    private readonly pullToRefresh: PullToRefreshService,
   ) {
     this.userForm = this.fb.group(
       {
@@ -109,13 +111,35 @@ export class SecurityComponent implements OnInit, OnDestroy {
     this.loadRoles();
     this.updateUserCounts();
     this.loadUsers();
+    this.pullToRefresh.register(this.recargar);
   }
 
   ngOnDestroy(): void {
     this.userSub?.unsubscribe();
+    this.pullToRefresh.unregister(this.recargar);
   }
 
-  loadRoles(): void {
+  /**
+   * Lo que corre al tirar de la pantalla hacia abajo en movil.
+   *
+   * Se respeta el filtro y la pagina en los que esta el usuario: recargar no es
+   * volver al principio, es traer lo mismo pero al dia. La promesa se resuelve
+   * cuando terminan las tres peticiones para que el indicador no se retire
+   * antes de que los datos esten puestos.
+   */
+  private readonly recargar = (): Promise<void> =>
+    new Promise<void>((resolver) => {
+      let pendientes = 3;
+      const listo = () => {
+        pendientes -= 1;
+        if (pendientes === 0) resolver();
+      };
+      this.loadRoles(listo);
+      this.updateUserCounts(listo);
+      this.loadUsers(listo, false);
+    });
+
+  loadRoles(alTerminar?: () => void): void {
     this.securityService.getAllRoles().subscribe({
       next: (response: any) => {
         // Assuming the response structure, adjust if necessary based on actual API
@@ -133,14 +157,22 @@ export class SecurityComponent implements OnInit, OnDestroy {
             .map((r) => r.name)
             .filter((name): name is string => !!name),
         ];
+        alTerminar?.();
       },
       error: (err) => {
         console.error('Error loading roles:', err);
+        alTerminar?.();
       },
     });
   }
 
-  loadUsers(): void {
+  /**
+   * `mostrarCargando` en falso deja la lista en pantalla mientras llega la
+   * respuesta. Es lo que se quiere al tirar para recargar: el indicador de
+   * arriba ya dice que algo esta pasando y vaciar la grilla para volver a
+   * llenarla con casi lo mismo se ve como un parpadeo.
+   */
+  loadUsers(alTerminar?: () => void, mostrarCargando: boolean = true): void {
     let filtros: Filter[] = [];
     if (this.activeFilter !== 'Todos') {
       filtros.push(new Filter('userRoles.role.name', '=', this.activeFilter));
@@ -150,7 +182,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
       new Pagination(this.rows, this.page),
       new Sort('name', true),
     );
-    this.loading = true;
+    if (mostrarCargando) this.loading = true;
     this.securityService.getUserFilter(filter).subscribe({
       next: (response: any) => {
         if (response?.data?.content) {
@@ -164,10 +196,12 @@ export class SecurityComponent implements OnInit, OnDestroy {
           this.users = [];
         }
         this.loading = false;
+        alTerminar?.();
       },
       error: (err) => {
         console.error('Error loading users:', err);
         this.loading = false;
+        alTerminar?.();
       },
     });
   }
@@ -195,7 +229,7 @@ export class SecurityComponent implements OnInit, OnDestroy {
     return 'otro';
   }
 
-  updateUserCounts(): void {
+  updateUserCounts(alTerminar?: () => void): void {
     forkJoin({
       total: this.securityService.getUserFilter(
         new ModelFilterTable([], new Pagination(1, 0), new Sort('id', true)),
@@ -219,6 +253,11 @@ export class SecurityComponent implements OnInit, OnDestroy {
         this.totalUsersStable = resps.total?.data?.totalElements ?? 0;
         this.ownersCount = resps.owners?.data?.totalElements ?? 0;
         this.driversCount = resps.drivers?.data?.totalElements ?? 0;
+        alTerminar?.();
+      },
+      error: (err) => {
+        console.error('Error loading user counts:', err);
+        alTerminar?.();
       },
     });
   }

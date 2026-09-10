@@ -128,9 +128,9 @@ export class GAddExpenseComponent implements OnInit {
     }
 
     if (this.showExpenseDate) {
-      /* El `min` y el `max` del campo frenan el selector, pero no lo que se
-         escriba a mano ni lo que llegue precargado: el validador es lo que
-         mantiene Guardar apagado con una fecha fuera de rango. */
+      /* El `min` del campo frena el selector, pero no lo que se escriba a mano
+         ni lo que llegue precargado: el validador es lo que mantiene Guardar
+         apagado con una fecha fuera de rango. */
       this.expenseForm
         .get('expenseDate')
         ?.setValidators([Validators.required, this.expenseDateRange()]);
@@ -201,14 +201,25 @@ export class GAddExpenseComponent implements OnInit {
     return !this.isMaintenance && this.pastTripDate !== null;
   }
 
-  /** La fecha del viaje, solo si es de un dia anterior a hoy. `null` si el
-   *  viaje es de hoy, si no hay viaje o si la fecha no se entiende. */
-  private get pastTripDate(): Date | null {
+  /**
+   * La fecha del viaje: cuando salio, o cuando se registro si no hay salida.
+   *
+   * De aqui sale todo lo que el campo hace con fechas -con que valor abre y
+   * hasta donde deja retroceder-, para que las dos no puedan separarse.
+   */
+  private get tripDate(): Date | null {
     const cruda = this.trip?.startDate ?? this.trip?.creationDate;
     if (!cruda) return null;
 
     const fecha = new Date(cruda);
-    if (isNaN(fecha.getTime())) return null;
+    return isNaN(fecha.getTime()) ? null : fecha;
+  }
+
+  /** La fecha del viaje, solo si es de un dia anterior a hoy. `null` si el
+   *  viaje es de hoy, si no hay viaje o si la fecha no se entiende. */
+  private get pastTripDate(): Date | null {
+    const fecha = this.tripDate;
+    if (!fecha) return null;
 
     const dia = (d: Date) =>
       new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -216,24 +227,21 @@ export class GAddExpenseComponent implements OnInit {
   }
 
   /**
-   * Lo mas temprano que admite el campo: cuando el viaje empieza a existir.
+   * Lo mas temprano que admite el campo: el dia del viaje.
    *
-   * Un gasto no puede ser anterior al viaje al que se le imputa. Se toma la
-   * mas temprana de las dos fechas que trae el viaje -cuando se registro y
-   * cuando salio- porque no siempre van en ese orden: quien carga un viaje de
-   * semanas atras lo crea hoy con una salida anterior, y quedarse solo con la
-   * de creacion dejaria fuera justo la fecha que el campo viene a poner.
+   * Un gasto no puede ser anterior al viaje al que se le imputa. Antes se
+   * tomaba la mas temprana entre la salida y el registro, y eso abria dias
+   * anteriores al que el campo trae puesto: un viaje creado el lunes con
+   * salida el jueves dejaba elegir martes y miercoles, dias en los que ese
+   * viaje todavia no rodaba.
+   *
+   * Vale igual creando que editando. Editando se puede corregir la fecha hacia
+   * atras, porque un gasto se guarda mal y hay que poder arreglarlo, pero
+   * nunca mas alla del viaje.
    */
   get expenseDateMin(): string {
-    const fechas = [this.trip?.creationDate, this.trip?.startDate]
-      .map((valor) => (valor ? new Date(valor) : null))
-      .filter((d): d is Date => d !== null && !isNaN(d.getTime()));
-    if (!fechas.length) return '';
-
-    const primera = fechas.reduce((a, b) =>
-      a.getTime() <= b.getTime() ? a : b,
-    );
-    return GAddExpenseComponent.toInputDate(primera);
+    const fecha = this.tripDate;
+    return fecha ? GAddExpenseComponent.toInputDate(fecha) : '';
   }
 
   /** Fuera de rango, con cual de los dos topes se paso: el mensaje de abajo

@@ -312,9 +312,24 @@ export class SubscriptionComponent implements OnInit, OnDestroy {
     return !this.loading && !this.loadError && !this.pendingPayment;
   }
 
-  /** El último rechazo, que es lo que explica por qué sigue sin renovarse. */
+  /** El último comprobante enviado. Va primero: el servicio los entrega del
+   *  más reciente al más viejo. */
+  private get latestPayment(): SubscriptionPayment | null {
+    return this.payments[0] ?? null;
+  }
+
+  /**
+   * El rechazo que todavía pesa, que es lo que explica por qué sigue sin
+   * renovarse. Solo cuenta si es el del último comprobante.
+   *
+   * Un rechazo deja de importar en cuanto el propietario manda otro
+   * comprobante y ese se confirma: el problema ya se resolvió y el aviso rojo
+   * solo asusta. Antes se buscaba cualquier rechazado en el histórico, así que
+   * el aviso se quedaba puesto para siempre.
+   */
   get lastRejected(): SubscriptionPayment | null {
-    return this.payments.find((p) => p.status === 'RECHAZADO') ?? null;
+    const ultimo = this.latestPayment;
+    return ultimo?.status === 'RECHAZADO' ? ultimo : null;
   }
 
   public methodName(id: string): string {
