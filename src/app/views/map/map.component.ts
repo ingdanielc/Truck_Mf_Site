@@ -11,6 +11,11 @@ import { DriverService } from 'src/app/services/driver.service';
 import { FormsModule } from '@angular/forms';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { ModelTrip } from 'src/app/models/trip-model';
+import {
+  ComboOption,
+  GSearchComboboxComponent,
+} from 'src/app/components/g-search-combobox/g-search-combobox.component';
+import { ownerComboOptions } from 'src/app/utils/owner-options';
 import { ModelOwner } from 'src/app/models/owner-model';
 import {
   ModelFilterTable,
@@ -26,10 +31,15 @@ import { Formatters } from '../../utils/formatters';
 
 declare const google: any;
 
+/** El id de la fila "Todos los Propietarios". Ya era el valor del `<option>`
+ *  que tenía el desplegable, y el filtro de vehículos lo mira para no acotar
+ *  por propietario. */
+const TODOS_LOS_PROPIETARIOS = -1;
+
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatePipe],
+  imports: [CommonModule, FormsModule, PlatePipe, GSearchComboboxComponent],
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss'],
 })
@@ -42,7 +52,34 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   isPanelCollapsed: boolean = false;
   fromParam: string | null = null;
 
-  owners: ModelOwner[] = [];
+  /** Los propietarios con viaje en curso. Al llegar se rehacen las filas del
+   *  buscador: armarlas en la plantilla las volvería a crear en cada ciclo. */
+  set owners(value: ModelOwner[]) {
+    this.listaOwners = value ?? [];
+    this.ownerFilterOptions = this.listaOwners.length
+      ? [
+          { id: TODOS_LOS_PROPIETARIOS, name: 'Todos los Propietarios' },
+          /* El nombre con su identificación al lado, como en el resto del
+             panel: hay propietarios que se llaman parecido y el número es lo
+             único que los separa. El nombre se resuelve antes porque algunos
+             solo lo traen en el usuario. */
+          ...ownerComboOptions(
+            this.listaOwners.map((owner) => ({
+              id: owner.id,
+              name:
+                owner.name || owner.user?.name || `Propietario ${owner.id}`,
+              documentNumber: owner.documentNumber,
+            })),
+            true,
+          ),
+        ]
+      : [];
+  }
+  get owners(): ModelOwner[] {
+    return this.listaOwners;
+  }
+  private listaOwners: ModelOwner[] = [];
+  ownerFilterOptions: ComboOption[] = [];
   selectedOwnerFilterId: number | null = null;
 
   private markers: any[] = [];
@@ -742,6 +779,16 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       .filter((id): id is number => id != null);
     if (fromVehicle.length > 0) return fromVehicle;
     return trip.driver?.ownerId == null ? [] : [trip.driver.ownerId];
+  }
+
+  /**
+   * El buscador devuelve el id como texto y aquí se sigue trabajando con
+   * número: el filtro de vehículos compara contra -1 para saber si se pidieron
+   * todos. `null` no llega nunca, porque la lista no trae fila vacía.
+   */
+  onOwnerSelected(ownerId: string | null): void {
+    this.selectedOwnerFilterId = ownerId === null ? null : Number(ownerId);
+    this.onOwnerFilterChange();
   }
 
   onOwnerFilterChange(): void {

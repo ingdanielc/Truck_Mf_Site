@@ -50,6 +50,11 @@ import { GVehicleDocumentsComponent } from 'src/app/components/g-vehicle-documen
 import { PlatePipe } from '../../pipes/plate.pipe';
 import { GConfirmSheetComponent } from '../../components/g-confirm-sheet/g-confirm-sheet.component';
 import { findScroller, scrollToTop } from 'src/app/utils/scroll';
+import {
+  ComboOption,
+  GSearchComboboxComponent,
+} from 'src/app/components/g-search-combobox/g-search-combobox.component';
+import { ownerComboOptions } from 'src/app/utils/owner-options';
 
 export interface VehicleOwnerGroup {
   owner: ModelOwner;
@@ -69,6 +74,7 @@ export interface VehicleOwnerGroup {
     GVehicleDocumentsComponent,
     PlatePipe,
     GConfirmSheetComponent,
+    GSearchComboboxComponent,
   ],
   templateUrl: './vehicles.component.html',
   styleUrls: ['./vehicles.component.scss'],
@@ -171,6 +177,19 @@ export class VehiclesComponent implements OnInit, AfterViewInit, OnDestroy {
     return !(control.invalid && control.touched);
   }
   owners: ModelOwner[] = [];
+  /**
+   * Todos los propietarios, solo para el desplegable del formulario.
+   *
+   * Va aparte de `owners`, que es la lista del listado y llega paginada de a
+   * nueve: el formulario terminaba ofreciendo únicamente la página que se
+   * estaba viendo, y el buscador no podía encontrar a nadie más. Esta se pide
+   * una sola vez al entrar, no en cada cambio de página.
+   */
+  private allOwners: ModelOwner[] = [];
+  /** Las filas que ofrece el formulario abierto. Ver `fijarOwnersDelFormulario`. */
+  ownerOptions: ComboOption[] = [];
+  /** El propietario al que se fijó el formulario, si se abrió desde su fila. */
+  private ownerFijado: ModelOwner | null = null;
   drivers: ModelDriver[] = [];
   loadingDrivers: boolean = false;
   private readonly ownerChangeSub?: Subscription;
@@ -316,6 +335,7 @@ export class VehiclesComponent implements OnInit, AfterViewInit, OnDestroy {
             this.rows = 9;
           }
 
+          this.loadAllOwners();
           this.openPendingEditVehicle();
 
           if (this.userRole === 'ADMINISTRADOR') {
@@ -441,6 +461,47 @@ export class VehiclesComponent implements OnInit, AfterViewInit, OnDestroy {
       error: () => {
         this.drivers = [];
         this.loadingDrivers = false;
+      },
+    });
+  }
+
+  /**
+   * Las filas del propietario que ofrece el formulario.
+   *
+   * Son todos, salvo cuando se agrega desde la fila de un propietario: ahí es
+   * solo ese, porque el campo ya viene resuelto y cambiarlo sería salirse de
+   * donde se estaba.
+   */
+  private fijarOwnersDelFormulario(owner: ModelOwner | null): void {
+    this.ownerFijado = owner;
+    this.ownerOptions = ownerComboOptions(owner ? [owner] : this.allOwners, true);
+  }
+
+  /**
+   * Trae la lista entera de propietarios para el formulario.
+   *
+   * Solo la necesita el administrador: los demás roles no eligen propietario,
+   * el formulario les esconde el campo. El tope es el mismo que usa el filtro
+   * del listado de viajes.
+   */
+  private loadAllOwners(): void {
+    if (this.userRole !== 'ADMINISTRADOR') return;
+
+    const filter = new ModelFilterTable(
+      [],
+      new Pagination(1000, 0),
+      new Sort('name', true),
+    );
+
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (response: any) => {
+        this.allOwners = response?.data?.content ?? [];
+        if (!this.ownerFijado) this.fijarOwnersDelFormulario(null);
+      },
+      error: (err) => {
+        console.error('Error loading owners for the vehicle form:', err);
+        this.allOwners = [];
+        if (!this.ownerFijado) this.fijarOwnersDelFormulario(null);
       },
     });
   }
@@ -705,6 +766,10 @@ export class VehiclesComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.checkVehicleLimit(owner)) return;
     }
     this.showingVehicleLimitWarning = false;
+    /* Abrir por las vías de siempre —el botón de agregar y el de editar—
+       devuelve la lista completa: el formulario quedaba fijado al propietario
+       de la última vez que se agregó desde su fila. */
+    this.fijarOwnersDelFormulario(null);
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
     this.editingVehicle = vehicle || null;
     this.photoFile = null;
@@ -863,6 +928,7 @@ export class VehiclesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showingVehicleLimitWarning = false;
     this.editingVehicle = null;
     this.isOffcanvasOpen = true;
+    this.fijarOwnersDelFormulario(owner);
     // Primero reseteamos sin emitir eventos para evitar doble disparo
     this.vehicleForm.reset(
       { year: new Date().getFullYear(), axleCount: null, initialKm: 0 },

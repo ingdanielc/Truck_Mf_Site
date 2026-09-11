@@ -40,7 +40,11 @@ import { computeRoute, routeDistanceKm } from 'src/app/utils/google-routes';
 import { locationQuery } from 'src/app/utils/city-geo';
 import { canSetTripStatus } from 'src/app/utils/trip-status';
 import { PlatePipe } from '../../pipes/plate.pipe';
-import { GCityComboboxComponent } from '../g-city-combobox/g-city-combobox.component';
+import {
+  ComboOption,
+  GSearchComboboxComponent,
+} from '../g-search-combobox/g-search-combobox.component';
+import { ownerComboOptions } from 'src/app/utils/owner-options';
 
 @Component({
   selector: 'g-trip-form',
@@ -52,7 +56,7 @@ import { GCityComboboxComponent } from '../g-city-combobox/g-city-combobox.compo
     UpperCasePipe,
     NgClass,
     PlatePipe,
-    GCityComboboxComponent,
+    GSearchComboboxComponent,
   ],
   templateUrl: './g-trip-form.component.html',
   styleUrls: ['./g-trip-form.component.scss'],
@@ -68,6 +72,9 @@ export class GTripFormComponent implements OnInit, OnDestroy {
 
   tripForm: FormGroup;
   owners: ModelOwner[] = [];
+  /** Los mismos propietarios, ya listos para el buscador. Ver
+   *  `ownerComboOptions`: se arma al cargarlos y no en la plantilla. */
+  ownerOptions: ComboOption[] = [];
   vehicles: ModelVehicle[] = [];
   drivers: ModelDriver[] = [];
   cities: any[] = [];
@@ -630,6 +637,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         if (response?.data?.content) {
           this.owners = response.data.content;
+          this.ownerOptions = ownerComboOptions(this.owners, true);
         }
       },
     });

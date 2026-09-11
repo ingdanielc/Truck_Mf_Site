@@ -1,8 +1,8 @@
 import { ChangeDetectorRef } from '@angular/core';
-import { CityGroup, GCityComboboxComponent } from './g-city-combobox.component';
+import { ComboGroup, GSearchComboboxComponent } from './g-search-combobox.component';
 
 /** Dos departamentos bastan para probar el agrupado y el recorrido. */
-const GRUPOS: CityGroup[] = [
+const GRUPOS: ComboGroup[] = [
   {
     state: 'Antioquia',
     cities: [
@@ -25,7 +25,7 @@ const detector = { detectChanges: () => {} } as ChangeDetectorRef;
 const tecla = (key: string): KeyboardEvent =>
   ({ key, preventDefault: () => {} }) as KeyboardEvent;
 
-const escribir = (combo: GCityComboboxComponent, texto: string): void =>
+const escribir = (combo: GSearchComboboxComponent, texto: string): void =>
   combo.onBuscar({ target: { value: texto } } as unknown as Event);
 
 /**
@@ -42,7 +42,7 @@ const puntero = (clientY: number, enZonaMuerta = false): PointerEvent =>
   }) as unknown as PointerEvent;
 
 /** La barrita solo existe en el teléfono, y sin ella no hay gesto. */
-const enTelefono = (combo: GCityComboboxComponent): void => {
+const enTelefono = (combo: GSearchComboboxComponent): void => {
   (combo as unknown as { barrita: unknown }).barrita = {
     nativeElement: { offsetParent: {} },
   };
@@ -50,7 +50,7 @@ const enTelefono = (combo: GCityComboboxComponent): void => {
 
 /** Arrastre desde `desde` hasta `hasta`, en píxeles de pantalla. */
 const arrastrar = (
-  combo: GCityComboboxComponent,
+  combo: GSearchComboboxComponent,
   desde: number,
   hasta: number,
   enZonaMuerta = false,
@@ -61,17 +61,17 @@ const arrastrar = (
 };
 
 /** Los nombres que quedan a la vista, en el orden en que se ven. */
-const visibles = (combo: GCityComboboxComponent): string[] =>
+const visibles = (combo: GSearchComboboxComponent): string[] =>
   combo.filteredGroups.flatMap((grupo) =>
-    grupo.cities.map((ciudad) => ciudad.name),
+    grupo.cities.map((opcion) => opcion.name),
   );
 
-describe('GCityComboboxComponent', () => {
-  let combo: GCityComboboxComponent;
+describe('GSearchComboboxComponent', () => {
+  let combo: GSearchComboboxComponent;
   let emitido: string | null | undefined;
 
   beforeEach(() => {
-    combo = new GCityComboboxComponent(detector);
+    combo = new GSearchComboboxComponent(detector);
     combo.groups = GRUPOS;
     emitido = undefined;
     combo.registerOnChange((valor) => (emitido = valor));
@@ -85,7 +85,7 @@ describe('GCityComboboxComponent', () => {
   });
 
   /* Quien sabe la región pero no el municipio escribe el departamento. */
-  it('escribir el departamento saca todas sus ciudades', () => {
+  it('escribir el departamento saca todas sus opciones', () => {
     combo.abrir();
     escribir(combo, 'ant');
 
@@ -111,7 +111,7 @@ describe('GCityComboboxComponent', () => {
     expect(combo.open).toBeFalse();
   });
 
-  it('las flechas recorren las ciudades de todos los departamentos', () => {
+  it('las flechas recorren las opciones de todos los departamentos', () => {
     combo.abrir();
     combo.onKeydown(tecla('ArrowDown'));
     combo.onKeydown(tecla('ArrowDown'));
@@ -141,7 +141,7 @@ describe('GCityComboboxComponent', () => {
   });
 
   /* El formulario trae el id como número al editar y como texto al haberlo
-     tocado; los dos tienen que pintar la misma ciudad. */
+     tocado; los dos tienen que pintar la misma opcion. */
   it('reconoce el valor tanto en número como en texto', () => {
     combo.writeValue(3);
     expect(combo.selectedLabel).toBe('Bogotá');
@@ -161,8 +161,8 @@ describe('GCityComboboxComponent', () => {
   });
 
   /* Pasar de viaje redondo a sencillo vacía el destino de regreso. Si la
-     etiqueta se quedara, el campo seguiría enseñando la ciudad de antes. */
-  it('vaciar el campo borra la ciudad que se estaba enseñando', () => {
+     etiqueta se quedara, el campo seguiría enseñando la opcion de antes. */
+  it('vaciar el campo borra la opcion que se estaba enseñando', () => {
     combo.writeValue(3);
     expect(combo.selectedLabel).toBe('Bogotá');
 
@@ -172,7 +172,7 @@ describe('GCityComboboxComponent', () => {
   });
 
   /* Un id que no está en la lista tampoco puede dejar la etiqueta anterior. */
-  it('un id desconocido deja el campo sin ciudad', () => {
+  it('un id desconocido deja el campo sin opcion', () => {
     combo.writeValue(3);
 
     combo.writeValue(999);
@@ -180,9 +180,9 @@ describe('GCityComboboxComponent', () => {
     expect(combo.selectedLabel).toBe('');
   });
 
-  /* Las ciudades llegan del servidor después del primer dibujado. */
-  it('pinta la etiqueta cuando las ciudades llegan después del valor', () => {
-    const tardio = new GCityComboboxComponent(detector);
+  /* Las opciones llegan del servidor después del primer dibujado. */
+  it('pinta la etiqueta cuando las opciones llegan después del valor', () => {
+    const tardio = new GSearchComboboxComponent(detector);
     tardio.writeValue(2);
     expect(tardio.selectedLabel).toBe('');
 
@@ -214,7 +214,7 @@ describe('GCityComboboxComponent', () => {
   });
 
   /* De la lista y del buscador no sale el gesto: ahí el dedo hacia abajo
-     recorre las ciudades o escribe. */
+     recorre las opciones o escribe. */
   it('arrastrar desde la lista no mueve la hoja', () => {
     enTelefono(combo);
     combo.abrir();
@@ -265,7 +265,7 @@ describe('GCityComboboxComponent', () => {
       expect(combo.isSelected(null)).toBeTrue();
     });
 
-    /* Quien escribe está buscando una ciudad, no quitar el filtro. */
+    /* Quien escribe está buscando una opcion, no quitar el filtro. */
     it('desaparece en cuanto se escribe algo', () => {
       combo.abrir();
       expect(combo.mostrarTodas).toBeTrue();
@@ -296,5 +296,55 @@ describe('GCityComboboxComponent', () => {
     combo.seleccionar(GRUPOS[0].cities[0]);
 
     expect(emitido).toBe('1');
+  });
+});
+
+/**
+ * Las listas sin tramos, que es como llegan los propietarios. Se guardan como
+ * un único tramo sin encabezado para que el resto del componente no tenga que
+ * distinguir los dos casos.
+ */
+describe('GSearchComboboxComponent, lista plana', () => {
+  let combo: GSearchComboboxComponent;
+
+  const PROPIETARIOS = [
+    { id: 7, name: 'Transportes del Norte - 1.010.101.010' },
+    { id: 8, name: 'Carga Segura - 2.020.202.020' },
+  ];
+
+  beforeEach(() => {
+    combo = new GSearchComboboxComponent(detector);
+    combo.label = 'Propietario';
+    combo.options = PROPIETARIOS;
+  });
+
+  it('deja un solo tramo y sin encabezado que dibujar', () => {
+    expect(combo.filteredGroups.length).toBe(1);
+    expect(combo.filteredGroups[0].state).toBe('');
+    expect(combo.filteredGroups[0].cities.length).toBe(2);
+  });
+
+  it('filtra por el nombre de la fila', () => {
+    escribir(combo, 'carga');
+
+    expect(combo.filteredGroups[0].cities.map((fila) => fila.id)).toEqual([8]);
+  });
+
+  /* Un encabezado vacío no puede coincidir con lo que se escriba: si lo
+     hiciera, cualquier búsqueda sacaría la lista entera. */
+  it('una búsqueda sin coincidencias deja la lista vacía', () => {
+    escribir(combo, 'zzz');
+
+    expect(combo.filteredGroups.length).toBe(0);
+  });
+
+  it('el buscador se nombra a partir del campo', () => {
+    expect(combo.textoBuscador).toBe('Buscar Propietario');
+  });
+
+  it('una lista vacía no deja tramos sueltos', () => {
+    combo.options = [];
+
+    expect(combo.filteredGroups.length).toBe(0);
   });
 });

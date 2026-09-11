@@ -167,12 +167,18 @@ export class GAddExpenseComponent implements OnInit {
    * y esa es la respuesta correcta casi siempre.
    *
    * En los dos casos es solo el valor de partida: el campo se cambia.
+   *
+   * Nunca por debajo del tope. La fecha del viaje es su salida, y en un viaje
+   * cargado tarde la salida queda antes del registro: sin esto el campo abria
+   * en un dia que el mismo campo no admite, en rojo desde el primer momento.
    */
   private get defaultExpenseDate(): string {
     const fecha = this.isTripOpen
       ? new Date()
       : (this.pastTripDate ?? new Date());
-    return GAddExpenseComponent.toInputDate(fecha);
+    const partida = GAddExpenseComponent.toInputDate(fecha);
+    const minimo = this.expenseDateMin;
+    return minimo && partida < minimo ? minimo : partida;
   }
 
   /** El viaje sigue vivo: rodando, o entregado y sin cobrar. */
@@ -215,6 +221,16 @@ export class GAddExpenseComponent implements OnInit {
     return isNaN(fecha.getTime()) ? null : fecha;
   }
 
+  /** Cuando el viaje entro al sistema. Puede ser posterior a la salida: un
+   *  viaje se registra tarde y se le pone la fecha en que de verdad salio. */
+  private get tripCreationDate(): Date | null {
+    const cruda = this.trip?.creationDate;
+    if (!cruda) return null;
+
+    const fecha = new Date(cruda);
+    return isNaN(fecha.getTime()) ? null : fecha;
+  }
+
   /** La fecha del viaje, solo si es de un dia anterior a hoy. `null` si el
    *  viaje es de hoy, si no hay viaje o si la fecha no se entiende. */
   private get pastTripDate(): Date | null {
@@ -227,21 +243,31 @@ export class GAddExpenseComponent implements OnInit {
   }
 
   /**
-   * Lo mas temprano que admite el campo: el dia del viaje.
+   * Lo mas temprano que admite el campo: la mas tardia entre la salida del
+   * viaje y su registro.
    *
-   * Un gasto no puede ser anterior al viaje al que se le imputa. Antes se
-   * tomaba la mas temprana entre la salida y el registro, y eso abria dias
-   * anteriores al que el campo trae puesto: un viaje creado el lunes con
-   * salida el jueves dejaba elegir martes y miercoles, dias en los que ese
-   * viaje todavia no rodaba.
+   * Un gasto no puede ser anterior al viaje al que se le imputa, y los dos
+   * topes dejan fuera cosas distintas segun como se haya cargado el viaje.
+   *
+   * **Por la salida.** Un viaje creado el lunes con salida el jueves no puede
+   * tener gastos del martes: esos dias el camion todavia no rodaba.
+   *
+   * **Por el registro.** Un viaje que se carga tarde —sale el cinco y se
+   * registra el diez— no puede tener gastos del seis: ese viaje no existia en
+   * el sistema y la fecha no se puede comprobar contra nada.
    *
    * Vale igual creando que editando. Editando se puede corregir la fecha hacia
    * atras, porque un gasto se guarda mal y hay que poder arreglarlo, pero
-   * nunca mas alla del viaje.
+   * nunca mas alla de ese tope.
    */
   get expenseDateMin(): string {
-    const fecha = this.tripDate;
-    return fecha ? GAddExpenseComponent.toInputDate(fecha) : '';
+    /* `YYYY-MM-DD` se ordena igual como texto que como fecha, asi que la mas
+       tardia es la mayor de las dos cadenas. */
+    const topes = [this.tripDate, this.tripCreationDate]
+      .filter((fecha): fecha is Date => fecha !== null)
+      .map((fecha) => GAddExpenseComponent.toInputDate(fecha))
+      .sort();
+    return topes.length ? topes[topes.length - 1] : '';
   }
 
   /** Fuera de rango, con cual de los dos topes se paso: el mensaje de abajo

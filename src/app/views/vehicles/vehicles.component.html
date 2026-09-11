@@ -884,25 +884,18 @@
           </h6>
           <div class="mb-3">
             <label for="ownerId" class="form-label small fw-bold mb-2"
-              >Seleccionar Socio*</label
+              >Seleccionar Propietario*</label
             >
-            <select
-              id="ownerId"
-              class="form-select rounded-3 py-2 px-3"
+            <g-search-combobox
+              inputId="ownerId"
+              label="Propietario"
               formControlName="ownerId"
-              [class.is-invalid]="
-                vehicleForm.get('ownerId')?.invalid &&
-                vehicleForm.get('ownerId')?.touched
+              [options]="ownerOptions"
+              [invalid]="
+                !!vehicleForm.get('ownerId')?.invalid &&
+                !!vehicleForm.get('ownerId')?.touched
               "
-            >
-              <option value="null" disabled selected>Selecciona</option>
-              @for (owner of owners; track owner.id) {
-                <option [value]="owner.id">
-                  {{ owner.name }} -
-                  {{ owner.documentNumber | documentNumber }}
-                </option>
-              }
-            </select>
+            ></g-search-combobox>
             @if (
               vehicleForm.get("ownerId")?.invalid &&
               vehicleForm.get("ownerId")?.touched

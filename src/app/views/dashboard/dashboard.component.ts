@@ -34,6 +34,10 @@ import {
 import { ModelVehicle } from '../../models/vehicle-model';
 import { ModelTrip } from '../../models/trip-model';
 import { ModelExpense } from '../../models/expense-model';
+import {
+  ComboOption,
+  GSearchComboboxComponent,
+} from 'src/app/components/g-search-combobox/g-search-combobox.component';
 import { ModelOwner } from '../../models/owner-model';
 import { Formatters } from '../../utils/formatters';
 import {
@@ -76,6 +80,7 @@ interface ProfitStats {
     GExpensesReportComponent,
     GSubscriptionsReportComponent,
     GBalancesReportComponent,
+    GSearchComboboxComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
@@ -104,7 +109,22 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     | 'saldos'
     | 'viajes' = 'rentabilidad';
   userRole: string = '';
-  owners: ModelOwner[] = [];
+  /** La lista se rellena al cargar, así que las filas del buscador se rehacen
+   *  aquí. El texto sale de `ownerName`, el mismo criterio que las gráficas. */
+  set owners(value: ModelOwner[]) {
+    this.listaOwners = value ?? [];
+    this.ownerOptions = this.listaOwners
+      .filter((owner) => owner.id !== null && owner.id !== undefined)
+      .map((owner) => ({
+        id: owner.id as number,
+        name: this.ownerName(owner),
+      }));
+  }
+  get owners(): ModelOwner[] {
+    return this.listaOwners;
+  }
+  private listaOwners: ModelOwner[] = [];
+  ownerOptions: ComboOption[] = [];
   selectedOwnerId: number | null = null;
 
   showHistoryPanel: boolean = false;
@@ -1931,9 +1951,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async loadOwners() {
+    /* Mil, el mismo tope que el resto de los desplegables de propietario. */
     const filter = new ModelFilterTable(
       [],
-      new Pagination(500, 0),
+      new Pagination(1000, 0),
       new Sort('name', true),
     );
     try {
@@ -1978,6 +1999,17 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.currentUser) {
       this.loadData(this.currentUser);
     }
+  }
+
+  /**
+   * El buscador devuelve el id como texto, y aquí se sigue trabajando con
+   * número: los reportes lo comparan contra los ids que traen los viajes.
+   * `null` es la fila de "Todos los Propietarios".
+   */
+  onOwnerSelected(ownerId: string | null): void {
+    this.selectedOwnerId = ownerId ? Number(ownerId) : null;
+    this.showHistoryPanel = false;
+    this.onOwnerChange();
   }
 
   onOwnerChange() {

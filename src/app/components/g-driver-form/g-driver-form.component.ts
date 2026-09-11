@@ -17,7 +17,11 @@ import {
 } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
-import { GCityComboboxComponent } from 'src/app/components/g-city-combobox/g-city-combobox.component';
+import {
+  ComboOption,
+  GSearchComboboxComponent,
+} from 'src/app/components/g-search-combobox/g-search-combobox.component';
+import { ownerComboOptions } from 'src/app/utils/owner-options';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { DriverService } from 'src/app/services/driver.service';
@@ -39,7 +43,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
     FormsModule,
     ReactiveFormsModule,
     GCameraComponent,
-    GCityComboboxComponent,
+    GSearchComboboxComponent,
   ],
   templateUrl: './g-driver-form.component.html',
   styleUrls: ['./g-driver-form.component.scss'],
@@ -49,7 +53,17 @@ export class GDriverFormComponent implements OnInit, OnChanges {
   @Input() driver: ModelDriver | null = null;
   @Input() userRole: string = '';
   @Input() loggedInOwnerId: number | null = null;
-  @Input() owners: ModelOwner[] = [];
+  /** La lista llega de fuera y puede llegar tarde, así que las filas del
+   *  buscador se rehacen aquí y no en la plantilla. Ver `ownerComboOptions`. */
+  @Input() set owners(value: ModelOwner[]) {
+    this.listaOwners = value ?? [];
+    this.ownerOptions = ownerComboOptions(this.listaOwners, true);
+  }
+  get owners(): ModelOwner[] {
+    return this.listaOwners;
+  }
+  private listaOwners: ModelOwner[] = [];
+  ownerOptions: ComboOption[] = [];
   @Input() documentTypes: any[] = [];
   @Input() genders: any[] = [];
   @Input() cities: any[] = [];

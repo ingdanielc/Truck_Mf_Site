@@ -14,19 +14,19 @@
    listado y en crear cuenta la hoja vive al nivel de la página. Por debajo de
    1290, que es donde empiezan los paneles y las confirmaciones: una hoja de
    confirmación abierta tiene que seguir tapando a esta. */
-.city-combobox-backdrop {
+.search-combobox-backdrop {
   position: fixed;
   inset: 0;
   z-index: 1060;
   background-color: rgba(0, 0, 0, 0.35);
-  animation: city-combobox-aparecer 0.2s ease;
+  animation: search-combobox-aparecer 0.2s ease;
 }
 
 /* Sube desde abajo y se queda a media pantalla: por encima sigue viéndose el
    formulario, que es lo que dice que esto se cierra y uno vuelve a donde
    estaba. Solo se anima al abrir; al elegir, la hoja se quita de golpe porque
    deja de dibujarse. */
-.city-combobox-sheet {
+.search-combobox-sheet {
   /* Lo que el teclado le quita a la ventana por abajo. Lo mide el componente
      con `visualViewport`, porque en iOS el teclado no encoge la ventana y una
      hoja pegada al borde inferior se quedaría debajo de las teclas. */
@@ -39,16 +39,16 @@
   z-index: 1070;
   display: flex;
   flex-direction: column;
-  /* Dos quintos de pantalla como mucho, y nunca por debajo del teclado. Los
+  /* Algo menos de media pantalla, y nunca por debajo del teclado. Los
      `dvh` son para que la barra del navegador al recogerse no descuadre el
      alto. */
-  max-height: 40vh;
-  max-height: min(40dvh, calc(100dvh - var(--teclado) - 3rem));
+  max-height: 45vh;
+  max-height: min(45dvh, calc(100dvh - var(--teclado) - 3rem));
   background-color: var(--bs-body-bg);
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   box-shadow: 0 -0.5rem 2rem rgba(0, 0, 0, 0.2);
-  animation: city-combobox-subir 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: search-combobox-subir 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   /* La vuelta a su sitio cuando el arrastre se queda corto. */
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   /* El gesto de bajar la hoja es nuestro, no del navegador. Sin esto, en iOS
@@ -69,7 +69,7 @@
    arriba la despega del borde: centrada en su caja y sin él quedaba pegada a la
    esquina redondeada. Como el botón no se dibuja de tableta en adelante, ese
    hueco no aparece en el desplegable. */
-.city-combobox-grabber {
+.search-combobox-grabber {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -96,7 +96,7 @@
   }
 }
 
-.city-combobox-search {
+.search-combobox-search {
   /* La etiqueta va encima del campo, no a su lado. */
   display: block;
   /* El mismo hueco de arriba que el cuerpo de las hojas de confirmación. */
@@ -148,7 +148,7 @@
   }
 }
 
-@keyframes city-combobox-subir {
+@keyframes search-combobox-subir {
   from {
     transform: translateY(100%);
   }
@@ -157,7 +157,7 @@
   }
 }
 
-@keyframes city-combobox-aparecer {
+@keyframes search-combobox-aparecer {
   from {
     opacity: 0;
   }
@@ -166,7 +166,7 @@
   }
 }
 
-.city-combobox-list {
+.search-combobox-list {
   flex: 1;
   /* Sin esto el hijo de un flex no se encoge y la lista desborda la hoja en
      vez de desplazarse. */
@@ -205,7 +205,7 @@
 
 /* Pegajoso: al bajar por la lista hay que seguir sabiendo de qué departamento
    son las ciudades que se están viendo. */
-.city-combobox-group {
+.search-combobox-group {
   position: sticky;
   top: 0;
   z-index: 1;
@@ -219,11 +219,11 @@
 }
 
 /* Separada de los departamentos: no es una ciudad, es lo contrario. */
-.city-combobox-todas {
+.search-combobox-todas {
   border-bottom: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
 }
 
-.city-combobox-option {
+.search-combobox-option {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -249,14 +249,22 @@
   }
 }
 
-/* De tableta para arriba deja de ser una hoja y vuelve a ser un desplegable
-   colgado del campo: ahí la pantalla da de sobra y tapar todo sería excesivo. */
-@media (min-width: 768px) {
-  .city-combobox-backdrop {
+/* Desplegable colgado del campo en lugar de hoja que sube desde abajo. Es lo
+   que se usa de tableta para arriba, donde la pantalla da de sobra y tapar
+   todo sería excesivo, y también lo que pide `anchored` a cualquier ancho. */
+@mixin desplegable {
+  .search-combobox-backdrop {
     background-color: transparent;
   }
 
-  .city-combobox-sheet {
+  /* La barrita solo tiene sentido en una hoja que se baja con el dedo. Al
+     esconderla, el componente también deja de pedir el gesto y de abrir sin
+     foco: mira si está a la vista para saber en cuál de los dos está. */
+  .search-combobox-grabber {
+    display: none;
+  }
+
+  .search-combobox-sheet {
     position: absolute;
     inset: auto 0 auto 0;
     top: calc(100% + 0.25rem);
@@ -266,16 +274,30 @@
     box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15);
     overflow: hidden;
     /* Aquí no sube nada: se despliega en su sitio, bajo el campo. */
-    animation: city-combobox-aparecer 0.15s ease;
+    animation: search-combobox-aparecer 0.15s ease;
     /* Y tampoco se baja con el dedo, así que el gesto vuelve al navegador. */
     touch-action: auto;
   }
 
-  .city-combobox-search {
+  .search-combobox-search {
     touch-action: auto;
   }
 
-  .city-combobox-list {
+  .search-combobox-list {
     padding-bottom: 0.5rem;
   }
+}
+
+@media (min-width: 768px) {
+  @include desplegable;
+}
+
+/* En el teléfono la hoja se apoya en el borde inferior de la ventana, y eso
+   solo funciona si nadie por encima le cambia el marco de referencia. Un
+   ancestro con `backdrop-filter` —el panel flotante del mapa— pasa a ser el
+   bloque contenedor de lo fijo, y la hoja terminaría encerrada en ese
+   recuadro. Ahí se pide `anchored` y el campo despliega hacia abajo, que no
+   depende de nada de fuera. */
+:host(.search-combobox-anchored) {
+  @include desplegable;
 }

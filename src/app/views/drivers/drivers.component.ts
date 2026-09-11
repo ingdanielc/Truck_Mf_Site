@@ -96,6 +96,20 @@ export class DriversComponent implements OnInit, OnDestroy {
   groupedCities: { state: string; cities: any[] }[] = [];
   owners: ModelOwner[] = [];
   loggedInOwner: ModelOwner | null = null;
+  /**
+   * Todos los propietarios, solo para el desplegable del formulario.
+   *
+   * Va aparte de `owners`, que es la lista del listado y llega paginada de a
+   * nueve: el formulario terminaba ofreciendo únicamente la página que se
+   * estaba viendo, y el buscador no podía encontrar a nadie más. Esta se pide
+   * una sola vez al entrar, no en cada cambio de página.
+   */
+  private allOwners: ModelOwner[] = [];
+  /** Los que ofrece el formulario que está abierto. Son todos, salvo cuando se
+   *  agrega desde el botón de un propietario: ahí es solo ese. */
+  formOwners: ModelOwner[] = [];
+  /** El propietario al que se fijó el formulario, si se abrió desde su fila. */
+  private ownerFijado: ModelOwner | null = null;
   salaryTypes: any[] = [];
 
   isPasswordOffcanvasOpen: boolean = false;
@@ -166,6 +180,7 @@ export class DriversComponent implements OnInit, OnDestroy {
             this.loadOwners(); // This will trigger loadDrivers upon success
           } else {
             this.loadOwners();
+            this.loadAllOwners();
             if (this.userRole !== 'ADMINISTRADOR') {
               this.loadDrivers();
             }
@@ -463,8 +478,42 @@ export class DriversComponent implements OnInit, OnDestroy {
       .map(([state, cities]) => ({ state, cities }));
   }
 
+  /**
+   * Trae la lista entera de propietarios para el formulario.
+   *
+   * Solo la necesita el administrador: los demás roles no eligen propietario,
+   * el formulario les esconde el campo. El tope es el mismo que usa el filtro
+   * del listado de viajes.
+   */
+  private loadAllOwners(): void {
+    if (this.userRole !== 'ADMINISTRADOR') return;
+
+    const filter = new ModelFilterTable(
+      [],
+      new Pagination(1000, 0),
+      new Sort('name', true),
+    );
+
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (response: any) => {
+        this.allOwners = response?.data?.content ?? [];
+        if (!this.ownerFijado) this.formOwners = this.allOwners;
+      },
+      error: (err) => {
+        console.error('Error loading owners for the driver form:', err);
+        this.allOwners = [];
+        if (!this.ownerFijado) this.formOwners = [];
+      },
+    });
+  }
+
   toggleOffcanvas(driver?: ModelDriver): void {
     this.editingDriver = driver || null;
+    /* Abrir por las vías de siempre —el botón de agregar y el de editar—
+       devuelve la lista completa: el formulario quedaba fijado al propietario
+       de la última vez que se agregó desde su fila. */
+    this.ownerFijado = null;
+    this.formOwners = this.allOwners;
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
   }
 
@@ -863,6 +912,11 @@ export class DriversComponent implements OnInit, OnDestroy {
   openAddDriverForOwner(owner: ModelOwner): void {
     this.editingDriver = null;
     this.isOffcanvasOpen = true;
+    /* Se entró por la fila de un propietario, así que el formulario no ofrece
+       ningún otro: el campo ya viene resuelto y cambiarlo sería salirse de
+       donde se estaba. */
+    this.ownerFijado = owner;
+    this.formOwners = [owner];
     if (owner.id) {
       this.editingDriver = { ownerId: owner.id } as ModelDriver;
     }

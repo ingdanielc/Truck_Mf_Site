@@ -45,12 +45,25 @@
     background-position: right 0.75rem center;
     background-size: 16px 12px;
 
-    &::-webkit-calendar-picker-indicator {
+    /* El chevron que se ve es el de arriba, dibujado como fondo para que sea
+       el mismo gris de los `<select>`. El del navegador sobra, y va por
+       partida doble: Chrome pone el del calendario y Safari el de la lista,
+       que además lo pinta azul. Se esconde de tres formas porque no todos los
+       motores atienden a `display` en estos pseudoelementos. */
+    &::-webkit-calendar-picker-indicator,
+    &::-webkit-list-button {
       display: none !important;
+      -webkit-appearance: none;
+      appearance: none;
+      opacity: 0;
     }
   }
 
-  [data-bs-theme="dark"] input.form-control[list] {
+  /* `:host-context` y no `[data-bs-theme="dark"] input...`: el atributo vive
+     en <html>, que no lleva la marca de encapsulación de Angular, así que la
+     forma directa se reescribe a algo que no coincide nunca y el chevron se
+     quedaba oscuro sobre fondo oscuro. */
+  :host-context([data-bs-theme="dark"]) input.form-control[list] {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23dee2e6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
   }
 

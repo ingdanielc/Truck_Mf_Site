@@ -247,42 +247,16 @@
             <label for="city" class="form-label small fw-bold mb-2"
               >Ciudad*</label
             >
-            <!-- Mismo trato que en la ficha de propietario: la prueba del
-                 buscador es de momento solo para el administrador, porque esta
-                 ficha también la abren propietarios y conductores. Quitar el
-                 `@if` es todo lo que hace falta para dárselo a todos. -->
-            @if (userRole === "ADMINISTRADOR") {
-              <g-city-combobox
-                inputId="city"
-                formControlName="city"
-                [groups]="groupedCities"
-                [invalid]="
-                  !!driverForm.get('city')?.invalid &&
-                  !!driverForm.get('city')?.touched
-                "
-              ></g-city-combobox>
-            } @else {
-              <select
-                id="city"
-                class="form-select rounded-3 py-2 px-3"
-                formControlName="city"
-                [class.is-invalid]="
-                  driverForm.get('city')?.invalid &&
-                  driverForm.get('city')?.touched
-                "
-              >
-                <option [value]="null" disabled selected>Selecciona</option>
-                @for (group of groupedCities; track group.state) {
-                  <optgroup [label]="group.state">
-                    @for (city of group.cities; track city.id) {
-                      <option [value]="city.id">
-                        {{ city.name }}
-                      </option>
-                    }
-                  </optgroup>
-                }
-              </select>
-            }
+            <g-search-combobox
+              inputId="city"
+              label="Ciudad"
+              formControlName="city"
+              [groups]="groupedCities"
+              [invalid]="
+                !!driverForm.get('city')?.invalid &&
+                !!driverForm.get('city')?.touched
+              "
+            ></g-search-combobox>
             @if (
               driverForm.get("city")?.invalid && driverForm.get("city")?.touched
             ) {
@@ -511,22 +485,16 @@
             <label for="ownerId" class="form-label small fw-bold mb-2"
               >Seleccionar Propietario*</label
             >
-            <select
-              id="ownerId"
-              class="form-select rounded-3 py-2 px-3"
+            <g-search-combobox
+              inputId="ownerId"
+              label="Propietario"
               formControlName="ownerId"
-              [class.is-invalid]="
-                driverForm.get('ownerId')?.invalid &&
-                driverForm.get('ownerId')?.touched
+              [options]="ownerOptions"
+              [invalid]="
+                !!driverForm.get('ownerId')?.invalid &&
+                !!driverForm.get('ownerId')?.touched
               "
-            >
-              <option [value]="null" disabled selected>Selecciona</option>
-              @for (owner of owners; track owner.id) {
-                <option [value]="owner.id">
-                  {{ owner.name }}
-                </option>
-              }
-            </select>
+            ></g-search-combobox>
             @if (
               driverForm.get("ownerId")?.invalid &&
               driverForm.get("ownerId")?.touched

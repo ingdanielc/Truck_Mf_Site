@@ -17,7 +17,7 @@ import {
 } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
-import { GCityComboboxComponent } from 'src/app/components/g-city-combobox/g-city-combobox.component';
+import { GSearchComboboxComponent } from 'src/app/components/g-search-combobox/g-search-combobox.component';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { CommonService } from 'src/app/services/common.service';
 import { OwnerService } from 'src/app/services/owner.service';
@@ -39,7 +39,7 @@ import { SubscriptionUtils } from 'src/app/utils/subscription';
     FormsModule,
     ReactiveFormsModule,
     GCameraComponent,
-    GCityComboboxComponent,
+    GSearchComboboxComponent,
   ],
   templateUrl: './g-owner-form.component.html',
   styleUrls: ['./g-owner-form.component.scss'],

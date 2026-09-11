@@ -95,17 +95,15 @@
                     class="form-label small text-secondary fw-bold mb-1"
                     >Propietario</label
                   >
-                  <select
-                    id="propietario"
-                    class="form-select rounded-3 shadow-sm border-0"
+                  <g-search-combobox
+                    inputId="propietario"
+                    label="Propietario"
+                    emptyOptionLabel="Todos"
+                    fieldClass="rounded-3 shadow-sm border-0"
+                    [options]="ownerFilterOptions"
                     [ngModel]="ownerIdFilter"
                     (ngModelChange)="onOwnerFilterChange($event)"
-                  >
-                    <option [ngValue]="null">Todos</option>
-                    @for (owner of ownerOptions; track owner.id) {
-                      <option [ngValue]="owner.id">{{ owner.name }}</option>
-                    }
-                  </select>
+                  ></g-search-combobox>
                 </div>
               }
               <div class="col-12 col-md-4">
@@ -114,33 +112,14 @@
                   class="form-label small text-secondary fw-bold mb-1"
                   >Origen</label
                 >
-                <!-- Mismo trato que en las fichas: la prueba del buscador es
-                     de momento solo para el administrador. -->
-                @if (userRole === "ADMINISTRADOR") {
-                  <g-city-combobox
-                    inputId="origen"
-                    label="Origen"
-                    emptyOptionLabel="Todos"
-                    fieldClass="rounded-3 shadow-sm border-0"
-                    [groups]="groupedCities"
-                    [(ngModel)]="originFilter"
-                  ></g-city-combobox>
-                } @else {
-                  <select
-                    id="origen"
-                    class="form-select rounded-3 shadow-sm border-0"
-                    [(ngModel)]="originFilter"
-                  >
-                    <option [value]="null">Todos</option>
-                    @for (group of groupedCities; track group) {
-                      <optgroup [label]="group.state">
-                        @for (city of group.cities; track city.id) {
-                          <option [value]="city.id">{{ city.name }}</option>
-                        }
-                      </optgroup>
-                    }
-                  </select>
-                }
+                <g-search-combobox
+                  inputId="origen"
+                  label="Origen"
+                  emptyOptionLabel="Todos"
+                  fieldClass="rounded-3 shadow-sm border-0"
+                  [groups]="groupedCities"
+                  [(ngModel)]="originFilter"
+                ></g-search-combobox>
               </div>
               <div class="col-12 col-md-4">
                 <label
@@ -148,31 +127,14 @@
                   class="form-label small text-secondary fw-bold mb-1"
                   >Destino</label
                 >
-                @if (userRole === "ADMINISTRADOR") {
-                  <g-city-combobox
-                    inputId="destino"
-                    label="Destino"
-                    emptyOptionLabel="Todos"
-                    fieldClass="rounded-3 shadow-sm border-0"
-                    [groups]="groupedCities"
-                    [(ngModel)]="destinationFilter"
-                  ></g-city-combobox>
-                } @else {
-                  <select
-                    id="destino"
-                    class="form-select rounded-3 shadow-sm border-0"
-                    [(ngModel)]="destinationFilter"
-                  >
-                    <option [value]="null">Todos</option>
-                    @for (group of groupedCities; track group) {
-                      <optgroup [label]="group.state">
-                        @for (city of group.cities; track city.id) {
-                          <option [value]="city.id">{{ city.name }}</option>
-                        }
-                      </optgroup>
-                    }
-                  </select>
-                }
+                <g-search-combobox
+                  inputId="destino"
+                  label="Destino"
+                  emptyOptionLabel="Todos"
+                  fieldClass="rounded-3 shadow-sm border-0"
+                  [groups]="groupedCities"
+                  [(ngModel)]="destinationFilter"
+                ></g-search-combobox>
               </div>
               <div class="col-12 col-md-4">
                 <div class="row g-2">

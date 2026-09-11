@@ -12,24 +12,18 @@
         </h6>
         <div class="mb-3">
           <label for="ownerId" class="form-label small fw-bold mb-2"
-            >Seleccionar Socio*</label
+            >Seleccionar Propietario*</label
           >
-          <select
-            id="ownerId"
-            class="form-select rounded-3 py-2 px-3"
+          <g-search-combobox
+            inputId="ownerId"
+            label="Propietario"
             formControlName="ownerId"
-            [class.is-invalid]="
-              tripForm.get('ownerId')?.touched &&
-              tripForm.get('ownerId')?.invalid
+            [options]="ownerOptions"
+            [invalid]="
+              !!tripForm.get('ownerId')?.touched &&
+              !!tripForm.get('ownerId')?.invalid
             "
-          >
-            <option class="gtk-placeholder" [ngValue]="null">Selecciona</option>
-            @for (owner of owners; track owner) {
-              <option [ngValue]="owner.id">
-                {{ owner.name }} - {{ owner.documentNumber | documentNumber }}
-              </option>
-            }
-          </select>
+          ></g-search-combobox>
           <div class="invalid-feedback small">
             Este campo es obligatorio para continuar
           </div>
@@ -186,42 +180,16 @@
           <label for="origin" class="form-label small fw-bold mb-2"
             >Origen*</label
           >
-          <!-- Mismo trato que en las fichas de propietario y conductor: la
-               prueba del buscador es de momento solo para el administrador.
-               Quitar el `@if` es todo lo que hace falta para dárselo a todos. -->
-          @if (userRole === "ADMINISTRADOR") {
-            <g-city-combobox
-              inputId="origin"
-              label="Origen"
-              formControlName="originId"
-              [groups]="groupedCities"
-              [invalid]="
-                !!tripForm.get('originId')?.touched &&
-                !!tripForm.get('originId')?.invalid
-              "
-            ></g-city-combobox>
-          } @else {
-            <select
-              id="origin"
-              class="form-select rounded-3 py-2 px-3"
-              formControlName="originId"
-              [class.is-invalid]="
-                tripForm.get('originId')?.touched &&
-                tripForm.get('originId')?.invalid
-              "
-            >
-              <option class="gtk-placeholder" [ngValue]="null">Selecciona</option>
-              @for (group of groupedCities; track group) {
-                <optgroup [label]="group.state">
-                  @for (city of group.cities; track city) {
-                    <option [value]="city.id">
-                      {{ city.name }}
-                    </option>
-                  }
-                </optgroup>
-              }
-            </select>
-          }
+          <g-search-combobox
+            inputId="origin"
+            label="Origen"
+            formControlName="originId"
+            [groups]="groupedCities"
+            [invalid]="
+              !!tripForm.get('originId')?.touched &&
+              !!tripForm.get('originId')?.invalid
+            "
+          ></g-search-combobox>
           <div class="invalid-feedback small">
             Este campo es obligatorio para continuar
           </div>
@@ -230,39 +198,16 @@
           <label for="destination" class="form-label small fw-bold mb-2">{{
             isRoundTrip ? "Destino de Ida*" : "Destino*"
           }}</label>
-          @if (userRole === "ADMINISTRADOR") {
-            <g-city-combobox
-              inputId="destination"
-              [label]="isRoundTrip ? 'Destino de Ida' : 'Destino'"
-              formControlName="destinationId"
-              [groups]="groupedCities"
-              [invalid]="
-                !!tripForm.get('destinationId')?.touched &&
-                !!tripForm.get('destinationId')?.invalid
-              "
-            ></g-city-combobox>
-          } @else {
-            <select
-              id="destination"
-              class="form-select rounded-3 py-2 px-3"
-              formControlName="destinationId"
-              [class.is-invalid]="
-                tripForm.get('destinationId')?.touched &&
-                tripForm.get('destinationId')?.invalid
-              "
-            >
-              <option class="gtk-placeholder" [ngValue]="null">Selecciona</option>
-              @for (group of groupedCities; track group) {
-                <optgroup [label]="group.state">
-                  @for (city of group.cities; track city) {
-                    <option [value]="city.id">
-                      {{ city.name }}
-                    </option>
-                  }
-                </optgroup>
-              }
-            </select>
-          }
+          <g-search-combobox
+            inputId="destination"
+            [label]="isRoundTrip ? 'Destino de Ida' : 'Destino'"
+            formControlName="destinationId"
+            [groups]="groupedCities"
+            [invalid]="
+              !!tripForm.get('destinationId')?.touched &&
+              !!tripForm.get('destinationId')?.invalid
+            "
+          ></g-search-combobox>
           <div class="invalid-feedback small">
             Este campo es obligatorio para continuar
           </div>
@@ -273,39 +218,16 @@
             <label for="returnDestination" class="form-label small fw-bold mb-2"
               >Destino de Regreso*</label
             >
-            @if (userRole === "ADMINISTRADOR") {
-              <g-city-combobox
-                inputId="returnDestination"
-                label="Destino de Regreso"
-                formControlName="returnDestinationId"
-                [groups]="groupedCities"
-                [invalid]="
-                  !!tripForm.get('returnDestinationId')?.touched &&
-                  !!tripForm.get('returnDestinationId')?.invalid
-                "
-              ></g-city-combobox>
-            } @else {
-              <select
-                id="returnDestination"
-                class="form-select rounded-3 py-2 px-3"
-                formControlName="returnDestinationId"
-                [class.is-invalid]="
-                  tripForm.get('returnDestinationId')?.touched &&
-                  tripForm.get('returnDestinationId')?.invalid
-                "
-              >
-                <option class="gtk-placeholder" [ngValue]="null">Selecciona</option>
-                @for (group of groupedCities; track group) {
-                  <optgroup [label]="group.state">
-                    @for (city of group.cities; track city) {
-                      <option [value]="city.id">
-                        {{ city.name }}
-                      </option>
-                    }
-                  </optgroup>
-                }
-              </select>
-            }
+            <g-search-combobox
+              inputId="returnDestination"
+              label="Destino de Regreso"
+              formControlName="returnDestinationId"
+              [groups]="groupedCities"
+              [invalid]="
+                !!tripForm.get('returnDestinationId')?.touched &&
+                !!tripForm.get('returnDestinationId')?.invalid
+              "
+            ></g-search-combobox>
             <div class="invalid-feedback small">
               Este campo es obligatorio para continuar
             </div>

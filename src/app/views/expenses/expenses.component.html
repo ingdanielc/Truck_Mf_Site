@@ -32,15 +32,14 @@
             <i
               class="fa-solid fa-user-tie position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary"
             ></i>
-            <select
-              class="form-select ps-5 py-2 rounded-3 shadow-none border w-100"
-              (change)="onOwnerChange($event)"
-            >
-              <option value="">Todos los propietarios</option>
-              @for (owner of owners; track owner.id) {
-                <option [value]="owner.id">{{ owner.name }}</option>
-              }
-            </select>
+            <g-search-combobox
+              label="Propietario"
+              emptyOptionLabel="Todos los propietarios"
+              fieldClass="ps-5 py-2 rounded-3 shadow-none border w-100"
+              [options]="ownerOptions"
+              [ngModel]="selectedOwnerId"
+              (ngModelChange)="onOwnerChange($event)"
+            ></g-search-combobox>
           </div>
         </div>
       </div>

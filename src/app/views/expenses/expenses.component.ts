@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Observable, Subscription, map, of, switchMap, take } from 'rxjs';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
@@ -43,12 +44,19 @@ import {
 } from 'src/app/utils/expense-shortcuts';
 import { PlatePipe } from '../../pipes/plate.pipe';
 import { isCancelledTrip } from 'src/app/utils/trip-status';
+import {
+  ComboOption,
+  GSearchComboboxComponent,
+} from 'src/app/components/g-search-combobox/g-search-combobox.component';
+import { ownerComboOptions } from 'src/app/utils/owner-options';
 
 @Component({
   selector: 'app-expenses',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
+    GSearchComboboxComponent,
     GVehicleGoodCardComponent,
     GExpensesTripComponent,
     GAddExpenseComponent,
@@ -80,7 +88,17 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   hideSelectionSections = false;
   isMaintenance = false;
   userRole = '';
-  owners: any[] = [];
+  /** La lista se rellena al cargar, así que las filas del buscador se rehacen
+   *  aquí. Ver `ownerComboOptions`. */
+  set owners(value: any[]) {
+    this.listaOwners = value ?? [];
+    this.ownerOptions = ownerComboOptions(this.listaOwners);
+  }
+  get owners(): any[] {
+    return this.listaOwners;
+  }
+  private listaOwners: any[] = [];
+  ownerOptions: ComboOption[] = [];
   selectedOwnerId: number | null = null;
   hasBackContext = false;
   tripIdParam: string | null = null;
@@ -560,9 +578,10 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   loadOwners(): void {
+    /* Mil, el mismo tope que el resto de los desplegables de propietario. */
     const filter = new ModelFilterTable(
       [],
-      new Pagination(9999, 0),
+      new Pagination(1000, 0),
       new Sort('name', true),
     );
     this.ownerService.getOwnerFilter(filter).subscribe({
@@ -573,9 +592,10 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     });
   }
 
-  onOwnerChange(event: any): void {
-    const val = event.target.value;
-    this.selectedOwnerId = val ? Number(val) : null;
+  /** Llega el id como texto —o `null` en la fila de "Todos"—, que es lo que
+   *  emite el buscador. */
+  onOwnerChange(ownerId: string | null): void {
+    this.selectedOwnerId = ownerId ? Number(ownerId) : null;
     this.selectedVehicle = null;
     this.selectedTrip = null;
     this.loadingVehicles = true;

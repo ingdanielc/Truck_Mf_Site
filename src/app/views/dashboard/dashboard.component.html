@@ -1194,19 +1194,14 @@
           <i class="fa-solid fa-user-tie me-2"></i>Propietario
         </h6>
         <div class="mb-3 col-12">
-          <select
-            id="ownerId"
-            class="form-select rounded-3 py-2 px-3"
-            [(ngModel)]="selectedOwnerId"
-            (change)="onOwnerChange(); showHistoryPanel = false"
-          >
-            <option [ngValue]="null">Todos los Propietarios</option>
-            @for (owner of owners; track owner.id) {
-              <option [ngValue]="owner.id">
-                {{ ownerName(owner) }}
-              </option>
-            }
-          </select>
+          <g-search-combobox
+            inputId="ownerId"
+            label="Propietario"
+            emptyOptionLabel="Todos los Propietarios"
+            [options]="ownerOptions"
+            [ngModel]="selectedOwnerId"
+            (ngModelChange)="onOwnerSelected($event)"
+          ></g-search-combobox>
         </div>
       </div>
       <div class="mt-4 p-3 bg-body-tertiary rounded-3 small text-secondary">

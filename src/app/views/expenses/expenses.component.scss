@@ -21,6 +21,18 @@
     white-space: nowrap;
   }
 
+  /* El icono va dentro del campo, sobre su fondo.
+
+     Antes le bastaba con ir posicionado: el `<select>` no lo estaba y el
+     icono le quedaba encima. El buscador que lo reemplaza sí se posiciona
+     —cuelga de ahí su desplegable—, así que sin esto se pinta después y lo
+     tapa. Y sin `pointer-events` el icono se quedaría el toque: es el campo
+     entero el que tiene que abrir la hoja, no todo menos esta esquina. */
+  > .fa-user-tie {
+    z-index: 2;
+    pointer-events: none;
+  }
+
   @media (min-width: 576px) {
     min-width: 300px;
   }

@@ -35,29 +35,27 @@
 
     @if (userRole === "ADMINISTRADOR") {
       <div class="owner-filter-container my-2">
-        <select
-          class="form-select form-select-sm rounded-3 py-2 px-3 border-secondary-subtle bg-dark text-white"
-          [(ngModel)]="selectedOwnerFilterId"
-          (change)="onOwnerFilterChange()"
-        >
-          <option [ngValue]="null" disabled>Selecciona un propietario</option>
-          <!-- Solo se listan los propietarios con algun viaje en curso: son
-               los unicos que tienen algo que mostrar en el mapa. -->
-          @if (owners.length === 0) {
-            <option [ngValue]="null" disabled>
-              Ningún propietario tiene viajes en curso
-            </option>
-          } @else {
-            <option [ngValue]="-1">Todos los Propietarios</option>
-            @for (owner of owners; track owner.id) {
-              <option [ngValue]="owner.id">
-                {{
-                  owner.name || owner.user?.name || "Propietario " + owner.id
-                }}
-              </option>
-            }
-          }
-        </select>
+        <!-- Solo se listan los propietarios con algun viaje en curso: son
+             los unicos que tienen algo que mostrar en el mapa. La fila de
+             "Todos los Propietarios" va dentro de la lista y no como opcion
+             vacia del buscador, porque aqui vale -1 y no `null`: `null` es no
+             haber elegido todavia, y con eso el mapa no consulta nada.
+
+             `anchored` porque este panel lleva `backdrop-filter` y una hoja
+             fija quedaria encerrada en el. -->
+        <g-search-combobox
+          label="Propietario"
+          [anchored]="true"
+          fieldClass="form-select-sm rounded-3 py-2 px-3 border-secondary-subtle bg-dark text-white"
+          [placeholder]="
+            owners.length === 0
+              ? 'Ningún propietario tiene viajes en curso'
+              : 'Selecciona un propietario'
+          "
+          [options]="ownerFilterOptions"
+          [ngModel]="selectedOwnerFilterId"
+          (ngModelChange)="onOwnerSelected($event)"
+        ></g-search-combobox>
       </div>
     }
 

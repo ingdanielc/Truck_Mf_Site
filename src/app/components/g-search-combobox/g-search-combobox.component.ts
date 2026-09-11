@@ -11,17 +11,25 @@ import {
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
-/** Una ciudad tal y como la devuelve `getCities`. `state` es el departamento. */
-export interface CityOption {
+/** Una fila de la lista: lo que se elige. */
+export interface ComboOption {
   id: string | number;
   name: string;
   state?: string;
 }
 
-/** Las ciudades de un departamento, ya ordenadas por quien nos las pasa. */
-export interface CityGroup {
+/**
+ * Un tramo de la lista con su encabezado, ya ordenado por quien nos lo pasa.
+ *
+ * Los nombres de los campos son los que traen las ciudades agrupadas por
+ * departamento, que es de donde salió este componente: `state` es el
+ * encabezado y `cities` sus filas. Se dejan tal cual para no tocar los cinco
+ * sitios que arman esa lista. Un encabezado vacío no se dibuja, que es como se
+ * pasa una lista sin tramos.
+ */
+export interface ComboGroup {
   state: string;
-  cities: CityOption[];
+  cities: ComboOption[];
 }
 
 /** Los ids de las opciones tienen que ser únicos en toda la página. */
@@ -36,11 +44,15 @@ const normalizar = (texto: string): string =>
     .trim();
 
 /**
- * Buscador de ciudades agrupadas por departamento.
+ * Buscador que reemplaza a un `<select>` cuando la lista es tan larga que
+ * desplegarla no sirve de nada.
  *
- * Reemplaza a un `<select>` con `<optgroup>` cuando la lista es tan larga que
- * desplegarla no sirve de nada: mil y pico de municipios no se recorren con el
- * pulgar. Se comporta como un `combobox` de ARIA —campo de texto que filtra,
+ * Nació para las ciudades —mil y pico de municipios no se recorren con el
+ * pulgar— y sirve igual para cualquier lista larga: los propietarios del
+ * panel se eligen aquí desde que pasaron del centenar. La lista puede venir
+ * en tramos con encabezado, como los departamentos, o plana.
+ *
+ * Se comporta como un `combobox` de ARIA —campo de texto que filtra,
  * `listbox` emergente, `aria-activedescendant` para el recorrido con flechas—,
  * que es el patrón que Angular expone de fábrica desde la versión 22. Aquí
  * está escrito a mano porque este microfrontend va por la 19.
@@ -51,47 +63,59 @@ const normalizar = (texto: string): string =>
  * recolocaría al abrirla y al cerrarla aparecería desplazado.
  *
  * En el teléfono la hoja sube desde abajo y se queda a media pantalla, con el
- * buscador arriba y los departamentos como encabezados pegajosos. Por encima
+ * buscador arriba y los encabezados de tramo pegajosos. Por encima
  * sigue asomando el formulario: así se ve de dónde se viene y que cerrar
  * devuelve allí. En pantalla ancha es el desplegable de siempre, colgado del
  * campo.
  */
 @Component({
-  selector: 'g-city-combobox',
+  selector: 'g-search-combobox',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './g-city-combobox.component.html',
-  styleUrls: ['./g-city-combobox.component.scss'],
+  templateUrl: './g-search-combobox.component.html',
+  styleUrls: ['./g-search-combobox.component.scss'],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => GCityComboboxComponent),
+      useExisting: forwardRef(() => GSearchComboboxComponent),
       multi: true,
     },
   ],
 })
-export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
-  /** Ciudades ya agrupadas por departamento. Llegan después del primer render:
-   *  el formulario las pide al abrirse, así que la etiqueta de lo seleccionado
-   *  se recalcula cada vez que cambian. */
-  @Input() set groups(value: CityGroup[] | null) {
+export class GSearchComboboxComponent
+  implements ControlValueAccessor, OnDestroy
+{
+  /** Opciones repartidas en tramos con encabezado, como las ciudades por
+   *  departamento. Llegan después del primer render: el formulario las pide al
+   *  abrirse, así que la etiqueta de lo seleccionado se recalcula cada vez que
+   *  cambian. */
+  @Input() set groups(value: ComboGroup[] | null) {
     this.gruposOrigen = value ?? [];
     this.filtrar();
     this.sincronizarEtiqueta();
   }
-  get groups(): CityGroup[] {
+  get groups(): ComboGroup[] {
     return this.gruposOrigen;
+  }
+
+  /** La misma lista cuando no hay tramos que valga la pena encabezar, que es
+   *  el caso de los propietarios. Se guarda como un solo tramo sin encabezado
+   *  para que de aquí en adelante todo sea un único camino. */
+  @Input() set options(value: ComboOption[] | null) {
+    this.groups = value?.length ? [{ state: '', cities: value }] : [];
   }
 
   /** Para que el `<label for>` del formulario apunte aquí. */
   @Input() inputId = '';
   @Input() placeholder = 'Selecciona';
-  @Input() searchPlaceholder = 'Buscar Ciudad';
+  /** Lo que invita a escribir dentro de la hoja. Sin poner, sale del nombre
+   *  del campo: "Buscar Ciudad", "Buscar Propietario". */
+  @Input() searchPlaceholder = '';
   /** El nombre del campo, repetido dentro de la hoja: al abrirla tapa el
    *  formulario, y sin él no se sabe qué se está eligiendo. */
-  @Input() label = 'Ciudad';
+  @Input() label = '';
   /**
-   * Texto de la fila que no elige ninguna ciudad, como el "Todos" de un
+   * Texto de la fila que no elige ninguna opción, como el "Todos" de un
    * filtro. Puesto, esa fila encabeza la lista y vale `null`; sin poner, el
    * campo es obligatorio y no hay forma de volver atrás desde la hoja.
    */
@@ -101,6 +125,14 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
   @Input() fieldClass = 'rounded-3 py-2 px-3';
   /** Pinta el borde de error, igual que `is-invalid` en el `<select>`. */
   @Input() invalid = false;
+  /** Despliega hacia abajo a cualquier ancho, en vez de subir como hoja en el
+   *  teléfono. Ver el comentario de `.search-combobox-anchored` en la hoja de
+   *  estilos: hace falta donde algo por encima le cambia el marco a lo fijo. */
+  @Input() anchored = false;
+
+  @HostBinding('class.search-combobox-anchored') get anclado(): boolean {
+    return this.anchored;
+  }
 
   /**
    * La marca de error también en la etiqueta de fuera, no solo en el campo.
@@ -127,19 +159,19 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
   query = '';
   /** Lo que se ve en el campo cuando está cerrado, p. ej. "Medellín". */
   selectedLabel = '';
-  filteredGroups: CityGroup[] = [];
+  filteredGroups: ComboGroup[] = [];
 
-  readonly listboxId = `city-combobox-${++secuencia}`;
+  readonly listboxId = `search-combobox-${++secuencia}`;
   readonly buscadorId = `${this.listboxId}-buscador`;
 
-  private gruposOrigen: CityGroup[] = [];
+  private gruposOrigen: ComboGroup[] = [];
   /** El id seleccionado, siempre como texto: el formulario lo trae unas veces
    *  como número —al editar— y otras como texto. Comparar en crudo fallaba. */
   private selectedId: string | null = null;
-  /** Las ciudades visibles en un solo nivel, que es como se recorren con las
+  /** Las opciones visibles en un solo nivel, que es como se recorren con las
    *  flechas. Los encabezados de departamento no se pueden elegir. El `null`
    *  de la primera posición, cuando lo hay, es la fila de "Todos". */
-  private planas: (CityOption | null)[] = [];
+  private planas: (ComboOption | null)[] = [];
   private activo = -1;
 
   private dragStartY: number | null = null;
@@ -198,12 +230,12 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
     this.open = true;
     this.query = '';
     this.filtrar();
-    this.activo = this.planas.findIndex((ciudad) => this.isSelected(ciudad));
+    this.activo = this.planas.findIndex((opcion) => this.isSelected(opcion));
 
     this.cdr.detectChanges();
 
     /* En el teléfono la hoja se abre sin foco. Pedirlo sacaría el teclado de
-       golpe y taparía media lista, cuando lo corriente es elegir la ciudad con
+       golpe y taparía media lista, cuando lo corriente es elegir la opción con
        el dedo; quien quiera escribir toca el buscador y entonces sale. En
        escritorio sí se pide: allí no hay teclado que estorbe y las flechas no
        funcionan sin él. Se mira si la barrita está a la vista para no repetir
@@ -261,7 +293,7 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
     const origen = event.target as HTMLElement | null;
     if (
       origen?.closest(
-        '.city-combobox-list, .input-group, button:not(.city-combobox-grabber)',
+        '.search-combobox-list, .input-group, button:not(.search-combobox-grabber)',
       )
     ) {
       return;
@@ -376,9 +408,11 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
   }
 
   /**
-   * Escribir el departamento saca sus ciudades enteras. Buscar "ant" tenía que
-   * dar Antioquia completa y no solo los municipios con esas letras en el
-   * nombre, que es como se busca cuando uno sabe la región pero no el pueblo.
+   * Escribir el encabezado de un tramo saca sus filas enteras. Buscar "ant"
+   * tenía que dar Antioquia completa y no solo los municipios con esas letras
+   * en el nombre, que es como se busca cuando uno sabe la región pero no el
+   * pueblo. En una lista plana el encabezado es vacío y no coincide con nada,
+   * así que solo se miran los nombres.
    */
   private filtrar(): void {
     const texto = normalizar(this.query);
@@ -391,24 +425,32 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
           if (normalizar(grupo.state).includes(texto)) return grupo;
           return {
             state: grupo.state,
-            cities: grupo.cities.filter((ciudad) =>
-              normalizar(ciudad.name).includes(texto),
+            cities: grupo.cities.filter((opcion) =>
+              normalizar(opcion.name).includes(texto),
             ),
           };
         })
         .filter((grupo) => grupo.cities.length > 0);
     }
 
-    this.planas = this.filteredGroups.flatMap<CityOption | null>(
+    this.planas = this.filteredGroups.flatMap<ComboOption | null>(
       (grupo) => grupo.cities,
     );
 
     /* "Todos" encabeza la lista, pero solo sin nada escrito: quien busca una
-       ciudad no está buscando quitar el filtro. */
+       opción no está buscando quitar el filtro. */
     if (this.mostrarTodas) this.planas.unshift(null);
   }
 
-  /** ¿Se enseña la fila que no elige ninguna ciudad? */
+  /** El texto del buscador y el nombre de la hoja para el lector de pantalla,
+   *  que dicen lo mismo. */
+  get textoBuscador(): string {
+    return (
+      this.searchPlaceholder || (this.label ? `Buscar ${this.label}` : 'Buscar')
+    );
+  }
+
+  /** ¿Se enseña la fila que no elige ninguna opción? */
   get mostrarTodas(): boolean {
     return !!this.emptyOptionLabel && !this.query;
   }
@@ -426,24 +468,24 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
 
   // ── Selección ──────────────────────────────────────────────────────
 
-  /** `null` es la fila de "Todos": deja el campo sin ciudad. */
-  seleccionar(ciudad: CityOption | null): void {
-    this.selectedId = ciudad ? String(ciudad.id) : null;
-    this.selectedLabel = ciudad ? ciudad.name : '';
+  /** `null` es la fila de "Todos": deja el campo sin opción. */
+  seleccionar(opcion: ComboOption | null): void {
+    this.selectedId = opcion ? String(opcion.id) : null;
+    this.selectedLabel = opcion ? opcion.name : '';
     /* Se emite texto y no el número crudo para mandar al backend exactamente
        lo mismo que mandaba el `<select>`, cuyo `[value]` ya era una cadena. */
     this.alCambiar(this.selectedId);
     this.cerrar();
   }
 
-  isSelected(ciudad: CityOption | null): boolean {
-    return ciudad
-      ? String(ciudad.id) === this.selectedId
+  isSelected(opcion: ComboOption | null): boolean {
+    return opcion
+      ? String(opcion.id) === this.selectedId
       : this.selectedId === null;
   }
 
-  optionId(ciudad: CityOption | null): string {
-    return `${this.listboxId}-op-${ciudad ? ciudad.id : 'todas'}`;
+  optionId(opcion: ComboOption | null): string {
+    return `${this.listboxId}-op-${opcion ? opcion.id : 'todas'}`;
   }
 
   /** Lo que lee el lector de pantalla como opción en curso. */
@@ -501,7 +543,7 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
 
     /* Sin nada marcado, bajar entra por arriba y subir por abajo. Contar desde
        el -1 con la vuelta puesta dejaba la primera flecha hacia arriba en la
-       penúltima ciudad, que no es de donde se espera empezar. */
+       penúltima opción, que no es de donde se espera empezar. */
     if (this.activo < 0) {
       this.irA(paso > 0 ? 0 : total - 1);
       return;
@@ -522,7 +564,7 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
    * Antes esto era un `scrollIntoView`, y ese desplaza todos los contenedores
    * de encima, la página incluida. Con el teclado abierto eso corría la ventana
    * visible entera y la hoja terminaba por debajo de las teclas. Se notaba al
-   * filtrar hasta dejar una sola ciudad: la fila quedaba tapada justo cuando
+   * filtrar hasta dejar una sola opción: la fila quedaba tapada justo cuando
    * era la única que importaba. Aquí las cuentas van contra la caja de la
    * lista y nada de fuera se entera.
    */
@@ -553,20 +595,20 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
   private sincronizarEtiqueta(): void {
     if (this.selectedId !== null) {
       for (const grupo of this.gruposOrigen) {
-        const ciudad = grupo.cities.find(
+        const opcion = grupo.cities.find(
           (candidata) => String(candidata.id) === this.selectedId,
         );
-        if (ciudad) {
-          this.selectedLabel = ciudad.name;
+        if (opcion) {
+          this.selectedLabel = opcion.name;
           return;
         }
       }
     }
 
-    /* Sin ciudad que enseñar, el campo vuelve a su texto de invitación. Dejar
+    /* Sin opción que enseñar, el campo vuelve a su texto de invitación. Dejar
        la etiqueta anterior haría que un formulario ya vaciado —cambiar de
        viaje redondo a sencillo borra el destino de regreso— siguiera
-       enseñando la ciudad de antes como si estuviera elegida. */
+       enseñando la opción de antes como si estuviera elegida. */
     this.selectedLabel = '';
   }
 }

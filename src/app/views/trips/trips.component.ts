@@ -28,7 +28,11 @@ import { DriverService } from 'src/app/services/driver.service';
 import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
 import { GTripFormComponent } from '../../components/g-trip-form/g-trip-form.component';
 import { GTripInfoCardComponent } from '../../components/g-trip-info-card/g-trip-info-card.component';
-import { GCityComboboxComponent } from 'src/app/components/g-city-combobox/g-city-combobox.component';
+import {
+  ComboOption,
+  GSearchComboboxComponent,
+} from 'src/app/components/g-search-combobox/g-search-combobox.component';
+import { ownerComboOptions } from 'src/app/utils/owner-options';
 import { GConfirmSheetComponent } from '../../components/g-confirm-sheet/g-confirm-sheet.component';
 import { NotificationsService } from 'src/app/services/notifications.service';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
@@ -67,7 +71,7 @@ export interface TripOwnerGroup {
     GTripFormComponent,
     GConfirmSheetComponent,
     GTripInfoCardComponent,
-    GCityComboboxComponent,
+    GSearchComboboxComponent,
   ],
   templateUrl: './trips.component.html',
   styleUrls: ['./trips.component.scss'],
@@ -97,7 +101,17 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
   originFilter: string | null = null;
   destinationFilter: string | null = null;
   /** Propietarios del desplegable de filtro. Solo se llena para el admin. */
-  ownerOptions: ModelOwner[] = [];
+  /** La lista se rellena en la carga y se vacía en su error, así que las
+   *  filas del buscador se rehacen aquí. Ver `ownerComboOptions`. */
+  set ownerOptions(value: ModelOwner[]) {
+    this.listaOwners = value ?? [];
+    this.ownerFilterOptions = ownerComboOptions(this.listaOwners);
+  }
+  get ownerOptions(): ModelOwner[] {
+    return this.listaOwners;
+  }
+  private listaOwners: ModelOwner[] = [];
+  ownerFilterOptions: ComboOption[] = [];
   showFilters: boolean = false;
   isSearchActive: boolean = false;
   page: number = 0;

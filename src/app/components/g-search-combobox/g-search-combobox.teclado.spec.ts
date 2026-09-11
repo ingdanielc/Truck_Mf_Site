@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { GCityComboboxComponent } from './g-city-combobox.component';
+import { GSearchComboboxComponent } from './g-search-combobox.component';
 
 /**
  * Lo único que se prueba aquí con la plantilla montada: que el alto del teclado
@@ -7,16 +7,16 @@ import { GCityComboboxComponent } from './g-city-combobox.component';
  * el teléfono la hoja se suba por encima de las teclas, y no se puede
  * comprobar sin dibujar.
  */
-describe('GCityComboboxComponent, el alto del teclado', () => {
-  let fixture: ComponentFixture<GCityComboboxComponent>;
-  let combo: GCityComboboxComponent;
+describe('GSearchComboboxComponent, el alto del teclado', () => {
+  let fixture: ComponentFixture<GSearchComboboxComponent>;
+  let combo: GSearchComboboxComponent;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [GCityComboboxComponent],
+      imports: [GSearchComboboxComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(GCityComboboxComponent);
+    fixture = TestBed.createComponent(GSearchComboboxComponent);
     combo = fixture.componentInstance;
     combo.groups = [
       { state: 'Antioquia', cities: [{ id: 1, name: 'Medellín' }] },
@@ -25,7 +25,7 @@ describe('GCityComboboxComponent, el alto del teclado', () => {
   });
 
   const hoja = (): HTMLElement =>
-    fixture.nativeElement.querySelector('.city-combobox-sheet');
+    fixture.nativeElement.querySelector('.search-combobox-sheet');
 
   it('llega a la hoja como una medida en píxeles', () => {
     combo.abrir();

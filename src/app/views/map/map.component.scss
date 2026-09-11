@@ -25,11 +25,20 @@
     }
 
     .owner-filter-container {
-      select {
-        width: 100%;
+      /* El campo va sobre fondo oscuro aunque el tema sea claro, así que el
+         gris de invitación del resto de la aplicación no se leería. La
+         variable se hereda hasta el buscador, que vive en su propio
+         componente. */
+      --gtk-placeholder-color: rgba(255, 255, 255, 0.55);
+
+      g-search-combobox {
         font-size: 0.85rem;
+      }
+
+      ::ng-deep .form-select {
         cursor: pointer;
         outline: none;
+        font-size: inherit;
 
         &:focus {
           box-shadow: none;
