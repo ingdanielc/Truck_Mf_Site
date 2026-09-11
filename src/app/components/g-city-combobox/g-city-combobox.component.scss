@@ -8,10 +8,16 @@
    mide contra el panel lateral y no contra la página. Sale a cuenta: en el
    teléfono el panel ocupa la pantalla entera, que es justo lo que queremos
    tapar, y el `overflow` del cuerpo del formulario no lo recorta. */
+/* Por encima del botón flotante, que está en 1050 y se quedaba sobre la hoja
+   en el listado de viajes. Dentro de un panel lateral estos números no compiten
+   con nadie —el panel ya abre su propio contexto de apilado—, pero en el
+   listado y en crear cuenta la hoja vive al nivel de la página. Por debajo de
+   1290, que es donde empiezan los paneles y las confirmaciones: una hoja de
+   confirmación abierta tiene que seguir tapando a esta. */
 .city-combobox-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 10;
+  z-index: 1060;
   background-color: rgba(0, 0, 0, 0.35);
   animation: city-combobox-aparecer 0.2s ease;
 }
@@ -30,7 +36,7 @@
   right: 0;
   bottom: var(--teclado);
   left: 0;
-  z-index: 11;
+  z-index: 1070;
   display: flex;
   flex-direction: column;
   /* Dos quintos de pantalla como mucho, y nunca por debajo del teclado. Los

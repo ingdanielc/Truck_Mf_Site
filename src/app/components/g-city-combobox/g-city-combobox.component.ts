@@ -189,10 +189,8 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
   // ── Abrir y cerrar ─────────────────────────────────────────────────
 
   /**
-   * El foco del buscador se pide en el mismo gesto que abrió la hoja, no en un
-   * `setTimeout`: en iOS el teclado solo sale si el foco cae dentro del toque
-   * del usuario. Por eso hace falta el `detectChanges`, que dibuja la hoja
-   * antes de continuar; sin él el campo aún no existe.
+   * El `detectChanges` dibuja la hoja antes de seguir. Sin él nada de lo que
+   * hay dentro existe todavía, y lo que viene después necesita tocarlo.
    */
   abrir(): void {
     if (this.disabled || this.open) return;
@@ -203,7 +201,17 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
     this.activo = this.planas.findIndex((ciudad) => this.isSelected(ciudad));
 
     this.cdr.detectChanges();
-    this.buscador?.nativeElement.focus();
+
+    /* En el teléfono la hoja se abre sin foco. Pedirlo sacaría el teclado de
+       golpe y taparía media lista, cuando lo corriente es elegir la ciudad con
+       el dedo; quien quiera escribir toca el buscador y entonces sale. En
+       escritorio sí se pide: allí no hay teclado que estorbe y las flechas no
+       funcionan sin él. Se mira si la barrita está a la vista para no repetir
+       aquí el corte de la hoja de estilos. */
+    if (!this.barrita?.nativeElement.offsetParent) {
+      this.buscador?.nativeElement.focus();
+    }
+
     this.desplazarAlActivo();
     this.vigilarTeclado(true);
   }
@@ -321,10 +329,17 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
    */
   private medirTeclado = (): void => {
     const ventana = window.visualViewport;
-    if (!ventana) return;
+    if (!ventana || !this.open) return;
 
     const tapado = window.innerHeight - ventana.height - ventana.offsetTop;
-    this.tecladoPx = Math.max(0, Math.round(tapado));
+    const alto = Math.max(0, Math.round(tapado));
+    if (alto === this.tecladoPx) return;
+
+    this.tecladoPx = alto;
+    /* Se pinta a mano y no se espera a la detección de cambios de siempre:
+       esto llega de un `visualViewport`, y si algo dejara ese evento fuera del
+       zone la hoja se quedaría debajo del teclado sin más aviso. */
+    this.cdr.detectChanges();
   };
 
   private vigilarTeclado(activar: boolean): void {
@@ -501,17 +516,37 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
     this.desplazarAlActivo();
   }
 
-  /** La opción marcada tiene que verse; el encabezado pegajoso del
-   *  departamento tapa la primera fila si no se deja margen. */
+  /**
+   * Acerca la opción marcada moviendo solo la lista.
+   *
+   * Antes esto era un `scrollIntoView`, y ese desplaza todos los contenedores
+   * de encima, la página incluida. Con el teclado abierto eso corría la ventana
+   * visible entera y la hoja terminaba por debajo de las teclas. Se notaba al
+   * filtrar hasta dejar una sola ciudad: la fila quedaba tapada justo cuando
+   * era la única que importaba. Aquí las cuentas van contra la caja de la
+   * lista y nada de fuera se entera.
+   */
   private desplazarAlActivo(): void {
     const id = this.activeOptionId;
-    if (!id) return;
+    const lista = this.lista?.nativeElement;
+    if (!id || !lista) return;
 
     setTimeout(() => {
-      const nodo = this.lista?.nativeElement.querySelector(
-        `#${CSS.escape(id)}`,
-      );
-      nodo?.scrollIntoView({ block: 'nearest' });
+      const fila = lista.querySelector<HTMLElement>(`#${CSS.escape(id)}`);
+      if (!fila) return;
+
+      const suya = fila.getBoundingClientRect();
+      const caja = lista.getBoundingClientRect();
+
+      /* El encabezado del departamento se queda pegado sobre la primera fila
+         visible, así que por arriba hay que dejarle su alto. */
+      const margen = 28;
+
+      if (suya.top < caja.top + margen) {
+        lista.scrollTop -= caja.top + margen - suya.top;
+      } else if (suya.bottom > caja.bottom) {
+        lista.scrollTop += suya.bottom - caja.bottom;
+      }
     });
   }
 
