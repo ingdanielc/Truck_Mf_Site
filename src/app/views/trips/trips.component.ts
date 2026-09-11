@@ -94,6 +94,8 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
   searchTerm: string = '';
   originFilter: string | null = null;
   destinationFilter: string | null = null;
+  /** Propietarios del desplegable de filtro. Solo se llena para el admin. */
+  ownerOptions: ModelOwner[] = [];
   showFilters: boolean = false;
   isSearchActive: boolean = false;
   page: number = 0;
@@ -299,6 +301,78 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * La lista completa de propietarios para el desplegable del filtro.
+   *
+   * No sirve `owners`: esa es la página de nueve tarjetas que se está viendo y
+   * el filtro tiene que ofrecerlos todos. Se pide una sola vez al entrar, solo
+   * para el administrador, que es el único que ve el filtro.
+   */
+  private loadOwnerOptions(): void {
+    const filter = new ModelFilterTable(
+      [],
+      new Pagination(1000, 0),
+      new Sort('name', true),
+    );
+    this.ownerService.getOwnerFilter(filter).subscribe({
+      next: (response: any) => {
+        this.ownerOptions = response?.data?.content ?? [];
+      },
+      error: (err) => {
+        console.error('Error loading owner options:', err);
+        this.ownerOptions = [];
+      },
+    });
+  }
+
+  /**
+   * El administrador elige un propietario y la pantalla se acota a él.
+   *
+   * Se apoya en `ownerIdFilter`, el mismo estado que ya usa el enlace que trae
+   * aquí desde la ficha de un propietario: una sola forma de acotar la vista
+   * en vez de dos que puedan discrepar. Por eso también se refleja en la URL,
+   * para que recargar o compartir el enlace caiga en la misma pantalla.
+   *
+   * La cadena arranca por el propietario porque los viajes se acotan a sus
+   * vehículos, y esos hay que tenerlos antes de pedirlos.
+   */
+  onOwnerFilterChange(ownerId: number | string | null): void {
+    const elegido = ownerId === null || ownerId === '' ? null : Number(ownerId);
+    if (elegido === this.ownerIdFilter) return;
+
+    this.ownerIdFilter = elegido;
+    this.filteredOwner = null;
+    this.expandedOwnerId = null;
+    this.expandedOwnerPage = 0;
+    this.ownerTrips = [];
+    this.isSearchActive = false;
+    this.page = 0;
+
+    /* Vehículo y conductor mandan sobre el propietario al armar la consulta,
+       así que si quedaran puestos el filtro recién elegido no se notaría. Se
+       sueltan aquí y en la URL: quien llegó desde un vehículo y ahora elige un
+       propietario está pidiendo otra cosa. */
+    this.vehicleIdFilter = null;
+    this.filteredVehicle = null;
+    this.driverIdFilter = null;
+    this.filteredDriver = null;
+
+    this.router.navigate([], {
+      queryParams: { ownerId: elegido, vehicleId: null, driverId: null },
+      queryParamsHandling: 'merge',
+    });
+
+    if (elegido != null) {
+      this.loadFilteredOwner(elegido);
+    } else {
+      /* Sin propietario no hay vehículos que acoten nada: se sueltan para que
+         las consultas vuelvan a ser las del listado general. */
+      this.vehicles = [];
+      this.loadTrips();
+    }
+    this.loadOwners();
+  }
+
   loadFilteredDriver(driverId: number): void {
     const filter = new ModelFilterTable(
       [new Filter('id', '=', driverId.toString())],
@@ -338,6 +412,7 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
           this.userRole = (user.userRoles?.[0]?.role?.name || '').toUpperCase();
 
           if (this.userRole === 'ADMINISTRADOR') {
+            this.loadOwnerOptions();
             this.loadOwners();
             this.loadTrips();
           } else if (this.userRole === 'PROPIETARIO') {
@@ -930,34 +1005,50 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.listTotal = response?.data?.totalElements ?? this.allTrips.length;
         this.loadEmptyTripExpenses();
 
-        // Identify missing owners needed for grouping
-        const getOwnerId = (t: ModelTrip): number | undefined => {
-          if (t.driver?.ownerId) return t.driver.ownerId;
-          if (t.vehicle?.owners && t.vehicle.owners.length > 0) {
-            return t.vehicle.owners[0].ownerId;
+        /**
+         * Los propietarios que faltan solo se traen buscando.
+         *
+         * Buscando, la lista de tarjetas la mandan los viajes que coinciden:
+         * hay que mostrar a su dueño esté o no en la página, y por eso se pide
+         * aparte. En el listado paginado manda la página de propietarios, y
+         * agregarle los dueños de los viajes recientes la inflaba por encima
+         * de las nueve tarjetas que el paginador cuenta. De ahí salían las
+         * once o doce tarjetas y los propietarios repetidos entre páginas.
+         *
+         * No se esconde nada: la tarjeta cerrada no muestra viajes —los pide
+         * al abrirse— así que un viaje cuyo dueño cae en otra página se sigue
+         * viendo al abrir esa tarjeta o al buscarlo.
+         */
+        if (this.userRole === 'ADMINISTRADOR' && this.isSearchActive) {
+          const getOwnerId = (t: ModelTrip): number | undefined => {
+            if (t.driver?.ownerId) return t.driver.ownerId;
+            if (t.vehicle?.owners && t.vehicle.owners.length > 0) {
+              return t.vehicle.owners[0].ownerId;
+            }
+            return undefined;
+          };
+
+          const currentOwnerIds = new Set(this.owners.map((o) => o.id));
+          const missingOwnerIds = [
+            ...new Set(
+              this.allTrips
+                .map((t) => getOwnerId(t))
+                .filter(
+                  (id): id is number =>
+                    id != null &&
+                    !currentOwnerIds.has(id) &&
+                    id !== this.ownerIdFilter,
+                ),
+            ),
+          ];
+
+          if (missingOwnerIds.length > 0) {
+            this.fetchMissingOwners(missingOwnerIds);
+            return;
           }
-          return undefined;
-        };
-
-        const currentOwnerIds = new Set(this.owners.map((o) => o.id));
-        const missingOwnerIds = [
-          ...new Set(
-            this.allTrips
-              .map((t) => getOwnerId(t))
-              .filter(
-                (id): id is number =>
-                  id != null &&
-                  !currentOwnerIds.has(id) &&
-                  id !== this.ownerIdFilter,
-              ),
-          ),
-        ];
-
-        if (missingOwnerIds.length > 0) {
-          this.fetchMissingOwners(missingOwnerIds);
-        } else {
-          this.applyFilter(true);
         }
+
+        this.applyFilter(true);
       },
       error: (error: any) => {
         console.error('Error loading trips:', error);
@@ -1148,6 +1239,15 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.destinationFilter = null;
     this.searchTerm = '';
     this.expandedOwnerId = null;
+
+    /* El propietario es un filtro más, así que "Limpiar" también lo suelta.
+       Soltarlo rehace las consultas y la URL, y eso ya lo sabe hacer su propio
+       manejador: llamarlo evita repetir aquí la misma secuencia. */
+    if (this.userRole === 'ADMINISTRADOR' && this.ownerIdFilter != null) {
+      this.onOwnerFilterChange(null);
+      return;
+    }
+
     this.updateStatusCounts();
     this.applyFilter();
   }

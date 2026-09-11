@@ -476,7 +476,7 @@ export class GSubscriptionsReportComponent implements OnInit, OnChanges {
      asi que se pagina en memoria: no hay consulta que repetir por pagina. */
 
   public page = 0;
-  public readonly rowsPerPage = 10;
+  public readonly rowsPerPage = 9;
 
   get totalPages(): number {
     return Math.ceil(this.visibleRows.length / this.rowsPerPage);

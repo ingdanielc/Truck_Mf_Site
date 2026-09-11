@@ -24,6 +24,7 @@ import {
   DashboardGroupTrips,
   DashboardMonth,
 } from '../../models/dashboard-report-model';
+import { PaginationUtils } from '../../utils/pagination-utils';
 import { xlsxFileName } from '../../utils/xlsx';
 import { buildTripsSheet } from '../../utils/trips-sheet';
 import { shareOrDownloadFile } from '../../utils/file-share';
@@ -449,6 +450,9 @@ export class GProfitabilityReportComponent implements OnChanges {
 
     this.unassignedExpenses = otros;
     this.tripRows = filas;
+    /* Otro periodo o otro vehiculo es otra lista: quedarse en la pagina cuatro
+       de la anterior deja la tabla en blanco sin explicar por que. */
+    this.page = 0;
     this.buildRoutes();
     this.applySort();
     void this.loadReturnLegs();
@@ -692,11 +696,48 @@ export class GProfitabilityReportComponent implements OnChanges {
       this.sortAsc = field === 'label';
     }
     this.applySort();
+    this.page = 0;
   }
 
   public sortIcon(field: SortField): string {
     if (this.sortField !== field) return 'fa-sort';
     return this.sortAsc ? 'fa-sort-up' : 'fa-sort-down';
+  }
+
+  /* ---- Paginacion ---------------------------------------------------------
+     Las filas ya estan en memoria —salen del detalle que se pidio para el
+     periodo—, asi que se pagina aqui y no hay consulta que repetir por pagina.
+     Nueve por pagina, como el resto de los listados de la aplicacion.
+
+     Solo se pagina lo que se pinta. Los totales del pie suman `tripRows`
+     entero, porque son los del periodo y no los de la pagina; lo mismo la
+     exportacion, que se lleva el detalle completo. */
+
+  public page = 0;
+  public readonly rowsPerPage = 9;
+
+  get totalPages(): number {
+    return Math.ceil(this.tripRows.length / this.rowsPerPage);
+  }
+
+  /** Los viajes de la pagina actual, los unicos que se pintan. */
+  get pagedTripRows(): TripRow[] {
+    const start = this.page * this.rowsPerPage;
+    return this.tripRows.slice(start, start + this.rowsPerPage);
+  }
+
+  get desktopPages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 12);
+  }
+
+  get mobilePages(): number[] {
+    return PaginationUtils.getVisiblePages(this.page, this.totalPages, 4);
+  }
+
+  public changePage(newPage: number): void {
+    if (newPage >= 0 && newPage < this.totalPages && newPage !== this.page) {
+      this.page = newPage;
+    }
   }
 
   private applySort(): void {

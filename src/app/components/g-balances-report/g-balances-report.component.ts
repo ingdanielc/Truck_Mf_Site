@@ -604,7 +604,7 @@ export class GBalancesReportComponent implements OnChanges {
      ====================================================================== */
 
   public page = 0;
-  public readonly rowsPerPage = 10;
+  public readonly rowsPerPage = 9;
 
   get totalPages(): number {
     return Math.ceil(this.visibleRows.length / this.rowsPerPage);
