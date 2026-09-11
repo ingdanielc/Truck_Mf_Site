@@ -549,3 +549,65 @@ html[data-bs-theme="dark"] .text-indigo {
     line-height: 1.2;
   }
 }
+
+/* ==========================================================================
+   Color de los textos de invitacion de los campos (placeholder)
+
+   Un solo tono para toda la aplicacion. Antes cada campo tiraba de lo que le
+   tocaba —el gris fuerte que Bootstrap da por defecto, un `opacity: .5`
+   suelto en las contrasenas, un blanco al 30% en el formulario de gastos— y
+   el mismo formulario ensenaba tres grises distintos.
+   
+   Mismo bloque en Truck_Mf_Auth/src/styles.scss: mantener ambos en
+   sincronia.
+   ========================================================================== */
+:root {
+  --gtk-placeholder-color: rgba(var(--bs-body-color-rgb), 0.45);
+}
+
+/* Sobre fondo oscuro el mismo 0.45 se apaga mas, asi que sube un punto para
+   que los dos temas se lean igual de tenues. */
+:root[data-bs-theme="dark"] {
+  --gtk-placeholder-color: rgba(var(--bs-body-color-rgb), 0.5);
+}
+
+/* Se cualifica con el elemento (`input.form-control`) para ganarle por
+   especificidad a la regla de Bootstrap sin `!important`: el shell sirve
+   Bootstrap desde el CDN y no se puede asumir el orden de carga. La variante
+   sin clase cubre los campos que no llevan `.form-control`.
+
+   `opacity: 1` porque Firefox aclara el placeholder por su cuenta: sin esto
+   el tono no seria el mismo en todos los navegadores. */
+input::placeholder,
+textarea::placeholder,
+input.form-control::placeholder,
+textarea.form-control::placeholder,
+.form-control::placeholder {
+  color: var(--gtk-placeholder-color);
+  opacity: 1;
+}
+
+/* El desplegable no tiene placeholder propio: lo que se ve es el `<option>`
+   de «Selecciona» mientras no se ha elegido nada. Se le da el mismo tono al
+   `<select>` entero cuando esa es la opcion marcada —la mayoria la llevan
+   `disabled`; las que se pueden volver a elegir se marcan a mano con
+   `.gtk-placeholder`— y se devuelve el color normal a la lista desplegada,
+   que hereda del `<select>`. */
+.form-select:has(> option:checked:disabled),
+.form-select:has(> option:checked.gtk-placeholder) {
+  color: var(--gtk-placeholder-color);
+
+  > option,
+  > optgroup {
+    color: var(--bs-body-color);
+  }
+}
+
+/* El mismo tono para los campos que no son un `<input>` ni un `<select>`
+   pero se comportan como tales: el boton del combo de ciudad, que ensena la
+   invitacion hasta que se elige una. Se cualifica con `.form-select` porque
+   ese boton ya lleva esa clase. */
+.gtk-placeholder,
+.form-select.gtk-placeholder {
+  color: var(--gtk-placeholder-color);
+}

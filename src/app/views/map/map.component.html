@@ -40,7 +40,7 @@
           [(ngModel)]="selectedOwnerFilterId"
           (change)="onOwnerFilterChange()"
         >
-          <option [ngValue]="null" disabled>Seleccione un propietario</option>
+          <option [ngValue]="null" disabled>Selecciona un propietario</option>
           <!-- Solo se listan los propietarios con algun viaje en curso: son
                los unicos que tienen algo que mostrar en el mapa. -->
           @if (owners.length === 0) {

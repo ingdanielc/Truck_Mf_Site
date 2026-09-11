@@ -101,7 +101,7 @@
               class="form-control rounded-3 py-2 px-3"
               formControlName="name"
               maxlength="150"
-              placeholder="Ej: Juan Conduct"
+              placeholder="Escribe"
               [class.is-invalid]="
                 driverForm.get('name')?.invalid &&
                 driverForm.get('name')?.touched
@@ -154,7 +154,7 @@
               inputmode="numeric"
               class="form-control rounded-3 py-2 px-3"
               formControlName="documentNumber"
-              placeholder="Ej: 1.010.101.010"
+              placeholder="Escribe"
               maxlength="13"
               (input)="onDocumentNumberInput($event)"
               [class.is-invalid]="
@@ -190,7 +190,7 @@
               inputmode="numeric"
               class="form-control rounded-3 py-2 px-3"
               formControlName="cellPhone"
-              placeholder="XXX XXX XX XX"
+              placeholder="Escribe"
               (input)="formatCellPhone($event)"
               maxlength="13"
               [class.is-invalid]="
@@ -332,7 +332,7 @@
               type="email"
               class="form-control rounded-3 py-2 px-3"
               formControlName="email"
-              placeholder="correo@ejemplo.com"
+              placeholder="Escribe"
               [class.is-invalid]="
                 driverForm.get('email')?.invalid &&
                 driverForm.get('email')?.touched
@@ -376,7 +376,7 @@
                 driverForm.get('licenseCategory')?.touched
               "
             >
-              <option [value]="null">Selecciona</option>
+              <option class="gtk-placeholder" [value]="null">Selecciona</option>
               @for (cat of licenseCategories; track cat.id) {
                 <option [value]="cat.id">{{ cat.name }}</option>
               }
@@ -436,7 +436,7 @@
                 driverForm.get('salaryTypeId')?.touched
               "
             >
-              <option [value]="null">Selecciona</option>
+              <option class="gtk-placeholder" [value]="null">Selecciona</option>
               @for (type of salaryTypes; track type.id) {
                 <option [value]="type.id">{{ type.name }}</option>
               }
@@ -467,9 +467,7 @@
                 [class.rounded-end-3]="salaryLabel !== 'Porcentaje'"
                 formControlName="salary"
                 (input)="onSalaryInput($event)"
-                [placeholder]="
-                  salaryLabel === 'Porcentaje' ? 'Ej: 10' : 'Ej: 1.500.000'
-                "
+                placeholder="Escribe"
                 [class.is-invalid]="
                   driverForm.get('salary')?.invalid &&
                   driverForm.get('salary')?.touched
@@ -583,7 +581,7 @@
                   type="email"
                   class="form-control rounded-3 py-2 px-3"
                   formControlName="email"
-                  placeholder="correo@ejemplo.com"
+                  placeholder="Escribe"
                   [class.is-invalid]="
                     driverForm.get('email')?.invalid &&
                     driverForm.get('email')?.touched

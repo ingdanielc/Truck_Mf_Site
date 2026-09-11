@@ -23,7 +23,7 @@
               tripForm.get('ownerId')?.invalid
             "
           >
-            <option [ngValue]="null">Selecciona</option>
+            <option class="gtk-placeholder" [ngValue]="null">Selecciona</option>
             @for (owner of owners; track owner) {
               <option [ngValue]="owner.id">
                 {{ owner.name }} - {{ owner.documentNumber | documentNumber }}
@@ -170,7 +170,7 @@
               type="text"
               class="form-control rounded-3 py-2 px-3"
               formControlName="manifestNumber"
-              placeholder="Ej: MF-8892"
+              placeholder="Escribe"
               [class.is-invalid]="
                 tripForm.get('manifestNumber')?.touched &&
                 tripForm.get('manifestNumber')?.invalid
@@ -210,7 +210,7 @@
                 tripForm.get('originId')?.invalid
               "
             >
-              <option [ngValue]="null">Selecciona</option>
+              <option class="gtk-placeholder" [ngValue]="null">Selecciona</option>
               @for (group of groupedCities; track group) {
                 <optgroup [label]="group.state">
                   @for (city of group.cities; track city) {
@@ -251,7 +251,7 @@
                 tripForm.get('destinationId')?.invalid
               "
             >
-              <option [ngValue]="null">Selecciona</option>
+              <option class="gtk-placeholder" [ngValue]="null">Selecciona</option>
               @for (group of groupedCities; track group) {
                 <optgroup [label]="group.state">
                   @for (city of group.cities; track city) {
@@ -294,7 +294,7 @@
                   tripForm.get('returnDestinationId')?.invalid
                 "
               >
-                <option [ngValue]="null">Selecciona</option>
+                <option class="gtk-placeholder" [ngValue]="null">Selecciona</option>
                 @for (group of groupedCities; track group) {
                   <optgroup [label]="group.state">
                     @for (city of group.cities; track city) {

@@ -101,7 +101,7 @@
               class="form-control rounded-3 py-2 px-3"
               formControlName="name"
               maxlength="150"
-              placeholder="Ej: Juan Pérez"
+              placeholder="Escribe"
               [class.is-invalid]="
                 ownerForm.get('name')?.invalid && ownerForm.get('name')?.touched
               "
@@ -152,7 +152,7 @@
               inputmode="numeric"
               class="form-control rounded-3 py-2 px-3"
               formControlName="documentNumber"
-              placeholder="Ej: 1.010.101.010"
+              placeholder="Escribe"
               maxlength="13"
               (input)="onDocumentNumberInput($event)"
               (keypress)="allowOnlyNumbers($event)"
@@ -191,7 +191,7 @@
               inputmode="numeric"
               class="form-control rounded-3 py-2 px-3"
               formControlName="cellPhone"
-              placeholder="XXX XXX XX XX"
+              placeholder="Escribe"
               (input)="formatCellPhone($event)"
               maxlength="13"
               [class.is-invalid]="
@@ -396,7 +396,7 @@
               type="email"
               class="form-control rounded-3 py-2 px-3"
               formControlName="email"
-              placeholder="correo@ejemplo.com"
+              placeholder="Escribe"
               [class.is-invalid]="
                 ownerForm.get('email')?.invalid &&
                 ownerForm.get('email')?.touched
@@ -525,7 +525,7 @@
               type="email"
               class="form-control rounded-3 py-2 px-3"
               formControlName="email"
-              placeholder="correo@ejemplo.com"
+              placeholder="Escribe"
               [class.is-invalid]="
                 ownerForm.get('email')?.invalid &&
                 ownerForm.get('email')?.touched

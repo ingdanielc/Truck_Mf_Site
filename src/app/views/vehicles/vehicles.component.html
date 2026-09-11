@@ -690,7 +690,7 @@
               type="text"
               class="form-control rounded-3 py-2 px-3"
               formControlName="model"
-              placeholder="Ej: Actros 2645"
+              placeholder="Escribe"
               [class.is-invalid]="
                 vehicleForm.get('model')?.invalid &&
                 vehicleForm.get('model')?.touched
@@ -739,7 +739,7 @@
               type="text"
               class="form-control rounded-3 py-2 px-3"
               formControlName="color"
-              placeholder="Ej: Blanco"
+              placeholder="Escribe"
               [class.is-invalid]="
                 vehicleForm.get('color')?.invalid &&
                 vehicleForm.get('color')?.touched
@@ -804,7 +804,7 @@
               type="text"
               class="form-control rounded-3 py-2 px-3"
               formControlName="motorNumber"
-              placeholder="MOT-998877"
+              placeholder="Escribe"
             />
           </div>
 
@@ -817,7 +817,7 @@
               type="text"
               class="form-control rounded-3 py-2 px-3"
               formControlName="chassisNumber"
-              placeholder="CHS-112233"
+              placeholder="Escribe"
             />
           </div>
 
@@ -832,7 +832,7 @@
               max="99999999"
               class="form-control rounded-3 py-2 px-3"
               formControlName="initialKm"
-              placeholder="Ej. 120000"
+              placeholder="Escribe"
               (input)="onInitialKmInput($event)"
               [class.is-invalid]="
                 vehicleForm.get('initialKm')?.invalid &&
