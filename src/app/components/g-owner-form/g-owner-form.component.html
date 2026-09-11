@@ -249,23 +249,42 @@
             <label for="city" class="form-label small fw-bold mb-2"
               >Ciudad*</label
             >
-            <select
-              id="city"
-              class="form-select rounded-3 py-2 px-3"
-              formControlName="city"
-              [class.is-invalid]="
-                ownerForm.get('city')?.invalid && ownerForm.get('city')?.touched
-              "
-            >
-              <option value="null" disabled selected>Selecciona</option>
-              @for (group of groupedCities; track group) {
-                <optgroup [label]="group.state">
-                  @for (city of group.cities; track city) {
-                    <option [value]="city.id">{{ city.name }}</option>
-                  }
-                </optgroup>
-              }
-            </select>
+            <!-- Prueba del buscador de ciudades, de momento solo para el
+                 administrador. Esta misma ficha la abren propietarios y
+                 conductores desde su perfil, y a ellos les tiene que seguir
+                 saliendo el desplegable de siempre hasta que la prueba salga
+                 bien. Quitar el `@if` es todo lo que hace falta para
+                 dárselo a todos. -->
+            @if (userRole === "ADMINISTRADOR") {
+              <g-city-combobox
+                inputId="city"
+                formControlName="city"
+                [groups]="groupedCities"
+                [invalid]="
+                  !!ownerForm.get('city')?.invalid &&
+                  !!ownerForm.get('city')?.touched
+                "
+              ></g-city-combobox>
+            } @else {
+              <select
+                id="city"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="city"
+                [class.is-invalid]="
+                  ownerForm.get('city')?.invalid &&
+                  ownerForm.get('city')?.touched
+                "
+              >
+                <option value="null" disabled selected>Selecciona</option>
+                @for (group of groupedCities; track group) {
+                  <optgroup [label]="group.state">
+                    @for (city of group.cities; track city) {
+                      <option [value]="city.id">{{ city.name }}</option>
+                    }
+                  </optgroup>
+                }
+              </select>
+            }
             @if (
               ownerForm.get("city")?.invalid && ownerForm.get("city")?.touched
             ) {

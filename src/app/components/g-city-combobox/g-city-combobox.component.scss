@@ -1,0 +1,249 @@
+:host {
+  display: block;
+  /* El desplegable de escritorio cuelga de aquí. */
+  position: relative;
+}
+
+/* `.custom-offcanvas` lleva `transform`, así que lo fijo de aquí dentro se
+   mide contra el panel lateral y no contra la página. Sale a cuenta: en el
+   teléfono el panel ocupa la pantalla entera, que es justo lo que queremos
+   tapar, y el `overflow` del cuerpo del formulario no lo recorta. */
+.city-combobox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.35);
+  animation: city-combobox-aparecer 0.2s ease;
+}
+
+/* Sube desde abajo y se queda a media pantalla: por encima sigue viéndose el
+   formulario, que es lo que dice que esto se cierra y uno vuelve a donde
+   estaba. Solo se anima al abrir; al elegir, la hoja se quita de golpe porque
+   deja de dibujarse. */
+.city-combobox-sheet {
+  /* Lo que el teclado le quita a la ventana por abajo. Lo mide el componente
+     con `visualViewport`, porque en iOS el teclado no encoge la ventana y una
+     hoja pegada al borde inferior se quedaría debajo de las teclas. */
+  --teclado: 0px;
+
+  position: fixed;
+  right: 0;
+  bottom: var(--teclado);
+  left: 0;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  /* Dos quintos de pantalla como mucho, y nunca por debajo del teclado. Los
+     `dvh` son para que la barra del navegador al recogerse no descuadre el
+     alto. */
+  max-height: 40vh;
+  max-height: min(40dvh, calc(100dvh - var(--teclado) - 3rem));
+  background-color: var(--bs-body-bg);
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  box-shadow: 0 -0.5rem 2rem rgba(0, 0, 0, 0.2);
+  animation: city-combobox-subir 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  /* La vuelta a su sitio cuando el arrastre se queda corto. */
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* El gesto de bajar la hoja es nuestro, no del navegador. Sin esto, en iOS
+     el dedo hacia abajo se lo queda Safari para desplazar la página de detrás:
+     el `pointermove` deja de llegar y la hoja se queda quieta. La lista se lo
+     devuelve, que ahí el dedo sí desplaza. */
+  touch-action: none;
+
+  /* Mientras el dedo la arrastra manda el transform en línea; la transición
+     la haría ir por detrás del gesto. */
+  &.dragging {
+    transition: none;
+  }
+}
+
+/* Se ve una barrita de 2.5rem × 4px, pero el botón mide lo que tiene que medir
+   para que un pulgar le acierte. Lo que se pinta es el `::before`. El margen de
+   arriba la despega del borde: centrada en su caja y sin él quedaba pegada a la
+   esquina redondeada. Como el botón no se dibuja de tableta en adelante, ese
+   hueco no aparece en el desplegable. */
+.city-combobox-grabber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 1.75rem;
+  margin: 0.5rem auto 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: grab;
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &::before {
+    content: "";
+    display: block;
+    width: 2.5rem;
+    height: 4px;
+    border-radius: 2px;
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.2);
+  }
+}
+
+.city-combobox-search {
+  /* La etiqueta va encima del campo, no a su lado. */
+  display: block;
+  /* El mismo hueco de arriba que el cuerpo de las hojas de confirmación. */
+  padding: 0.75rem 0.75rem;
+  border-bottom: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+  /* Arrastrar desde aquí baja la hoja; escribir no, y por eso el grupo del
+     buscador recupera el gesto del navegador un poco más abajo. */
+  touch-action: none;
+
+  .input-group {
+    min-width: 0;
+    touch-action: auto;
+  }
+
+  /* Los tres trozos del buscador —lupa, campo y aspa— tienen que leerse como
+     una sola pieza. Cada uno traía el borde de su clase de Bootstrap y se veían
+     tres grises distintos pegados. */
+  .input-group-text,
+  .form-control,
+  .btn {
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.03);
+    border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+    color: var(--bs-body-color);
+  }
+
+  /* El texto no puede empezar pegado a la lupa: sin esto se leía como si
+     faltara un espacio. */
+  .form-control {
+    padding-left: 0.75rem;
+  }
+
+  /* El resalte al escribir es del grupo entero y no del campo. Llevándolo solo
+     el campo se encendía el trozo de en medio y los extremos se quedaban
+     apagados, que era lo que partía el buscador en tres. */
+  .form-control:focus {
+    border-color: rgba(var(--bs-emphasis-color-rgb), 0.1);
+    box-shadow: none;
+  }
+
+  .input-group:focus-within {
+    border-radius: var(--bs-border-radius);
+    box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.1);
+
+    .input-group-text,
+    .form-control,
+    .btn {
+      border-color: var(--bs-primary);
+    }
+  }
+}
+
+@keyframes city-combobox-subir {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes city-combobox-aparecer {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.city-combobox-list {
+  flex: 1;
+  /* Sin esto el hijo de un flex no se encoge y la lista desborda la hoja en
+     vez de desplazarse. */
+  min-height: 0;
+  overflow-y: auto;
+  /* El desplazamiento se queda dentro: al llegar al final de la lista, seguir
+     arrastrando movía el formulario de detrás. */
+  overscroll-behavior: contain;
+  /* Aquí el dedo hacia abajo recorre la lista, no baja la hoja. La hoja pone
+     `touch-action: none` para quedarse el gesto; esto se lo devuelve. */
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+/* Pegajoso: al bajar por la lista hay que seguir sabiendo de qué departamento
+   son las ciudades que se están viendo. */
+.city-combobox-group {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.4rem 1rem;
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-secondary-color);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.city-combobox-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  /* Un pulgar no acierta a menos de esto, y aquí se elige con el pulgar. */
+  min-height: 48px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+
+  /* La marcada con las flechas o con el primer resultado de la búsqueda. */
+  &.active {
+    background-color: rgba(var(--bs-primary-rgb), 0.08);
+  }
+
+  &[aria-selected="true"] {
+    font-weight: 600;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: rgba(var(--bs-emphasis-color-rgb), 0.05);
+    }
+  }
+}
+
+/* De tableta para arriba deja de ser una hoja y vuelve a ser un desplegable
+   colgado del campo: ahí la pantalla da de sobra y tapar todo sería excesivo. */
+@media (min-width: 768px) {
+  .city-combobox-backdrop {
+    background-color: transparent;
+  }
+
+  .city-combobox-sheet {
+    position: absolute;
+    inset: auto 0 auto 0;
+    top: calc(100% + 0.25rem);
+    max-height: 20rem;
+    border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.15);
+    border-radius: 0.75rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    /* Aquí no sube nada: se despliega en su sitio, bajo el campo. */
+    animation: city-combobox-aparecer 0.15s ease;
+    /* Y tampoco se baja con el dedo, así que el gesto vuelve al navegador. */
+    touch-action: auto;
+  }
+
+  .city-combobox-search {
+    touch-action: auto;
+  }
+
+  .city-combobox-list {
+    padding-bottom: 0.5rem;
+  }
+}

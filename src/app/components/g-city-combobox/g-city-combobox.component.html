@@ -1,0 +1,138 @@
+<!-- Se viste de `form-select` para que quede igual que el resto de campos del
+     panel, que ya tienen estilo propio dentro de `.custom-offcanvas`. Es un
+     botón y no un `<input>` porque cerrado no se escribe en él: lo que se
+     escribe está dentro de la hoja. -->
+<button
+  #disparador
+  type="button"
+  class="form-select rounded-3 py-2 px-3 text-start text-truncate"
+  [id]="inputId"
+  [class.is-invalid]="invalid"
+  [class.text-secondary]="!selectedLabel"
+  [disabled]="disabled"
+  [attr.aria-expanded]="open"
+  [attr.aria-controls]="open ? listboxId : null"
+  aria-haspopup="dialog"
+  (click)="abrir()"
+>
+  {{ selectedLabel || placeholder }}
+</button>
+
+@if (open) {
+  <!-- Tocar fuera cierra sin elegir. En el teléfono se ve oscurecido por encima
+       de la hoja y es la salida más a mano; en pantalla ancha es transparente y
+       solo sirve para recoger ese toque. -->
+  <div class="city-combobox-backdrop" (click)="cerrar()" onkeypress></div>
+
+  <!-- El gesto se escucha en la hoja entera y no solo en la barrita: en un
+       teléfono esa barrita mide cuatro píxeles de alto y acertarle con el pulgar
+       es cuestión de suerte. `onDragStart` deja fuera la lista y el buscador. -->
+  <div
+    class="city-combobox-sheet"
+    role="dialog"
+    aria-label="Buscar ciudad"
+    [style.--teclado.px]="tecladoPx"
+    [style.transform]="dragOffset ? 'translateY(' + dragOffset + 'px)' : null"
+    [class.dragging]="!!dragOffset"
+    (pointerdown)="onDragStart($event)"
+    (pointermove)="onDragMove($event)"
+    (pointerup)="onDragEnd()"
+    (pointercancel)="onDragEnd()"
+  >
+    <!-- La barrita dice que esto es una hoja y se puede bajar. Solo en el
+         teléfono: en pantalla ancha esto no es una hoja, es un desplegable. -->
+    <button
+      #barrita
+      type="button"
+      class="city-combobox-grabber d-md-none"
+      aria-label="Cerrar sin elegir"
+      (click)="onGrabberClick()"
+    ></button>
+
+    <div class="city-combobox-search">
+      <!-- Mismo estilo que las etiquetas del formulario de detrás, que es de
+           donde viene quien abre esto. -->
+      <label [for]="buscadorId" class="form-label small fw-bold mb-2">
+        {{ label }}
+      </label>
+
+      <div class="input-group flex-nowrap">
+        <span class="input-group-text border-end-0">
+          <i class="fa-solid fa-magnifying-glass text-secondary"></i>
+        </span>
+        <input
+          #buscador
+          type="text"
+          [id]="buscadorId"
+          class="form-control border-start-0"
+          role="combobox"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          aria-expanded="true"
+          aria-autocomplete="list"
+          [attr.aria-controls]="listboxId"
+          [attr.aria-activedescendant]="activeOptionId"
+          [placeholder]="searchPlaceholder"
+          [value]="query"
+          (input)="onBuscar($event)"
+          (keydown)="onKeydown($event)"
+        />
+        @if (query) {
+          <button
+            type="button"
+            class="btn border-start-0"
+            aria-label="Borrar la búsqueda"
+            (click)="limpiarBusqueda()"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div
+      #lista
+      class="city-combobox-list"
+      [id]="listboxId"
+      role="listbox"
+      aria-label="Ciudades"
+    >
+      @for (group of filteredGroups; track group.state) {
+        <div role="group" [attr.aria-label]="group.state">
+          <!-- El nombre del departamento ya va en el `aria-label` del grupo;
+               repetirlo aquí haría que el lector lo dijera dos veces. -->
+          <div class="city-combobox-group" aria-hidden="true">
+            {{ group.state }}
+          </div>
+
+          @for (city of group.cities; track city.id) {
+            <!-- `pointerdown` se anula para que el buscador no pierda el foco
+                 antes de que llegue el `click`: si lo perdiera, en el teléfono
+                 el teclado se cerraría y la hoja daría un salto. -->
+            <div
+              class="city-combobox-option"
+              role="option"
+              [id]="optionId(city)"
+              [class.active]="optionId(city) === activeOptionId"
+              [attr.aria-selected]="isSelected(city)"
+              (pointerdown)="$event.preventDefault()"
+              (click)="seleccionar(city)"
+            >
+              <span class="text-truncate">{{ city.name }}</span>
+              @if (isSelected(city)) {
+                <i class="fa-solid fa-check text-primary ms-2"></i>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @if (!filteredGroups.length) {
+        <p class="text-secondary small text-center py-5 mb-0">
+          Ninguna ciudad coincide con «{{ query }}»
+        </p>
+      }
+    </div>
+  </div>
+}
