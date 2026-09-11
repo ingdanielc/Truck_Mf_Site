@@ -38,6 +38,7 @@ import {
   ComboOption,
   GSearchComboboxComponent,
 } from 'src/app/components/g-search-combobox/g-search-combobox.component';
+import { ownerComboOptions } from 'src/app/utils/owner-options';
 import { ModelOwner } from '../../models/owner-model';
 import { Formatters } from '../../utils/formatters';
 import {
@@ -109,16 +110,26 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     | 'saldos'
     | 'viajes' = 'rentabilidad';
   userRole: string = '';
-  /** La lista se rellena al cargar, así que las filas del buscador se rehacen
-   *  aquí. El texto sale de `ownerName`, el mismo criterio que las gráficas. */
+  /**
+   * La lista se rellena al cargar, así que las filas del buscador se rehacen
+   * aquí.
+   *
+   * El nombre sale de `ownerName`, el mismo criterio que las gráficas, y se
+   * resuelve antes de armar la fila para que el buscador y el eje se lean
+   * igual. La identificación va al lado, como en el resto del panel: hay
+   * propietarios que se llaman parecido y el número es lo único que los
+   * separa.
+   */
   set owners(value: ModelOwner[]) {
     this.listaOwners = value ?? [];
-    this.ownerOptions = this.listaOwners
-      .filter((owner) => owner.id !== null && owner.id !== undefined)
-      .map((owner) => ({
-        id: owner.id as number,
+    this.ownerOptions = ownerComboOptions(
+      this.listaOwners.map((owner) => ({
+        id: owner.id,
         name: this.ownerName(owner),
-      }));
+        documentNumber: owner.documentNumber,
+      })),
+      true,
+    );
   }
   get owners(): ModelOwner[] {
     return this.listaOwners;

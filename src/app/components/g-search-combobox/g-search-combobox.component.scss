@@ -42,8 +42,8 @@
   /* Algo menos de media pantalla, y nunca por debajo del teclado. Los
      `dvh` son para que la barra del navegador al recogerse no descuadre el
      alto. */
-  max-height: 45vh;
-  max-height: min(45dvh, calc(100dvh - var(--teclado) - 3rem));
+  max-height: 48vh;
+  max-height: min(48dvh, calc(100dvh - var(--teclado) - 3rem));
   background-color: var(--bs-body-bg);
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
