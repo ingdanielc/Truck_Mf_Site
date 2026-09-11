@@ -3,6 +3,7 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
+  HostBinding,
   Input,
   OnDestroy,
   ViewChild,
@@ -89,8 +90,27 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
   /** El nombre del campo, repetido dentro de la hoja: al abrirla tapa el
    *  formulario, y sin él no se sabe qué se está eligiendo. */
   @Input() label = 'Ciudad';
+  /**
+   * Texto de la fila que no elige ninguna ciudad, como el "Todos" de un
+   * filtro. Puesto, esa fila encabeza la lista y vale `null`; sin poner, el
+   * campo es obligatorio y no hay forma de volver atrás desde la hoja.
+   */
+  @Input() emptyOptionLabel: string | null = null;
+  /** Clases del campo cerrado, junto a `form-select`. Los filtros del listado
+   *  de viajes no se visten como los campos de un formulario. */
+  @Input() fieldClass = 'rounded-3 py-2 px-3';
   /** Pinta el borde de error, igual que `is-invalid` en el `<select>`. */
   @Input() invalid = false;
+
+  /**
+   * La marca de error también en la etiqueta de fuera, no solo en el campo.
+   * Bootstrap enseña los `.invalid-feedback` con un `.is-invalid ~`, es decir,
+   * mirando al hermano de antes. Ese hermano ahora es este componente, y sin la
+   * clase aquí el mensaje de error no llegaría a verse.
+   */
+  @HostBinding('class.is-invalid') get marcadoInvalido(): boolean {
+    return this.invalid;
+  }
 
   @ViewChild('buscador') private buscador?: ElementRef<HTMLInputElement>;
   @ViewChild('disparador') private disparador?: ElementRef<HTMLButtonElement>;
@@ -117,8 +137,9 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
    *  como número —al editar— y otras como texto. Comparar en crudo fallaba. */
   private selectedId: string | null = null;
   /** Las ciudades visibles en un solo nivel, que es como se recorren con las
-   *  flechas. Los encabezados de departamento no se pueden elegir. */
-  private planas: CityOption[] = [];
+   *  flechas. Los encabezados de departamento no se pueden elegir. El `null`
+   *  de la primera posición, cuando lo hay, es la fila de "Todos". */
+  private planas: (CityOption | null)[] = [];
   private activo = -1;
 
   private dragStartY: number | null = null;
@@ -142,9 +163,12 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
   // ── ControlValueAccessor ───────────────────────────────────────────
 
   writeValue(valor: unknown): void {
-    /* El `<select>` de antes traía la cadena "null" en su opción vacía, y ese
-       valor sigue llegando de formularios que no se han tocado. */
-    const vacio = valor === null || valor === undefined || valor === 'null';
+    /* Vacío se escribe de varias formas según de dónde venga el formulario: la
+       ficha de viaje arranca sus campos en cadena vacía, las de propietario y
+       conductor en `null`, y el `<select>` de antes traía la cadena "null" en
+       su opción sin elegir. Las tres significan lo mismo. */
+    const vacio =
+      valor === null || valor === undefined || valor === '' || valor === 'null';
     this.selectedId = vacio ? null : String(valor);
     this.sincronizarEtiqueta();
   }
@@ -176,9 +200,7 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
     this.open = true;
     this.query = '';
     this.filtrar();
-    this.activo = this.planas.findIndex(
-      (ciudad) => String(ciudad.id) === this.selectedId,
-    );
+    this.activo = this.planas.findIndex((ciudad) => this.isSelected(ciudad));
 
     this.cdr.detectChanges();
     this.buscador?.nativeElement.focus();
@@ -362,32 +384,59 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
         .filter((grupo) => grupo.cities.length > 0);
     }
 
-    this.planas = this.filteredGroups.flatMap((grupo) => grupo.cities);
+    this.planas = this.filteredGroups.flatMap<CityOption | null>(
+      (grupo) => grupo.cities,
+    );
+
+    /* "Todos" encabeza la lista, pero solo sin nada escrito: quien busca una
+       ciudad no está buscando quitar el filtro. */
+    if (this.mostrarTodas) this.planas.unshift(null);
+  }
+
+  /** ¿Se enseña la fila que no elige ninguna ciudad? */
+  get mostrarTodas(): boolean {
+    return !!this.emptyOptionLabel && !this.query;
+  }
+
+  /** Lo que se lee en el campo cerrado. */
+  get textoDisparador(): string {
+    return this.selectedLabel || this.emptyOptionLabel || this.placeholder;
+  }
+
+  /** Gris de invitación solo cuando de verdad no hay nada que enseñar. Un
+   *  filtro en "Todos" no está vacío: está en su valor de siempre. */
+  get disparadorVacio(): boolean {
+    return !this.selectedLabel && !this.emptyOptionLabel;
   }
 
   // ── Selección ──────────────────────────────────────────────────────
 
-  seleccionar(ciudad: CityOption): void {
-    this.selectedId = String(ciudad.id);
-    this.selectedLabel = ciudad.name;
+  /** `null` es la fila de "Todos": deja el campo sin ciudad. */
+  seleccionar(ciudad: CityOption | null): void {
+    this.selectedId = ciudad ? String(ciudad.id) : null;
+    this.selectedLabel = ciudad ? ciudad.name : '';
     /* Se emite texto y no el número crudo para mandar al backend exactamente
        lo mismo que mandaba el `<select>`, cuyo `[value]` ya era una cadena. */
     this.alCambiar(this.selectedId);
     this.cerrar();
   }
 
-  isSelected(ciudad: CityOption): boolean {
-    return String(ciudad.id) === this.selectedId;
+  isSelected(ciudad: CityOption | null): boolean {
+    return ciudad
+      ? String(ciudad.id) === this.selectedId
+      : this.selectedId === null;
   }
 
-  optionId(ciudad: CityOption): string {
-    return `${this.listboxId}-op-${ciudad.id}`;
+  optionId(ciudad: CityOption | null): string {
+    return `${this.listboxId}-op-${ciudad ? ciudad.id : 'todas'}`;
   }
 
   /** Lo que lee el lector de pantalla como opción en curso. */
   get activeOptionId(): string | null {
-    const ciudad = this.planas[this.activo];
-    return ciudad ? this.optionId(ciudad) : null;
+    /* Se mira el índice y no el valor: la fila de "Todos" es un `null` de
+       pleno derecho y también tiene que poder estar marcada. */
+    if (this.activo < 0 || this.activo >= this.planas.length) return null;
+    return this.optionId(this.planas[this.activo]);
   }
 
   // ── Teclado ────────────────────────────────────────────────────────
@@ -414,8 +463,9 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
         /* Sin esto "Enter" enviaría el formulario de propietarios entero, que
            es lo que hace la tecla dentro de un `<form>`. */
         evento.preventDefault();
-        const ciudad = this.planas[this.activo];
-        if (ciudad) this.seleccionar(ciudad);
+        if (this.activo >= 0 && this.activo < this.planas.length) {
+          this.seleccionar(this.planas[this.activo]);
+        }
         break;
       }
       case 'Escape':
@@ -466,19 +516,22 @@ export class GCityComboboxComponent implements ControlValueAccessor, OnDestroy {
   }
 
   private sincronizarEtiqueta(): void {
-    if (this.selectedId === null) {
-      this.selectedLabel = '';
-      return;
-    }
-
-    for (const grupo of this.gruposOrigen) {
-      const ciudad = grupo.cities.find(
-        (candidata) => String(candidata.id) === this.selectedId,
-      );
-      if (ciudad) {
-        this.selectedLabel = ciudad.name;
-        return;
+    if (this.selectedId !== null) {
+      for (const grupo of this.gruposOrigen) {
+        const ciudad = grupo.cities.find(
+          (candidata) => String(candidata.id) === this.selectedId,
+        );
+        if (ciudad) {
+          this.selectedLabel = ciudad.name;
+          return;
+        }
       }
     }
+
+    /* Sin ciudad que enseñar, el campo vuelve a su texto de invitación. Dejar
+       la etiqueta anterior haría que un formulario ya vaciado —cambiar de
+       viaje redondo a sencillo borra el destino de regreso— siguiera
+       enseñando la ciudad de antes como si estuviera elegida. */
+    this.selectedLabel = '';
   }
 }

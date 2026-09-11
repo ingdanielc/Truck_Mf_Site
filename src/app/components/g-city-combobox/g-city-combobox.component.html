@@ -5,17 +5,18 @@
 <button
   #disparador
   type="button"
-  class="form-select rounded-3 py-2 px-3 text-start text-truncate"
+  class="form-select text-start text-truncate"
+  [ngClass]="fieldClass"
   [id]="inputId"
   [class.is-invalid]="invalid"
-  [class.text-secondary]="!selectedLabel"
+  [class.text-secondary]="disparadorVacio"
   [disabled]="disabled"
   [attr.aria-expanded]="open"
   [attr.aria-controls]="open ? listboxId : null"
   aria-haspopup="dialog"
   (click)="abrir()"
 >
-  {{ selectedLabel || placeholder }}
+  {{ textoDisparador }}
 </button>
 
 @if (open) {
@@ -98,6 +99,26 @@
       role="listbox"
       aria-label="Ciudades"
     >
+      <!-- La fila que no elige ninguna ciudad: el "Todos" de los filtros. Va
+           antes de los departamentos y se recorre con las flechas como una
+           ciudad más, por eso lleva los mismos atributos. -->
+      @if (mostrarTodas) {
+        <div
+          class="city-combobox-option city-combobox-todas"
+          role="option"
+          [id]="optionId(null)"
+          [class.active]="optionId(null) === activeOptionId"
+          [attr.aria-selected]="isSelected(null)"
+          (pointerdown)="$event.preventDefault()"
+          (click)="seleccionar(null)"
+        >
+          <span class="text-truncate">{{ emptyOptionLabel }}</span>
+          @if (isSelected(null)) {
+            <i class="fa-solid fa-check text-primary ms-2"></i>
+          }
+        </div>
+      }
+
       @for (group of filteredGroups; track group.state) {
         <div role="group" [attr.aria-label]="group.state">
           <!-- El nombre del departamento ya va en el `aria-label` del grupo;

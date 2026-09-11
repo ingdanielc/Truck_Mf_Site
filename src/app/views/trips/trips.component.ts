@@ -28,6 +28,7 @@ import { DriverService } from 'src/app/services/driver.service';
 import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
 import { GTripFormComponent } from '../../components/g-trip-form/g-trip-form.component';
 import { GTripInfoCardComponent } from '../../components/g-trip-info-card/g-trip-info-card.component';
+import { GCityComboboxComponent } from 'src/app/components/g-city-combobox/g-city-combobox.component';
 import { GConfirmSheetComponent } from '../../components/g-confirm-sheet/g-confirm-sheet.component';
 import { NotificationsService } from 'src/app/services/notifications.service';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
@@ -66,6 +67,7 @@ export interface TripOwnerGroup {
     GTripFormComponent,
     GConfirmSheetComponent,
     GTripInfoCardComponent,
+    GCityComboboxComponent,
   ],
   templateUrl: './trips.component.html',
   styleUrls: ['./trips.component.scss'],

@@ -114,20 +114,33 @@
                   class="form-label small text-secondary fw-bold mb-1"
                   >Origen</label
                 >
-                <select
-                  id="origen"
-                  class="form-select rounded-3 shadow-sm border-0"
-                  [(ngModel)]="originFilter"
-                >
-                  <option [value]="null">Todos</option>
-                  @for (group of groupedCities; track group) {
-                    <optgroup [label]="group.state">
-                      @for (city of group.cities; track city.id) {
-                        <option [value]="city.id">{{ city.name }}</option>
-                      }
-                    </optgroup>
-                  }
-                </select>
+                <!-- Mismo trato que en las fichas: la prueba del buscador es
+                     de momento solo para el administrador. -->
+                @if (userRole === "ADMINISTRADOR") {
+                  <g-city-combobox
+                    inputId="origen"
+                    label="Origen"
+                    emptyOptionLabel="Todos"
+                    fieldClass="rounded-3 shadow-sm border-0"
+                    [groups]="groupedCities"
+                    [(ngModel)]="originFilter"
+                  ></g-city-combobox>
+                } @else {
+                  <select
+                    id="origen"
+                    class="form-select rounded-3 shadow-sm border-0"
+                    [(ngModel)]="originFilter"
+                  >
+                    <option [value]="null">Todos</option>
+                    @for (group of groupedCities; track group) {
+                      <optgroup [label]="group.state">
+                        @for (city of group.cities; track city.id) {
+                          <option [value]="city.id">{{ city.name }}</option>
+                        }
+                      </optgroup>
+                    }
+                  </select>
+                }
               </div>
               <div class="col-12 col-md-4">
                 <label
@@ -135,20 +148,31 @@
                   class="form-label small text-secondary fw-bold mb-1"
                   >Destino</label
                 >
-                <select
-                  id="destino"
-                  class="form-select rounded-3 shadow-sm border-0"
-                  [(ngModel)]="destinationFilter"
-                >
-                  <option [value]="null">Todos</option>
-                  @for (group of groupedCities; track group) {
-                    <optgroup [label]="group.state">
-                      @for (city of group.cities; track city.id) {
-                        <option [value]="city.id">{{ city.name }}</option>
-                      }
-                    </optgroup>
-                  }
-                </select>
+                @if (userRole === "ADMINISTRADOR") {
+                  <g-city-combobox
+                    inputId="destino"
+                    label="Destino"
+                    emptyOptionLabel="Todos"
+                    fieldClass="rounded-3 shadow-sm border-0"
+                    [groups]="groupedCities"
+                    [(ngModel)]="destinationFilter"
+                  ></g-city-combobox>
+                } @else {
+                  <select
+                    id="destino"
+                    class="form-select rounded-3 shadow-sm border-0"
+                    [(ngModel)]="destinationFilter"
+                  >
+                    <option [value]="null">Todos</option>
+                    @for (group of groupedCities; track group) {
+                      <optgroup [label]="group.state">
+                        @for (city of group.cities; track city.id) {
+                          <option [value]="city.id">{{ city.name }}</option>
+                        }
+                      </optgroup>
+                    }
+                  </select>
+                }
               </div>
               <div class="col-12 col-md-4">
                 <div class="row g-2">

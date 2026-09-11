@@ -172,6 +172,27 @@
   /* Aquí el dedo hacia abajo recorre la lista, no baja la hoja. La hoja pone
      `touch-action: none` para quedarse el gesto; esto se lo devuelve. */
   touch-action: pan-y;
+
+  /* Una línea y no la barra de siempre, que en escritorio se comía parte del
+     desplegable. Misma medida que la `.custom-scrollbar` del proyecto, pero el
+     color sale de la variable de Bootstrap para que también se vea sobre fondo
+     oscuro; el gris fijo de aquella desaparece ahí. La regla estándar y la de
+     WebKit dicen lo mismo, porque no todos los navegadores atienden a las dos. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--bs-emphasis-color-rgb), 0.2) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(var(--bs-emphasis-color-rgb), 0.2);
+    border-radius: 10px;
+  }
   -webkit-overflow-scrolling: touch;
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
@@ -189,6 +210,11 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+/* Separada de los departamentos: no es una ciudad, es lo contrario. */
+.city-combobox-todas {
+  border-bottom: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
 }
 
 .city-combobox-option {

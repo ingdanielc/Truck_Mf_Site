@@ -40,6 +40,7 @@ import { computeRoute, routeDistanceKm } from 'src/app/utils/google-routes';
 import { locationQuery } from 'src/app/utils/city-geo';
 import { canSetTripStatus } from 'src/app/utils/trip-status';
 import { PlatePipe } from '../../pipes/plate.pipe';
+import { GCityComboboxComponent } from '../g-city-combobox/g-city-combobox.component';
 
 @Component({
   selector: 'g-trip-form',
@@ -51,6 +52,7 @@ import { PlatePipe } from '../../pipes/plate.pipe';
     UpperCasePipe,
     NgClass,
     PlatePipe,
+    GCityComboboxComponent,
   ],
   templateUrl: './g-trip-form.component.html',
   styleUrls: ['./g-trip-form.component.scss'],

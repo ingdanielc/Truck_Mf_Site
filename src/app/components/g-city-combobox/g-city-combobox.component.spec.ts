@@ -150,9 +150,32 @@ describe('GCityComboboxComponent', () => {
     expect(combo.selectedLabel).toBe('Soacha');
   });
 
-  /* La opción vacía del `<select>` de antes valía la cadena "null". */
-  it('la cadena "null" cuenta como campo sin elegir', () => {
-    combo.writeValue('null');
+  /* Vacío se escribe de varias formas según de dónde venga el formulario. */
+  it('reconoce como vacío el nulo, la cadena vacía y la cadena "null"', () => {
+    for (const vacio of [null, '', 'null']) {
+      combo.writeValue(3);
+      combo.writeValue(vacio);
+
+      expect(combo.selectedLabel).toBe('');
+    }
+  });
+
+  /* Pasar de viaje redondo a sencillo vacía el destino de regreso. Si la
+     etiqueta se quedara, el campo seguiría enseñando la ciudad de antes. */
+  it('vaciar el campo borra la ciudad que se estaba enseñando', () => {
+    combo.writeValue(3);
+    expect(combo.selectedLabel).toBe('Bogotá');
+
+    combo.writeValue(null);
+
+    expect(combo.selectedLabel).toBe('');
+  });
+
+  /* Un id que no está en la lista tampoco puede dejar la etiqueta anterior. */
+  it('un id desconocido deja el campo sin ciudad', () => {
+    combo.writeValue(3);
+
+    combo.writeValue(999);
 
     expect(combo.selectedLabel).toBe('');
   });
@@ -208,6 +231,64 @@ describe('GCityComboboxComponent', () => {
     arrastrar(combo, 300, 420);
 
     expect(combo.open).toBeTrue();
+  });
+
+  /* Los filtros del listado de viajes vacían con `null`, que es lo que su
+     `if (this.originFilter)` entiende como "sin filtro", y lo mismo que deja
+     el botón de limpiar. */
+  describe('con la fila de "Todos"', () => {
+    beforeEach(() => {
+      combo.emptyOptionLabel = 'Todos';
+      combo.writeValue(3);
+    });
+
+    it('elegirla vacía el campo y emite nulo', () => {
+      combo.abrir();
+      combo.seleccionar(null);
+
+      expect(emitido).toBeNull();
+      expect(combo.selectedLabel).toBe('');
+      expect(combo.textoDisparador).toBe('Todos');
+    });
+
+    it('encabeza la lista y se recorre con las flechas', () => {
+      combo.abrir();
+      combo.onKeydown(tecla('Home'));
+      combo.onKeydown(tecla('Enter'));
+
+      expect(emitido).toBeNull();
+    });
+
+    it('se marca como elegida cuando el campo está vacío', () => {
+      combo.writeValue(null);
+
+      expect(combo.isSelected(null)).toBeTrue();
+    });
+
+    /* Quien escribe está buscando una ciudad, no quitar el filtro. */
+    it('desaparece en cuanto se escribe algo', () => {
+      combo.abrir();
+      expect(combo.mostrarTodas).toBeTrue();
+
+      escribir(combo, 'bog');
+
+      expect(combo.mostrarTodas).toBeFalse();
+    });
+
+    /* En un filtro, "Todos" no es un hueco por rellenar. */
+    it('el campo no se pinta como vacío', () => {
+      combo.writeValue(null);
+
+      expect(combo.disparadorVacio).toBeFalse();
+    });
+  });
+
+  /* Sin esa fila, el campo es obligatorio y enseña su texto de invitación. */
+  it('sin fila de "Todos" el campo vacío se pinta como tal', () => {
+    combo.writeValue(null);
+
+    expect(combo.textoDisparador).toBe('Selecciona');
+    expect(combo.disparadorVacio).toBeTrue();
   });
 
   it('manda el id como texto, igual que el select al que reemplaza', () => {

@@ -186,71 +186,28 @@
           <label for="origin" class="form-label small fw-bold mb-2"
             >Origen*</label
           >
-          <select
-            id="origin"
-            class="form-select rounded-3 py-2 px-3"
-            formControlName="originId"
-            [class.is-invalid]="
-              tripForm.get('originId')?.touched &&
-              tripForm.get('originId')?.invalid
-            "
-          >
-            <option [ngValue]="null">Selecciona</option>
-            @for (group of groupedCities; track group) {
-              <optgroup [label]="group.state">
-                @for (city of group.cities; track city) {
-                  <option [value]="city.id">
-                    {{ city.name }}
-                  </option>
-                }
-              </optgroup>
-            }
-          </select>
-          <div class="invalid-feedback small">
-            Este campo es obligatorio para continuar
-          </div>
-        </div>
-        <div class="col-6 mb-3">
-          <label for="destination" class="form-label small fw-bold mb-2">{{
-            isRoundTrip ? "Destino de Ida*" : "Destino*"
-          }}</label>
-          <select
-            id="destination"
-            class="form-select rounded-3 py-2 px-3"
-            formControlName="destinationId"
-            [class.is-invalid]="
-              tripForm.get('destinationId')?.touched &&
-              tripForm.get('destinationId')?.invalid
-            "
-          >
-            <option [ngValue]="null">Selecciona</option>
-            @for (group of groupedCities; track group) {
-              <optgroup [label]="group.state">
-                @for (city of group.cities; track city) {
-                  <option [value]="city.id">
-                    {{ city.name }}
-                  </option>
-                }
-              </optgroup>
-            }
-          </select>
-          <div class="invalid-feedback small">
-            Este campo es obligatorio para continuar
-          </div>
-        </div>
-
-        @if (isRoundTrip) {
-          <div class="col-6 mb-3">
-            <label for="returnDestination" class="form-label small fw-bold mb-2"
-              >Destino de Regreso*</label
-            >
+          <!-- Mismo trato que en las fichas de propietario y conductor: la
+               prueba del buscador es de momento solo para el administrador.
+               Quitar el `@if` es todo lo que hace falta para dárselo a todos. -->
+          @if (userRole === "ADMINISTRADOR") {
+            <g-city-combobox
+              inputId="origin"
+              label="Origen"
+              formControlName="originId"
+              [groups]="groupedCities"
+              [invalid]="
+                !!tripForm.get('originId')?.touched &&
+                !!tripForm.get('originId')?.invalid
+              "
+            ></g-city-combobox>
+          } @else {
             <select
-              id="returnDestination"
+              id="origin"
               class="form-select rounded-3 py-2 px-3"
-              formControlName="returnDestinationId"
+              formControlName="originId"
               [class.is-invalid]="
-                tripForm.get('returnDestinationId')?.touched &&
-                tripForm.get('returnDestinationId')?.invalid
+                tripForm.get('originId')?.touched &&
+                tripForm.get('originId')?.invalid
               "
             >
               <option [ngValue]="null">Selecciona</option>
@@ -264,6 +221,91 @@
                 </optgroup>
               }
             </select>
+          }
+          <div class="invalid-feedback small">
+            Este campo es obligatorio para continuar
+          </div>
+        </div>
+        <div class="col-6 mb-3">
+          <label for="destination" class="form-label small fw-bold mb-2">{{
+            isRoundTrip ? "Destino de Ida*" : "Destino*"
+          }}</label>
+          @if (userRole === "ADMINISTRADOR") {
+            <g-city-combobox
+              inputId="destination"
+              [label]="isRoundTrip ? 'Destino de Ida' : 'Destino'"
+              formControlName="destinationId"
+              [groups]="groupedCities"
+              [invalid]="
+                !!tripForm.get('destinationId')?.touched &&
+                !!tripForm.get('destinationId')?.invalid
+              "
+            ></g-city-combobox>
+          } @else {
+            <select
+              id="destination"
+              class="form-select rounded-3 py-2 px-3"
+              formControlName="destinationId"
+              [class.is-invalid]="
+                tripForm.get('destinationId')?.touched &&
+                tripForm.get('destinationId')?.invalid
+              "
+            >
+              <option [ngValue]="null">Selecciona</option>
+              @for (group of groupedCities; track group) {
+                <optgroup [label]="group.state">
+                  @for (city of group.cities; track city) {
+                    <option [value]="city.id">
+                      {{ city.name }}
+                    </option>
+                  }
+                </optgroup>
+              }
+            </select>
+          }
+          <div class="invalid-feedback small">
+            Este campo es obligatorio para continuar
+          </div>
+        </div>
+
+        @if (isRoundTrip) {
+          <div class="col-6 mb-3">
+            <label for="returnDestination" class="form-label small fw-bold mb-2"
+              >Destino de Regreso*</label
+            >
+            @if (userRole === "ADMINISTRADOR") {
+              <g-city-combobox
+                inputId="returnDestination"
+                label="Destino de Regreso"
+                formControlName="returnDestinationId"
+                [groups]="groupedCities"
+                [invalid]="
+                  !!tripForm.get('returnDestinationId')?.touched &&
+                  !!tripForm.get('returnDestinationId')?.invalid
+                "
+              ></g-city-combobox>
+            } @else {
+              <select
+                id="returnDestination"
+                class="form-select rounded-3 py-2 px-3"
+                formControlName="returnDestinationId"
+                [class.is-invalid]="
+                  tripForm.get('returnDestinationId')?.touched &&
+                  tripForm.get('returnDestinationId')?.invalid
+                "
+              >
+                <option [ngValue]="null">Selecciona</option>
+                @for (group of groupedCities; track group) {
+                  <optgroup [label]="group.state">
+                    @for (city of group.cities; track city) {
+                      <option [value]="city.id">
+                        {{ city.name }}
+                      </option>
+                    }
+                  </optgroup>
+                }
+              </select>
+            }
             <div class="invalid-feedback small">
               Este campo es obligatorio para continuar
             </div>

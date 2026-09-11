@@ -17,6 +17,7 @@ import {
 } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
+import { GCityComboboxComponent } from 'src/app/components/g-city-combobox/g-city-combobox.component';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { ModelOwner } from 'src/app/models/owner-model';
 import { DriverService } from 'src/app/services/driver.service';
@@ -33,7 +34,13 @@ import { SecurityService } from 'src/app/services/security/security.service';
 @Component({
   selector: 'g-driver-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, GCameraComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    GCameraComponent,
+    GCityComboboxComponent,
+  ],
   templateUrl: './g-driver-form.component.html',
   styleUrls: ['./g-driver-form.component.scss'],
 })
