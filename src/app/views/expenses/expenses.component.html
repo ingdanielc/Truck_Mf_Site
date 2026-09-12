@@ -64,7 +64,7 @@
         <span
           class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3"
         >
-          {{ vehicles.length }} Vehículo{{ vehicles.length !== 1 ? "s" : "" }}
+          {{ totalVehicles }} Vehículo{{ totalVehicles !== 1 ? "s" : "" }}
         </span>
       </div>
 
@@ -86,7 +86,7 @@
         }
 
         <!-- Empty -->
-        @if (!loadingVehicles && vehicles.length === 0) {
+        @if (!loadingVehicles && totalVehicles === 0) {
           <div
             class="text-center p-4 bg-body-tertiary rounded-4 mb-4 border border-dashed"
           >
@@ -100,14 +100,14 @@
         }
 
         <!-- Carousel -->
-        @if (!loadingVehicles && vehicles.length > 0) {
+        @if (!loadingVehicles && totalVehicles > 0) {
           <div>
             <!-- Nav + visible cards -->
             <div class="d-flex align-items-center gap-2">
               <!-- Prev -->
               <button
                 class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0 d-none"
-                [class.d-md-flex]="vehicles.length > 3"
+                [class.d-md-flex]="totalVehicles > 3"
                 (click)="prev()"
                 [disabled]="!canPrev"
                 aria-label="Anterior"
@@ -117,18 +117,18 @@
               <!-- Cards window -->
               <div
                 class="flex-grow-1 overflow-hidden"
-                [class.px-3]="vehicles.length < 4"
+                [class.px-3]="totalVehicles < 4"
                 style="margin: -1rem"
               >
                 <div
                   id="vehicles"
                   class="d-flex flex-nowrap gap-3 overflow-auto snap-x hide-scrollbar"
-                  [style.padding]="vehicles.length < 4 ? '1rem 0' : '1rem'"
+                  [style.padding]="totalVehicles < 4 ? '1rem 0' : '1rem'"
                 >
                   @for (v of visibleVehicles; track v) {
                     <div
                       class="carousel-slide cursor-pointer p-1 snap-align-start flex-shrink-0"
-                      [class.ring-selected]="selectedVehicle === v"
+                      [class.ring-selected]="selectedVehicle?.id === v.id"
                       (click)="selectVehicle(v)"
                       onkeypress
                     >
@@ -140,7 +140,7 @@
               <!-- Next -->
               <button
                 class="btn btn-outline-primary rounded-circle carousel-nav-btn flex-shrink-0 d-none"
-                [class.d-md-flex]="vehicles.length > 3"
+                [class.d-md-flex]="totalVehicles > 3"
                 (click)="next()"
                 [disabled]="!canNext"
                 aria-label="Siguiente"
@@ -168,7 +168,7 @@
                   <button
                     class="dot-btn p-0 border-0 rounded-circle transition-all"
                     [class.dot-active]="i === carouselIndex"
-                    (click)="carouselIndex = i; selectVehicle(vehicles[i])"
+                    (click)="goToVehicle(i)"
                     [attr.aria-label]="'Ir al vehículo ' + (i + 1)"
                   ></button>
                 }

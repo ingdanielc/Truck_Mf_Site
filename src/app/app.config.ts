@@ -3,7 +3,7 @@ import {
   LOCALE_ID,
   provideZoneChangeDetection,
 } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withPreloading } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import {
   HTTP_INTERCEPTORS,
@@ -15,6 +15,7 @@ import localeEsCo from '@angular/common/locales/es-CO';
 import { CookieService } from 'ngx-cookie-service';
 
 import { routes } from './app.routes';
+import { PreloadMarkedStrategy } from './utils/preload-marked.strategy';
 import { HttpHeadersInterceptor } from './services/utils/http-headers.service';
 
 registerLocaleData(localeEsCo);
@@ -22,7 +23,11 @@ registerLocaleData(localeEsCo);
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes),
+    /* La precarga es selectiva —ver `PreloadMarkedStrategy`—: arranca cuando
+       termina una navegación y solo alcanza a las rutas marcadas, así que el
+       código de Reportes baja mientras se mira el inicio en vez de al tocar
+       el menú. */
+    provideRouter(routes, withPreloading(PreloadMarkedStrategy)),
     provideAnimations(),
     provideHttpClient(withInterceptorsFromDi()),
     {

@@ -24,12 +24,23 @@ import {
 import { lastValueFrom, Subscription, distinctUntilChanged } from 'rxjs';
 import { BaseChartDirective } from 'ng2-charts';
 import {
+  BarController,
+  BarElement,
+  CategoryScale,
   Chart,
   ChartConfiguration,
   ChartData,
   ChartType,
+  Colors,
+  Filler,
+  Legend,
+  LinearScale,
+  LineController,
+  LineElement,
   Plugin,
-  registerables,
+  PointElement,
+  Title,
+  Tooltip,
 } from 'chart.js';
 import { ModelVehicle } from '../../models/vehicle-model';
 import { ModelTrip } from '../../models/trip-model';
@@ -57,7 +68,27 @@ import { GSubscriptionsReportComponent } from '../../components/g-subscriptions-
 import { GBalancesReportComponent } from '../../components/g-balances-report/g-balances-report.component';
 import { findScroller, scrollToTop } from '../../utils/scroll';
 
-Chart.register(...registerables);
+/* Solo lo que el tablero dibuja, en vez de `...registerables`.
+   Las nueve gráficas son de barras o de línea —los `*Type` no toman otro
+   valor—, así que registrar el paquete completo arrastraba al chunk los
+   controladores de torta, dona, radar, área polar, dispersión y burbuja con
+   sus escalas radiales, que nadie instancia. `Colors` y `Filler` entran
+   aunque las series traigan su color y `fill: false`: son los que dan ese
+   comportamiento por defecto, y quitarlos lo cambiaría en silencio. */
+Chart.register(
+  BarController,
+  LineController,
+  BarElement,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Colors,
+  Filler,
+  Legend,
+  Title,
+  Tooltip,
+);
 
 /** Resumen de una serie de utilidad, para el pie de los detalles. */
 interface ProfitStats {
@@ -93,6 +124,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     trip: ModelTrip;
     expenses: ModelExpense[];
   }[] = [];
+  /** Las tarjetas de "En ruta" ya no retienen la carga del tablero, así que
+   *  hay un tramo en que la pestaña existe y sus consultas no han vuelto. */
+  activeTripsLoading = false;
+  /** Turno de la carga de tarjetas en curso — ver `loadActiveTrips`. */
+  private activeTripsTurn = 0;
   /**
    * Pestaña abierta. Las tres secciones dejaron de apilarse plegadas: llegar a
    * las gráficas obligaba a pasar por la rentabilidad entera o a plegarla a
@@ -2115,12 +2151,17 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       /* Las tarjetas de viajes activos cuelgan de tres consultas aparte y son
          un extra sobre las gráficas. Si fallan, la sección se queda sin
          tarjetas; vaciar el tablero entero por eso sería desproporcionado
-         —y era justo lo que hacía el `catch` de abajo. */
-      try {
-        await this.loadActiveTrips(report?.activeTrips ?? []);
-      } catch (error) {
+         —y era justo lo que hacía el `catch` de abajo.
+
+         Tampoco se esperan: son tres idas y vueltas para una pestaña que
+         empieza cerrada, y hasta aquí retenían el tablero entero. Ahora
+         siguen por su cuenta y `activeTripsLoading` sostiene la sección
+         mientras llegan, para que no se lea "No hay viajes en curso" sobre
+         una consulta todavía en vuelo. Al terminar se vuelve a medir la barra
+         de pestañas: el contador de "En ruta" le cambia el ancho. */
+      this.loadActiveTrips(report?.activeTrips ?? []).catch((error) => {
         console.error('Error loading active trips:', error);
-      }
+      });
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       this.clearChartData();
@@ -2249,9 +2290,35 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
    * y el alcance por rol ya lo aplicó el servidor al armar el reporte.
    */
   private async loadActiveTrips(actives: DashboardActiveTrip[]): Promise<void> {
+    /* Ya no se espera desde `loadData`, así que cambiar de periodo o de
+       propietario dos veces seguidas deja dos cargas en vuelo. El turno se
+       compara antes de cada asignación: sin esto, la respuesta de la primera
+       podría llegar después y dejar en pantalla las tarjetas del periodo que
+       el usuario acababa de abandonar. */
+    const turno = ++this.activeTripsTurn;
+    const vigente = () => turno === this.activeTripsTurn;
+
     this.activeTrips = [];
     this.vehicles = [];
+    this.activeTripsLoading = true;
+    try {
+      await this.fetchActiveTrips(actives, vigente);
+    } finally {
+      /* Solo la carga vigente apaga el indicador y vuelve a medir la barra de
+         pestañas: el contador de "En ruta" le cambia el ancho, y una carga ya
+         desplazada lo dejaría medido sobre un número que no se va a pintar. */
+      if (vigente()) {
+        this.activeTripsLoading = false;
+        this.scheduleTabsCheck();
+      }
+    }
+  }
 
+  /** El cuerpo de `loadActiveTrips`, sin el turno ni el indicador. */
+  private async fetchActiveTrips(
+    actives: DashboardActiveTrip[],
+    vigente: () => boolean,
+  ): Promise<void> {
     const tripIds = (actives ?? [])
       .map((a) => a?.tripId)
       .filter((id) => id != null);
@@ -2267,6 +2334,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         ),
       ),
     );
+    if (!vigente()) return;
     const trips: ModelTrip[] = tripsResp?.data?.content || [];
     if (!trips.length) return;
 
@@ -2297,6 +2365,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         : Promise.resolve(null),
     ]);
 
+    if (!vigente()) return;
     const expenses: ModelExpense[] = expensesResp?.data?.content || [];
     this.vehicles = vehiclesResp?.data?.content || [];
 

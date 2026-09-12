@@ -8,7 +8,15 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Observable, Subscription, map, of, switchMap, take } from 'rxjs';
+import {
+  Observable,
+  Subscription,
+  catchError,
+  map,
+  of,
+  switchMap,
+  take,
+} from 'rxjs';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { OwnerService } from 'src/app/services/owner.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
@@ -50,6 +58,28 @@ import {
 } from 'src/app/components/g-search-combobox/g-search-combobox.component';
 import { ownerComboOptions } from 'src/app/utils/owner-options';
 
+/**
+ * El parque de vehículos que le corresponde al usuario: con qué se filtra y
+ * por qué endpoint se pide. Se resuelve una sola vez a partir del rol, y de
+ * ahí en adelante lo único que cambia entre peticiones es la página.
+ */
+interface VehicleQuery {
+  filters: Filter[];
+  /**
+   * La consulta va por `filterVehicleOwner`, que es la única vía hasta
+   * `owner.id`. Ese endpoint consulta la relación vehículo-propietario y solo
+   * conoce los campos de la relación: no filtra por el estado del vehículo ni
+   * ordena por placa. De ahí salen las dos consecuencias, y por eso son un
+   * solo campo y no dos banderas que puedan discrepar: esos parques se traen
+   * completos y se filtran y ordenan aquí.
+   *
+   * `withOwner: false` va por el endpoint llano, que sabe hacer las dos
+   * cosas, y entonces el parque se pagina de verdad: el total que informa y
+   * el corte de cada página hablan de la misma lista que se pinta.
+   */
+  withOwner: boolean;
+}
+
 @Component({
   selector: 'app-expenses',
   standalone: true,
@@ -70,7 +100,54 @@ import { ownerComboOptions } from 'src/app/utils/owner-options';
 export class ExpensesComponent implements OnInit, OnDestroy {
   @ViewChild(GExpensesTripComponent)
   expensesTripComponent?: GExpensesTripComponent;
-  vehicles: ModelVehicle[] = [];
+  /* -- Parque paginado ----------------------------------------------------
+     El carrusel muestra uno o tres vehículos a la vez, así que la lista
+     completa nunca hace falta: se pide por páginas y solo se guarda lo que
+     se ha llegado a mostrar. `totalVehicles` es el tamaño del parque, que es
+     lo que cuentan el badge y los puntos; el buffer es lo que se puede
+     pintar. */
+
+  /** Vehículos por petición. Cuatro ventanas de escritorio por página. */
+  private static readonly VEHICLE_PAGE_SIZE = 12;
+
+  /** Vehículos por tanda al traer una flota entera. Las flotas reales caben
+   *  en una, y si no, se pide la siguiente en vez de subir el tope. */
+  private static readonly FLEET_PAGE_SIZE = 200;
+
+  /** Tope de tandas de una flota. Solo salta si el servidor ignorara la
+   *  paginación; con `FLEET_PAGE_SIZE` cubre cinco mil vehículos. */
+  private static readonly FLEET_MAX_PAGES = 25;
+
+  /** Tope de vehículos del alcance del ranking cuando hay que pedirlo. */
+  private static readonly SHORTCUTS_VEHICLE_CAP = 50;
+
+  /** Posición global en el parque -> vehículo ya traído. */
+  private readonly vehicleBuffer = new Map<number, ModelVehicle>();
+
+  /** Páginas ya pedidas, para no repetirlas al ir y venir por el carrusel. */
+  private readonly requestedPages = new Set<number>();
+
+  /** Tamaño del parque según el servidor, no de lo que hay cargado. */
+  totalVehicles = 0;
+
+  /** El total ya lo dijo el servidor. Mientras no lo haya dicho, un cero no
+   *  significa parque vacío y no sirve para descartar páginas. */
+  private totalKnown = false;
+
+  /** El parque vigente. Lo fija el rol y solo cambia cuando el
+   *  administrador elige otro propietario. */
+  private vehicleQuery: VehicleQuery | null = null;
+
+  /** El orden por placa lo hace el servidor: paginar y reordenar después
+   *  solo ordena dentro de cada página. Si la API no admitiera ese campo de
+   *  orden, se degrada a `id` una vez y la vista sigue sirviendo con el
+   *  parque en otro orden. Ver `vehicleSort` y `onVehiclePageError`. */
+  private plateSortRejected = false;
+
+  /** Posición que se pidió desde los puntos y cuya página aún viaja. La
+   *  selección la hace la respuesta al llegar. */
+  private pendingSelectIndex: number | null = null;
+
   selectedVehicle: ModelVehicle | null = null;
   selectedTrip: ModelTrip | null = null;
   showAddExpense = false;
@@ -89,10 +166,14 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   isMaintenance = false;
   userRole = '';
   /** La lista se rellena al cargar, así que las filas del buscador se rehacen
-   *  aquí. Ver `ownerComboOptions`. */
+   *  aquí. Ver `ownerComboOptions`.
+   *
+   *  Con el documento, igual que las listas de conductores y vehículos: en el
+   *  panel hay propietarios que se llaman parecido y el número es lo único
+   *  que los separa. */
   set owners(value: any[]) {
     this.listaOwners = value ?? [];
-    this.ownerOptions = ownerComboOptions(this.listaOwners);
+    this.ownerOptions = ownerComboOptions(this.listaOwners, true);
   }
   get owners(): any[] {
     return this.listaOwners;
@@ -185,30 +266,22 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           this.loadOwners();
         }
 
-        // 1. Always load the list of vehicles for the user
-        this.loadVehiclesForUser(user, vehicleId);
-
+        /* 1. El parque del usuario, por páginas. Cuando viene un vehículo en
+              la URL se carga primero ese vehículo: es el que se selecciona y
+              el que dice en qué página tiene que arrancar el carrusel. Antes
+              las dos cargas iban en paralelo y se pisaban, de modo que si el
+              vehículo de la URL no caía en la lista se acababan mostrando los
+              viajes de otro. */
         if (vehicleId) {
-          // Load the full vehicle data so g-vehicle-trip-card has plate, brand, year, etc.
-          const vFilter = new ModelFilterTable(
-            [new Filter('id', '=', vehicleId.toString())],
-            new Pagination(1, 0),
-            new Sort('id', true),
-          );
-          this.vehicleService.getVehicleFilter(vFilter).subscribe({
-            next: (resp: any) => {
-              if (resp?.data?.content?.length > 0) {
-                this.selectedVehicle = resp.data.content[0];
-                this.mapBrandNames();
-
-                // Also load driver name if vehicle has a driver assigned
-                if (resp.data.content[0].driver?.name) {
-                  this.selectedVehicle!.currentDriverName =
-                    resp.data.content[0].driver?.name;
-                }
-              }
-            },
+          this.loadVehicleById(vehicleId).subscribe((vehicle) => {
+            if (vehicle) {
+              this.selectedVehicle = vehicle;
+              this.mapBrandNames();
+            }
+            this.loadVehiclesForUser(user, vehicle);
           });
+        } else {
+          this.loadVehiclesForUser(user, null);
         }
 
         // 2. If it's a focused trip view, perform additional validation and loading
@@ -260,10 +333,8 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   onResize(): void {
     this.updateVisibleCount();
     // Clamp index so it doesn't go out of bounds after resize
-    this.carouselIndex = Math.min(
-      this.carouselIndex,
-      Math.max(0, this.vehicles.length - this.visibleCount),
-    );
+    this.clampCarouselIndex();
+    this.ensureWindowLoaded();
   }
 
   private updateVisibleCount(): void {
@@ -391,190 +462,434 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
   // ── Data loading ─────────────────────────────────────────────────
 
+  /**
+   * Resuelve el parque que le toca al usuario y arranca su carga. Cada rol
+   * mira un parque distinto, pero los tres se piden igual: mismos filtros de
+   * estado, mismo orden y por páginas.
+   *
+   * `preselected` es el vehículo que venía en la URL, ya cargado.
+   */
   private loadVehiclesForUser(
     user: any,
-    preselectedId: number | null = null,
+    preselected: ModelVehicle | null = null,
   ): void {
     const roles = new Set(
       (user.userRoles || []).map((ur: any) =>
         (ur.role?.name || '').toUpperCase(),
       ),
     );
+    this.loadingVehicles = true;
+
+    /* Los vendidos no se muestran, pero no todos los parques pueden pedirlo
+       al servidor: solo los que van por `/vehicle/filter`, que es donde este
+       filtro se aplica y por eso son los que paginan de verdad. Los que pasan
+       por la relación vehículo-propietario no lo admiten, así que allí no se
+       envía y el descarte lo hace `loadFleet`. */
+    const activos = new Filter('status', '!=', 'Vendido');
 
     if (roles.has('PROPIETARIO')) {
+      /* Una fila: el propietario se busca por su usuario. */
       const filter = new ModelFilterTable(
         [new Filter('user.id', '=', user.id.toString())],
-        new Pagination(9999, 0),
+        new Pagination(1, 0),
         new Sort('id', true),
       );
       this.ownerService.getOwnerFilter(filter).subscribe({
         next: (resp: any) => {
           const owner = resp?.data?.content?.[0];
-          if (owner?.id) {
-            this.loadVehiclesByOwner(owner.id, preselectedId);
-          } else {
+          if (!owner?.id) {
             this.loadingVehicles = false;
+            return;
           }
+          /* Sin `activos`: la relación no filtra el estado, así que enviarlo
+             solo engañaría al siguiente que lea esto. Se descarta en
+             `loadFleet`. */
+          this.startVehicleQuery(
+            {
+              filters: [new Filter('owner.id', '=', owner.id.toString())],
+              withOwner: true,
+            },
+            preselected,
+          );
         },
         error: () => (this.loadingVehicles = false),
       });
-    } else if (roles.has('CONDUCTOR')) {
-      this.loadVehiclesByDriver(user.id, preselectedId);
-    } else {
-      let filtros: Filter[] = [];
-      if (this.selectedOwnerId) {
-        filtros.push(
-          new Filter('owner.id', '=', this.selectedOwnerId.toString()),
-        );
-      }
-      const filter = new ModelFilterTable(
-        filtros,
-        new Pagination(9999, 0),
+      return;
+    }
+
+    if (roles.has('CONDUCTOR')) {
+      const driverFilter = new ModelFilterTable(
+        [new Filter('user.id', '=', user.id.toString())],
+        new Pagination(1, 0),
         new Sort('id', true),
       );
-      this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
+      this.driverService.getDriverFilter(driverFilter).subscribe({
         next: (resp: any) => {
-          this.vehicles = (resp?.data?.content ?? [])
-            .filter((v: any) => v.status !== 'Vendido')
-            .sort((a: any, b: any) =>
-              a.plate.localeCompare(b.plate, 'es', { sensitivity: 'base' }),
-            );
-          if (this.vehicles.length > 0) {
-            this.vehicles.forEach((v: any) => {
-              if (v.driver?.name) {
-                v.currentDriverName = v.driver.name;
-              }
-            });
-
-            const index = preselectedId
-              ? this.vehicles.findIndex((v) => v.id === preselectedId)
-              : -1;
-            const pre = index === -1 ? null : this.vehicles[index];
-            this.selectVehicle(pre || this.vehicles[0]);
-
-            if (index !== -1) {
-              this.ensureVehicleIsVisible(index);
-            }
+          const driver = resp?.data?.content?.[0];
+          if (!driver?.id) {
+            this.loadingVehicles = false;
+            return;
           }
-          this.loadingVehicles = false;
-          this.mapBrandNames();
+          this.startVehicleQuery(
+            {
+              filters: [
+                new Filter('currentDriverId', '=', driver.id.toString()),
+                activos,
+              ],
+              withOwner: false,
+            },
+            preselected,
+          );
         },
         error: () => (this.loadingVehicles = false),
       });
+      return;
     }
-  }
 
-  private loadVehiclesByOwner(
-    ownerId: number,
-    preselectedId: number | null = null,
-  ): void {
-    const filter = new ModelFilterTable(
-      [new Filter('owner.id', '=', ownerId.toString())],
-      new Pagination(9999, 0),
-      new Sort('id', true),
-    );
-    this.vehicleService.getVehicleOwnerFilter(filter).subscribe({
-      next: (resp: any) => {
-        this.vehicles = (resp?.data?.content ?? [])
-          .filter((v: any) => v.status !== 'Vendido')
-          .sort((a: any, b: any) =>
-            a.plate.localeCompare(b.plate, 'es', { sensitivity: 'base' }),
-          );
-        if (this.vehicles.length > 0) {
-          this.vehicles.forEach((v: any) => {
-            if (v.driver?.name) {
-              v.currentDriverName = v.driver.name;
-            }
-          });
-
-          const index = preselectedId
-            ? this.vehicles.findIndex((v) => v.id === preselectedId)
-            : -1;
-          const pre = index === -1 ? null : this.vehicles[index];
-          this.selectVehicle(pre || this.vehicles[0]);
-
-          if (index !== -1) {
-            this.ensureVehicleIsVisible(index);
-          } else {
-            this.carouselIndex = 0;
+    /* Administrador con propietario elegido: hay que pasar por la relación
+       para llegar a `owner.id`, y esa flota se trae completa. Sin propietario
+       elegido el parque es todo el sistema, que es el caso que de verdad
+       pesa: ahí no hace falta la relación, y el endpoint llano sí filtra el
+       estado, así que se pagina de verdad. */
+    this.startVehicleQuery(
+      this.selectedOwnerId
+        ? {
+            filters: [
+              new Filter('owner.id', '=', this.selectedOwnerId.toString()),
+            ],
+            withOwner: true,
           }
-        } else {
-          this.carouselIndex = 0;
-        }
-        this.loadingVehicles = false;
-        this.mapBrandNames();
-      },
-      error: () => (this.loadingVehicles = false),
-    });
+        : {
+            filters: [activos],
+            withOwner: false,
+          },
+      preselected,
+    );
   }
 
-  private loadVehiclesByDriver(
-    userId: number,
-    preselectedId: number | null = null,
-  ): void {
-    const driverFilter = new ModelFilterTable(
-      [new Filter('user.id', '=', userId.toString())],
+  /**
+   * El vehículo que viene en la URL, con placa, marca y año, que es lo que
+   * necesita `g-vehicle-trip-card`. Un fallo no corta la vista: el parque se
+   * carga igual y el carrusel arranca por el principio.
+   */
+  private loadVehicleById(vehicleId: number): Observable<ModelVehicle | null> {
+    const filter = new ModelFilterTable(
+      [new Filter('id', '=', vehicleId.toString())],
       new Pagination(1, 0),
       new Sort('id', true),
     );
-    this.driverService.getDriverFilter(driverFilter).subscribe({
-      next: (driverResp: any) => {
-        const driver = driverResp?.data?.content?.[0];
-        if (driver?.id) {
-          const vehicleFilter = new ModelFilterTable(
-            [new Filter('currentDriverId', '=', driver.id.toString())],
-            new Pagination(9999, 0),
-            new Sort('id', true),
-          );
-          this.vehicleService.getVehicleFilter(vehicleFilter).subscribe({
-            next: (resp: any) => {
-              this.vehicles = (resp?.data?.content ?? [])
-                .filter((v: any) => v.status !== 'Vendido')
-                .sort((a: any, b: any) =>
-                  a.plate.localeCompare(b.plate, 'es', { sensitivity: 'base' }),
-                );
-              if (this.vehicles.length > 0) {
-                this.vehicles.forEach((v: any) => {
-                  if (v.driver?.name) {
-                    v.currentDriverName = v.driver.name;
-                  }
-                });
-
-                const index = preselectedId
-                  ? this.vehicles.findIndex((v) => v.id === preselectedId)
-                  : -1;
-                const pre = index === -1 ? null : this.vehicles[index];
-                this.selectVehicle(pre || this.vehicles[0]);
-
-                if (index !== -1) {
-                  this.ensureVehicleIsVisible(index);
-                } else {
-                  this.carouselIndex = 0;
-                }
-              } else {
-                this.carouselIndex = 0;
-              }
-              this.loadingVehicles = false;
-              this.mapBrandNames();
-            },
-            error: () => (this.loadingVehicles = false),
-          });
-        } else {
-          this.loadingVehicles = false;
+    return this.vehicleService.getVehicleFilter(filter).pipe(
+      map((resp: any) => {
+        const vehicle = resp?.data?.content?.[0] ?? null;
+        if (vehicle?.driver?.name) {
+          vehicle.currentDriverName = vehicle.driver.name;
         }
-      },
-      error: () => (this.loadingVehicles = false),
+        return vehicle as ModelVehicle | null;
+      }),
+      catchError((err) => {
+        console.error('Error loading vehicle from url:', err);
+        return of(null);
+      }),
+    );
+  }
+
+  /**
+   * Arranca un parque nuevo: tira lo cargado y pide la página que toca. Con
+   * vehículo preseleccionado el carrusel arranca donde esté él, no en la
+   * primera página.
+   */
+  private startVehicleQuery(
+    query: VehicleQuery,
+    preselected: ModelVehicle | null,
+  ): void {
+    this.vehicleQuery = query;
+    this.vehicleBuffer.clear();
+    this.requestedPages.clear();
+    this.pendingSelectIndex = null;
+    this.totalVehicles = 0;
+    this.totalKnown = false;
+    this.carouselIndex = 0;
+    this.loadingVehicles = true;
+
+    /* Flota completa: el estado se descarta aquí, así que el total y las
+       posiciones tienen que salir de la lista ya filtrada, no del servidor. */
+    if (query.withOwner) {
+      if (preselected) this.selectVehicle(preselected);
+      this.loadFleet(preselected);
+      return;
+    }
+
+    if (!preselected) {
+      this.fetchVehiclePage(0, true);
+      return;
+    }
+
+    this.selectVehicle(preselected);
+    this.resolveVehicleIndex(preselected).subscribe((index) => {
+      this.carouselIndex = Math.max(0, index);
+      /* Solo la página donde cae el vehículo. Lo que falte alrededor lo pide
+         `ensureWindowLoaded` con la respuesta, que ya sabe el total y no
+         acaba pidiendo páginas que no existen. */
+      this.fetchVehiclePage(
+        Math.floor(this.carouselIndex / ExpensesComponent.VEHICLE_PAGE_SIZE),
+      );
     });
   }
 
-  private ensureVehicleIsVisible(index: number): void {
-    if (index >= 0) {
-      // Try to center it or at least make it the first one
-      this.carouselIndex = Math.max(
-        0,
-        Math.min(index, this.vehicles.length - this.visibleCount),
+  /**
+   * Orden del parque. Paginando lo tiene que hacer el servidor, porque
+   * reordenar después solo ordena dentro de cada página; si la API rechazara
+   * el campo se degrada a `id`. Trayendo la flota completa da igual lo que
+   * ordene el servidor: se reordena por placa al recibirla, como siempre se
+   * hizo, y así ese camino no depende de que la API sepa ordenar por placa.
+   */
+  private vehicleSort(query: VehicleQuery): Sort {
+    const porPlaca = !query.withOwner && !this.plateSortRejected;
+    return new Sort(porPlaca ? 'plate' : 'id', true);
+  }
+
+  /** El orden por placa de siempre, en español y sin distinguir tildes. */
+  private static porPlaca(a: ModelVehicle, b: ModelVehicle): number {
+    return a.plate.localeCompare(b.plate, 'es', { sensitivity: 'base' });
+  }
+
+  /**
+   * La flota entera, en tandas y sin tope abierto. Se recorre hasta el total
+   * que informa el servidor en vez de confiar en un `pageSize` grande.
+   */
+  private fetchFleet(page = 0): Observable<ModelVehicle[]> {
+    const size = ExpensesComponent.FLEET_PAGE_SIZE;
+    return this.vehicleRequest(this.vehicleQuery!, page, size).pipe(
+      switchMap((resp: any) => {
+        const content: ModelVehicle[] = resp?.data?.content ?? [];
+        /* Se corta con la primera tanda incompleta, no con el total que
+           informa el servidor: si ese dato faltara, una flota de más de una
+           tanda se quedaría a medias y el propietario dejaría de ver
+           vehículos. El tope de tandas es el seguro contra un servidor que
+           ignorara la paginación y devolviera siempre lo mismo. */
+        const ultima =
+          content.length < size ||
+          page + 1 >= ExpensesComponent.FLEET_MAX_PAGES;
+        if (ultima) return of(content);
+        return this.fetchFleet(page + 1).pipe(
+          map((resto) => [...content, ...resto]),
+        );
+      }),
+    );
+  }
+
+  /**
+   * Trae la flota, descarta los vendidos y la ordena por placa. Es lo que
+   * hacía la vista antes para todos los roles; ahora solo para los parques
+   * que van por la relación vehículo-propietario, que están acotados.
+   */
+  private loadFleet(preselected: ModelVehicle | null): void {
+    this.fetchFleet().subscribe({
+      next: (todos) => {
+        const vistos = new Set<number>();
+        const activos = todos
+          .filter((v) => v.status !== 'Vendido')
+          /* La relación puede repetir un vehículo, y el carrusel se recorre
+             por posición: un duplicado desplazaría al resto. */
+          .filter((v) => {
+            if (v.id == null || vistos.has(v.id)) return false;
+            vistos.add(v.id);
+            return true;
+          })
+          .sort(ExpensesComponent.porPlaca);
+
+        activos.forEach((vehicle: any, i: number) => {
+          if (vehicle.driver?.name) {
+            vehicle.currentDriverName = vehicle.driver.name;
+          }
+          this.vehicleBuffer.set(i, vehicle);
+        });
+        this.totalVehicles = activos.length;
+        this.totalKnown = true;
+        this.loadingVehicles = false;
+        this.mapBrandNames();
+
+        const index = preselected
+          ? activos.findIndex((v) => v.id === preselected.id)
+          : -1;
+        this.carouselIndex = index > 0 ? index : 0;
+        this.clampCarouselIndex();
+
+        if (!preselected && activos.length > 0) {
+          this.selectVehicle(activos[0]);
+        }
+      },
+      error: (err) => {
+        console.error('Error loading vehicles:', err);
+        this.loadingVehicles = false;
+      },
+    });
+  }
+
+  /**
+   * Única puerta a la API del parque. Recibe la consulta entera para que el
+   * endpoint, el orden y los filtros salgan siempre de la misma: mezclar el
+   * orden de un parque con el endpoint de otro es un 400 del servidor.
+   */
+  private vehicleRequest(
+    query: VehicleQuery,
+    page: number,
+    pageSize: number,
+    filters: Filter[] = query.filters,
+  ): Observable<any> {
+    const filter = new ModelFilterTable(
+      filters,
+      new Pagination(pageSize, page),
+      this.vehicleSort(query),
+    );
+    return query.withOwner
+      ? this.vehicleService.getVehicleOwnerFilter(filter)
+      : this.vehicleService.getVehicleFilter(filter);
+  }
+
+  /**
+   * Trae una página al buffer. `selectFirst` pide seleccionar el primero de
+   * la página al llegar, que es lo que hace el arranque sin vehículo en la
+   * URL.
+   */
+  private fetchVehiclePage(page: number, selectFirst = false): void {
+    /* Solo el camino paginado. En modo flota completa el buffer ya tiene todo
+       filtrado y ordenado, y pedir páginas por la relación sobrescribiría
+       esas posiciones con filas sin filtrar y en otro orden: el carrusel
+       repetiría unos vehículos y se saltaría otros. */
+    if (!this.vehicleQuery || this.vehicleQuery.withOwner || page < 0) return;
+    if (this.requestedPages.has(page)) return;
+    this.requestedPages.add(page);
+
+    const size = ExpensesComponent.VEHICLE_PAGE_SIZE;
+    this.vehicleRequest(this.vehicleQuery, page, size).subscribe({
+      next: (resp: any) => {
+        const content: ModelVehicle[] = resp?.data?.content ?? [];
+        this.totalVehicles = resp?.data?.totalElements ?? content.length;
+        this.totalKnown = true;
+        content.forEach((vehicle: any, i: number) => {
+          if (vehicle.driver?.name) {
+            vehicle.currentDriverName = vehicle.driver.name;
+          }
+          this.vehicleBuffer.set(page * size + i, vehicle);
+        });
+
+        this.loadingVehicles = false;
+        this.clampCarouselIndex();
+        this.mapBrandNames();
+        this.ensureWindowLoaded();
+
+        if (selectFirst && content.length > 0) {
+          this.selectVehicle(content[0]);
+        }
+        this.resolvePendingSelection();
+      },
+      error: (err) => this.onVehiclePageError(err, page, selectFirst),
+    });
+  }
+
+  /**
+   * Un fallo de una página con orden por placa se reintenta una vez
+   * ordenando por `id`: si la API no admite ese campo de orden, la vista
+   * sigue sirviendo y lo único que cambia es el orden del carrusel. Un fallo
+   * de red, que no trae código de estado, no degrada nada, porque no dice
+   * nada del campo de orden.
+   */
+  private onVehiclePageError(
+    err: any,
+    page: number,
+    selectFirst: boolean,
+  ): void {
+    this.requestedPages.delete(page);
+
+    const sortMayBeUnsupported =
+      !this.plateSortRejected &&
+      typeof err?.status === 'number' &&
+      err.status >= 400;
+
+    if (sortMayBeUnsupported) {
+      console.warn(
+        'El parque no admite orden por placa; se ordena por id.',
+        err,
       );
+      this.plateSortRejected = true;
+      /* Al cambiar el orden, lo ya cargado pertenece a otra secuencia: las
+         posiciones del buffer dejan de significar lo mismo y mezclarlo
+         repetiría unos vehículos y se saltaría otros. Se tira y se vuelve a
+         pedir la ventana desde cero. */
+      this.vehicleBuffer.clear();
+      this.requestedPages.clear();
+      this.totalVehicles = 0;
+      this.totalKnown = false;
+      this.loadingVehicles = true;
+      this.fetchVehiclePage(
+        Math.floor(this.carouselIndex / ExpensesComponent.VEHICLE_PAGE_SIZE),
+        selectFirst || !this.selectedVehicle,
+      );
+      this.ensureWindowLoaded();
+      return;
     }
+
+    console.error('Error loading vehicles:', err);
+    this.loadingVehicles = false;
+  }
+
+  /**
+   * La posición global del vehículo dentro del parque, que es donde tiene
+   * que arrancar el carrusel. Se cuenta cuántas placas van antes de la suya
+   * con el mismo filtro de parque. Si la API no sabe comparar placas, o
+   * falla, se arranca por el principio: el vehículo queda seleccionado igual
+   * y lo único que se pierde es el punto centrado.
+   */
+  private resolveVehicleIndex(vehicle: ModelVehicle): Observable<number> {
+    const query = this.vehicleQuery;
+    /* Solo el camino paginado: por la relación no se puede comparar placas, y
+       ahí la posición sale de la lista ya cargada. */
+    if (!query || query.withOwner || this.plateSortRejected || !vehicle.plate) {
+      return of(0);
+    }
+    return this.vehicleRequest(query, 0, 1, [
+      ...query.filters,
+      new Filter('plate', '<', vehicle.plate),
+    ]).pipe(
+      map((resp: any) => resp?.data?.totalElements ?? 0),
+      catchError(() => of(0)),
+    );
+  }
+
+  /** Deja el índice dentro del parque. */
+  private clampCarouselIndex(): void {
+    this.carouselIndex = Math.min(
+      Math.max(0, this.carouselIndex),
+      Math.max(0, this.totalVehicles - this.visibleCount),
+    );
+  }
+
+  /**
+   * Pide lo que falte para pintar la ventana actual, y la página siguiente
+   * por adelantado, para que avanzar no se quede esperando a la red.
+   */
+  private ensureWindowLoaded(): void {
+    if (!this.vehicleQuery || this.vehicleQuery.withOwner) return;
+    const size = ExpensesComponent.VEHICLE_PAGE_SIZE;
+    const first = Math.floor(this.carouselIndex / size);
+    const last = Math.floor(
+      (this.carouselIndex + this.visibleCount - 1) / size,
+    );
+    for (let page = first; page <= last + 1; page++) {
+      if (!this.totalKnown || page * size < this.totalVehicles) {
+        this.fetchVehiclePage(page);
+      }
+    }
+  }
+
+  /** Selecciona el vehículo que se pidió desde los puntos, si ya llegó. */
+  private resolvePendingSelection(): void {
+    if (this.pendingSelectIndex == null) return;
+    const vehicle = this.vehicleBuffer.get(this.pendingSelectIndex);
+    if (!vehicle) return;
+    this.pendingSelectIndex = null;
+    this.selectVehicle(vehicle);
   }
 
   loadOwners(): void {
@@ -599,7 +914,6 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     this.selectedVehicle = null;
     this.selectedTrip = null;
     this.loadingVehicles = true;
-    this.vehicles = [];
 
     // Trigger reload
     this.securityService.userData$.pipe(take(1)).subscribe((user) => {
@@ -660,18 +974,23 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     };
 
     if (this.brands.length > 0) {
-      this.vehicles.forEach(mapFn);
+      this.vehicleBuffer.forEach(mapFn);
       if (this.selectedVehicle) mapFn(this.selectedVehicle);
     }
   }
 
   // ── Carousel navigation ──────────────────────────────────────────
 
+  /** La ventana que se pinta. Se salta los huecos: mientras una página
+   *  viaja, esa posición todavía no tiene vehículo que mostrar. */
   get visibleVehicles(): ModelVehicle[] {
-    return this.vehicles.slice(
-      this.carouselIndex,
-      this.carouselIndex + this.visibleCount,
-    );
+    const window: ModelVehicle[] = [];
+    const end = this.carouselIndex + this.visibleCount;
+    for (let i = this.carouselIndex; i < end; i++) {
+      const vehicle = this.vehicleBuffer.get(i);
+      if (vehicle) window.push(vehicle);
+    }
+    return window;
   }
 
   // ── Accesos rápidos de categorías ────────────────────────────────
@@ -688,20 +1007,109 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * El ranking se calcula sobre los gastos recientes de todos los vehículos
-   * visibles (los del propietario), así los accesos rápidos reflejan lo que esa
-   * operación realmente registra y no una lista fija.
+   * El parque sobre el que se calcula el ranking. Es el del usuario, con una
+   * excepción: el administrador que no ha elegido propietario tiene por
+   * parque todo el sistema, y un ranking de categorías de todo el sistema no
+   * dice nada de la operación que se está mirando. Ahí se acota al
+   * propietario del vehículo seleccionado, y si no se le conoce propietario
+   * devuelve `null`, que deja el ranking en el vehículo solo.
+   */
+  private shortcutsQuery(): VehicleQuery | null {
+    if (this.userRole !== 'ADMINISTRADOR' || this.selectedOwnerId != null) {
+      return this.vehicleQuery;
+    }
+    const vehicle = this.selectedVehicle;
+    const ownerId = vehicle?.ownerId ?? vehicle?.owners?.[0]?.ownerId;
+    if (ownerId == null) return null;
+    return {
+      filters: [new Filter('owner.id', '=', ownerId.toString())],
+      withOwner: true,
+    };
+  }
+
+  /**
+   * Los ids del parque del ranking. Antes salían de la lista completa, que
+   * estaba entera en memoria; ahora se piden aparte y con tope, porque la
+   * lista ya no se carga entera. Si la petición falla, el ranking se calcula
+   * con el vehículo seleccionado, que es mejor que quedarse sin accesos.
+   */
+  private shortcutsVehicleIds(
+    query: VehicleQuery | null,
+  ): Observable<number[]> {
+    const own = this.selectedVehicle?.id;
+    const fallback = own != null ? [own] : [];
+    if (!query) return of(fallback);
+
+    /* La flota entera ya está cargada, así que no hace falta pedirla otra
+       vez. Es el caso del conductor y de las flotas pequeñas, que son la
+       mayoría. */
+    if (query === this.vehicleQuery) {
+      const buffered = this.bufferedFleetIds();
+      if (buffered) return of(buffered);
+    }
+
+    return this.vehicleRequest(
+      query,
+      0,
+      ExpensesComponent.SHORTCUTS_VEHICLE_CAP,
+    ).pipe(
+      map((resp: any) =>
+        ((resp?.data?.content ?? []) as ModelVehicle[])
+          /* Los vendidos no cuentan para el ranking, y por la relación
+             llegan igual. */
+          .filter((v) => v.status !== 'Vendido')
+          .map((v) => v.id)
+          .filter((id): id is number => id != null),
+      ),
+      catchError((err) => {
+        console.error('Error loading shortcut scope:', err);
+        return of(fallback);
+      }),
+    );
+  }
+
+  /**
+   * Los ids de todo el parque, si es que ya está entero en el buffer y cabe
+   * en el tope del ranking. `null` cuando falta algo y hay que pedirlo.
+   */
+  private bufferedFleetIds(): number[] | null {
+    if (!this.totalKnown) return null;
+    if (this.totalVehicles === 0) return [];
+    const ids: number[] = [];
+    for (let i = 0; i < this.totalVehicles; i++) {
+      const id = this.vehicleBuffer.get(i)?.id;
+      if (id == null) return null;
+      ids.push(id);
+    }
+    return ids;
+  }
+
+  /**
+   * El ranking se calcula sobre los gastos recientes del parque que se está
+   * operando, así los accesos rápidos reflejan lo que esa operación
+   * realmente registra y no una lista fija. Ver `shortcutsQuery` para el
+   * alcance de cada rol.
    */
   private loadExpenseShortcuts(force: boolean = false): void {
-    const vehicleIds = this.vehicles
-      .map((v) => v.id)
-      .filter((id) => id != null)
-      .join(',');
+    const query = this.shortcutsQuery();
+    const scope = query
+      ? JSON.stringify(query)
+      : `vehicle:${this.selectedVehicle?.id ?? ''}`;
 
-    if (!vehicleIds) return;
-    if (!force && vehicleIds === this.shortcutsScope) return;
-    this.shortcutsScope = vehicleIds;
+    if (scope === 'vehicle:') return;
+    if (!force && scope === this.shortcutsScope) return;
+    this.shortcutsScope = scope;
 
+    this.shortcutsVehicleIds(query).subscribe((ids) => {
+      if (ids.length === 0) {
+        this.expenseShortcuts = this.buildShortcuts([]);
+        return;
+      }
+      this.fetchExpenseShortcuts(ids.join(','));
+    });
+  }
+
+  private fetchExpenseShortcuts(vehicleIds: string): void {
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - this.SHORTCUTS_HISTORY_MONTHS);
 
@@ -726,8 +1134,10 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   selectVehicle(vehicle: ModelVehicle): void {
-    this.loadExpenseShortcuts();
+    /* Primero la selección: el alcance del ranking se deduce del vehículo
+       seleccionado cuando el administrador no ha elegido propietario. */
     this.selectedVehicle = vehicle;
+    this.loadExpenseShortcuts();
     if (
       this.tripIdParam &&
       this.vehicleIdParam === vehicle.id?.toString() &&
@@ -825,11 +1235,32 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   prev(): void {
-    if (this.canPrev) this.carouselIndex--;
+    if (!this.canPrev) return;
+    this.carouselIndex--;
+    this.ensureWindowLoaded();
   }
 
   next(): void {
-    if (this.canNext) this.carouselIndex++;
+    if (!this.canNext) return;
+    this.carouselIndex++;
+    this.ensureWindowLoaded();
+  }
+
+  /**
+   * Salta a una posición del carrusel desde los puntos. El vehículo puede
+   * estar en una página que todavía no se ha traído: entonces se pide y la
+   * selección la hace la respuesta, en `resolvePendingSelection`.
+   */
+  goToVehicle(index: number): void {
+    this.carouselIndex = index;
+    const vehicle = this.vehicleBuffer.get(index);
+    if (vehicle) {
+      this.pendingSelectIndex = null;
+      this.selectVehicle(vehicle);
+    } else {
+      this.pendingSelectIndex = index;
+    }
+    this.ensureWindowLoaded();
   }
 
   get canPrev(): boolean {
@@ -837,11 +1268,11 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   get canNext(): boolean {
-    return this.carouselIndex + this.visibleCount < this.vehicles.length;
+    return this.carouselIndex + this.visibleCount < this.totalVehicles;
   }
 
   get totalDots(): number {
-    return Math.max(0, this.vehicles.length - this.visibleCount + 1);
+    return Math.max(0, this.totalVehicles - this.visibleCount + 1);
   }
 
   dotRange(): number[] {

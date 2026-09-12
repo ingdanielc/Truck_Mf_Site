@@ -54,7 +54,8 @@
                   "maximumError": "8kb"
                 }
               ],
-              "outputHashing": "none"
+              "outputHashing": "none",
+              "deployUrl": "/truck/truck-mf-site/"
             },
             "development": {
               "buildOptimizer": false,

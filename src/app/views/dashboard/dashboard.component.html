@@ -294,6 +294,17 @@
               </g-vehicle-trip-exp-card>
             </div>
           }
+        } @else if (activeTripsLoading) {
+          <!-- Las tres consultas de las tarjetas ya no retienen el tablero, asi
+               que se puede abrir la pestaña con ellas todavia en vuelo. Sin
+               esto se leeria "No hay viajes en curso" sobre una respuesta que
+               aun no llego. -->
+          <div class="col-12 d-flex align-items-center gap-2">
+            <output class="spinner-border spinner-border-sm text-primary">
+              <span class="visually-hidden">Cargando...</span>
+            </output>
+            <span class="text-body-secondary small">Cargando viajes...</span>
+          </div>
         } @else {
           <div class="col-12">
             <p class="text-body-secondary small mb-0">

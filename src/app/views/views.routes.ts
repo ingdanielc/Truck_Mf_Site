@@ -9,7 +9,12 @@ export const routes: Routes = [
       import('./home/home.component').then((m) => m.HomeComponent),
   },
   {
+    /* Marcada para precarga: es la vista más pesada del sitio —arrastra
+       chart.js y los cinco reportes— y se entra a ella desde el inicio y
+       desde el menú. Sin esto el chunk empieza a bajar con el clic ya dado,
+       que en móvil es la mayor parte de la espera. */
     path: 'dashboard',
+    data: { preload: true },
     loadComponent: () =>
       import('./dashboard/dashboard.component').then(
         (m) => m.DashboardComponent,
