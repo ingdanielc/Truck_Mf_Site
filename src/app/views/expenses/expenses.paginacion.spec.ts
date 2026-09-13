@@ -175,6 +175,15 @@ describe('ExpensesComponent · parque paginado', () => {
   let parque: ModelVehicle[];
   /** Endpoints que deben fallar, para probar la degradación. */
   let fallar: (p: Peticion) => any | null;
+  /** Archivos que pasaron por la subida. */
+  let subidas: File[];
+  /** Gastos que llegaron a guardarse. */
+  let gastosGuardados: any[];
+  /** URL que devuelve la subida, y si falla. */
+  let subidaUrl: string | null;
+  let subidaFalla: boolean;
+  /** Errores que mostró la vista. */
+  let erroresMostrados: string[];
   /** El servidor omite `totalElements`, para probar que la flota se completa
    *  sin ese dato. */
   let sinTotal: boolean;
@@ -259,6 +268,16 @@ describe('ExpensesComponent · parque paginado', () => {
     const commonService: any = {
       getVehicleBrands: () => of({ data: [{ id: 1, name: 'Marca' }] }),
       getCities: () => of({ data: [] }),
+      uploadDocument: (file: File) => {
+        subidas.push(file);
+        return subidaFalla
+          ? throwError(() => ({ status: 500 }))
+          : of({ data: subidaUrl });
+      },
+    };
+    expenseService.createExpense = (expense: any) => {
+      gastosGuardados.push(expense);
+      return of({ data: expense });
     };
 
     const component = new ExpensesComponent(
@@ -270,7 +289,10 @@ describe('ExpensesComponent · parque paginado', () => {
       { getPayload: () => null } as any,
       expenseService,
       tripService,
-      { showError: () => undefined, showSuccess: () => undefined } as any,
+      {
+        showError: (_t: string, m: string) => erroresMostrados.push(m),
+        showSuccess: () => undefined,
+      } as any,
       {
         snapshot: { data: {} },
         queryParamMap: of(convertToParamMap(queryParams)),
@@ -299,6 +321,11 @@ describe('ExpensesComponent · parque paginado', () => {
     fallar = () => null;
     violaciones = [];
     sinTotal = false;
+    subidas = [];
+    gastosGuardados = [];
+    subidaUrl = 'https://cdn/archivos/factura-1.jpg';
+    subidaFalla = false;
+    erroresMostrados = [];
   });
 
   afterEach(() => {
@@ -634,6 +661,176 @@ describe('ExpensesComponent · parque paginado', () => {
       expect(c.selectedVehicle?.id).toBe(objetivo.id);
       expect(c.carouselIndex).toBe(0);
       expect(c.totalVehicles).toBe(30);
+    });
+  });
+
+  /* ---- Comprobante del gasto ---------------------------------------- */
+
+  describe('Comprobante del gasto', () => {
+    const gasto = {
+      vehicleId: 5,
+      categoryId: 7,
+      amount: 10000,
+      expenseDate: '2026-01-10',
+    } as any;
+
+    function vista(): ExpensesComponent {
+      const c = crear('ADMINISTRADOR');
+      c.ngOnInit();
+      return c;
+    }
+
+    function factura(nombre = 'factura.jpg'): File {
+      return new File([new Uint8Array(16)], nombre, { type: 'image/jpeg' });
+    }
+
+    it('sin comprobante guarda el gasto sin pasar por la subida', () => {
+      vista().onExpenseAdded({ expense: { ...gasto }, receipt: null });
+
+      expect(subidas.length).toBe(0);
+      expect(gastosGuardados.length).toBe(1);
+      expect(gastosGuardados[0].receiptImageUrl).toBeUndefined();
+    });
+
+    it('con comprobante sube primero y guarda con la URL que devuelve', () => {
+      const file = factura();
+
+      vista().onExpenseAdded({ expense: { ...gasto }, receipt: file });
+
+      expect(subidas).toEqual([file]);
+      expect(gastosGuardados.length).toBe(1);
+      expect(gastosGuardados[0].receiptImageUrl).toBe(
+        'https://cdn/archivos/factura-1.jpg',
+      );
+    });
+
+    it('si la subida falla no se guarda el gasto', () => {
+      /* Vale más repetir el registro que dejar un gasto sin el soporte que el
+         usuario creyó adjuntar. */
+      subidaFalla = true;
+      const c = vista();
+
+      c.onExpenseAdded({ expense: { ...gasto }, receipt: factura() });
+
+      expect(gastosGuardados.length).toBe(0);
+      expect(erroresMostrados).toContain('No se pudo adjuntar el comprobante');
+      expect(c.isSavingExpense).toBeFalse();
+    });
+
+    it('si la subida no devuelve URL tampoco se guarda', () => {
+      subidaUrl = null;
+      const c = vista();
+
+      c.onExpenseAdded({ expense: { ...gasto }, receipt: factura() });
+
+      expect(gastosGuardados.length).toBe(0);
+      expect(erroresMostrados).toContain('No se pudo adjuntar el comprobante');
+      expect(c.isSavingExpense).toBeFalse();
+    });
+
+    it('al editar conserva la URL que ya traía el gasto', () => {
+      const previo = 'https://cdn/archivos/vieja.pdf';
+
+      vista().onExpenseAdded({
+        expense: { ...gasto, id: 9, receiptImageUrl: previo },
+        receipt: null,
+      });
+
+      expect(subidas.length).toBe(0);
+      expect(gastosGuardados[0].receiptImageUrl).toBe(previo);
+    });
+
+    it('cancelar cierra el formulario y no guarda nada', () => {
+      const c = vista();
+
+      c.onExpenseAdded(null);
+
+      expect(c.showAddExpense).toBeFalse();
+      expect(subidas.length).toBe(0);
+      expect(gastosGuardados.length).toBe(0);
+    });
+  });
+
+  /* ---- Contra que se miden los gastos del viaje ---------------------- */
+
+  describe('Presupuesto del viaje', () => {
+    const viaje = {
+      id: 1,
+      status: 'En Curso',
+      freight: 5000000,
+      advancePayment: 1500000,
+      balance: 3500000,
+    } as any;
+
+    function vista(trip: any): ExpensesComponent {
+      const c = crear('ADMINISTRADOR');
+      c.ngOnInit();
+      c.selectedTrip = trip;
+      return c;
+    }
+
+    it('sin cobrar el saldo, el presupuesto es el anticipo', () => {
+      /* Es lo unico que el conductor tiene en la mano. */
+      expect(vista({ ...viaje, paidBalance: false }).tripBudget).toBe(1500000);
+    });
+
+    it('el saldo sin marcar se trata como no cobrado', () => {
+      const sinCampo = { ...viaje };
+      delete sinCampo.paidBalance;
+
+      expect(vista(sinCampo).tripBudget).toBe(1500000);
+    });
+
+    it('cobrado el saldo, el presupuesto es el flete completo', () => {
+      /* Ya se dispone de todo el dinero del viaje: medir contra el anticipo
+         pintaba en rojo viajes que no se habian pasado de nada. */
+      const c = vista({ ...viaje, status: 'Completado', paidBalance: true });
+
+      expect(c.tripBudget).toBe(5000000);
+    });
+
+    it('un gasto mayor que el anticipo deja de ser un desfase al cobrar', () => {
+      const gastado = 2000000;
+      const enCurso = vista({ ...viaje, paidBalance: false });
+      expect(gastado > enCurso.tripBudget).toBeTrue();
+
+      const cobrado = vista({
+        ...viaje,
+        status: 'Completado',
+        paidBalance: true,
+      });
+
+      expect(gastado > cobrado.tripBudget).toBeFalse();
+    });
+
+    it('manda el dinero cobrado, no el rotulo del viaje', () => {
+      /* El saldo tambien se marca a mano desde el detalle, asi que la senal
+         es `paidBalance` y no el estado. */
+      const cobradoSinCerrar = vista({ ...viaje, paidBalance: true });
+      expect(cobradoSinCerrar.tripBudget).toBe(5000000);
+
+      const cerradoSinCobrar = vista({
+        ...viaje,
+        status: 'Completado',
+        paidBalance: false,
+      });
+      expect(cerradoSinCobrar.tripBudget).toBe(1500000);
+    });
+
+    it('pasarse del flete si es un desfase', () => {
+      /* Cobrado el saldo el rojo no desaparece: gastar mas que el flete es
+         perder dinero en el viaje. */
+      const c = vista({ ...viaje, paidBalance: true });
+
+      expect(6000000 > c.tripBudget).toBeTrue();
+    });
+
+    it('sin viaje seleccionado no hay presupuesto', () => {
+      const c = crear('ADMINISTRADOR');
+      c.ngOnInit();
+      c.selectedTrip = null;
+
+      expect(c.tripBudget).toBe(0);
     });
   });
 

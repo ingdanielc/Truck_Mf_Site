@@ -20,6 +20,7 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { GExpenseCategoryCardComponent } from '../g-expense-category-card/g-expense-category-card.component';
+import { GDocumentViewerComponent } from '../g-document-viewer/g-document-viewer.component';
 import { VehicleService } from '../../services/expense.service';
 import { ModelExpense } from 'src/app/models/expense-model';
 import { ModelTrip } from 'src/app/models/trip-model';
@@ -38,6 +39,26 @@ import { CustomValidators } from 'src/app/utils/custom-validators';
 import { CommonService } from 'src/app/services/common.service';
 import { normalizeCategoryName } from 'src/app/utils/expense-shortcuts';
 
+/** Lo que acepta `/common/upload-document`, que es por donde sube el soporte. */
+const ALLOWED_RECEIPT_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
+/** `spring.servlet.multipart.max-file-size` del backend. */
+const MAX_RECEIPT_SIZE_MB = 5;
+
+/**
+ * Lo que el formulario entrega al guardar: el gasto y, aparte, el soporte que
+ * todavía no se ha subido.
+ *
+ * El archivo no viaja dentro del gasto a propósito. Subirlo es un paso previo
+ * con su propia petición, y quien guarda es la vista, no este formulario: así
+ * los dos pasos quedan en el mismo sitio, que es donde tendrá que engancharse
+ * la cola de envíos sin conexión.
+ */
+export interface ExpenseSubmit {
+  expense: ModelExpense;
+  /** Soporte nuevo por subir. `null` cuando no se tocó el que ya había. */
+  receipt: File | null;
+}
+
 interface CategoryConfig {
   id: number;
   name: string;
@@ -50,7 +71,12 @@ interface CategoryConfig {
 @Component({
   selector: 'g-add-expense',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, GExpenseCategoryCardComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    GExpenseCategoryCardComponent,
+    GDocumentViewerComponent,
+  ],
   templateUrl: './g-add-expense.component.html',
   styleUrls: ['./g-add-expense.component.scss'],
 })
@@ -68,11 +94,34 @@ export class GAddExpenseComponent implements OnInit {
   @Input() isMaintenance = false;
   @Input() userRole = '';
   @Input() isSaving: boolean = false;
-  @Output() close = new EventEmitter<ModelExpense | null>();
+  @Output() close = new EventEmitter<ExpenseSubmit | null>();
   private initialFormValue: string = '';
   private targetOwnerId: number | null = null;
 
   @ViewChild('amountInput') amountInputRef?: ElementRef<HTMLInputElement>;
+
+  /* -- Soporte del gasto -------------------------------------------------
+     Opcional y discreto: una sola fila bajo la descripción. La factura del
+     combustible o del peaje se adjunta donde se registra el gasto, que es el
+     único momento en que el conductor la tiene en la mano. */
+
+  /** Archivo elegido y aún sin subir. */
+  receiptFile: File | null = null;
+  receiptFileName = '';
+  /** Soporte ya guardado, al editar. `null` si se quitó o no había. */
+  currentReceiptUrl: string | null = null;
+  receiptError = '';
+  /** Soporte abierto en el visor; `null` cuando no hay ninguno. */
+  receiptViewerUrl: string | null = null;
+
+  readonly acceptedReceipts = ALLOWED_RECEIPT_EXTENSIONS.map(
+    (ext) => `.${ext}`,
+  ).join(',');
+  readonly maxReceiptSizeMb = MAX_RECEIPT_SIZE_MB;
+
+  /** El soporte cambió, aunque no se haya tocado ningún campo. Sin esto,
+   *  adjuntar una factura y nada más dejaba el botón de guardar apagado. */
+  private receiptTouched = false;
 
   expenseForm!: FormGroup;
   expenseTypes = [
@@ -320,6 +369,14 @@ export class GAddExpenseComponent implements OnInit {
 
     this.selectedType = this.editingExpense.category?.expenseTypeId || 1;
     this.selectedCategoryId = this.editingExpense.categoryId;
+
+    /* El soporte que ya tenía. Queda como `currentReceiptUrl` y no como
+       archivo: ya está subido, así que se puede abrir en el visor y no hay
+       nada que volver a subir salvo que lo reemplacen. */
+    this.currentReceiptUrl = this.editingExpense.receiptImageUrl || null;
+    this.receiptFileName = this.currentReceiptUrl
+      ? GAddExpenseComponent.fileNameOf(this.currentReceiptUrl)
+      : '';
 
     const fecha = new Date(this.editingExpense.expenseDate);
 
@@ -799,6 +856,77 @@ export class GAddExpenseComponent implements OnInit {
     return clean.includes('salario') || clean.includes('porcentaje');
   }
 
+  /* -- Soporte del gasto ----------------------------------------------- */
+
+  /** Hay algo que enseñar: recién elegido o ya guardado. */
+  get hasReceipt(): boolean {
+    return !!this.receiptFile || !!this.currentReceiptUrl;
+  }
+
+  /** El soporte ya está guardado y se puede abrir en el visor. Uno recién
+   *  elegido todavía no tiene URL, así que no hay nada que abrir. */
+  get canViewReceipt(): boolean {
+    return !!this.currentReceiptUrl && !this.receiptFile;
+  }
+
+  onReceiptSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    /* El input se limpia siempre para que volver a elegir el mismo archivo
+       después de un error vuelva a disparar el change. */
+    input.value = '';
+    if (file) this.setReceipt(file);
+  }
+
+  /**
+   * Acepta el soporte si el backend va a poder con él.
+   *
+   * Un archivo inválido no borra el que ya estaba: quitar es un gesto aparte,
+   * con su propio botón, así que equivocarse al reemplazar no debería dejar al
+   * usuario sin el comprobante que ya tenía.
+   */
+  private setReceipt(file: File): void {
+    const extension = (file.name.split('.').pop() || '').toLowerCase();
+    if (!ALLOWED_RECEIPT_EXTENSIONS.includes(extension)) {
+      this.receiptError =
+        'Formato no permitido. Se aceptan: ' +
+        ALLOWED_RECEIPT_EXTENSIONS.join(', ');
+      return;
+    }
+    if (file.size > MAX_RECEIPT_SIZE_MB * 1024 * 1024) {
+      this.receiptError = `El archivo supera los ${MAX_RECEIPT_SIZE_MB} MB permitidos.`;
+      return;
+    }
+
+    this.receiptFile = file;
+    this.receiptFileName = file.name;
+    this.receiptError = '';
+    this.receiptTouched = true;
+  }
+
+  /** Quita el soporte. Al editar, guardar sin soporte lo desvincula. */
+  removeReceipt(): void {
+    this.receiptFile = null;
+    this.receiptFileName = '';
+    this.currentReceiptUrl = null;
+    this.receiptError = '';
+    this.receiptTouched = true;
+  }
+
+  openReceipt(): void {
+    if (this.currentReceiptUrl) this.receiptViewerUrl = this.currentReceiptUrl;
+  }
+
+  closeReceipt(): void {
+    this.receiptViewerUrl = null;
+  }
+
+  /** El último tramo de la URL, para nombrar el soporte ya guardado. */
+  private static fileNameOf(url: string): string {
+    const limpio = url.split('?')[0];
+    return decodeURIComponent(limpio.split('/').pop() || 'Comprobante');
+  }
+
   onSave(): void {
     if (this.expenseForm.valid && this.selectedCategoryId && this.vehicleId) {
       const expenseData: ModelExpense = {
@@ -814,7 +942,13 @@ export class GAddExpenseComponent implements OnInit {
       if (this.editingExpense?.id) {
         expenseData.id = this.editingExpense.id;
       }
-      this.close.emit(expenseData);
+      /* El que ya estaba. Uno nuevo no tiene URL todavía: la pone quien lo
+         sube, justo antes de guardar. Quitarlo deja el campo vacío, que es
+         como se desvincula. */
+      if (this.currentReceiptUrl) {
+        expenseData.receiptImageUrl = this.currentReceiptUrl;
+      }
+      this.close.emit({ expense: expenseData, receipt: this.receiptFile });
     } else {
       if (!this.vehicleId) {
         console.error('No vehicle ID provided for the expense.');
@@ -846,7 +980,7 @@ export class GAddExpenseComponent implements OnInit {
   }
 
   get canSave(): boolean {
-    return this.expenseForm.valid && this.isModified;
+    return this.expenseForm.valid && (this.isModified || this.receiptTouched);
   }
 
   private captureInitialState(): void {

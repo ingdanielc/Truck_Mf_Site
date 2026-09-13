@@ -83,7 +83,9 @@
             style="height: 10px"
           >
             <div
-              class="progress-bar bg-primary rounded-pill"
+              class="progress-bar rounded-pill"
+              [class.bg-primary]="!isOverBudget"
+              [class.bg-danger]="isOverBudget"
               role="progressbar"
               [style.width]="budgetPercentage + '%'"
               onkeypress
@@ -91,11 +93,22 @@
             ></div>
           </div>
 
-          <p class="small text-secondary fst-italic mb-4">
-            Te quedan
-            {{ remainingBudget | currency: "COP" : "symbol-narrow" : "1.0-0" }}
-            para este trayecto.
-          </p>
+          @if (isOverBudget) {
+            <p class="small text-danger fw-medium mb-4">
+              <i class="fa-solid fa-triangle-exclamation me-1"></i>
+              Te pasaste
+              {{ overBudget | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+              de lo presupuestado.
+            </p>
+          } @else {
+            <p class="small text-secondary fst-italic mb-4">
+              Te quedan
+              {{
+                remainingBudget | currency: "COP" : "symbol-narrow" : "1.0-0"
+              }}
+              para este trayecto.
+            </p>
+          }
 
           <div
             class="mt-auto pt-3 border-top border-secondary border-opacity-10 d-flex gap-3 align-items-center"

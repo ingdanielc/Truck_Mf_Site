@@ -92,17 +92,6 @@
                         >{{ row.validity.label }}
                       </span>
                     </div>
-
-                    <div
-                      class="validity-track rounded-pill mt-2"
-                      [title]="row.validity.label"
-                    >
-                      <div
-                        class="validity-fill rounded-pill"
-                        [ngClass]="'state-' + row.validity.state"
-                        [style.width.%]="row.validity.percent"
-                      ></div>
-                    </div>
                   </div>
                 </div>
 
@@ -158,6 +147,20 @@
                     </button>
                   }
                 </div>
+              </div>
+
+              <!-- La barra de vigencia, a lo ancho de la tarjeta. Dentro de la
+                   columna de texto se cortaba donde empiezan los iconos, que
+                   en escritorio es bastante antes del borde. -->
+              <div
+                class="validity-track rounded-pill mt-2"
+                [title]="row.validity.label"
+              >
+                <div
+                  class="validity-fill rounded-pill"
+                  [ngClass]="'state-' + row.validity.state"
+                  [style.width.%]="row.validity.percent"
+                ></div>
               </div>
 
               <!-- Confirmación de borrado, en la propia fila -->
@@ -369,7 +372,7 @@
 
               @if (selectedFileName) {
                 <div
-                  class="file-chip border rounded-3 p-3 d-flex align-items-center gap-3"
+                  class="file-chip field-height border rounded-3 px-3 d-flex align-items-center gap-3"
                 >
                   <i class="fa-solid fa-file-lines fs-4 text-primary"></i>
                   <div class="flex-grow-1 overflow-hidden">
@@ -420,15 +423,26 @@
                   </button>
                 </div>
               } @else {
+                <!-- En fila y del alto de un campo, como en el formulario de
+                     gastos. En columna ocupaba el triple que la ficha que la
+                     sustituye, y el formulario daba un salto al elegir el
+                     archivo. -->
                 <button
                   type="button"
-                  class="file-dropzone btn w-100 rounded-3 py-3 d-flex flex-column align-items-center justify-content-center gap-1"
+                  class="file-dropzone field-height btn w-100 rounded-3 px-3 d-flex align-items-center text-start gap-3"
                   (click)="triggerFileInput(documentInput)"
                 >
                   <i class="fa-solid fa-cloud-arrow-up fs-4 text-primary"></i>
-                  <span class="small fw-bold">Seleccionar archivo</span>
-                  <span class="text-secondary" style="font-size: 0.72rem">
-                    PDF o imagen, hasta {{ maxFileSizeMb }} MB · opcional
+                  <span class="flex-grow-1 overflow-hidden">
+                    <span class="mb-0 small fw-bold d-block"
+                      >Seleccionar archivo</span
+                    >
+                    <span
+                      class="mb-0 text-secondary d-block"
+                      style="font-size: 0.72rem"
+                    >
+                      PDF o imagen, hasta {{ maxFileSizeMb }} MB · opcional
+                    </span>
                   </span>
                 </button>
               }

@@ -126,3 +126,78 @@ input[type="number"] {
     }
   }
 }
+
+/* ---- Alto único de los campos ------------------------------------------
+   Fecha, monto, descripción y comprobante miden lo mismo. Cuadrar rellenos no
+   bastaba: el monto lleva letra más grande y el comprobante botones, así que
+   cada campo acababa con su propio alto. Se fija el alto y se neutraliza el
+   relleno vertical, que por eso salió del marcado.
+
+   `box-sizing` va explícito y no se deja al reinicio de Bootstrap: Bootstrap
+   lo carga el shell, y sin él este alto se sumaría al relleno en vez de
+   contenerlo. */
+.expense-field {
+  height: 62px;
+  box-sizing: border-box;
+}
+
+/* Un `<input>` centra su texto solo cuando la caja es más alta que la línea:
+   basta con dejarlo ocupar el alto del grupo. */
+.expense-field .form-control,
+.expense-field .input-group-text {
+  height: 100%;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* El textarea no centra nada. El relleno se calcula desde el propio alto en
+   vez de fijarlo a ojo: así la única fila queda a la altura del texto de los
+   campos de al lado, y si mañana cambia el tamaño de letra el cálculo se
+   ajusta solo. `1.5em` es la caja de una línea con la interlínea del cuerpo.
+   Si se estira para escribir más, el mismo relleno sirve de margen. */
+textarea.expense-field {
+  --line: 1.5em;
+  padding-top: calc((62px - 2px - var(--line)) / 2);
+  padding-bottom: calc((62px - 2px - var(--line)) / 2);
+}
+
+/* Ficha del comprobante. Mismas medidas y mismos tonos que la carga de
+   documentos del vehículo: es el mismo gesto en dos pantallas y no debería
+   verse distinto. */
+.draft-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.file-chip {
+  background-color: rgba(var(--bs-emphasis-color-rgb), 0.03);
+  border-color: rgba(var(--bs-emphasis-color-rgb), 0.1) !important;
+}
+
+/* Zona de carga. Es un `button` y no un `div` para que llegue por teclado sin
+   inventar roles; los estilos de boton de Bootstrap se neutralizan a mano. */
+.file-dropzone {
+  background-color: rgba(var(--bs-emphasis-color-rgb), 0.02);
+  border: 1px dashed rgba(var(--bs-emphasis-color-rgb), 0.2) !important;
+  color: var(--bs-body-color);
+  transition: all 0.2s ease;
+
+  &:hover,
+  &:focus-visible {
+    background-color: rgba(var(--bs-primary-rgb), 0.04);
+    border-color: rgba(var(--bs-primary-rgb), 0.4) !important;
+    color: var(--bs-body-color);
+  }
+}
+
+[data-bs-theme="dark"] {
+  .file-chip,
+  .file-dropzone {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+}

@@ -38,7 +38,10 @@ import {
   Pagination,
   Sort,
 } from 'src/app/models/model-filter-table';
-import { GAddExpenseComponent } from 'src/app/components/g-add-expense/g-add-expense.component';
+import {
+  ExpenseSubmit,
+  GAddExpenseComponent,
+} from 'src/app/components/g-add-expense/g-add-expense.component';
 import { TripService } from 'src/app/services/trip.service';
 import { ModelTrip } from 'src/app/models/trip-model';
 import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-trip-mini-card.component';
@@ -1284,6 +1287,25 @@ export class ExpensesComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Contra qué se miden los gastos del viaje.
+   *
+   * Mientras el saldo no se ha cobrado, lo que hay para gastar es el anticipo,
+   * y ese es el presupuesto. Cobrado el saldo se dispone del flete completo:
+   * seguir midiendo contra el anticipo pintaba en rojo viajes que no se habían
+   * pasado de nada, porque el dinero del viaje ya no era solo el adelanto.
+   *
+   * La señal es `paidBalance` y no el estado: completar el viaje es justo lo
+   * que lo pone en cierto —ver `applyTripStatusChange`—, pero el saldo también
+   * se marca a mano desde el detalle, y lo que decide es el dinero cobrado, no
+   * el rótulo del viaje.
+   */
+  get tripBudget(): number {
+    const trip = this.selectedTrip;
+    if (!trip) return 0;
+    return trip.paidBalance ? (trip.freight ?? 0) : (trip.advancePayment ?? 0);
+  }
+
+  /**
    * El viaje está dado de baja. Sus gastos quedan en solo lectura: se
    * consultan, pero no se registran ni se editan. A diferencia de los plazos
    * de abajo, este no depende del rol —un viaje que no existió no admite
@@ -1483,49 +1505,96 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     this.showAddExpense = true;
   }
 
-  onExpenseAdded(event: any): void {
-    if (event) {
-      this.isSavingExpense = true;
-      const isUpdating = !!this.editingExpense;
-      let mensaje = '';
-      if (this.isMaintenance) {
-        mensaje = isUpdating
-          ? 'Mantenimiento actualizado exitosamente!'
-          : 'Mantenimiento registrado exitosamente!';
-      } else {
-        mensaje = isUpdating
-          ? 'Gasto actualizado exitosamente!'
-          : 'Gasto registrado exitosamente!';
-      }
-      this.expenseService.createExpense(event).subscribe({
-        next: () => {
-          this.toastService.showSuccess(
-            this.isMaintenance ? 'Mantenimiento' : 'Gastos',
-            mensaje,
-          );
-          this.showAddExpense = false;
-          // Refresh list
-          this.expensesTripComponent?.loadExpenses();
-          this.notificationsService.refreshNotifications();
-          this.reportLocationIfDriver();
-          // El nuevo gasto puede cambiar el ranking de categorías
-          this.loadExpenseShortcuts(true);
-          // Reset states AFTER potential usage
-          this.editingExpense = null;
-          this.resetPreselection();
-          this.isSavingExpense = false;
-        },
-        error: (err) => {
-          console.error('Error saving expense:', err);
-          this.toastService.showError('Error', 'No se pudo registrar el gasto');
-          this.isSavingExpense = false;
-        },
-      });
-    } else {
+  /**
+   * Guarda el gasto que entrega el formulario.
+   *
+   * Con soporte son dos pasos: primero se sube el archivo, que devuelve su
+   * URL, y solo entonces se guarda el gasto con esa URL. Es el mismo orden que
+   * usan los documentos del vehículo, y el único posible: la subida no recibe
+   * el id de la fila, así que no puede esperar a que el gasto exista.
+   *
+   * Si la subida falla no se guarda nada. Vale más repetir el registro que
+   * dejar un gasto sin el soporte que el usuario creyó adjuntar.
+   */
+  onExpenseAdded(event: ExpenseSubmit | null): void {
+    if (!event) {
       this.showAddExpense = false;
       this.editingExpense = null;
       this.resetPreselection();
+      return;
     }
+
+    if (!event.receipt) {
+      this.saveExpense(event.expense);
+      return;
+    }
+
+    this.isSavingExpense = true;
+    const receipt = event.receipt;
+    this.commonService.uploadDocument(receipt, receipt.name).subscribe({
+      next: (resp: any) => {
+        /* La subida devuelve la URL en `data`, como texto. Ver los documentos
+           del vehículo y la renovación de suscripción, que la leen igual. */
+        const url = resp?.data;
+        if (!url) {
+          console.error('Respuesta sin URL al subir el comprobante:', resp);
+          this.toastService.showError(
+            'Error',
+            'No se pudo adjuntar el comprobante',
+          );
+          this.isSavingExpense = false;
+          return;
+        }
+        this.saveExpense({ ...event.expense, receiptImageUrl: url });
+      },
+      error: (err) => {
+        console.error('Error uploading receipt:', err);
+        this.toastService.showError(
+          'Error',
+          'No se pudo adjuntar el comprobante',
+        );
+        this.isSavingExpense = false;
+      },
+    });
+  }
+
+  private saveExpense(event: ModelExpense): void {
+    this.isSavingExpense = true;
+    const isUpdating = !!this.editingExpense;
+    let mensaje = '';
+    if (this.isMaintenance) {
+      mensaje = isUpdating
+        ? 'Mantenimiento actualizado exitosamente!'
+        : 'Mantenimiento registrado exitosamente!';
+    } else {
+      mensaje = isUpdating
+        ? 'Gasto actualizado exitosamente!'
+        : 'Gasto registrado exitosamente!';
+    }
+    this.expenseService.createExpense(event).subscribe({
+      next: () => {
+        this.toastService.showSuccess(
+          this.isMaintenance ? 'Mantenimiento' : 'Gastos',
+          mensaje,
+        );
+        this.showAddExpense = false;
+        // Refresh list
+        this.expensesTripComponent?.loadExpenses();
+        this.notificationsService.refreshNotifications();
+        this.reportLocationIfDriver();
+        // El nuevo gasto puede cambiar el ranking de categorías
+        this.loadExpenseShortcuts(true);
+        // Reset states AFTER potential usage
+        this.editingExpense = null;
+        this.resetPreselection();
+        this.isSavingExpense = false;
+      },
+      error: (err) => {
+        console.error('Error saving expense:', err);
+        this.toastService.showError('Error', 'No se pudo registrar el gasto');
+        this.isSavingExpense = false;
+      },
+    });
   }
 
   private reportLocationIfDriver(): void {

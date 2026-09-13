@@ -10,7 +10,7 @@
   onkeypress
 >
   <div
-    class="icon-shape rounded-circle d-flex align-items-center justify-content-center mb-2"
+    class="icon-shape rounded-circle d-flex align-items-center justify-content-center mb-1"
     [ngClass]="{
       'bg-primary bg-opacity-10 text-primary': !selected || isNew,
       'bg-white text-primary': selected && !isNew,
@@ -20,7 +20,7 @@
   </div>
   <span
     class="small fw-medium"
-    style="line-height: 1.15;"
+    style="line-height: 1.15"
     [ngClass]="{
       'text-body': !selected && !isNew,
       'text-white': selected && !isNew,

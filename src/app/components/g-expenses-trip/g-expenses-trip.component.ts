@@ -207,6 +207,25 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
     return Math.max(0, this.budget - this.totalAmount);
   }
 
+  /**
+   * Los gastos pasaron del anticipo.
+   *
+   * Sin anticipo no hay presupuesto contra el que medir, y cualquier gasto
+   * saldría desfasado: un viaje al que nadie le puso anticipo no es un viaje
+   * que se haya pasado, así que ahí no se anuncia nada.
+   */
+  get isOverBudget(): boolean {
+    return this.budget > 0 && this.totalAmount > this.budget;
+  }
+
+  /** Cuánto se pasó de lo presupuestado. Cero mientras quede margen. */
+  get overBudget(): number {
+    if (this.budget <= 0) return 0;
+    return Math.max(0, this.totalAmount - this.budget);
+  }
+
+  /* La barra se llena y ahí se queda: pasado el anticipo, lo que importa no es
+     cuánto sobra de barra sino cuánto se pasó, y eso lo dice la cifra. */
   get budgetPercentage(): number {
     if (this.budget <= 0) return 0;
     return Math.min(100, Math.round((this.totalAmount / this.budget) * 100));

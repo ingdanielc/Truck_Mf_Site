@@ -87,6 +87,18 @@
   transition: all 0.2s ease;
 }
 
+/* Alto de un campo, el mismo que usa el formulario de gastos para su
+   comprobante. La zona de carga iba en columna y ocupaba el triple que la
+   ficha que la sustituye, así que el formulario saltaba al elegir el archivo.
+
+   `box-sizing` va explícito y no se deja al reinicio de Bootstrap: Bootstrap
+   lo carga el shell, y sin él este alto se sumaría al relleno en vez de
+   contenerlo. */
+.field-height {
+  height: 62px;
+  box-sizing: border-box;
+}
+
 .file-chip {
   background-color: rgba(var(--bs-emphasis-color-rgb), 0.03);
   border-color: rgba(var(--bs-emphasis-color-rgb), 0.1) !important;

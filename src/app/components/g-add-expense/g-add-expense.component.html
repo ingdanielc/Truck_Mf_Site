@@ -130,7 +130,7 @@
           >Fecha del gasto*</label
         >
         <div
-          class="input-group input-group-lg no-border-input-group rounded-3 overflow-hidden shadow-sm border transition-all"
+          class="input-group input-group-lg no-border-input-group rounded-3 overflow-hidden shadow-sm border transition-all expense-field"
           [class.is-invalid-group]="
             expenseForm.get('expenseDate')?.touched &&
             expenseForm.get('expenseDate')?.invalid
@@ -144,7 +144,7 @@
           <input
             id="expenseDate"
             type="date"
-            class="form-control border-0 shadow-none text-secondary py-3"
+            class="form-control border-0 shadow-none text-secondary"
             formControlName="expenseDate"
             [min]="expenseDateMin"
           />
@@ -167,7 +167,7 @@
         >Monto total*</label
       >
       <div
-        class="input-group input-group-lg no-border-input-group rounded-3 overflow-hidden shadow-sm border transition-all"
+        class="input-group input-group-lg no-border-input-group rounded-3 overflow-hidden shadow-sm border transition-all expense-field"
         [class.is-invalid-group]="
           expenseForm.get('amount')?.touched &&
           expenseForm.get('amount')?.invalid
@@ -181,7 +181,7 @@
           #amountInput
           type="text"
           inputmode="numeric"
-          class="form-control border-0 shadow-none fs-4 text-secondary py-3"
+          class="form-control border-0 shadow-none fs-4 text-secondary"
           placeholder="0"
           maxlength="10"
           formControlName="amount"
@@ -217,10 +217,14 @@
       <label for="desc" class="form-label fw-bold small text-body mb-2"
         >Descripción{{ isMaintenance ? "*" : "" }}</label
       >
+      <!-- Una sola fila, del alto de los demás campos, que lo fija
+           `expense-field`. La letra se queda en su tamaño normal: la
+           descripción se lee como texto, no como una cifra. Sigue siendo un
+           textarea, así que quien escriba de más puede estirarlo. -->
       <textarea
         id="desc"
-        class="form-control shadow-sm rounded-3 p-3 text-secondary transition-all"
-        rows="3"
+        class="form-control shadow-sm rounded-3 px-3 text-secondary transition-all expense-field"
+        rows="2"
         [class.is-invalid]="
           expenseForm.get('description')?.touched &&
           expenseForm.get('description')?.invalid
@@ -240,6 +244,97 @@
         <div class="text-danger small mt-2">
           Este campo es obligatorio para continuar
         </div>
+      }
+    </div>
+
+    <!-- Comprobante. Es la misma ficha de la carga de documentos del
+         vehículo, con sus mismas acciones e iconos: es el mismo gesto en dos
+         pantallas y no debería verse ni comportarse distinto. -->
+    <div class="mb-4">
+      <span class="form-label small fw-bold mb-2 d-block">Comprobante</span>
+      <input
+        id="receipt"
+        #receiptInput
+        type="file"
+        class="d-none"
+        [accept]="acceptedReceipts"
+        (change)="onReceiptSelected($event)"
+      />
+
+      @if (hasReceipt) {
+        <div
+          class="file-chip expense-field border rounded-3 px-3 d-flex align-items-center gap-3"
+        >
+          <i class="fa-solid fa-file-lines fs-4 text-primary"></i>
+          <div class="flex-grow-1 overflow-hidden">
+            <p class="mb-0 small fw-bold text-truncate">
+              {{ receiptFileName }}
+            </p>
+            <p class="mb-0 text-secondary" style="font-size: 0.72rem">
+              @if (receiptFile) {
+                Se subirá al guardar
+              } @else {
+                Comprobante actual
+              }
+            </p>
+          </div>
+          @if (canViewReceipt) {
+            <button
+              type="button"
+              class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none draft-btn"
+              (click)="openReceipt()"
+              title="Abrir comprobante"
+              aria-label="Abrir comprobante"
+            >
+              <i
+                class="fa-solid fa-arrow-up-right-from-square"
+                style="font-size: 0.75rem"
+              ></i>
+            </button>
+          }
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm rounded-3 p-1 shadow-none draft-btn"
+            (click)="receiptInput.click()"
+            title="Reemplazar comprobante"
+            aria-label="Reemplazar comprobante"
+          >
+            <i class="fa-solid fa-arrows-rotate" style="font-size: 0.75rem"></i>
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-danger btn-sm rounded-3 p-1 shadow-none draft-btn"
+            (click)="removeReceipt()"
+            title="Quitar comprobante"
+            aria-label="Quitar comprobante"
+          >
+            <i class="fa-solid fa-trash" style="font-size: 0.75rem"></i>
+          </button>
+        </div>
+      } @else {
+        <!-- Misma estructura que la ficha de arriba —icono, dos líneas y los
+             mismos paddings—, para que al elegir el archivo una ocupe el sitio
+             de la otra sin que el formulario dé un salto. -->
+        <button
+          type="button"
+          class="file-dropzone expense-field btn w-100 rounded-3 px-3 d-flex align-items-center text-start gap-3"
+          (click)="receiptInput.click()"
+        >
+          <i class="fa-solid fa-cloud-arrow-up fs-4 text-primary"></i>
+          <span class="flex-grow-1 overflow-hidden">
+            <span class="mb-0 small fw-bold d-block">Seleccionar archivo</span>
+            <span
+              class="mb-0 text-secondary d-block"
+              style="font-size: 0.72rem"
+            >
+              PDF o imagen, hasta {{ maxReceiptSizeMb }} MB · opcional
+            </span>
+          </span>
+        </button>
+      }
+
+      @if (receiptError) {
+        <div class="text-danger small mt-2">{{ receiptError }}</div>
       }
     </div>
 
@@ -266,3 +361,11 @@
     </div>
   </form>
 </div>
+
+@if (receiptViewerUrl) {
+  <g-document-viewer
+    [url]="receiptViewerUrl"
+    [name]="receiptFileName || 'Comprobante'"
+    (close)="closeReceipt()"
+  ></g-document-viewer>
+}
