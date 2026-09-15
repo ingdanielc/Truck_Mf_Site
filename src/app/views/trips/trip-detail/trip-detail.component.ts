@@ -10,6 +10,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
 import { GTripFormComponent } from '../../../components/g-trip-form/g-trip-form.component';
 import { GConfirmSheetComponent } from '../../../components/g-confirm-sheet/g-confirm-sheet.component';
 import { GTripInfoCardComponent } from '../../../components/g-trip-info-card/g-trip-info-card.component';
+import { isUrbanTrip } from 'src/app/utils/urban-trip';
 import { NotificationsService } from 'src/app/services/notifications.service';
 import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
@@ -390,6 +391,11 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   /** Un viaje redondo se distingue por tener destino de regreso */
   get isRoundTrip(): boolean {
     return !!this.returnDestinationName;
+  }
+
+  /** Origen y destino son la misma ciudad: no hay trayecto que mostrar. */
+  get isUrbanTrip(): boolean {
+    return isUrbanTrip(this.trip?.originId, this.trip?.destinationId);
   }
 
   /** El viaje vacío no tiene flete ni saldo, así que no puede quedar Pendiente */
@@ -1075,10 +1081,15 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (this.tripId) {
       this.loadTrip(this.tripId);
     }
-    if (this.originName !== 'N/A' && this.destinationName !== 'N/A') {
+    const tripAfterSave = savedTrip ?? this.trip;
+    if (
+      this.originName !== 'N/A' &&
+      this.destinationName !== 'N/A' &&
+      !isUrbanTrip(tripAfterSave?.originId, tripAfterSave?.destinationId)
+    ) {
       // El formulario se mantiene abierto mientras se calcula la ruta, para
       // no dejar la pantalla vacía; lo cierra `onRouteReady`
-      this.tollTripContext = tollContextFromTrip(savedTrip ?? this.trip);
+      this.tollTripContext = tollContextFromTrip(tripAfterSave);
       this.isTripInfoOpen = true;
       return;
     }
@@ -1086,6 +1097,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   }
 
   openTripInfo(): void {
+    // Un viaje urbano no tiene trayecto: el progreso no abre nada.
+    if (this.isUrbanTrip) return;
     if (
       this.originName &&
       this.originName !== 'N/A' &&

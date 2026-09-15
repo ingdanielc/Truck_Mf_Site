@@ -41,9 +41,11 @@
   flex-direction: column;
   /* Algo menos de media pantalla, y nunca por debajo del teclado. Los
      `dvh` son para que la barra del navegador al recogerse no descuadre el
-     alto. */
-  max-height: 48vh;
-  max-height: min(48dvh, calc(100dvh - var(--teclado) - 3rem));
+     alto. Es alto fijo y no máximo: al filtrar hasta una o dos coincidencias
+     la hoja se encogía hacia abajo y esas filas quedaban tapadas por el
+     teclado. Con el alto fijo el buscador y las primeras filas no se mueven. */
+  height: 48vh;
+  height: min(48dvh, calc(100dvh - var(--teclado) - 3rem));
   background-color: var(--bs-body-bg);
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
@@ -268,6 +270,8 @@
     position: absolute;
     inset: auto 0 auto 0;
     top: calc(100% + 0.25rem);
+    /* Aquí sí se ajusta a lo que haya: el alto fijo es solo de la hoja. */
+    height: auto;
     max-height: 20rem;
     border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.15);
     border-radius: 0.75rem;

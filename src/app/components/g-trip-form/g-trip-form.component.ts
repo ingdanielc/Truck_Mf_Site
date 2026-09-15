@@ -44,6 +44,7 @@ import {
   ComboOption,
   GSearchComboboxComponent,
 } from '../g-search-combobox/g-search-combobox.component';
+import { isUrbanTrip } from '../../utils/urban-trip';
 import { ownerComboOptions } from 'src/app/utils/owner-options';
 
 @Component({
@@ -152,10 +153,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
           [Validators.required, Validators.min(0), Validators.max(999999999)],
         ],
         balance: [0],
-        startDate: [
-          new Date().toISOString().split('T')[0],
-          [Validators.required],
-        ],
+        startDate: [this.toLocalDateInput(new Date()), [Validators.required]],
         ownerId: [null, [Validators.required]],
         vehicleId: [null, [Validators.required]],
         driverId: [null, [Validators.required]],
@@ -187,6 +185,14 @@ export class GTripFormComponent implements OnInit, OnDestroy {
 
   get isRoundTrip(): boolean {
     return this.tripForm.get('tripType')?.value === 'REDONDO';
+  }
+
+  /** Origen y destino son la misma ciudad. Ver `isUrbanTrip` en utils. */
+  get isUrbanTrip(): boolean {
+    return isUrbanTrip(
+      this.tripForm.get('originId')?.value,
+      this.tripForm.get('destinationId')?.value,
+    );
   }
 
   /**
@@ -508,7 +514,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     if (trip.startDate) {
       const dateObj = new Date(trip.startDate);
       if (!Number.isNaN(dateObj.getTime())) {
-        startDateStr = dateObj.toISOString().split('T')[0];
+        startDateStr = this.toLocalDateInput(dateObj);
       }
     }
 
@@ -565,7 +571,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     this.tripForm.reset({
       freight: 0,
       advancePayment: 0,
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: this.toLocalDateInput(new Date()),
       status: 'En Curso',
       driverId: null,
       loadType: '',
@@ -866,6 +872,15 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** `YYYY-MM-DD` en hora local, el formato del `input type="date"`. Con
+   *  `toISOString` salía el día UTC y de noche se corría al día siguiente. */
+  private toLocalDateInput(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   async onSubmit(): Promise<void> {
     if (this.tripForm.valid) {
       const { ownerId, balance, ...formData } = this.tripForm.getRawValue();
@@ -881,14 +896,20 @@ export class GTripFormComponent implements OnInit, OnDestroy {
         typeof tripData.startDate === 'string' &&
         tripData.startDate.length === 10
       ) {
+        // Se compara contra el día local del viaje, que es el que se ve en el
+        // campo: si no se tocó, se conserva la fecha original con su hora.
         if (
           this.trip?.startDate &&
-          typeof this.trip.startDate === 'string' &&
-          this.trip.startDate.startsWith(tripData.startDate)
+          this.toLocalDateInput(new Date(this.trip.startDate)) ===
+            tripData.startDate
         ) {
           tripData.startDate = this.trip.startDate;
         } else {
-          tripData.startDate = `${tripData.startDate}T${new Date().toISOString().split('T')[1]}`;
+          // El día elegido con la hora local de ahora, enviado como instante UTC.
+          const [year, month, day] = tripData.startDate.split('-').map(Number);
+          const now = new Date();
+          now.setFullYear(year, month - 1, day);
+          tripData.startDate = now.toISOString();
         }
       }
 

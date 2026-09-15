@@ -95,3 +95,50 @@
     font-weight: 600;
   }
 }
+
+/* Mismas tarjetas de documento que la ficha del vehículo. */
+.document-tile {
+  background-color: rgba(var(--bs-emphasis-color-rgb), 0.02);
+  border: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.05) !important;
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s ease,
+    background-color 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+  }
+}
+
+.validity-track {
+  height: 5px;
+  background-color: rgba(var(--bs-emphasis-color-rgb), 0.1);
+  overflow: hidden;
+
+  .validity-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+
+    &.state-vigente,
+    &.state-sin-vigencia {
+      background-color: #10b981;
+    }
+
+    &.state-por-vencer {
+      background-color: #f59e0b;
+    }
+
+    &.state-critico,
+    &.state-vencido {
+      background-color: #ef4444;
+    }
+  }
+}
+
+[data-bs-theme="dark"] {
+  .document-tile {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+}

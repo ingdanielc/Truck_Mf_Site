@@ -213,6 +213,19 @@
           </div>
         </div>
 
+        <!-- Aviso, no error: un viaje dentro de la misma ciudad es válido.
+             Se sube hasta los campos: entre el `mb-3` de la columna de arriba y
+             el hueco vertical de `g-3` quedaba a dos rem y parecía suelto. -->
+        @if (isUrbanTrip) {
+          <div
+            class="col-12 mb-3 text-body-secondary small"
+            style="margin-top: -0.5rem"
+          >
+            <i class="fa-solid fa-circle-info me-1"></i>
+            Viaje urbano: origen y destino son la misma ciudad.
+          </div>
+        }
+
         @if (isRoundTrip) {
           <div class="col-6 mb-3">
             <label for="returnDestination" class="form-label small fw-bold mb-2"

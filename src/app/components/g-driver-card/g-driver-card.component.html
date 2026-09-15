@@ -174,18 +174,31 @@
           </div>
         }
       </div>
-      @if (canEdit) {
+      <div class="d-flex gap-2 flex-shrink-0">
         <button
           type="button"
-          (click)="onEditClick($event)"
-          class="btn btn-outline-info btn-sm rounded-3 p-2 mt-0 shadow-none action-btn"
+          (click)="onManageDocumentsClick($event)"
+          class="btn btn-outline-primary btn-sm rounded-3 p-2 mt-0 shadow-none action-btn"
           style="width: 40px"
           onkeypress
-          aria-label="Editar conductor"
+          title="Documentos"
+          aria-label="Documentos del conductor"
         >
-          <i class="fa-solid fa-pencil"></i>
+          <i class="fa-solid fa-folder-open"></i>
         </button>
-      }
+        @if (canEdit) {
+          <button
+            type="button"
+            (click)="onEditClick($event)"
+            class="btn btn-outline-info btn-sm rounded-3 p-2 mt-0 shadow-none action-btn"
+            style="width: 40px"
+            onkeypress
+            aria-label="Editar conductor"
+          >
+            <i class="fa-solid fa-pencil"></i>
+          </button>
+        }
+      </div>
     </div>
   </div>
 </div>

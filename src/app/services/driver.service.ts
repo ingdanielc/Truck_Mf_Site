@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 import { shareReplay } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { ModelDriver } from '../models/driver-model';
-
 @Injectable({
   providedIn: 'root',
 })

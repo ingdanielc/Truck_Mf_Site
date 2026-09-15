@@ -1,5 +1,30 @@
 import { CATEGORY_COLOR_CLASSES } from '../../utils/category-config';
-import { separateAdjacentColors } from './g-expenses-report.component';
+import {
+  isMaintenanceExpense,
+  separateAdjacentColors,
+} from './g-expenses-report.component';
+
+describe('isMaintenanceExpense', () => {
+  const gasto = (extra: object) =>
+    ({ vehicleId: 1, categoryId: 1, amount: 1000, ...extra }) as any;
+
+  it('el tipo 4 es mantenimiento', () => {
+    expect(isMaintenanceExpense(gasto({ category: { expenseTypeId: 4 } })))
+      .toBeTrue();
+  });
+
+  it('los tipos de viaje no lo son, aunque no traigan viaje', () => {
+    expect(isMaintenanceExpense(gasto({ category: { expenseTypeId: 1 } })))
+      .toBeFalse();
+    expect(isMaintenanceExpense(gasto({ category: { expenseTypeId: 2 } })))
+      .toBeFalse();
+  });
+
+  it('sin tipo, decide si cuelga de un viaje', () => {
+    expect(isMaintenanceExpense(gasto({ tripId: 7 }))).toBeFalse();
+    expect(isMaintenanceExpense(gasto({}))).toBeTrue();
+  });
+});
 
 /** Ningún par contiguo comparte tono. */
 const sinRepetidosSeguidos = (colores: string[]): boolean =>

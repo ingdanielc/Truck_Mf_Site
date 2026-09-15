@@ -28,6 +28,7 @@ import { DriverService } from 'src/app/services/driver.service';
 import { VehicleService as ExpenseService } from 'src/app/services/expense.service';
 import { GTripFormComponent } from '../../components/g-trip-form/g-trip-form.component';
 import { GTripInfoCardComponent } from '../../components/g-trip-info-card/g-trip-info-card.component';
+import { isUrbanTrip } from 'src/app/utils/urban-trip';
 import {
   ComboOption,
   GSearchComboboxComponent,
@@ -1798,8 +1799,13 @@ export class TripsComponent implements OnInit, AfterViewInit, OnDestroy {
         fullVehicle?.numberOfAxles,
       );
 
-      // Sin ciudades no hay ruta posible: se evita la consulta
-      if (originName !== 'N/A' && destName !== 'N/A') {
+      // Sin ciudades no hay ruta posible: se evita la consulta. Un viaje
+      // urbano tampoco tiene trayecto que mostrar: todo saldría en cero.
+      if (
+        originName !== 'N/A' &&
+        destName !== 'N/A' &&
+        !isUrbanTrip(savedTrip.originId, savedTrip.destinationId)
+      ) {
         // El formulario se mantiene abierto mientras se calcula la ruta, para
         // no dejar la pantalla vacía; lo cierra `onRouteReady`
         this.isTripInfoOpen = true;

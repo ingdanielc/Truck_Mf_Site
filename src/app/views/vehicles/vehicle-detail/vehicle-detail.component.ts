@@ -34,6 +34,7 @@ import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component
 import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-trip-mini-card.component';
 import { GVehicleDocumentsComponent } from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
 import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
+import { shareDocumentFiles } from 'src/app/utils/document-share';
 import { PlatePipe } from '../../../pipes/plate.pipe';
 import { GConfirmSheetComponent } from '../../../components/g-confirm-sheet/g-confirm-sheet.component';
 import { excludeCancelledFilter } from 'src/app/utils/trip-status';
@@ -571,49 +572,10 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
     this.isDocumentsOpen = false;
   }
 
-  /**
-   * Comparte los documentos por WhatsApp. El adjunto es lo que vale, así que
-   * el mensaje se arma despues de bajar los archivos: cada documento aporta
-   * solo su nombre, y el enlace aparece unicamente para los que no se pudieron
-   * descargar, como respaldo. Web Share es la unica via del navegador para
-   * entregar ficheros, y pide HTTPS, soporte de archivos y que el
-   * almacenamiento responda con CORS.
-   */
+  /** Comparte los documentos por WhatsApp; ver `shareDocumentFiles`. */
   async shareDocumentsByWhatsApp(): Promise<void> {
-    if (this.documentRows.length === 0 || this.sharingDocuments) return;
+    if (this.sharingDocuments) return;
 
-    const attachments = await this.downloadDocumentFiles();
-    const files = Array.from(attachments.values());
-
-    if (files.length > 0 && navigator.canShare?.({ files })) {
-      try {
-        await navigator.share({
-          files,
-          text: this.buildDocumentsMessage(attachments),
-        });
-        return;
-      } catch (err: any) {
-        // Cerrar el selector de app no es un fallo: no se abre nada mas.
-        if (err?.name === 'AbortError') return;
-        console.error('Error sharing documents:', err);
-      }
-    }
-
-    // Sin adjuntos posibles, el enlace es lo unico que queda por compartir.
-    const text = this.buildDocumentsMessage(new Map());
-    window.open(
-      `https://wa.me/?text=${encodeURIComponent(text)}`,
-      '_blank',
-      'noopener',
-    );
-  }
-
-  /**
-   * Mensaje del chat: encabezado del vehiculo y el nombre de cada documento.
-   * Ni numero ni vigencia —son datos que viajan en el propio archivo— y el
-   * enlace solo para lo que no va adjunto.
-   */
-  private buildDocumentsMessage(attached: Map<DocumentRow, File>): string {
     const header = [
       `*Documentos ${Formatters.formatPlate(this.vehicle?.plate)}*`,
       [
@@ -623,72 +585,14 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
       ]
         .filter(Boolean)
         .join(' '),
-    ].filter(Boolean);
+    ];
 
-    const body = this.documentRows.map((row) => {
-      if (attached.has(row) || !row.document.fileUrl) {
-        return `• ${row.name}`;
-      }
-      return `• ${row.name}\n  ${row.document.fileUrl}`;
-    });
-
-    return [...header, '', ...body].join('\n');
-  }
-
-  /**
-   * Baja los archivos para adjuntarlos, sin perder de vista a que documento
-   * pertenece cada uno: el mensaje necesita saber cuales quedaron fuera para
-   * ponerles el enlace. Los que no tienen archivo o no se dejan descargar no
-   * entran en el mapa.
-   */
-  private async downloadDocumentFiles(): Promise<Map<DocumentRow, File>> {
-    const attached = new Map<DocumentRow, File>();
-    const withFile = this.documentRows.filter((row) => !!row.document.fileUrl);
-    if (withFile.length === 0 || !navigator.canShare) return attached;
-
-    this.sharingDocuments = true;
-    try {
-      const files = await Promise.all(
-        withFile.map((row) => this.fetchDocumentFile(row)),
-      );
-      files.forEach((file, index) => {
-        if (file) attached.set(withFile[index], file);
-      });
-      return attached;
-    } finally {
-      this.sharingDocuments = false;
-    }
-  }
-
-  private async fetchDocumentFile(row: DocumentRow): Promise<File | null> {
-    try {
-      const response = await fetch(row.document.fileUrl!);
-      if (!response.ok) return null;
-      const blob = await response.blob();
-      return new File([blob], this.buildFileName(row, blob.type), {
-        type: blob.type || 'application/octet-stream',
-      });
-    } catch (err) {
-      console.error('Error downloading document file:', err);
-      return null;
-    }
-  }
-
-  /** Nombre legible en el chat: placa, documento y extension del original. */
-  private buildFileName(row: DocumentRow, mimeType: string): string {
-    const path = (row.document.fileUrl ?? '').split(/[?#]/)[0];
-    const original = path.substring(path.lastIndexOf('/') + 1);
-    let extension = original.includes('.')
-      ? original.substring(original.lastIndexOf('.'))
-      : '';
-    if (!extension && mimeType.includes('pdf')) extension = '.pdf';
-
-    const base = [this.vehicle?.plate, row.name]
-      .filter(Boolean)
-      .join(' - ')
-      .replace(/[\\\/:*?"<>|]/g, '')
-      .trim();
-    return `${base || 'documento'}${extension}`;
+    await shareDocumentFiles(
+      this.documentRows,
+      header,
+      this.vehicle?.plate,
+      (preparing) => (this.sharingDocuments = preparing),
+    );
   }
 
   /**

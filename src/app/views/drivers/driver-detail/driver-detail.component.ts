@@ -18,6 +18,17 @@ import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-car
 import { Formatters } from '../../../utils/formatters';
 import { GDriverFormComponent } from 'src/app/components/g-driver-form/g-driver-form.component';
 import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
+import {
+  DocumentRow,
+  GVehicleDocumentsComponent,
+} from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
+import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
+import { ModelDocumentFile } from 'src/app/models/document-model';
+import {
+  getDocumentTypeName,
+  getDocumentValidity,
+} from 'src/app/utils/document-utils';
+import { shareDocumentFiles } from 'src/app/utils/document-share';
 import { excludeCancelledFilter } from 'src/app/utils/trip-status';
 import {
   Filter,
@@ -35,6 +46,8 @@ import {
     GCameraComponent,
     GDriverFormComponent,
     GPasswordCardComponent,
+    GVehicleDocumentsComponent,
+    GDocumentViewerComponent,
   ],
   templateUrl: './driver-detail.component.html',
   styleUrls: ['./driver-detail.component.scss'],
@@ -68,6 +81,15 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   isPasswordOffcanvasOpen: boolean = false;
   isSavingPassword: boolean = false;
   loggedInOwner: ModelOwner | null = null;
+
+  // Documentos
+  documentRows: DocumentRow[] = [];
+  isDocumentsOpen: boolean = false;
+  /** Descarga de los archivos previa a compartirlos por WhatsApp. */
+  sharingDocuments: boolean = false;
+  /** Documento abierto en el visor; null cuando no hay ninguno. */
+  viewerUrl: string | null = null;
+  viewerName: string = '';
 
   // Reference data for g-driver-form
   documentTypes: any[] = [];
@@ -113,6 +135,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
         this.loadDriver(this.driverId);
         this.loadVehicles(this.driverId);
         this.loadTripCount(this.driverId);
+        this.loadDocuments(this.driverId);
         this.loadReferenceData();
       }
     });
@@ -496,6 +519,92 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
         );
       },
     });
+  }
+
+  // ─── Documentos ──────────────────────────────────────────────────────────────
+
+  /** Gestionar documentos es de administrador y propietario; el resto solo lee. */
+  get canManageDocuments(): boolean {
+    return this.userRole === 'ADMINISTRADOR' || this.userRole === 'PROPIETARIO';
+  }
+
+  private loadDocuments(driverId: number): void {
+    const filter = new ModelFilterTable(
+      [new Filter('driverId', '=', driverId.toString())],
+      new Pagination(50, 0),
+      new Sort('expiryDate', true),
+    );
+    // Mismo endpoint que los documentos de vehículo; el filtro elige al conductor.
+    this.vehicleService.getVehicleDocuments(filter).subscribe({
+      next: (response: any) => {
+        // `isActive` se descarta aquí y no en el filtro: la comparación del
+        // backend castea a texto y un booleano no sobrevive ese casteo.
+        const actives: ModelDocumentFile[] = (
+          response?.data?.content || []
+        ).filter((item: ModelDocumentFile) => item.isActive !== false);
+        this.setDocuments(actives);
+      },
+      error: (err) => {
+        console.error('Error loading driver documents:', err);
+        this.documentRows = [];
+      },
+    });
+  }
+
+  /** El panel devuelve la lista ya vigente tras cada cambio; se reusa tal cual. */
+  setDocuments(documents: ModelDocumentFile[]): void {
+    this.documentRows = documents.map((item) => ({
+      document: item,
+      name: getDocumentTypeName(item),
+      validity: getDocumentValidity(item),
+    }));
+  }
+
+  openDocuments(): void {
+    this.isMenuOpen = false;
+    if (!this.canManageDocuments) return;
+    this.isDocumentsOpen = true;
+  }
+
+  closeDocuments(): void {
+    this.isDocumentsOpen = false;
+  }
+
+  /** Comparte los documentos por WhatsApp; ver `shareDocumentFiles`. */
+  async shareDocumentsByWhatsApp(): Promise<void> {
+    if (this.sharingDocuments) return;
+
+    const header = [
+      `*Documentos ${this.driver?.name ?? ''}*`,
+      this.formatDocNumber(this.driver?.documentNumber),
+    ];
+
+    await shareDocumentFiles(
+      this.documentRows,
+      header,
+      this.driver?.name,
+      (preparing) => (this.sharingDocuments = preparing),
+    );
+  }
+
+  /**
+   * El documento se muestra en el visor de la app. Abrirlo con `window.open`
+   * dejaba al usuario fuera y sin retorno cuando la PWA corre instalada.
+   */
+  openDocumentFile(row: DocumentRow, event: Event): void {
+    event.stopPropagation();
+    if (!row.document.fileUrl) return;
+    this.viewerUrl = row.document.fileUrl;
+    this.viewerName = row.name;
+  }
+
+  closeViewer(): void {
+    this.viewerUrl = null;
+    this.viewerName = '';
+  }
+
+  trackByDocument(index: number, row: DocumentRow): number {
+    return row.document.id ?? index;
   }
 
   // ─── Photo from hero card ─────────────────────────────────────────────────

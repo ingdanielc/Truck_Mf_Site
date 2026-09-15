@@ -14,6 +14,9 @@
     @if (plate) {
       Documentos de <span class="fw-bold">{{ plate | plate }}</span
       >.
+    } @else if (holderName) {
+      Documentos de <span class="fw-bold">{{ holderName }}</span
+      >.
     } @else {
       Cada cambio se guarda al momento.
     }
@@ -218,7 +221,10 @@
     } @else if (!showForm) {
       <div class="text-center py-4 text-secondary">
         <i class="fa-solid fa-folder-open fs-1 mb-3 opacity-25 d-block"></i>
-        <p class="mb-0 fw-bold small">Este vehículo no tiene documentos.</p>
+        <p class="mb-0 fw-bold small">
+          {{ holder === "DRIVER" ? "Este conductor" : "Este vehículo" }} no
+          tiene documentos.
+        </p>
       </div>
     }
 
@@ -356,7 +362,25 @@
                 type="date"
                 class="form-control rounded-3 py-2 px-3"
                 formControlName="expiryDate"
+                [min]="documentForm.get('issueDate')?.value || null"
+                [class.is-invalid]="
+                  expiryBeforeIssue ||
+                  ((expiryMissing || fileOrExpiryMissing) &&
+                    documentForm.get('expiryDate')?.touched)
+                "
               />
+              @if (expiryBeforeIssue) {
+                <div class="text-danger small mt-1">
+                  Debe ser igual o posterior a la fecha de expedición.
+                </div>
+              } @else if (
+                (expiryMissing || fileOrExpiryMissing) &&
+                documentForm.get("expiryDate")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
             </div>
 
             <!-- Archivo (opcional) -->
@@ -373,6 +397,7 @@
               @if (selectedFileName) {
                 <div
                   class="file-chip field-height border rounded-3 px-3 d-flex align-items-center gap-3"
+                  [class.is-invalid]="!!fileError"
                 >
                   <i class="fa-solid fa-file-lines fs-4 text-primary"></i>
                   <div class="flex-grow-1 overflow-hidden">
@@ -430,6 +455,11 @@
                 <button
                   type="button"
                   class="file-dropzone field-height btn w-100 rounded-3 px-3 d-flex align-items-center text-start gap-3"
+                  [class.is-invalid]="
+                    !!fileError ||
+                    (fileOrExpiryMissing &&
+                      documentForm.get('expiryDate')?.touched)
+                  "
                   (click)="triggerFileInput(documentInput)"
                 >
                   <i class="fa-solid fa-cloud-arrow-up fs-4 text-primary"></i>
@@ -446,17 +476,17 @@
                   </span>
                 </button>
               }
+              @if (fileError) {
+                <div class="text-danger small mt-1">{{ fileError }}</div>
+              } @else if (
+                fileOrExpiryMissing && documentForm.get("expiryDate")?.touched
+              ) {
+                <div class="text-danger small mt-1">
+                  Este campo es obligatorio para continuar
+                </div>
+              }
             </div>
           </div>
-
-          @if (formError) {
-            <div
-              class="alert alert-danger d-flex align-items-start gap-2 rounded-3 mt-3 mb-0 py-2 px-3 small"
-            >
-              <i class="fa-solid fa-triangle-exclamation mt-1"></i>
-              <span>{{ formError }}</span>
-            </div>
-          }
 
           <div class="d-flex flex-column-reverse flex-sm-row gap-2 mt-3">
             @if (rows.length > 0 || renewingFrom) {

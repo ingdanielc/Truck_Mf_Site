@@ -155,6 +155,7 @@
                 (changePassword)="togglePasswordOffcanvas($event)"
                 (toggleStatus)="onToggleDriverStatus($event)"
                 (viewDetail)="onViewDriver($event)"
+                (manageDocuments)="openDocuments($event)"
               ></app-g-driver-card>
             </div>
           }
@@ -254,6 +255,7 @@
                               (changePassword)="togglePasswordOffcanvas($event)"
                               (toggleStatus)="onToggleDriverStatus($event)"
                               (viewDetail)="onViewDriver($event)"
+                              (manageDocuments)="openDocuments($event)"
                             ></app-g-driver-card>
                           </div>
                         }
@@ -566,6 +568,31 @@
         (cancel)="togglePasswordOffcanvas()"
       ></g-password-card>
     </div>
+  </div>
+
+  <!-- Documentos -->
+  @if (documentsDriver) {
+    <div
+      class="offcanvas-backdrop transition-all d-none d-md-block"
+      (click)="closeDocuments()"
+      onkeypress
+    ></div>
+  }
+
+  <div
+    class="custom-offcanvas shadow-lg border-start transition-all"
+    [class.open]="!!documentsDriver"
+  >
+    @if (documentsDriver && documentsDriver.id) {
+      <g-vehicle-documents
+        [driverId]="documentsDriver.id"
+        [holderName]="documentsDriver.name || ''"
+        [driver]="documentsDriver"
+        [canEdit]="userRole !== 'CONDUCTOR'"
+        (close)="closeDocuments()"
+        class="d-flex flex-column h-100"
+      ></g-vehicle-documents>
+    }
   </div>
 
   <!-- Backdrop -->

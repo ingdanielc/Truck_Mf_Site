@@ -9,6 +9,7 @@ import {
   Sort,
 } from '../../models/model-filter-table';
 import { ModelExpense } from '../../models/expense-model';
+import { MAINTENANCE_EXPENSE_TYPE } from '../../models/dashboard-report-model';
 import { Formatters } from '../../utils/formatters';
 import {
   getCategoryConfigByName,
@@ -27,6 +28,32 @@ export interface ExpenseSlice {
   textClass: string;
   /** `bg-warning` — el segmento de la barra. */
   bgClass: string;
+}
+
+/** Un bloque del reporte: los gastos de viaje o los de mantenimiento. */
+export interface ExpenseGroup {
+  key: 'viaje' | 'mantenimiento';
+  label: string;
+  icon: string;
+  total: number;
+  count: number;
+  /** Porcentaje del bloque sobre el gasto del periodo. */
+  share: number;
+  /** Categorías del bloque; su `share` es sobre el total del bloque. */
+  slices: ExpenseSlice[];
+}
+
+/**
+ * ¿Es un gasto de mantenimiento?
+ *
+ * Lo dice el tipo de su categoría —el 4, el mismo que usa el tablero—. Si la
+ * respuesta no trae el tipo, queda la otra señal: el mantenimiento no cuelga
+ * de ningún viaje.
+ */
+export function isMaintenanceExpense(expense: ModelExpense): boolean {
+  const type = expense.category?.expenseTypeId;
+  if (type != null) return String(type) === MAINTENANCE_EXPENSE_TYPE;
+  return !expense.tripId;
 }
 
 /**
@@ -111,12 +138,14 @@ export class GExpensesReportComponent implements OnChanges {
   public loading = false;
   public loadError = false;
 
-  public slices: ExpenseSlice[] = [];
+  /** Viaje primero y mantenimiento después; un bloque sin gasto no aparece. */
+  public groups: ExpenseGroup[] = [];
   public total = 0;
   public count = 0;
 
   /**
-   * Cuántas categorías se nombran antes de agrupar el resto en "Otros".
+   * Cuántas categorías se nombran antes de agrupar el resto en "Otros". Cuenta
+   * por bloque, porque cada bloque pinta su propia barra.
    *
    * No es un tope estético: la paleta de categorías tiene siete tonos, y a
    * partir de ahí dos porciones distintas se pintarían del mismo color. Las
@@ -233,16 +262,46 @@ export class GExpensesReportComponent implements OnChanges {
       return fecha >= desde && fecha <= hasta;
     };
 
+    const enPeriodo = (expenses ?? []).filter(dentro);
+    const total = enPeriodo.reduce((a, e) => a + (e.amount || 0), 0);
+
+    this.total = total;
+    this.count = enPeriodo.length;
+
+    this.groups = [
+      this.buildGroup(
+        'viaje',
+        'Viaje',
+        'fa-solid fa-route',
+        enPeriodo.filter((e) => !isMaintenanceExpense(e)),
+        total,
+      ),
+      this.buildGroup(
+        'mantenimiento',
+        'Mantenimiento',
+        'fa-solid fa-wrench',
+        enPeriodo.filter((e) => isMaintenanceExpense(e)),
+        total,
+      ),
+    ].filter((group) => group.total > 0);
+  }
+
+  /** Suma por categoría los gastos de un bloque y reparte su total. */
+  private buildGroup(
+    key: ExpenseGroup['key'],
+    label: string,
+    icon: string,
+    expenses: ModelExpense[],
+    periodTotal: number,
+  ): ExpenseGroup {
     const porCategoria = new Map<string, number>();
     let total = 0;
-    let count = 0;
 
-    (expenses ?? []).filter(dentro).forEach((e) => {
+    expenses.forEach((e) => {
       const nombre = (e.category?.name ?? e.categoryName ?? 'Otros').trim();
       const monto = e.amount || 0;
       porCategoria.set(nombre, (porCategoria.get(nombre) ?? 0) + monto);
       total += monto;
-      count += 1;
     });
 
     const ordenadas = [...porCategoria.entries()]
@@ -263,9 +322,6 @@ export class GExpensesReportComponent implements OnChanges {
       });
     }
 
-    this.total = total;
-    this.count = count;
-
     const configs: CategoryConfig[] = filas.map((c) =>
       getCategoryConfigByName(c.name),
     );
@@ -276,7 +332,7 @@ export class GExpensesReportComponent implements OnChanges {
       configs.map((cfg) => cfg.colorClass),
     );
 
-    this.slices = filas.map((c, i) => {
+    const slices = filas.map((c, i) => {
       const [textClass, bgClass] = colores[i].split(' ');
       return {
         name: Formatters.titleCase(c.name),
@@ -287,6 +343,16 @@ export class GExpensesReportComponent implements OnChanges {
         bgClass,
       };
     });
+
+    return {
+      key,
+      label,
+      icon,
+      total,
+      count: expenses.length,
+      share: periodTotal > 0 ? (total / periodTotal) * 100 : 0,
+      slices,
+    };
   }
 
   /**

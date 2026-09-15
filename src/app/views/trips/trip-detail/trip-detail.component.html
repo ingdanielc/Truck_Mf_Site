@@ -46,7 +46,8 @@
     </div>
     <!-- Progress Section -->
     <div
-      class="card border-0 rounded-4 shadow-sm bg-body-tertiary mb-4 overflow-hidden hover-scale cursor-pointer"
+      class="card border-0 rounded-4 shadow-sm bg-body-tertiary mb-4 overflow-hidden hover-scale"
+      [class.cursor-pointer]="!isUrbanTrip"
       (click)="openTripInfo()"
       onkeypress
     >
@@ -285,6 +286,20 @@
                 <p class="text-secondary small mb-0">Conductor</p>
                 <h6 class="fw-bold mb-0">
                   {{ trip.driver?.name || "No asignado" }}
+                </h6>
+              </div>
+            </div>
+            <div class="d-flex gap-3 mb-4">
+              <div
+                class="icon-box bg-secondary bg-opacity-10 rounded-3 p-3 flex-shrink-0 d-flex align-items-center justify-content-center"
+                style="width: 50px; height: 50px"
+              >
+                <i class="fa-solid fa-calendar-day text-secondary"></i>
+              </div>
+              <div>
+                <p class="text-secondary small mb-0">Fecha de Inicio</p>
+                <h6 class="fw-bold mb-0">
+                  {{ (trip.startDate | date: "dd/MM/yyyy") || "N/A" }}
                 </h6>
               </div>
             </div>

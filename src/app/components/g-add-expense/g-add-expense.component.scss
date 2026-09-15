@@ -119,10 +119,19 @@ input[type="number"] {
 @media (max-width: 767.98px) {
   input[type="date"] {
     text-align: left !important;
+    /* Tampoco lo centra en vertical: el grupo estira el campo a la altura del
+       icono y Safari deja la fecha pegada arriba, con aire solo por debajo.
+       Sin la apariencia nativa el campo atiende a `flex` y la fecha vuelve al
+       centro. Tocarlo sigue abriendo el selector del sistema. */
+    -webkit-appearance: none;
+    appearance: none;
+    display: flex;
+    align-items: center;
 
     &::-webkit-date-and-time-value {
       text-align: left !important;
       min-height: 1.5em;
+      margin: 0;
     }
   }
 }

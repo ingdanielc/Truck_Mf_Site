@@ -29,6 +29,42 @@
   color: var(--bs-secondary-color);
 }
 
+/* ---- Encabezado de bloque (viaje / mantenimiento) -----------------------
+   El nombre a la izquierda y, a la derecha, su parte del total y su monto:
+   lo que cuesta operar frente a lo que cuesta mantener, de un vistazo. */
+.group-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+
+.group-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.group-share {
+  font-size: 0.85rem;
+  color: var(--bs-secondary-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.group-amount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* ---- La barra de proporciones -------------------------------------------
    Una sola línea con el gasto entero, partida por categoría. El hueco de 2 px
    entre segmentos no es decorativo: la paleta de categorías tiene siete tonos

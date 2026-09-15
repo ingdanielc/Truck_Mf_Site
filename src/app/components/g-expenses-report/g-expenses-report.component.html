@@ -30,49 +30,69 @@
       </span>
     </div>
 
-    <!-- La barra de proporciones, al modo del almacenamiento de iOS: el gasto
-         entero en una sola linea, partida por categoria.
+    <!-- Un bloque por naturaleza del gasto: lo que cuesta operar los viajes y
+         lo que cuesta mantener el camion. Cada uno con su encabezado —monto y
+         parte del total—, su barra y su lista; un bloque sin gastos no sale.
 
-         Responde de un vistazo lo que la lista responde en detalle —quien se
-         lleva la mayor parte—, y por eso no hay ademas un circular: seria la
-         misma informacion dos veces.
+         La barra, al modo del almacenamiento de iOS, parte el bloque por
+         categoria y responde de un vistazo quien se lleva la mayor parte; la
+         lista da el dato. Los porcentajes de la lista son sobre el bloque, igual
+         que la barra.
 
          Dos categorias contiguas nunca comparten tono: los 2 px de separacion
-         no bastaban —a esa escala dos tramos del mismo color se siguen leyendo
-         como uno—, asi que el color se desempata al armar las filas. Ver
+         no bastaban, asi que el color se desempata al armar las filas. Ver
          `separateAdjacentColors`. -->
-    <div
-      class="storage-bar mb-2"
-      role="img"
-      [attr.aria-label]="
-        'Reparto del gasto del periodo entre ' + slices.length + ' categorías'
-      "
-    >
-      @for (s of slices; track s.name) {
-        <div
-          class="storage-seg"
-          [ngClass]="s.bgClass"
-          [style.width]="segmentWidth(s)"
-          [title]="s.name + ' · ' + (s.share | number: '1.1-1') + '%'"
-        ></div>
-      }
-    </div>
-
-    <!-- La lista. Lleva el nombre, la cifra y el porcentaje en texto: la barra
-         da la proporcion y esta da el dato, que es lo que se apunta o se
-         discute con el conductor. -->
-    <ul class="category-list list-unstyled mb-0">
-      @for (s of slices; track s.name) {
-        <li class="category-row">
-          <span class="category-dot" [ngClass]="s.bgClass"></span>
-          <i class="category-icon" [ngClass]="[s.icon, s.textClass]"></i>
-          <span class="category-name">{{ s.name }}</span>
-          <span class="category-share"> {{ s.share | number: "1.0-0" }}% </span>
-          <span class="category-amount">
-            {{ s.amount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+    @for (group of groups; track group.key; let last = $last) {
+      <section class="expense-group" [class.mb-4]="!last">
+        <div class="group-header mb-2">
+          <span class="group-label">
+            <i class="me-2" [ngClass]="group.icon"></i>{{ group.label }}
           </span>
-        </li>
-      }
-    </ul>
+          <span class="group-share">
+            {{ group.share | number: "1.0-0" }}%
+          </span>
+          <span class="group-amount">
+            {{ group.total | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+          </span>
+        </div>
+
+        <div
+          class="storage-bar mb-2"
+          role="img"
+          [attr.aria-label]="
+            'Reparto del gasto de ' +
+            group.label.toLowerCase() +
+            ' entre ' +
+            group.slices.length +
+            ' categorías'
+          "
+        >
+          @for (s of group.slices; track s.name) {
+            <div
+              class="storage-seg"
+              [ngClass]="s.bgClass"
+              [style.width]="segmentWidth(s)"
+              [title]="s.name + ' · ' + (s.share | number: '1.1-1') + '%'"
+            ></div>
+          }
+        </div>
+
+        <ul class="category-list list-unstyled mb-0">
+          @for (s of group.slices; track s.name) {
+            <li class="category-row">
+              <span class="category-dot" [ngClass]="s.bgClass"></span>
+              <i class="category-icon" [ngClass]="[s.icon, s.textClass]"></i>
+              <span class="category-name">{{ s.name }}</span>
+              <span class="category-share">
+                {{ s.share | number: "1.0-0" }}%
+              </span>
+              <span class="category-amount">
+                {{ s.amount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+              </span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
   }
 </div>

@@ -18,6 +18,8 @@ export class GDriverCardComponent {
   @Output() changePassword = new EventEmitter<ModelDriver>();
   @Output() toggleStatus = new EventEmitter<ModelDriver>();
   @Output() viewDetail = new EventEmitter<ModelDriver>();
+  /** Abre el offcanvas de documentos, que vive en la vista padre. */
+  @Output() manageDocuments = new EventEmitter<ModelDriver>();
 
   isMenuOpen = false;
 
@@ -65,6 +67,12 @@ export class GDriverCardComponent {
     event?.stopPropagation();
     this.isMenuOpen = false;
     this.toggleStatus.emit(this.driver);
+  }
+
+  onManageDocumentsClick(event: Event): void {
+    event.stopPropagation();
+    this.isMenuOpen = false;
+    this.manageDocuments.emit(this.driver);
   }
 
   onViewProfile(): void {

@@ -2,8 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { GVehicleDocumentsComponent } from './g-vehicle-documents.component';
 import { CommonService } from 'src/app/services/common.service';
-import { VehicleService } from 'src/app/services/vehicle.service';
-import { ToastService } from 'src/app/services/toast.service';
+import { VehicleService } from 'src/app/services/vehicle.service';import { ToastService } from 'src/app/services/toast.service';
 
 /* ==========================================================================
    La zona de carga de documentos iba en columna y ocupaba mucho mas que la

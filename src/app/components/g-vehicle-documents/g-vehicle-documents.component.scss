@@ -134,3 +134,13 @@
     border-color: rgba(255, 255, 255, 0.1) !important;
   }
 }
+
+/* Falta archivo o vencimiento, o el archivo elegido se rechazó: la zona —o la
+   ficha del archivo— se marca como un campo con error. Va después de la regla
+   del tema oscuro para ganarle en los dos temas. */
+.file-dropzone.is-invalid,
+.file-chip.is-invalid,
+[data-bs-theme="dark"] .file-dropzone.is-invalid,
+[data-bs-theme="dark"] .file-chip.is-invalid {
+  border-color: var(--bs-form-invalid-border-color, #dc3545) !important;
+}
