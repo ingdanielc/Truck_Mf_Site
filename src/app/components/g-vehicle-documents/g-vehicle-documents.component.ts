@@ -6,36 +6,43 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, forkJoin, of, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import {
   DocumentHolder,
   ModelDocumentFile,
   ModelDocumentFileType,
 } from 'src/app/models/document-model';
-import {
-  Filter,
-  ModelFilterTable,
-  Pagination,
-  Sort,
-} from 'src/app/models/model-filter-table';
 import { CommonService } from 'src/app/services/common.service';
-import { VehicleService } from 'src/app/services/vehicle.service';import { ToastService } from 'src/app/services/toast.service';
+import { VehicleService } from 'src/app/services/vehicle.service';
+import { ToastService } from 'src/app/services/toast.service';
 import {
   DocumentValidity,
   getDocumentTypeName,
   getDocumentValidity,
   needsRenewal,
 } from 'src/app/utils/document-utils';
+import {
+  DocumentHolderIds,
+  loadHolderDocuments,
+} from 'src/app/utils/holder-documents';
 import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
 import { PlatePipe } from '../../pipes/plate.pipe';
 import { ModelDriver } from 'src/app/models/driver-model';
+import { ModelOwner } from 'src/app/models/owner-model';
 
 /** Sin tildes y en minúsculas: "Cédula" y "cedula" han de ser lo mismo. */
 const normalizar = (texto: string): string =>
-  texto
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
+  texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
+/** Los ids de portador que trae un documento, sin los vacíos. */
+function holderIdsOf(document: ModelDocumentFile): DocumentHolderIds {
+  const ids: DocumentHolderIds = {};
+  if (document.vehicleId != null) ids.vehicleId = document.vehicleId;
+  if (document.driverId != null) ids.driverId = document.driverId;
+  if (document.ownerId != null) ids.ownerId = document.ownerId;
+  return ids;
+}
 
 /** Lo que acepta `/common/upload-document`. */
 const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
@@ -50,10 +57,16 @@ export interface DocumentRow {
 }
 
 /**
- * Documentos de un vehículo o de un conductor que ya existe. A diferencia del
- * alta, aquí cada cambio se guarda contra el servidor en el momento: el
- * portador ya tiene id, así que no hay nada que diferir. Con `driverId` los
- * documentos son del conductor; sin él, del vehículo de `vehicleId`.
+ * Documentos de un vehículo, de un conductor o de un propietario que ya
+ * existe. A diferencia del alta, aquí cada cambio se guarda contra el servidor
+ * en el momento: el portador ya tiene id, así que no hay nada que diferir.
+ *
+ * **Una persona, dos portadores.** El propietario que también conduce tiene
+ * documentos como propietario y como conductor, y se tienen que ver juntos
+ * desde las dos fichas. Con `driverId` y `ownerId` a la vez se muestran los de
+ * los dos; `mainHolder` dice desde cuál se está mirando. Cada documento se
+ * sigue guardando con un solo portador: el que ya tenía, o el del catálogo del
+ * tipo elegido si es nuevo.
  *
  * Al guardar un documento de un tipo que ya tenía uno vigente el backend
  * desactiva el anterior en lugar de perderlo, que es como se renueva un SOAT o
@@ -73,14 +86,20 @@ export interface DocumentRow {
 })
 export class GVehicleDocumentsComponent implements OnInit {
   @Input() vehicleId: number | null = null;
-  /** Con valor, los documentos son de este conductor y no de un vehículo. */
+  /** Documentos de este conductor. */
   @Input() driverId: number | null = null;
+  /** Documentos de este propietario. */
+  @Input() ownerId: number | null = null;
+  /** Con conductor y propietario a la vez, desde cuál de los dos se mira. */
+  @Input() mainHolder: 'DRIVER' | 'OWNER' | null = null;
   /** Placa del vehículo, solo para el encabezado. */
   @Input() plate: string = '';
-  /** Nombre del conductor, solo para el encabezado. */
+  /** Nombre de la persona, solo para el encabezado. */
   @Input() holderName: string = '';
   /** Conductor portador: de aquí salen los datos que se precargan. */
   @Input() driver: ModelDriver | null = null;
+  /** Propietario portador: también precarga, si no hay conductor. */
+  @Input() owner: ModelOwner | null = null;
   /** Un conductor consulta los documentos pero no los modifica. */
   @Input() canEdit: boolean = true;
 
@@ -128,10 +147,8 @@ export class GVehicleDocumentsComponent implements OnInit {
   /** Un documento no se expide después de hoy. */
   readonly maxIssueDate = new Date().toISOString().slice(0, 10);
 
-  /** A quién pertenecen los documentos: decide catálogo, filtro y servicio. */
-  get holder(): DocumentHolder {
-    return this.driverId != null ? 'DRIVER' : 'VEHICLE';
-  }
+  /** Lo último que se precargó, para reconocerlo al cambiar de tipo. */
+  private prefilled = { documentNumber: '', expiryDate: '' };
 
   constructor(
     private readonly fb: FormBuilder,
@@ -151,19 +168,103 @@ export class GVehicleDocumentsComponent implements OnInit {
 
     this.documentForm
       .get('documentFileTypeId')
-      ?.valueChanges.subscribe(() => this.prefillFromDriver());
+      ?.valueChanges.subscribe(() => this.prefillFromPerson());
 
     this.loadDocumentTypes();
     this.loadDocuments();
   }
 
+  /* ======================================================================
+     Portadores
+     ====================================================================== */
+
+  /** Desde quién se miran los documentos: decide textos y portador por omisión. */
+  get holder(): DocumentHolder {
+    if (this.driverId == null && this.ownerId == null) return 'VEHICLE';
+    if (this.mainHolder === 'OWNER' && this.ownerId != null) return 'OWNER';
+    if (this.mainHolder === 'DRIVER' && this.driverId != null) return 'DRIVER';
+    return this.driverId != null ? 'DRIVER' : 'OWNER';
+  }
+
+  /** Todos los portadores que se muestran juntos, el principal primero. */
+  private get holders(): DocumentHolder[] {
+    if (this.holder === 'VEHICLE') return ['VEHICLE'];
+    const holders: DocumentHolder[] = [this.holder];
+    if (this.holder !== 'DRIVER' && this.driverId != null)
+      holders.push('DRIVER');
+    if (this.holder !== 'OWNER' && this.ownerId != null) holders.push('OWNER');
+    return holders;
+  }
+
+  private get holderIds(): DocumentHolderIds {
+    return this.holder === 'VEHICLE'
+      ? { vehicleId: this.vehicleId }
+      : { driverId: this.driverId, ownerId: this.ownerId };
+  }
+
+  /** El sujeto del estado vacío: "Este conductor no tiene documentos." */
+  get holderLabel(): string {
+    switch (this.holder) {
+      case 'DRIVER':
+        return 'Este conductor';
+      case 'OWNER':
+        return 'Este propietario';
+      default:
+        return 'Este vehículo';
+    }
+  }
+
+  /* ======================================================================
+     Carga
+     ====================================================================== */
+
+  /**
+   * El catálogo de cada portador, junto. Un tipo que está en los dos —la
+   * cédula, por ejemplo— se ofrece una sola vez: el del portador principal.
+   * Cada tipo guarda de qué catálogo vino, que es lo que decide con qué
+   * portador se guarda un documento nuevo.
+   */
   private loadDocumentTypes(): void {
     this.loadingTypes = true;
-    this.commonService.getDocumentFileTypes(this.holder).subscribe({
-      next: (response: any) => {
-        this.documentTypes = (response?.data || []).filter(
-          (type: ModelDocumentFileType) => type.isActive !== false,
-        );
+    const holders = this.holders;
+    const varios = holders.length > 1;
+
+    forkJoin(
+      holders.map((holder) =>
+        this.commonService.getDocumentFileTypes(holder).pipe(
+          map((response: any) =>
+            ((response?.data || []) as ModelDocumentFileType[]).map((type) => ({
+              ...type,
+              appliesTo: type.appliesTo ?? holder,
+            })),
+          ),
+          // Con dos catálogos, que falle uno no deja sin el otro.
+          catchError((error) => {
+            if (!varios) return throwError(() => error);
+            console.error(`Error loading ${holder} document types:`, error);
+            return of([] as ModelDocumentFileType[]);
+          }),
+        ),
+      ),
+    ).subscribe({
+      next: (catalogos) => {
+        const vistos = new Set<string>();
+        this.documentTypes = catalogos
+          .flat()
+          .filter((type) => type.isActive !== false)
+          .filter((type) => {
+            const clave = normalizar(type.name || '');
+            if (vistos.has(clave)) return false;
+            vistos.add(clave);
+            return true;
+          })
+          // Alfabético, y después de quitar repetidos: el orden de llegada es
+          // el que decide qué catálogo gana, así que no se toca antes.
+          .sort((a, b) =>
+            (a.name || '').localeCompare(b.name || '', 'es', {
+              sensitivity: 'base',
+            }),
+          );
         this.loadingTypes = false;
       },
       error: (error: any) => {
@@ -176,26 +277,8 @@ export class GVehicleDocumentsComponent implements OnInit {
 
   private loadDocuments(): void {
     this.loading = true;
-    const isDriver = this.holder === 'DRIVER';
-    const filter = new ModelFilterTable(
-      [
-        isDriver
-          ? new Filter('driverId', '=', String(this.driverId))
-          : new Filter('vehicleId', '=', String(this.vehicleId)),
-      ],
-      new Pagination(50, 0),
-      new Sort('expiryDate', true),
-    );
-    // Los documentos de vehículo y conductor comparten endpoints: el portador
-    // lo dice el filtro y, al guardar, el id que lleva cada documento.
-    this.vehicleService.getVehicleDocuments(filter).subscribe({
-      next: (response: any) => {
-        // `isActive` se descarta aquí y no en el filtro: la comparación del
-        // backend castea a texto y un booleano no sobrevive ese casteo.
-        const actives: ModelDocumentFile[] = (
-          response?.data?.content || []
-        ).filter((item: ModelDocumentFile) => item.isActive !== false);
-
+    loadHolderDocuments(this.vehicleService, this.holderIds).subscribe({
+      next: (actives) => {
         this.rows = actives.map((item) => ({
           document: item,
           name: getDocumentTypeName(item),
@@ -206,7 +289,7 @@ export class GVehicleDocumentsComponent implements OnInit {
         this.changed.emit(actives);
       },
       error: (err) => {
-        console.error('Error loading vehicle documents:', err);
+        console.error('Error loading documents:', err);
         this.rows = [];
         this.loading = false;
         this.showForm = this.canEdit;
@@ -214,9 +297,19 @@ export class GVehicleDocumentsComponent implements OnInit {
     });
   }
 
+  /* ======================================================================
+     Estado del formulario
+     ====================================================================== */
+
   get selectedType(): ModelDocumentFileType | null {
     const typeId = Number(this.documentForm?.get('documentFileTypeId')?.value);
     return this.documentTypes.find((type) => type.id === typeId) || null;
+  }
+
+  /** El documento que se edita, con su fila. */
+  private get editingRow(): DocumentRow | null {
+    if (this.editingId === null) return null;
+    return this.rows.find((row) => row.document.id === this.editingId) || null;
   }
 
   /** El backend exige la fecha cuando el tipo la declara obligatoria. */
@@ -229,16 +322,9 @@ export class GVehicleDocumentsComponent implements OnInit {
    * se lee que la exige, así que basta con marcar el campo.
    */
   get expiryMissing(): boolean {
-    return (
-      this.expiryRequired && !this.documentForm?.getRawValue().expiryDate
-    );
+    return this.expiryRequired && !this.documentForm?.getRawValue().expiryDate;
   }
 
-  /**
-   * Vencimiento anterior a la expedición. Se avisa en el propio campo mientras
-   * se llena, no en el aviso rojo del formulario. Las fechas van como
-   * `yyyy-MM-dd`, así que compararlas como texto es compararlas como fecha.
-   */
   /**
    * Sin archivo y sin vencimiento el documento no registra nada. Bajo el tipo
    * ya se lee que exige uno de los dos; al intentar guardar se marcan ambos
@@ -252,6 +338,11 @@ export class GVehicleDocumentsComponent implements OnInit {
     );
   }
 
+  /**
+   * Vencimiento anterior a la expedición. Se avisa en el propio campo mientras
+   * se llena, no en el aviso rojo del formulario. Las fechas van como
+   * `yyyy-MM-dd`, así que compararlas como texto es compararlas como fecha.
+   */
   get expiryBeforeIssue(): boolean {
     const value = this.documentForm?.getRawValue();
     return (
@@ -272,7 +363,7 @@ export class GVehicleDocumentsComponent implements OnInit {
   /**
    * Guardar se habilita en cuanto hay tipo. Las demás reglas no lo bloquean:
    * con el botón apagado no había forma de saber qué faltaba, así que se
-   * revisan al pulsarlo y el motivo sale en el aviso del formulario.
+   * revisan al pulsarlo y el motivo sale en el campo que falla.
    */
   get canSubmit(): boolean {
     if (!this.documentForm) return false;
@@ -282,14 +373,20 @@ export class GVehicleDocumentsComponent implements OnInit {
   /**
    * Documento vigente del tipo elegido, distinto del que se edita. Guardar
    * sobre él no lo borra: lo manda al histórico. Se avisa antes.
+   *
+   * Se reconoce también por el nombre: la cédula del propietario y la del
+   * conductor son tipos distintos en cada catálogo, pero para quien es las dos
+   * cosas son el mismo papel.
    */
   get typeBeingRenewed(): DocumentRow | null {
     const type = this.selectedType;
     if (!type) return null;
+    const clave = normalizar(type.name || '');
     return (
       this.rows.find(
         (row) =>
-          row.document.documentFileTypeId === type.id &&
+          (row.document.documentFileTypeId === type.id ||
+            normalizar(row.name) === clave) &&
           row.document.id !== this.editingId,
       ) || null
     );
@@ -315,6 +412,21 @@ export class GVehicleDocumentsComponent implements OnInit {
     return this.editingId ? 'Guardar cambios' : 'Guardar documento';
   }
 
+  /**
+   * El tipo que se muestra en el selector para un documento guardado. Si su
+   * tipo es el del otro catálogo —y por eso no está en la lista, que no repite
+   * nombres— se elige el de igual nombre, para que el selector no quede vacío.
+   */
+  private typeIdForForm(row: DocumentRow): number {
+    const propio = row.document.documentFileTypeId;
+    if (this.documentTypes.some((type) => type.id === propio)) return propio;
+    const clave = normalizar(row.name);
+    return (
+      this.documentTypes.find((type) => normalizar(type.name || '') === clave)
+        ?.id ?? propio
+    );
+  }
+
   openForm(): void {
     this.editingId = null;
     this.renewingFrom = null;
@@ -335,7 +447,7 @@ export class GVehicleDocumentsComponent implements OnInit {
       ? this.fileNameOf(this.currentFileUrl)
       : '';
     this.documentForm.reset({
-      documentFileTypeId: row.document.documentFileTypeId,
+      documentFileTypeId: this.typeIdForForm(row),
       documentNumber: row.document.documentNumber || '',
       issuer: row.document.issuer || '',
       issueDate: row.document.issueDate || '',
@@ -359,7 +471,7 @@ export class GVehicleDocumentsComponent implements OnInit {
     this.currentFileUrl = null;
     this.currentObservations = null;
     this.documentForm.reset({
-      documentFileTypeId: row.document.documentFileTypeId,
+      documentFileTypeId: this.typeIdForForm(row),
       documentNumber: row.document.documentNumber || '',
       issuer: row.document.issuer || '',
       issueDate: '',
@@ -395,32 +507,39 @@ export class GVehicleDocumentsComponent implements OnInit {
     this.prefilled = { documentNumber: '', expiryDate: '' };
   }
 
-  /** Lo último que se precargó, para reconocerlo al cambiar de tipo. */
-  private prefilled = { documentNumber: '', expiryDate: '' };
+  /* ======================================================================
+     Precarga
+     ====================================================================== */
 
   /**
-   * Al elegir el tipo de un documento nuevo del conductor se precarga lo que
-   * ya se sabe de él: la cédula lleva su número de identificación, y la
+   * Al elegir el tipo de un documento nuevo de una persona se precarga lo que
+   * ya se sabe de ella: la cédula lleva su número de identificación, y la
    * licencia ese mismo número —en Colombia es la identificación— y el
-   * vencimiento registrado en el conductor. Solo se escribe sobre un campo
-   * vacío o sobre lo que se precargó antes: lo que el usuario escribió no se
-   * pisa. Editar y renovar ya traen sus propios datos.
+   * vencimiento registrado. Los datos salen del conductor y, si no hay, del
+   * propietario, que también guarda la licencia cuando conduce.
+   *
+   * Solo se escribe sobre un campo vacío o sobre lo que se precargó antes: lo
+   * que el usuario escribió no se pisa. Editar y renovar ya traen sus propios
+   * datos.
    */
-  private prefillFromDriver(): void {
-    if (this.holder !== 'DRIVER' || !this.driver) return;
+  private prefillFromPerson(): void {
+    if (this.holder === 'VEHICLE' || (!this.driver && !this.owner)) return;
     if (this.editingId !== null || this.renewingFrom) return;
 
     const name = normalizar(this.selectedType?.name || '');
     const isCedula = name.includes('cedula');
     const isLicencia = name.includes('licencia');
 
+    const identificacion =
+      this.driver?.documentNumber ?? this.owner?.documentNumber ?? '';
+    const vencimientoLicencia =
+      this.driver?.licenseExpiry ?? this.owner?.licenseExpiry;
+
     const documentNumber =
-      isCedula || isLicencia
-        ? String(this.driver.documentNumber ?? '').trim()
-        : '';
+      isCedula || isLicencia ? String(identificacion).trim() : '';
     const expiryDate =
-      isLicencia && this.driver.licenseExpiry
-        ? String(this.driver.licenseExpiry).split('T')[0]
+      isLicencia && vencimientoLicencia
+        ? String(vencimientoLicencia).split('T')[0]
         : '';
 
     this.prefillControl('documentNumber', documentNumber);
@@ -440,6 +559,10 @@ export class GVehicleDocumentsComponent implements OnInit {
     control.setValue(value);
     this.prefilled[field] = value;
   }
+
+  /* ======================================================================
+     Archivo
+     ====================================================================== */
 
   private fileNameOf(url: string): string {
     return url.split('/').pop() || 'documento';
@@ -496,6 +619,66 @@ export class GVehicleDocumentsComponent implements OnInit {
     this.viewerName = '';
   }
 
+  /* ======================================================================
+     Guardar y eliminar
+     ====================================================================== */
+
+  /**
+   * Con qué tipo y qué portador se guarda.
+   *
+   * Si ya hay un documento de ese mismo papel —el que se edita, el que se
+   * renueva o el vigente que se va a reemplazar— se guarda con su tipo y su
+   * portador: así el backend manda el anterior al histórico aunque se haya
+   * cargado desde la otra ficha. Un documento nuevo va con el portador del
+   * catálogo del tipo elegido.
+   */
+  private resolveTypeAndHolder(): {
+    documentFileTypeId: number;
+    holderIds: DocumentHolderIds;
+  } {
+    const elegido = Number(this.documentForm.getRawValue().documentFileTypeId);
+    const base =
+      this.editingRow ?? this.renewingFrom ?? this.typeBeingRenewed ?? null;
+    const mismoPapel =
+      !!base &&
+      normalizar(this.selectedType?.name || '') === normalizar(base.name);
+
+    if (base && mismoPapel) {
+      const ids = holderIdsOf(base.document);
+      if (Object.keys(ids).length) {
+        return {
+          documentFileTypeId: base.document.documentFileTypeId,
+          holderIds: ids,
+        };
+      }
+    }
+
+    return { documentFileTypeId: elegido, holderIds: this.holderIdsForType() };
+  }
+
+  /** El portador del catálogo del tipo elegido, o el principal si no aplica. */
+  private holderIdsForType(): DocumentHolderIds {
+    switch (this.selectedType?.appliesTo) {
+      case 'OWNER':
+        if (this.ownerId != null) return { ownerId: this.ownerId };
+        break;
+      case 'DRIVER':
+        if (this.driverId != null) return { driverId: this.driverId };
+        break;
+      case 'VEHICLE':
+        if (this.vehicleId != null) return { vehicleId: this.vehicleId };
+        break;
+    }
+    switch (this.holder) {
+      case 'OWNER':
+        return { ownerId: this.ownerId };
+      case 'DRIVER':
+        return { driverId: this.driverId };
+      default:
+        return { vehicleId: this.vehicleId };
+    }
+  }
+
   async saveDocument(): Promise<void> {
     if (this.isSaving) return;
 
@@ -525,11 +708,10 @@ export class GVehicleDocumentsComponent implements OnInit {
       }
 
       const value = this.documentForm.getRawValue();
+      const { documentFileTypeId, holderIds } = this.resolveTypeAndHolder();
       const payload: ModelDocumentFile = {
-        documentFileTypeId: Number(value.documentFileTypeId),
-        ...(this.holder === 'DRIVER'
-          ? { driverId: this.driverId }
-          : { vehicleId: this.vehicleId }),
+        documentFileTypeId,
+        ...holderIds,
         documentNumber: value.documentNumber?.trim() || null,
         issuer: value.issuer?.trim() || null,
         issueDate: value.issueDate || null,
@@ -542,6 +724,8 @@ export class GVehicleDocumentsComponent implements OnInit {
         payload.id = this.editingId;
       }
 
+      // Vehículo, conductor y propietario comparten endpoint: el portador lo
+      // dice el id que lleva el documento.
       await firstValueFrom(this.vehicleService.saveVehicleDocuments([payload]));
 
       let message = 'Documento cargado exitosamente!';
@@ -560,7 +744,7 @@ export class GVehicleDocumentsComponent implements OnInit {
       this.isSaving = false;
       this.loadDocuments();
     } catch (err: any) {
-      console.error('Error saving vehicle document:', err);
+      console.error('Error saving document:', err);
       this.isSaving = false;
       this.toastService.showError(
         'Error',
@@ -597,7 +781,7 @@ export class GVehicleDocumentsComponent implements OnInit {
         this.loadDocuments();
       },
       error: (err) => {
-        console.error('Error deleting vehicle document:', err);
+        console.error('Error deleting document:', err);
         this.toastService.showError(
           'Error',
           err?.error?.message || 'No se pudo eliminar el documento.',

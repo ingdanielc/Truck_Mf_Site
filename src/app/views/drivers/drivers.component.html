@@ -151,6 +151,10 @@
                   userRole !== 'PROPIETARIO' ||
                   !isSameUser(driver, loggedInOwner)
                 "
+                [showDocuments]="
+                  userRole !== 'PROPIETARIO' ||
+                  !isSameUser(driver, loggedInOwner)
+                "
                 (edit)="toggleOffcanvas($event)"
                 (changePassword)="togglePasswordOffcanvas($event)"
                 (toggleStatus)="onToggleDriverStatus($event)"
@@ -586,6 +590,9 @@
     @if (documentsDriver && documentsDriver.id) {
       <g-vehicle-documents
         [driverId]="documentsDriver.id"
+        [ownerId]="documentsDriverOwner?.id ?? null"
+        [owner]="documentsDriverOwner"
+        [mainHolder]="'DRIVER'"
         [holderName]="documentsDriver.name || ''"
         [driver]="documentsDriver"
         [canEdit]="userRole !== 'CONDUCTOR'"

@@ -4,6 +4,10 @@ import { ModelOwner } from 'src/app/models/owner-model';
 import { GOwnerCardComponent } from 'src/app/components/g-owner-card/g-owner-card.component';
 import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
 import { GOwnerFormComponent } from 'src/app/components/g-owner-form/g-owner-form.component';
+import { GVehicleDocumentsComponent } from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
+import { DriverService } from 'src/app/services/driver.service';
+import { ModelDriver } from 'src/app/models/driver-model';
+import { findLinkedDriver } from 'src/app/utils/holder-documents';
 import { Subscription } from 'rxjs';
 import {
   Filter,
@@ -24,6 +28,7 @@ import { PaginationUtils } from 'src/app/utils/pagination-utils';
     GOwnerCardComponent,
     GPasswordCardComponent,
     GOwnerFormComponent,
+    GVehicleDocumentsComponent,
   ],
   templateUrl: './owners.component.html',
   styleUrls: ['./owners.component.scss'],
@@ -52,7 +57,14 @@ export class OwnersComponent implements OnInit, OnDestroy {
   isPasswordOffcanvasOpen: boolean = false;
   isSavingPassword: boolean = false;
   openMenuOwnerId: number | null = null;
+
+  /** Propietario cuyos documentos se gestionan; null con el panel cerrado. */
+  documentsOwner: ModelOwner | null = null;
+  /** Su registro de conductor, si también conduce: sus documentos van juntos. */
+  documentsOwnerDriver: ModelDriver | null = null;
+
   constructor(
+    private readonly driverService: DriverService,
     private readonly ownerService: OwnerService,
     private readonly securityService: SecurityService,
     private readonly toastService: ToastService,
@@ -247,6 +259,26 @@ export class OwnersComponent implements OnInit, OnDestroy {
   togglePasswordOffcanvas(): void {
     this.isPasswordOffcanvasOpen = !this.isPasswordOffcanvasOpen;
     this.selectedOwnerForPassword = null;
+  }
+
+  // --- Documentos ---
+
+  /**
+   * El panel se abre cuando ya se sabe si el propietario también conduce: el
+   * componente de documentos pide los suyos al iniciar, y los de conductor
+   * tienen que ir en esa misma carga.
+   */
+  openDocuments(owner: ModelOwner): void {
+    this.openMenuOwnerId = null;
+    findLinkedDriver(this.driverService, owner).subscribe((driver) => {
+      this.documentsOwnerDriver = driver;
+      this.documentsOwner = owner;
+    });
+  }
+
+  closeDocuments(): void {
+    this.documentsOwner = null;
+    this.documentsOwnerDriver = null;
   }
 
   async onUpdatePassword(passwords: any): Promise<void> {

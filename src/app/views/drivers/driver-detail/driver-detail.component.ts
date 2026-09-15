@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, firstValueFrom } from 'rxjs';
+import { Observable, Subscription, firstValueFrom } from 'rxjs';
 import { DriverService } from 'src/app/services/driver.service';
 import { TripService } from 'src/app/services/trip.service';
 import { VehicleService } from 'src/app/services/vehicle.service';
@@ -29,6 +29,11 @@ import {
   getDocumentValidity,
 } from 'src/app/utils/document-utils';
 import { shareDocumentFiles } from 'src/app/utils/document-share';
+import {
+  findLinkedOwner,
+  loadHolderDocuments,
+} from 'src/app/utils/holder-documents';
+import { filter as rxFilter, map, switchMap, take } from 'rxjs/operators';
 import { excludeCancelledFilter } from 'src/app/utils/trip-status';
 import {
   Filter,
@@ -74,6 +79,8 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   // Context menu
   isMenuOpen: boolean = false;
   userRole: string = '';
+  /** Usuario de la sesión: dice si el conductor está en su propio perfil. */
+  private loggedUserId: number | null = null;
   private userSub?: Subscription;
 
   // Offcanvas states
@@ -83,6 +90,10 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   loggedInOwner: ModelOwner | null = null;
 
   // Documentos
+  /** Ya se sabe si también es propietario: el panel puede pedir los documentos. */
+  documentsReady: boolean = false;
+  /** Su registro de propietario, si también lo es. */
+  linkedOwner: ModelOwner | null = null;
   documentRows: DocumentRow[] = [];
   isDocumentsOpen: boolean = false;
   /** Descarga de los archivos previa a compartirlos por WhatsApp. */
@@ -120,6 +131,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
           this.userRole = (user.userRoles?.[0]?.role?.name || '')
             .toUpperCase()
             .trim();
+          this.loggedUserId = user.id ?? null;
           if (this.userRole === 'PROPIETARIO' && user.id) {
             this.loadLoggedInOwner(user.id);
           }
@@ -132,10 +144,9 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
         this.driverId = Number(id);
         this.loadCities();
         this.loadBrands();
+        // Vehículos, viajes y documentos se piden cuando `loadDriver` ya
+        // comprobó que este perfil se puede ver.
         this.loadDriver(this.driverId);
-        this.loadVehicles(this.driverId);
-        this.loadTripCount(this.driverId);
-        this.loadDocuments(this.driverId);
         this.loadReferenceData();
       }
     });
@@ -155,25 +166,115 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
     );
     this.driverService.getDriverFilter(filter).subscribe({
       next: (response: any) => {
-        if (response?.data?.content?.length > 0) {
-          this.driver = response.data.content[0];
-          this.photoPreview = this.driver?.photo
-            ? `${this.driver.photo.split('?')[0]}?t=${Date.now()}`
+        const found: ModelDriver | undefined = response?.data?.content?.[0];
+        if (!found) {
+          this.loading = false;
+          this.denyAccess('No se encontró el conductor');
+          return;
+        }
+
+        // Nada del perfil se asigna ni se pide antes de saber que se puede ver.
+        this.authorize(found).subscribe((allowed) => {
+          if (!allowed) {
+            this.loading = false;
+            this.denyAccess('No tiene permiso para ver este perfil');
+            return;
+          }
+
+          this.driver = found;
+          this.photoPreview = found.photo
+            ? `${found.photo.split('?')[0]}?t=${Date.now()}`
             : '';
           this.resolveCityName();
-        } else {
-          this.toastService.showError('Error', 'No se encontró el conductor');
-          this.goBack();
-        }
-        this.loading = false;
+          this.loadDocuments();
+          this.loadVehicles(id);
+          this.loadTripCount(id);
+          this.loading = false;
+        });
       },
       error: (err) => {
         console.error('Error loading driver:', err);
-        this.toastService.showError('Error', 'Error al cargar el conductor');
         this.loading = false;
-        this.goBack();
+        this.denyAccess('Error al cargar el conductor');
       },
     });
+  }
+
+  /**
+   * ¿Puede el usuario de la sesión ver este conductor?
+   *
+   * El conductor solo ve su propio perfil: cambiar el id en la URL no puede
+   * abrir el de otro. Al administrador no se le restringe, y al propietario
+   * el backend ya le acota los conductores a los suyos.
+   *
+   * Espera al usuario de la sesión: el conductor puede llegar antes que él.
+   */
+  private authorize(driver: ModelDriver): Observable<boolean> {
+    return this.securityService.userData$.pipe(
+      rxFilter((user: any) => !!user),
+      take(1),
+      map((user: any) => {
+        const role = (user.userRoles?.[0]?.role?.name || '')
+          .toUpperCase()
+          .trim();
+        if (role !== 'CONDUCTOR') return true;
+        return !!user.id && driver.user?.id === user.id;
+      }),
+    );
+  }
+
+  /**
+   * Sale de un perfil que no se puede ver, con el motivo.
+   *
+   * El conductor vuelve a su propio perfil; el resto, a donde venía. El aviso
+   * se muestra cuando la navegación ya terminó: lanzado antes, el cambio de
+   * pantalla a veces lo tapaba.
+   */
+  private denyAccess(message: string): void {
+    const avisar = () => this.toastService.showError('Acceso denegado', message);
+
+    this.securityService.userData$
+      .pipe(
+        rxFilter((user: any) => !!user),
+        take(1),
+      )
+      .subscribe((user: any) => {
+        const role = (user.userRoles?.[0]?.role?.name || '')
+          .toUpperCase()
+          .trim();
+        if (role !== 'CONDUCTOR') {
+          this.goBack().then(avisar);
+          return;
+        }
+        this.goToOwnDriverProfile(user.id).then(avisar);
+      });
+  }
+
+  /**
+   * Lleva al conductor de la sesión a su propio perfil. Si no lo encuentra, o
+   * si justo el suyo es el que falla, al inicio: si no, volvería a entrar aquí
+   * una y otra vez.
+   */
+  private goToOwnDriverProfile(userId: number | undefined): Promise<boolean> {
+    if (!userId) return this.router.navigate(['/site/home']);
+
+    return firstValueFrom(
+      this.driverService.getDriverFilter(
+        new ModelFilterTable(
+          [new Filter('user.id', '=', userId.toString())],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        ),
+      ),
+    )
+      .then((response: any) => {
+        const own: ModelDriver | undefined = response?.data?.content?.[0];
+        if (own?.id && own.user?.id === userId && own.id !== this.driverId) {
+          return this.router.navigate(['/site/drivers', own.id]);
+        }
+        return this.router.navigate(['/site/home']);
+      })
+      .catch(() => this.router.navigate(['/site/home']));
   }
 
   loadReferenceData(): void {
@@ -344,13 +445,13 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  goBack(): void {
+  /** Devuelve la navegación, para avisar cuando ya terminó. */
+  goBack(): Promise<boolean> {
     // Desde la ficha de un vehículo se vuelve a esa ficha, no al listado.
     if (this.fromSource === 'vehicle-detail' && this.fromVehicleId) {
-      this.router.navigate(['/site/vehicles', this.fromVehicleId]);
-      return;
+      return this.router.navigate(['/site/vehicles', this.fromVehicleId]);
     }
-    this.router.navigate(['/site/drivers']);
+    return this.router.navigate(['/site/drivers']);
   }
 
   viewDriverVehicles(): void {
@@ -523,32 +624,61 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
 
   // ─── Documentos ──────────────────────────────────────────────────────────────
 
-  /** Gestionar documentos es de administrador y propietario; el resto solo lee. */
+  /**
+   * Quién gestiona los documentos del conductor:
+   * - el administrador, siempre;
+   * - el propietario, los de sus conductores. En su propio registro de
+   *   conductor no: sus documentos se cargan solo desde su ficha de
+   *   propietario;
+   * - el conductor, los suyos, desde su perfil —que es esta ficha—. Los de
+   *   otro conductor solo los lee.
+   */
   get canManageDocuments(): boolean {
-    return this.userRole === 'ADMINISTRADOR' || this.userRole === 'PROPIETARIO';
+    if (this.userRole === 'ADMINISTRADOR') return true;
+    if (this.userRole === 'PROPIETARIO') return this.canEdit;
+    if (this.userRole === 'CONDUCTOR') return this.isOwnProfile;
+    return false;
   }
 
-  private loadDocuments(driverId: number): void {
-    const filter = new ModelFilterTable(
-      [new Filter('driverId', '=', driverId.toString())],
-      new Pagination(50, 0),
-      new Sort('expiryDate', true),
+  /** El conductor de la sesión está en su propio perfil. */
+  get isOwnProfile(): boolean {
+    return (
+      !!this.loggedUserId &&
+      !!this.driver?.user?.id &&
+      this.driver.user.id === this.loggedUserId
     );
-    // Mismo endpoint que los documentos de vehículo; el filtro elige al conductor.
-    this.vehicleService.getVehicleDocuments(filter).subscribe({
-      next: (response: any) => {
-        // `isActive` se descarta aquí y no en el filtro: la comparación del
-        // backend castea a texto y un booleano no sobrevive ese casteo.
-        const actives: ModelDocumentFile[] = (
-          response?.data?.content || []
-        ).filter((item: ModelDocumentFile) => item.isActive !== false);
-        this.setDocuments(actives);
-      },
-      error: (err) => {
-        console.error('Error loading driver documents:', err);
-        this.documentRows = [];
-      },
-    });
+  }
+
+  /**
+   * Sus documentos y, si también es propietario, los de ese registro: cargados
+   * desde cualquiera de las dos fichas se ven en las dos.
+   */
+  private loadDocuments(): void {
+    const driver = this.driver;
+    if (!driver?.id) return;
+
+    this.documentsReady = false;
+    findLinkedOwner(this.ownerService, driver)
+      .pipe(
+        switchMap((owner) => {
+          this.linkedOwner = owner;
+          return loadHolderDocuments(this.vehicleService, {
+            driverId: driver.id,
+            ownerId: owner?.id,
+          });
+        }),
+      )
+      .subscribe({
+        next: (documents) => {
+          this.setDocuments(documents);
+          this.documentsReady = true;
+        },
+        error: (err) => {
+          console.error('Error loading driver documents:', err);
+          this.documentRows = [];
+          this.documentsReady = true;
+        },
+      });
   }
 
   /** El panel devuelve la lista ya vigente tras cada cambio; se reusa tal cual. */

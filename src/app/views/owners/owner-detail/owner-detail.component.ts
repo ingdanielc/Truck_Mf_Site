@@ -19,6 +19,23 @@ import { SubscriptionUtils } from '../../../utils/subscription';
 import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
 import { GOwnerFormComponent } from 'src/app/components/g-owner-form/g-owner-form.component';
 import { excludeCancelledFilter } from 'src/app/utils/trip-status';
+import { switchMap } from 'rxjs/operators';
+import {
+  DocumentRow,
+  GVehicleDocumentsComponent,
+} from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
+import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
+import { ModelDocumentFile } from 'src/app/models/document-model';
+import { ModelDriver } from 'src/app/models/driver-model';
+import {
+  getDocumentTypeName,
+  getDocumentValidity,
+} from 'src/app/utils/document-utils';
+import { shareDocumentFiles } from 'src/app/utils/document-share';
+import {
+  findLinkedDriver,
+  loadHolderDocuments,
+} from 'src/app/utils/holder-documents';
 import {
   Filter,
   ModelFilterTable,
@@ -35,6 +52,8 @@ import {
     GCameraComponent,
     GPasswordCardComponent,
     GOwnerFormComponent,
+    GVehicleDocumentsComponent,
+    GDocumentViewerComponent,
   ],
   templateUrl: './owner-detail.component.html',
   styleUrls: ['./owner-detail.component.scss'],
@@ -68,6 +87,19 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   isPasswordOffcanvasOpen: boolean = false;
   isSavingPassword: boolean = false;
   isMenuOpen: boolean = false;
+
+  // Documentos
+  documentRows: DocumentRow[] = [];
+  isDocumentsOpen: boolean = false;
+  /** Ya se sabe si también conduce: el panel puede pedir los documentos. */
+  documentsReady: boolean = false;
+  /** Su registro de conductor, si también conduce. */
+  linkedDriver: ModelDriver | null = null;
+  /** Descarga de los archivos previa a compartirlos por WhatsApp. */
+  sharingDocuments: boolean = false;
+  /** Documento abierto en el visor; null cuando no hay ninguno. */
+  viewerUrl: string | null = null;
+  viewerName: string = '';
 
   private routeSub?: Subscription;
 
@@ -127,17 +159,16 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
             this.owner.photo = `${this.owner.photo.split('?')[0]}?t=${Date.now()}`;
           }
           this.resolveCityName();
+          this.loadDocuments();
         } else {
-          this.toastService.showError('Error', 'No se encontró el propietario');
-          this.goBack();
+          this.denyAccess('Error', 'No se encontró el propietario');
         }
         this.loading = false;
       },
       error: (err) => {
         console.error('Error loading owner:', err);
-        this.toastService.showError('Error', 'Error al cargar el propietario');
         this.loading = false;
-        this.goBack();
+        this.denyAccess('Error', 'Error al cargar el propietario');
       },
     });
   }
@@ -211,11 +242,13 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
           if (loggedInOwner?.id === ownerId) {
             this.loadAllData(ownerId);
           } else {
-            this.toastService.showError(
+            // A su propio perfil, no atrás: si escribió la URL, atrás puede
+            // quedar fuera de la app.
+            this.denyAccess(
               'Acceso Denegado',
               'No tiene permiso para ver este perfil',
+              loggedInOwner?.id ? ['/site/owners', loggedInOwner.id] : null,
             );
-            this.goBack();
           }
         });
       return;
@@ -227,11 +260,10 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
     }
 
     // Otros roles
-    this.toastService.showError(
+    this.denyAccess(
       'Acceso Denegado',
       'No tiene permiso para ver esta información',
     );
-    this.goBack();
   }
 
   loadDriverVehicleData(ownerId: number, userId: number): void {
@@ -248,11 +280,11 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
         if (driver) {
           // Security check: ensure the driver belongs to the owner in the URL
           if (driver.ownerId !== ownerId) {
-            this.toastService.showError(
+            this.denyAccess(
               'Acceso Denegado',
               'No tiene permiso para ver este perfil de propietario',
+              driver.id ? ['/site/drivers', driver.id] : null,
             );
-            this.goBack();
             return;
           }
 
@@ -291,15 +323,15 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
             },
           });
         } else {
+          // Sin conductor no hay forma de validar el acceso: antes la pantalla
+          // se quedaba cargando para siempre detrás del aviso.
           this.loadingVehicles = false;
-          this.toastService.showError(
-            'Error',
-            'No se encontró información del conductor',
-          );
+          this.denyAccess('Error', 'No se encontró información del conductor');
         }
       },
       error: () => {
         this.loadingVehicles = false;
+        this.denyAccess('Error', 'No se pudo validar el acceso a este perfil');
       },
     });
   }
@@ -445,6 +477,27 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
       : 'bg-secondary';
   }
 
+  /**
+   * Sale de un perfil que no se puede ver y avisa cuando la navegación ya
+   * terminó.
+   *
+   * No usa `goBack`: para quien no es administrador ese vuelve con
+   * `location.back()`, y si la URL se escribió a mano atrás queda fuera de la
+   * app —o no hay a dónde ir— y el aviso se perdía. Aquí se va siempre a una
+   * pantalla de la app: la que se indique o, si no, el listado para el
+   * administrador y el inicio para el resto.
+   */
+  private denyAccess(
+    title: string,
+    message: string,
+    target: (string | number)[] | null = null,
+  ): void {
+    const avisar = () => this.toastService.showError(title, message);
+    const destino =
+      target ?? (this.isAdmin ? ['/site/owners'] : ['/site/home']);
+    this.router.navigate(destino).then(avisar, avisar);
+  }
+
   goBack(): void {
     // Desde la ficha de un vehículo se vuelve a esa ficha, no al listado.
     if (this.fromSource === 'vehicle-detail' && this.fromVehicleId) {
@@ -583,6 +636,106 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
 
   onCameraClose(): void {
     this.showCamera = false;
+  }
+
+  // --- Documentos ---
+
+  /**
+   * Los gestiona el administrador y el propio propietario: para él esta ficha
+   * es el único punto de carga de sus documentos, también de los que tiene
+   * como conductor.
+   */
+  get canManageDocuments(): boolean {
+    return this.isAdmin || this.isOwnerSelf;
+  }
+
+  /**
+   * Sus documentos y, si también conduce, los de su registro de conductor:
+   * cargados desde cualquiera de las dos fichas se ven en las dos. Un
+   * conductor no ve esta sección, son papeles personales del propietario.
+   */
+  private loadDocuments(): void {
+    const owner = this.owner;
+    if (!owner?.id || this.isConductor) return;
+
+    this.documentsReady = false;
+    findLinkedDriver(this.driverService, owner)
+      .pipe(
+        switchMap((driver) => {
+          this.linkedDriver = driver;
+          return loadHolderDocuments(this.vehicleService, {
+            ownerId: owner.id,
+            driverId: driver?.id,
+          });
+        }),
+      )
+      .subscribe({
+        next: (documents) => {
+          this.setDocuments(documents);
+          this.documentsReady = true;
+        },
+        error: (err) => {
+          console.error('Error loading owner documents:', err);
+          this.documentRows = [];
+          this.documentsReady = true;
+        },
+      });
+  }
+
+  /** El panel devuelve la lista ya vigente tras cada cambio; se reusa tal cual. */
+  setDocuments(documents: ModelDocumentFile[]): void {
+    this.documentRows = documents.map((item) => ({
+      document: item,
+      name: getDocumentTypeName(item),
+      validity: getDocumentValidity(item),
+    }));
+  }
+
+  openDocuments(): void {
+    this.isMenuOpen = false;
+    if (!this.canManageDocuments) return;
+    this.isDocumentsOpen = true;
+  }
+
+  closeDocuments(): void {
+    this.isDocumentsOpen = false;
+  }
+
+  /** Comparte los documentos por WhatsApp; ver `shareDocumentFiles`. */
+  async shareDocumentsByWhatsApp(): Promise<void> {
+    if (this.sharingDocuments) return;
+
+    const header = [
+      `*Documentos ${this.owner?.name ?? ''}*`,
+      this.formatDocNumber(this.owner?.documentNumber),
+    ];
+
+    await shareDocumentFiles(
+      this.documentRows,
+      header,
+      this.owner?.name,
+      (preparing) => (this.sharingDocuments = preparing),
+    );
+  }
+
+  /**
+   * El documento se muestra en el visor de la app. Abrirlo con `window.open`
+   * dejaba al usuario fuera y sin retorno cuando la PWA corre instalada.
+   */
+  openDocumentFile(row: DocumentRow, event: Event): void {
+    event.stopPropagation();
+    if (!row.document.fileUrl) return;
+    this.viewerUrl = row.document.fileUrl;
+    this.viewerName = row.name;
+  }
+
+  closeViewer(): void {
+    this.viewerUrl = null;
+    this.viewerName = '';
+  }
+
+  trackByDocument(index: number, row: DocumentRow): number {
+    return row.document.id ?? index;
   }
 
   // --- Offcanvas Methods ---

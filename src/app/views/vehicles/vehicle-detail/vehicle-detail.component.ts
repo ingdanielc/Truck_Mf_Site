@@ -171,20 +171,18 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
       next: async (response: any) => {
         const found = response?.data?.content?.[0];
         if (!found) {
-          this.toastService.showError('Error', 'No se encontró el vehículo');
           this.loading = false;
-          this.goBack();
+          this.leaveWithError('Error', 'No se encontró el vehículo');
           return;
         }
 
         const allowed = await this.isAllowed(found, user);
         if (!allowed) {
-          this.toastService.showError(
+          this.loading = false;
+          this.leaveWithError(
             'Acceso Denegado',
             'No tiene permiso para ver este vehículo',
           );
-          this.loading = false;
-          this.goBack();
           return;
         }
 
@@ -210,9 +208,8 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Error loading vehicle:', err);
-        this.toastService.showError('Error', 'Error al cargar el vehículo');
         this.loading = false;
-        this.goBack();
+        this.leaveWithError('Error', 'Error al cargar el vehículo');
       },
     });
   }
@@ -476,6 +473,17 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
   }
 
   // --- Navegación ---
+
+  /**
+   * Sale de un vehículo que no se puede ver y avisa cuando la navegación ya
+   * terminó. Va al listado y no atrás: `goBack` usa `location.back()` cuando
+   * hay origen, y con la URL escrita a mano atrás puede quedar fuera de la app
+   * y el aviso se perdía. El listado lo pueden abrir todos los roles.
+   */
+  private leaveWithError(title: string, message: string): void {
+    const avisar = () => this.toastService.showError(title, message);
+    this.router.navigate(['/site/vehicles']).then(avisar, avisar);
+  }
 
   goBack(): void {
     if (this.fromSource === 'owners') {

@@ -198,19 +198,14 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         if (response?.data?.content && response.data.content.length > 0) {
           this.processTripData(response.data.content[0]);
         } else {
-          this.toastService.showError('Error', 'No se encontró el viaje');
-          this.goBack();
           this.loading = false;
+          this.leaveWithError('Error', 'No se encontró el viaje');
         }
       },
       error: (error: any) => {
         console.error('Error loading trip:', error);
-        this.toastService.showError(
-          'Error',
-          'Error al cargar el detalle del viaje',
-        );
         this.loading = false;
-        this.goBack();
+        this.leaveWithError('Error', 'Error al cargar el detalle del viaje');
       },
     });
   }
@@ -340,11 +335,10 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         if (result.hasAccess && result.tripData) {
           this.processTripData(result.tripData);
         } else {
-          this.toastService.showError(
+          this.leaveWithError(
             'Acceso Denegado',
             result.error || 'No tiene permiso para ver este viaje',
           );
-          this.goBack();
         }
       });
   }
@@ -1040,14 +1034,23 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return (this.netProfit / this.totalIncome) * 100;
   }
 
-  goBack(): void {
+  /** Devuelve la navegación, para avisar cuando ya terminó. */
+  goBack(): Promise<boolean> {
     if (this.originView === 'vehicles') {
-      this.router.navigate(['/site/vehicles']);
+      return this.router.navigate(['/site/vehicles']);
     } else if (this.originView === 'dashboard') {
-      this.router.navigate(['/site/dashboard']);
-    } else {
-      this.router.navigate(['/site/trips']);
+      return this.router.navigate(['/site/dashboard']);
     }
+    return this.router.navigate(['/site/trips']);
+  }
+
+  /**
+   * Sale de un viaje que no se puede ver y avisa cuando la navegación ya
+   * terminó: lanzado antes, el cambio de pantalla a veces tapaba el aviso.
+   */
+  private leaveWithError(title: string, message: string): void {
+    const avisar = () => this.toastService.showError(title, message);
+    this.goBack().then(avisar, avisar);
   }
 
   onExpensesClick(): void {

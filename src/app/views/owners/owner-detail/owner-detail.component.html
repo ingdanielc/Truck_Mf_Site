@@ -35,6 +35,17 @@
             <ul
               class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
             >
+              @if (canManageDocuments) {
+                <li>
+                  <button
+                    class="dropdown-item d-flex align-items-center gap-2 py-2"
+                    (click)="openDocuments()"
+                  >
+                    <i class="fa-solid fa-folder-open text-secondary"></i>
+                    <span>Gestionar documentos</span>
+                  </button>
+                </li>
+              }
               <li>
                 <button
                   class="dropdown-item d-flex align-items-center gap-2 py-2"
@@ -481,6 +492,148 @@
         </div>
       </div>
     </div>
+    <!-- Documentos. Si también conduce, incluye los de su registro de
+         conductor. Un conductor no la ve: son papeles del propietario. -->
+    @if (!isConductor) {
+      <div
+        class="card border-0 rounded-4 shadow-sm bg-body-tertiary mb-4 hover-scale"
+      >
+        <div
+          class="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center"
+        >
+          <h5 class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary">
+            <i class="fa-solid fa-folder-open"></i> Documentos
+          </h5>
+          <div class="d-flex align-items-center gap-3">
+            @if (documentRows.length > 0) {
+              <button
+                class="btn btn-link text-success p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
+                (click)="shareDocumentsByWhatsApp()"
+                [disabled]="sharingDocuments"
+                title="Compartir por WhatsApp"
+              >
+                @if (sharingDocuments) {
+                  <output
+                    class="spinner-border spinner-border-sm"
+                    aria-hidden="true"
+                  ></output>
+                } @else {
+                  <i class="fa-brands fa-whatsapp fs-5"></i>
+                }
+                <span class="d-none d-md-inline">
+                  {{ sharingDocuments ? "Preparando…" : "Compartir" }}
+                </span>
+              </button>
+            }
+            @if (canManageDocuments) {
+              <button
+                class="btn btn-link text-primary p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
+                (click)="openDocuments()"
+              >
+                <i
+                  class="fa-solid fa-pen-to-square d-inline d-md-none fs-5"
+                ></i>
+                <span class="d-none d-md-inline">Gestionar</span>
+              </button>
+            }
+          </div>
+        </div>
+        <div class="card-body p-4">
+          @if (documentRows.length > 0) {
+            <div class="row g-3">
+              @for (row of documentRows; track trackByDocument($index, row)) {
+                <div class="col-12 col-md-6 col-xl-4">
+                  <div
+                    class="document-tile card border-0 rounded-4 shadow-sm p-3 h-100"
+                  >
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <span
+                        class="fw-bold text-truncate flex-grow-1"
+                        [title]="row.name"
+                      >
+                        {{ row.name }}
+                      </span>
+                      @if (row.document.fileUrl) {
+                        <button
+                          type="button"
+                          class="btn btn-link p-0 border-0 shadow-none text-primary flex-shrink-0"
+                          (click)="openDocumentFile(row, $event)"
+                          title="Abrir archivo"
+                          aria-label="Abrir archivo"
+                        >
+                          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </button>
+                      }
+                    </div>
+
+                    <div
+                      class="d-flex flex-wrap gap-2 text-secondary mb-2"
+                      style="font-size: 0.75rem"
+                    >
+                      @if (row.document.documentNumber) {
+                        <span class="text-truncate">
+                          <i class="fa-solid fa-hashtag me-1 opacity-75"></i
+                          >{{ row.document.documentNumber }}
+                        </span>
+                      }
+                      @if (row.document.issuer) {
+                        <span class="text-truncate">
+                          <i class="fa-solid fa-building me-1 opacity-75"></i
+                          >{{ row.document.issuer }}
+                        </span>
+                      }
+                    </div>
+
+                    <div
+                      class="validity-track rounded-pill"
+                      [title]="row.validity.label"
+                    >
+                      <div
+                        class="validity-fill rounded-pill"
+                        [ngClass]="'state-' + row.validity.state"
+                        [style.width.%]="row.validity.percent"
+                      ></div>
+                    </div>
+                    <span
+                      class="d-block mt-1"
+                      style="font-size: 0.7rem"
+                      [ngClass]="{
+                        'text-danger':
+                          row.validity.state === 'vencido' ||
+                          row.validity.state === 'critico',
+                        'text-warning': row.validity.state === 'por-vencer',
+                        'text-secondary':
+                          row.validity.state === 'vigente' ||
+                          row.validity.state === 'sin-vigencia',
+                      }"
+                    >
+                      {{ row.validity.label }}
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="text-center py-4 text-secondary">
+              <i
+                class="fa-solid fa-folder-open fs-1 mb-3 opacity-25 d-block"
+              ></i>
+              <p class="mb-3 fw-bold">Este propietario no tiene documentos.</p>
+              @if (canManageDocuments) {
+                <button
+                  class="btn btn-outline-primary rounded-3 px-4 py-2 fw-bold"
+                  (click)="openDocuments()"
+                >
+                  <i class="fa-solid fa-file-circle-plus me-2"></i>Cargar
+                  documentos
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
     <!-- Active Fleet Table -->
     <div class="card border-0 rounded-4 shadow-sm bg-body-tertiary hover-scale">
       <div
@@ -573,6 +726,43 @@
     ></g-password-card>
   </div>
 </div>
+
+<!-- Documentos -->
+@if (isDocumentsOpen) {
+  <div
+    class="offcanvas-backdrop transition-all d-none d-md-block"
+    (click)="closeDocuments()"
+    onkeypress
+  ></div>
+}
+
+<div
+  class="custom-offcanvas shadow-lg border-start transition-all"
+  [class.open]="isDocumentsOpen"
+>
+  @if (isDocumentsOpen && ownerId && documentsReady) {
+    <g-vehicle-documents
+      [ownerId]="ownerId"
+      [owner]="owner"
+      [driverId]="linkedDriver?.id ?? null"
+      [driver]="linkedDriver"
+      [mainHolder]="'OWNER'"
+      [holderName]="owner?.name || ''"
+      [canEdit]="canManageDocuments"
+      (changed)="setDocuments($event)"
+      (close)="closeDocuments()"
+      class="d-flex flex-column h-100"
+    ></g-vehicle-documents>
+  }
+</div>
+
+@if (viewerUrl) {
+  <g-document-viewer
+    [url]="viewerUrl"
+    [name]="viewerName"
+    (close)="closeViewer()"
+  ></g-document-viewer>
+}
 
 <!-- Backdrop -->
 @if (isOffcanvasOpen || isPasswordOffcanvasOpen) {

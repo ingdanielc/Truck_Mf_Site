@@ -13,6 +13,7 @@ import { GVehicleOwnerCardComponent } from '../../components/g-vehicle-owner-car
 import { GPasswordCardComponent } from '../../components/g-password-card/g-password-card.component';
 import { GDriverFormComponent } from '../../components/g-driver-form/g-driver-form.component';
 import { GVehicleDocumentsComponent } from '../../components/g-vehicle-documents/g-vehicle-documents.component';
+import { findLinkedOwner } from 'src/app/utils/holder-documents';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { DriverService } from 'src/app/services/driver.service';
@@ -120,6 +121,8 @@ export class DriversComponent implements OnInit, OnDestroy {
 
   /** Conductor cuyos documentos se estan gestionando; null con el panel cerrado. */
   documentsDriver: ModelDriver | null = null;
+  /** Su registro de propietario, si también lo es: sus documentos van juntos. */
+  documentsDriverOwner: ModelOwner | null = null;
 
   constructor(
     private readonly driverService: DriverService,
@@ -942,12 +945,21 @@ export class DriversComponent implements OnInit, OnDestroy {
 
   // --- Documentos ---
 
+  /**
+   * El panel se abre cuando ya se sabe si el conductor también es propietario:
+   * el componente de documentos pide los suyos al iniciar, y los de
+   * propietario tienen que ir en esa misma carga.
+   */
   openDocuments(driver: ModelDriver): void {
-    this.documentsDriver = driver;
+    findLinkedOwner(this.ownerService, driver).subscribe((owner) => {
+      this.documentsDriverOwner = owner;
+      this.documentsDriver = driver;
+    });
   }
 
   closeDocuments(): void {
     this.documentsDriver = null;
+    this.documentsDriverOwner = null;
   }
 
   async onUpdatePassword(passwords: any): Promise<void> {

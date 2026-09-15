@@ -155,10 +155,13 @@
               class="fa-solid fa-id-card-clip opacity-50 text-center"
               style="width: 16px"
             ></i>
+            <!-- En el teléfono los rótulos "Vence" y el tipo de salario se
+                 esconden: con el botón de documentos al lado, el texto se
+                 partía en dos líneas. El dato se entiende sin ellos. -->
             <span class="fw-medium">
               {{ driver.licenseCategory | uppercase }}
               @if (driver.licenseExpiry) {
-                — Vence:
+                — <span class="d-none d-sm-inline">Vence:</span>
                 {{ driver.licenseExpiry | date: "d MMM, yyyy" }}
               }
             </span>
@@ -170,22 +173,31 @@
               class="fa-solid fa-hand-holding-dollar opacity-50 text-center"
               style="width: 16px"
             ></i>
-            <span class="fw-medium">{{ salaryInfo }}</span>
+            <span class="fw-medium" [title]="salaryInfo">
+              <!-- En el teléfono solo se quita la palabra "mensual". -->
+              <span class="d-none d-sm-inline">{{ salaryTypeName }}: </span>
+              @if (salaryTypeShortName) {
+                <span class="d-sm-none">{{ salaryTypeShortName }}: </span>
+              }
+              {{ salaryAmount }}
+            </span>
           </div>
         }
       </div>
       <div class="d-flex gap-2 flex-shrink-0">
-        <button
-          type="button"
-          (click)="onManageDocumentsClick($event)"
-          class="btn btn-outline-primary btn-sm rounded-3 p-2 mt-0 shadow-none action-btn"
-          style="width: 40px"
-          onkeypress
-          title="Documentos"
-          aria-label="Documentos del conductor"
-        >
-          <i class="fa-solid fa-folder-open"></i>
-        </button>
+        @if (showDocuments) {
+          <button
+            type="button"
+            (click)="onManageDocumentsClick($event)"
+            class="btn btn-outline-primary btn-sm rounded-3 p-2 mt-0 shadow-none action-btn"
+            style="width: 40px"
+            onkeypress
+            title="Documentos"
+            aria-label="Documentos del conductor"
+          >
+            <i class="fa-solid fa-folder-open"></i>
+          </button>
+        }
         @if (canEdit) {
           <button
             type="button"

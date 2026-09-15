@@ -640,9 +640,12 @@
   class="custom-offcanvas shadow-lg border-start transition-all"
   [class.open]="isDocumentsOpen"
 >
-  @if (isDocumentsOpen && driverId) {
+  @if (isDocumentsOpen && driverId && documentsReady) {
     <g-vehicle-documents
       [driverId]="driverId"
+      [ownerId]="linkedOwner?.id ?? null"
+      [owner]="linkedOwner"
+      [mainHolder]="'DRIVER'"
       [holderName]="driver?.name || ''"
       [driver]="driver"
       [canEdit]="canManageDocuments"

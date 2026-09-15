@@ -17,6 +17,8 @@ export class GOwnerCardComponent {
   @Output() edit = new EventEmitter<ModelOwner>();
   @Output() changePassword = new EventEmitter<ModelOwner>();
   @Output() toggleStatus = new EventEmitter<ModelOwner>();
+  /** Abre el offcanvas de documentos, que vive en la vista padre. */
+  @Output() manageDocuments = new EventEmitter<ModelOwner>();
 
   @Input() isMenuOpen = false;
   @Output() menuToggle = new EventEmitter<number | null>();
@@ -44,6 +46,12 @@ export class GOwnerCardComponent {
     event?.stopPropagation();
     this.menuToggle.emit(null);
     this.edit.emit(this.owner);
+  }
+
+  onManageDocumentsClick(event: Event): void {
+    event.stopPropagation();
+    this.menuToggle.emit(null);
+    this.manageDocuments.emit(this.owner);
   }
 
   goToVehicles(): void {

@@ -201,16 +201,29 @@
           }}</span>
         </button>
       </div>
-      <button
-        type="button"
-        (click)="onEditClick(); $event.stopPropagation()"
-        class="btn btn-outline-info btn-sm rounded-3 p-2 mt-1 shadow-none action-btn"
-        style="width: 40px"
-        aria-label="Editar"
-        onkeypress
-      >
-        <i class="fa-solid fa-pencil"></i>
-      </button>
+      <div class="d-flex gap-2 flex-shrink-0">
+        <button
+          type="button"
+          (click)="onManageDocumentsClick($event)"
+          class="btn btn-outline-primary btn-sm rounded-3 p-2 mt-1 shadow-none action-btn"
+          style="width: 40px"
+          title="Documentos"
+          aria-label="Documentos del propietario"
+          onkeypress
+        >
+          <i class="fa-solid fa-folder-open"></i>
+        </button>
+        <button
+          type="button"
+          (click)="onEditClick(); $event.stopPropagation()"
+          class="btn btn-outline-info btn-sm rounded-3 p-2 mt-1 shadow-none action-btn"
+          style="width: 40px"
+          aria-label="Editar"
+          onkeypress
+        >
+          <i class="fa-solid fa-pencil"></i>
+        </button>
+      </div>
     </div>
   </div>
 </div>

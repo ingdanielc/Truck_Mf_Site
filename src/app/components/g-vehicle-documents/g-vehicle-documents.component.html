@@ -221,10 +221,7 @@
     } @else if (!showForm) {
       <div class="text-center py-4 text-secondary">
         <i class="fa-solid fa-folder-open fs-1 mb-3 opacity-25 d-block"></i>
-        <p class="mb-0 fw-bold small">
-          {{ holder === "DRIVER" ? "Este conductor" : "Este vehículo" }} no
-          tiene documentos.
-        </p>
+        <p class="mb-0 fw-bold small">{{ holderLabel }} no tiene documentos.</p>
       </div>
     }
 

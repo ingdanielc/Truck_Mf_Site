@@ -14,6 +14,9 @@ export class GDriverCardComponent {
   @Input() driver!: ModelDriver;
   @Input() salaryTypes: any[] = [];
   @Input() canEdit: boolean = true;
+  /** Botón de documentos. El propietario no lo ve en su propio registro de
+   *  conductor: sus documentos se cargan desde su ficha de propietario. */
+  @Input() showDocuments: boolean = true;
   @Output() edit = new EventEmitter<ModelDriver>();
   @Output() changePassword = new EventEmitter<ModelDriver>();
   @Output() toggleStatus = new EventEmitter<ModelDriver>();
@@ -23,23 +26,46 @@ export class GDriverCardComponent {
 
   isMenuOpen = false;
 
-  get salaryInfo(): string {
-    if (!this.driver.salaryTypeId || !this.driver.salary) return '';
-    const type = this.salaryTypes.find(
-      (t) => t.id === this.driver.salaryTypeId,
+  /** Tipo de salario del conductor, si tiene salario registrado. */
+  private get salaryType(): any | null {
+    if (!this.driver.salaryTypeId || !this.driver.salary) return null;
+    return (
+      this.salaryTypes.find((t) => t.id === this.driver.salaryTypeId) ?? null
     );
-    if (!type) return '';
+  }
+
+  /** El tipo de salario tal como viene del catálogo. */
+  get salaryTypeName(): string {
+    return this.salaryType?.name ?? '';
+  }
+
+  /**
+   * El tipo sin la palabra "mensual", para el teléfono: con el botón de
+   * documentos al lado el texto se partía en dos líneas. "Salario mensual"
+   * queda en "Salario"; "Porcentaje" no cambia.
+   */
+  get salaryTypeShortName(): string {
+    return this.salaryTypeName.replace(/\s*\bmensual\b\s*/gi, ' ').trim();
+  }
+
+  /** El valor ya formateado: "$ 2.000.000" o "15%". */
+  get salaryAmount(): string {
+    const type = this.salaryType;
+    if (!type || !this.driver.salary) return '';
 
     const isPercentage = type.name.toUpperCase().includes('PORCENTAJE');
-    const formattedValue = isPercentage
+    return isPercentage
       ? `${this.driver.salary}%`
       : new Intl.NumberFormat('es-CO', {
           style: 'currency',
           currency: 'COP',
           maximumFractionDigits: 0,
         }).format(this.driver.salary);
+  }
 
-    return `${type.name}: ${formattedValue}`;
+  get salaryInfo(): string {
+    if (!this.salaryType) return '';
+    return `${this.salaryTypeName}: ${this.salaryAmount}`;
   }
 
   toggleMenu(event: Event): void {

@@ -128,6 +128,7 @@
             (edit)="openOffcanvas($event)"
             (changePassword)="openPasswordOffcanvas($event)"
             (toggleStatus)="onToggleStatus($event)"
+            (manageDocuments)="openDocuments($event)"
           ></app-g-owner-card>
         </div>
       }
@@ -282,6 +283,35 @@
         (cancel)="togglePasswordOffcanvas()"
       ></g-password-card>
     </div>
+  </div>
+
+  <!-- Documentos. Si el propietario también conduce, van juntos los suyos de
+       conductor. -->
+  @if (documentsOwner) {
+    <div
+      class="offcanvas-backdrop transition-all d-none d-md-block"
+      (click)="closeDocuments()"
+      onkeypress
+    ></div>
+  }
+
+  <div
+    class="custom-offcanvas shadow-lg border-start transition-all"
+    [class.open]="!!documentsOwner"
+  >
+    @if (documentsOwner && documentsOwner.id) {
+      <g-vehicle-documents
+        [ownerId]="documentsOwner.id"
+        [owner]="documentsOwner"
+        [driverId]="documentsOwnerDriver?.id ?? null"
+        [driver]="documentsOwnerDriver"
+        [mainHolder]="'OWNER'"
+        [holderName]="documentsOwner.name || ''"
+        [canEdit]="true"
+        (close)="closeDocuments()"
+        class="d-flex flex-column h-100"
+      ></g-vehicle-documents>
+    }
   </div>
 
   <!-- Backdrop -->
