@@ -151,6 +151,14 @@ export class SecurityComponent implements OnInit, OnDestroy {
     if (this.activeFilter !== 'Todos') {
       filtros.push(new Filter('userRoles.role.name', '=', this.activeFilter));
     }
+    /* La busqueda va al servidor, como en conductores. Antes se filtraba en el
+       navegador sobre `allUsers`, que solo tiene la pagina pedida: quien
+       estuviera en otra pagina no aparecia, y el paginador seguia contando el
+       total sin filtrar. */
+    const term = this.searchTerm.trim();
+    if (term) {
+      filtros.push(new Filter('name', 'like', term));
+    }
     let filter = new ModelFilterTable(
       filtros,
       new Pagination(this.rows, this.page),
@@ -164,7 +172,10 @@ export class SecurityComponent implements OnInit, OnDestroy {
           this.allUsers = response.data.content.map((u: ModelUser) =>
             this.mapUser(u),
           );
-          this.applyFilter();
+          /* Ya viene filtrada del servidor: no se vuelve a filtrar aqui. Un
+             segundo filtro en el navegador podria descartar coincidencias que
+             el backend si dio por buenas, como las que difieren en tildes. */
+          this.users = [...this.allUsers];
         } else {
           this.allUsers = [];
           this.users = [];
@@ -244,17 +255,24 @@ export class SecurityComponent implements OnInit, OnDestroy {
     this.loadUsers();
   }
 
-  applyFilter(): void {
-    if (!this.searchTerm) {
-      this.users = [...this.allUsers];
-    } else {
-      const term = this.searchTerm.toLowerCase();
-      this.users = this.allUsers.filter(
-        (u) =>
-          u.name.toLowerCase().includes(term) ||
-          u.email.toLowerCase().includes(term),
-      );
-    }
+  /** Termino con el que se hizo la ultima consulta. */
+  private lastSearch = '';
+
+  /**
+   * Busca desde la primera pagina, en el servidor.
+   *
+   * Se lanza al salir del campo o con Enter, como en conductores y
+   * propietarios, y no con cada tecla: cada busqueda es una peticion. Si el
+   * termino no cambio no se vuelve a consultar, para que salir del campo sin
+   * tocar nada no recargue la lista.
+   */
+  onSearch(): void {
+    const term = this.searchTerm.trim();
+    if (term === this.lastSearch) return;
+
+    this.lastSearch = term;
+    this.page = 0;
+    this.loadUsers();
   }
 
   get totalPages(): number {

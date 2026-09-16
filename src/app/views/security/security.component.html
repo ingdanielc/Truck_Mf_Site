@@ -16,10 +16,11 @@
           <input
             type="text"
             class="form-control ps-5 py-2 rounded-3 w-100"
-            placeholder="Buscar por nombre o correo electrónico..."
+            placeholder="Buscar por nombre..."
             gAlphanumeric
-            (input)="applyFilter()"
             [(ngModel)]="searchTerm"
+            (blur)="onSearch()"
+            (keydown.enter)="onSearch()"
           />
         </div>
         <button
