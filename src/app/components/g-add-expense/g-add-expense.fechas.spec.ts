@@ -62,6 +62,83 @@ describe('GAddExpenseComponent, el tope de la fecha del gasto', () => {
     expect(componente(null).expenseDateMin).toBe('');
   });
 
+  /* El backend puede mandar la fecha como texto de solo dia. `new Date` la lee
+     como medianoche UTC, que en Bogota es la tarde del dia anterior, asi que
+     el tope se corria un dia. */
+  it('una fecha en texto de solo dia no se corre al dia anterior', () => {
+    const comp = componente({ startDate: '2026-03-05' } as ModelTrip);
+
+    expect(comp.expenseDateMin).toBe('2026-03-05');
+  });
+
+  /* El mismo desfase, y este si se veia: al abrir un gasto para editarlo su
+     fecha retrocedia un dia y caia por debajo del tope, con lo que el campo
+     nacia en rojo diciendo que el gasto era anterior al viaje. */
+  it('al editar, la fecha guardada no retrocede un dia', () => {
+    const comp = componente({ startDate: '2026-03-05' } as ModelTrip);
+    comp.initForm();
+    comp.editingExpense = {
+      categoryId: 1,
+      amount: 1000,
+      expenseDate: '2026-03-05',
+    } as never;
+
+    comp.patchFormForEdit();
+
+    expect(comp.expenseForm.value.expenseDate).toBe('2026-03-05');
+  });
+
+  /* Un viaje registrado despues de su salida deja el tope por encima de gastos
+     que ya existen. Sin la salvedad, ese gasto no se podia volver a guardar
+     nunca: el campo nacia en rojo y Guardar quedaba apagado. */
+  it('al editar se acepta la fecha guardada aunque el viaje se registrara despues', () => {
+    const comp = componente({
+      startDate: '2026-09-10',
+      creationDate: '2026-09-12',
+    } as ModelTrip);
+    comp.editingExpense = { expenseDate: '2026-09-10' } as never;
+
+    const validar = (comp as any).expenseDateRange();
+
+    expect(comp.expenseDateMin).toBe('2026-09-12');
+    expect(validar({ value: '2026-09-10' })).toBeNull();
+    /* Moverla mas atras sigue sin valer: la salvedad es para la que ya estaba,
+       no una puerta abierta. */
+    expect(validar({ value: '2026-09-09' })).toEqual({ antesDelViaje: true });
+  });
+
+  /* Creando no hay nada guardado que respetar, asi que el tope manda entero. */
+  it('creando, el tope se sigue aplicando', () => {
+    const comp = componente({
+      startDate: '2026-09-10',
+      creationDate: '2026-09-12',
+    } as ModelTrip);
+
+    const validar = (comp as any).expenseDateRange();
+
+    expect(validar({ value: '2026-09-10' })).toEqual({ antesDelViaje: true });
+    expect(validar({ value: '2026-09-12' })).toBeNull();
+  });
+
+  /* La fecha de un gasto es un dia de calendario: el dia es el que dice el
+     texto, tambien cuando llega a medianoche UTC. Leerla por partes locales la
+     mandaba al dia anterior —el gasto del diez se veia como del nueve—, y como
+     no depende de la zona del navegador, esta prueba lo sujeta en cualquier
+     maquina. */
+  it('al editar, una marca a medianoche UTC conserva su dia', () => {
+    const comp = componente({ startDate: '2026-09-10' } as ModelTrip);
+    comp.initForm();
+    comp.editingExpense = {
+      categoryId: 1,
+      amount: 1000,
+      expenseDate: '2026-09-10T00:00:00Z',
+    } as never;
+
+    comp.patchFormForEdit();
+
+    expect(comp.expenseForm.value.expenseDate).toBe('2026-09-10');
+  });
+
   it('una fecha que no se entiende no cuenta como tope', () => {
     const comp = componente({
       creationDate: 'vaya usted a saber',

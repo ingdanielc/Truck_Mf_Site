@@ -270,15 +270,6 @@ export class GAddExpenseComponent implements OnInit {
     return isNaN(fecha.getTime()) ? null : fecha;
   }
 
-  /** Cuando el viaje entro al sistema. Puede ser posterior a la salida: un
-   *  viaje se registra tarde y se le pone la fecha en que de verdad salio. */
-  private get tripCreationDate(): Date | null {
-    const cruda = this.trip?.creationDate;
-    if (!cruda) return null;
-
-    const fecha = new Date(cruda);
-    return isNaN(fecha.getTime()) ? null : fecha;
-  }
 
   /** La fecha del viaje, solo si es de un dia anterior a hoy. `null` si el
    *  viaje es de hoy, si no hay viaje o si la fecha no se entiende. */
@@ -312,9 +303,14 @@ export class GAddExpenseComponent implements OnInit {
   get expenseDateMin(): string {
     /* `YYYY-MM-DD` se ordena igual como texto que como fecha, asi que la mas
        tardia es la mayor de las dos cadenas. */
-    const topes = [this.tripDate, this.tripCreationDate]
-      .filter((fecha): fecha is Date => fecha !== null)
-      .map((fecha) => GAddExpenseComponent.toInputDate(fecha))
+    /* Cada uno con su lectura: la salida del viaje es un dia de calendario, y
+       el registro es el instante en que se creo. Leerlos igual corria uno de
+       los dos un dia. */
+    const topes = [
+      GAddExpenseComponent.toInputDateFrom(this.trip?.startDate),
+      GAddExpenseComponent.instantToInputDate(this.trip?.creationDate),
+    ]
+      .filter((texto) => !!texto)
       .sort();
     return topes.length ? topes[topes.length - 1] : '';
   }
@@ -325,6 +321,21 @@ export class GAddExpenseComponent implements OnInit {
     return (control: AbstractControl): ValidationErrors | null => {
       const valor = control.value;
       if (!valor) return null;
+
+      /* La fecha con la que el gasto ya estaba guardado se acepta siempre.
+         Un viaje puede haberse registrado despues de su salida, y entonces el
+         tope queda por encima de gastos que ya existen: sin esta salvedad, ese
+         gasto no se podria volver a guardar nunca, ni para corregirle la
+         descripcion. Cambiarla por otra anterior si se rechaza, asi que la
+         regla sigue valiendo para todo lo demas. */
+      if (
+        this.editingExpense &&
+        valor ===
+          GAddExpenseComponent.toInputDateFrom(this.editingExpense.expenseDate)
+      ) {
+        return null;
+      }
+
       /* `YYYY-MM-DD` se ordena igual como texto que como fecha, asi que la
          comparacion directa basta y no hay que construir dos `Date`. */
       if (this.expenseDateMin && valor < this.expenseDateMin) {
@@ -353,6 +364,69 @@ export class GAddExpenseComponent implements OnInit {
   }
 
   /**
+   * A `YYYY-MM-DD` desde lo que devuelve la API, que puede ser `Date` o texto.
+   *
+   * Una cadena que ya empieza por `YYYY-MM-DD` se recorta y no se construye
+   * ningun `Date`: `new Date('2026-03-05')` se lee como medianoche **UTC**, y
+   * en Bogota eso es el dia anterior a las siete de la tarde, asi que la fecha
+   * retrocedia un dia nada mas abrir el formulario. Es la misma trampa que
+   * describe `toInputDate`, entrando en vez de saliendo.
+   *
+   * Un `Date` se pasa por partes locales, como siempre. Lo que no se entienda
+   * devuelve vacio, que es lo que el campo trata como "sin fecha".
+   *
+   * Con una marca de tiempo con zona, recortar toma el dia en UTC. Es correcto
+   * para todo lo que escribe esta pantalla: `fromInputDate` fija el mediodia
+   * local, y a esa hora el dia es el mismo se mire desde donde se mire.
+   */
+  private static toInputDateFrom(raw: string | Date | null | undefined): string {
+    if (!raw) return '';
+
+    /* El dia se toma tal como esta escrito, sin construir ningun `Date`.
+       Da igual si llega `2026-09-10`, `2026-09-10T00:00:00Z` o el mediodia
+       local que escribe `fromInputDate`: en los tres el dia es el que dice el
+       texto. Leerlo por partes locales es lo que lo hacia retroceder al nueve
+       cuando el dato venia a medianoche UTC. */
+    if (typeof raw === 'string') {
+      const elDia = /^(\d{4}-\d{2}-\d{2})/.exec(raw);
+      if (elDia) return elDia[1];
+    }
+
+    const fecha = raw instanceof Date ? raw : new Date(raw);
+    return isNaN(fecha.getTime())
+      ? ''
+      : GAddExpenseComponent.toInputDate(fecha);
+  }
+
+  /**
+   * El dia local de un **instante**, no de una fecha de calendario.
+   *
+   * La diferencia importa y es la que confundi: la fecha de un gasto o la
+   * salida de un viaje son dias —el dia es el que dice el texto—, mientras que
+   * `creationDate` es el momento exacto en que se creo el registro. Las ocho de
+   * la noche del diez en Bogota se escriben `2026-09-11T01:00:00Z`: ahi el dia
+   * que vale es el diez, y recortar el prefijo daria el once, adelantando el
+   * tope un dia y rechazando gastos legitimos.
+   *
+   * Un texto que es solo el dia no tiene hora que convertir, asi que se toma
+   * tal cual; si no, se lee por partes locales.
+   */
+  private static instantToInputDate(
+    raw: string | Date | null | undefined,
+  ): string {
+    if (!raw) return '';
+
+    if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      return raw;
+    }
+
+    const fecha = raw instanceof Date ? raw : new Date(raw);
+    return isNaN(fecha.getTime())
+      ? ''
+      : GAddExpenseComponent.toInputDate(fecha);
+  }
+
+  /**
    * De `YYYY-MM-DD` a lo que guarda la API.
    *
    * Se fija al mediodia local y no a medianoche: a medianoche, el paso a UTC
@@ -378,14 +452,12 @@ export class GAddExpenseComponent implements OnInit {
       ? GAddExpenseComponent.fileNameOf(this.currentReceiptUrl)
       : '';
 
-    const fecha = new Date(this.editingExpense.expenseDate);
-
     this.expenseForm.patchValue({
       categoryId: this.editingExpense.categoryId,
       /* La suya, no la del viaje: editando se corrige lo que se guardo. */
-      expenseDate: isNaN(fecha.getTime())
-        ? ''
-        : GAddExpenseComponent.toInputDate(fecha),
+      expenseDate: GAddExpenseComponent.toInputDateFrom(
+        this.editingExpense.expenseDate,
+      ),
       amount: this.applyAmountMask(this.editingExpense.amount.toString()),
       description: this.editingExpense.description,
     });

@@ -170,6 +170,25 @@ textarea.expense-field {
   padding-bottom: calc((62px - 2px - var(--line)) / 2);
 }
 
+/* En el teléfono el marcador de mantenimiento no cabe de una línea y se parte
+   en dos. El relleno de arriba está calculado para centrar UNA, así que las dos
+   arrancaban por debajo del centro y la segunda se salía de la caja.
+
+   Con dos líneas el cálculo se hace sobre `2 * --line` y el bloque vuelve al
+   centro, sin tocar los 62px que el campo comparte con los de al lado. Se
+   calcula, y no se pone un número a ojo, por lo mismo que el de arriba: si
+   mañana cambia el tamaño de letra, el relleno se ajusta solo.
+
+   Vale para los dos rótulos, el de gasto y el de mantenimiento: en un teléfono
+   estrecho los dos se parten, y el campo no puede colocar su texto según lo que
+   ponga el marcador. */
+@media (max-width: 575.98px) {
+  textarea.expense-field {
+    padding-top: calc((62px - 2px - 2 * var(--line)) / 2);
+    padding-bottom: calc((62px - 2px - 2 * var(--line)) / 2);
+  }
+}
+
 /* Ficha del comprobante. Mismas medidas y mismos tonos que la carga de
    documentos del vehículo: es el mismo gesto en dos pantallas y no debería
    verse distinto. */
