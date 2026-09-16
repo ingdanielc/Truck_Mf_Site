@@ -239,10 +239,25 @@
                 </div>
               </div>
               <div class="col-12 col-sm-auto order-3 order-sm-2">
+                <!-- Para el titular, la tarjeta entera lleva a la suscripción.
+                     El enlace que había debajo repetía el mismo gesto en un
+                     blanco diminuto, y lo que se toca es el cuadro.
+
+                     Para quien no es el titular se queda como estaba: sin rol,
+                     sin foco y sin cursor, porque ahí no hay nada que abrir. -->
                 <div
                   class="card h-100 bg-dark bg-opacity-50 border-0 rounded-4 py-3 px-2 text-center"
+                  [class.cursor-pointer]="isOwnerSelf"
                   style="min-width: 150px"
                   [title]="subscriptionLabel"
+                  [attr.role]="isOwnerSelf ? 'button' : null"
+                  [attr.tabindex]="isOwnerSelf ? 0 : null"
+                  [attr.aria-label]="
+                    isOwnerSelf ? 'Ver y renovar la suscripción' : null
+                  "
+                  (click)="isOwnerSelf ? goToSubscription() : null"
+                  (keydown.enter)="isOwnerSelf ? goToSubscription() : null"
+                  (keydown.space)="isOwnerSelf ? goToSubscription() : null"
                 >
                   <p
                     class="text-white text-opacity-50 small fw-bold mb-0 text-uppercase tracking-wider"
@@ -281,20 +296,6 @@
                     >
                       {{ subscriptionLabel }}
                     </small>
-                  }
-                  <!-- El vencimiento se lee aquí y la renovación se hace en
-                       otra pantalla: el paso de una a otra va donde nace la
-                       pregunta, y no escondido en el menú de opciones. -->
-                  @if (isOwnerSelf) {
-                    <button
-                      type="button"
-                      class="btn btn-link btn-sm p-0 mt-1 text-white text-opacity-75 text-decoration-none"
-                      style="font-size: 0.75rem"
-                      (click)="goToSubscription()"
-                    >
-                      Ver y renovar
-                      <i class="fa-solid fa-arrow-right ms-1"></i>
-                    </button>
                   }
                 </div>
               </div>

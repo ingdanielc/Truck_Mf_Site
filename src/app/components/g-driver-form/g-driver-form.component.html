@@ -102,6 +102,7 @@
               formControlName="name"
               maxlength="150"
               placeholder="Escribe"
+              gAlphanumeric
               [class.is-invalid]="
                 driverForm.get('name')?.invalid &&
                 driverForm.get('name')?.touched

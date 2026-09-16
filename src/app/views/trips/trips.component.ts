@@ -62,6 +62,8 @@ export interface TripOwnerGroup {
   trips: ModelTrip[];
 }
 
+import { AlphanumericDirective } from 'src/app/directives/alphanumeric.directive';
+
 @Component({
   selector: 'app-trips',
   standalone: true,
@@ -73,6 +75,7 @@ export interface TripOwnerGroup {
     GConfirmSheetComponent,
     GTripInfoCardComponent,
     GSearchComboboxComponent,
+    AlphanumericDirective,
   ],
   templateUrl: './trips.component.html',
   styleUrls: ['./trips.component.scss'],

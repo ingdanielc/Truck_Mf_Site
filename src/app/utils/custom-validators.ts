@@ -53,6 +53,57 @@ export class CustomValidators {
   }
 
   /**
+   * Solo letras, digitos y espacios: ni simbolos ni puntuacion.
+   *
+   * "Alfanumerico" se toma en su sentido util para un nombre en castellano, no
+   * en el literal `A-Z0-9`: las tildes y la eñe son letras, y los nombres de
+   * dos palabras llevan espacio. Con la lectura estricta, una categoria ya
+   * guardada como "Lavado de vehiculo" no se podria ni volver a guardar al
+   * editarla.
+   *
+   * De ahi `\p{L}` y `\p{N}` en vez de rangos ASCII: cubren acentos, eñe y
+   * diereses sin enumerarlos uno a uno.
+   *
+   * El vacio se da por valido: de exigir un valor se encarga `required`, y si
+   * no, un campo recien abierto ya aparecería en rojo. Se comprueba sobre el
+   * valor recortado para que un espacio al final no invalide el nombre.
+   */
+  static alphanumericValidator(extra: string = ''): ValidatorFn {
+    const re = new RegExp(`^[${CustomValidators.allowedChars(extra)}]+$`, 'u');
+
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = String(control.value ?? '').trim();
+      if (!value) return null;
+
+      return re.test(value) ? null : { invalidChars: true };
+    };
+  }
+
+  /**
+   * La clase de caracteres admitidos, en un solo sitio.
+   *
+   * La comparten el validador y la directiva que filtra lo que se teclea, para
+   * que no puedan discrepar: si una admitiera algo que la otra rechaza, el
+   * campo dejaria escribir un valor que luego no deja guardar.
+   *
+   * `extra` se escapa antes de entrar en la clase. Sin eso, un guion al final
+   * de la lista formaria un rango y admitiria de mas.
+   */
+  private static allowedChars(extra: string): string {
+    const escaped = extra.replaceAll(/[\\\]^-]/g, String.raw`\$&`);
+    return String.raw`\p{L}\p{N} ` + escaped;
+  }
+
+  /**
+   * Quita de `value` todo lo que no admita la regla, con los mismos criterios
+   * que `alphanumericValidator`.
+   */
+  static cleanAlphanumeric(value: string, extra: string = ''): string {
+    const re = new RegExp(`[^${CustomValidators.allowedChars(extra)}]`, 'gu');
+    return value.replaceAll(re, '');
+  }
+
+  /**
    * Validates that password and confirmPassword match.
    */
   static passwordMatchValidator(g: AbstractControl): ValidationErrors | null {

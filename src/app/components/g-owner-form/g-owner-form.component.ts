@@ -30,6 +30,7 @@ import {
 } from 'src/app/utils/custom-validators';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { SubscriptionUtils } from 'src/app/utils/subscription';
+import { AlphanumericDirective } from 'src/app/directives/alphanumeric.directive';
 
 @Component({
   selector: 'g-owner-form',
@@ -40,6 +41,7 @@ import { SubscriptionUtils } from 'src/app/utils/subscription';
     ReactiveFormsModule,
     GCameraComponent,
     GSearchComboboxComponent,
+    AlphanumericDirective,
   ],
   templateUrl: './g-owner-form.component.html',
   styleUrls: ['./g-owner-form.component.scss'],
@@ -90,7 +92,14 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
   ) {
     this.ownerForm = this.fb.group(
       {
-        name: ['', [Validators.required, Validators.maxLength(150)]],
+        name: [
+          '',
+          [
+            Validators.required,
+            Validators.maxLength(150),
+            CustomValidators.alphanumericValidator(),
+          ],
+        ],
         documentType: [null, [Validators.required]],
         documentNumber: ['', [Validators.required, Validators.maxLength(13)]],
         cellPhone: [

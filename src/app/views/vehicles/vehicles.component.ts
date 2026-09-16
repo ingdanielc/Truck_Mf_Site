@@ -55,6 +55,7 @@ import {
   GSearchComboboxComponent,
 } from 'src/app/components/g-search-combobox/g-search-combobox.component';
 import { ownerComboOptions } from 'src/app/utils/owner-options';
+import { AlphanumericDirective } from 'src/app/directives/alphanumeric.directive';
 
 export interface VehicleOwnerGroup {
   owner: ModelOwner;
@@ -75,6 +76,7 @@ export interface VehicleOwnerGroup {
     PlatePipe,
     GConfirmSheetComponent,
     GSearchComboboxComponent,
+    AlphanumericDirective,
   ],
   templateUrl: './vehicles.component.html',
   styleUrls: ['./vehicles.component.scss'],
@@ -223,12 +225,18 @@ export class VehiclesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.generateYears();
     this.vehicleForm = this.fb.group({
       brand: ['', [Validators.required]],
-      model: ['', [Validators.required]],
+      model: [
+        '',
+        [Validators.required, CustomValidators.alphanumericValidator()],
+      ],
       year: [
         new Date().getFullYear(),
         [Validators.required, Validators.min(1980)],
       ],
-      color: ['', [Validators.required]],
+      color: [
+        '',
+        [Validators.required, CustomValidators.alphanumericValidator()],
+      ],
       plate: [
         '',
         [
@@ -237,8 +245,8 @@ export class VehiclesComponent implements OnInit, AfterViewInit, OnDestroy {
           this.duplicatePlateValidator(),
         ],
       ],
-      motorNumber: [''],
-      chassisNumber: [''],
+      motorNumber: ['', [CustomValidators.alphanumericValidator()]],
+      chassisNumber: ['', [CustomValidators.alphanumericValidator()]],
       axleCount: [
         null,
         [Validators.required, Validators.min(1), Validators.max(6)],
@@ -424,14 +432,25 @@ export class VehiclesComponent implements OnInit, AfterViewInit, OnDestroy {
           .map((v) => v.currentDriverId)
           .filter((id) => id != null);
 
-        // Filter: Keep unassigned drivers OR the driver of the vehicle currently being edited
+        /* Se proponen los conductores libres y activos. Uno deshabilitado no
+           puede llevar un vehiculo, asi que no se ofrece. La regla de "activo"
+           es la misma del listado y de las tarjetas: sin usuario tambien
+           cuenta como activo, porque quien no tiene cuenta nunca se
+           deshabilito.
+
+           La excepcion sigue siendo el conductor que ya lleva el vehiculo que
+           se esta editando, ahora tambien cuando esta inactivo: si se cayera
+           de la lista, el select quedaria vacio sobre un campo obligatorio y
+           entrar a la ficha a cambiar cualquier otra cosa obligaria a
+           reasignarlo. */
         this.drivers = allDrivers.filter((d: any) => {
           if (!d.id) return false;
           const isAssigned = assignedDriverIds.includes(d.id);
+          const isActive = !d.user || d.user.status === 'Activo';
           const isCurrentOfEditing =
             this.editingVehicle &&
             d.id === (this.editingVehicle.currentDriverId as any);
-          return !isAssigned || isCurrentOfEditing;
+          return (!isAssigned && isActive) || isCurrentOfEditing;
         });
 
         this.loadingDrivers = false;
@@ -474,7 +493,10 @@ export class VehiclesComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   private fijarOwnersDelFormulario(owner: ModelOwner | null): void {
     this.ownerFijado = owner;
-    this.ownerOptions = ownerComboOptions(owner ? [owner] : this.allOwners, true);
+    this.ownerOptions = ownerComboOptions(
+      owner ? [owner] : this.allOwners,
+      true,
+    );
   }
 
   /**

@@ -34,6 +34,7 @@ import {
   UniquenessField,
 } from 'src/app/utils/custom-validators';
 import { SecurityService } from 'src/app/services/security/security.service';
+import { AlphanumericDirective } from 'src/app/directives/alphanumeric.directive';
 
 @Component({
   selector: 'g-driver-form',
@@ -44,6 +45,7 @@ import { SecurityService } from 'src/app/services/security/security.service';
     ReactiveFormsModule,
     GCameraComponent,
     GSearchComboboxComponent,
+    AlphanumericDirective,
   ],
   templateUrl: './g-driver-form.component.html',
   styleUrls: ['./g-driver-form.component.scss'],
@@ -129,7 +131,14 @@ export class GDriverFormComponent implements OnInit, OnChanges {
   private initForm(): void {
     this.driverForm = this.fb.group(
       {
-        name: ['', [Validators.required, Validators.maxLength(150)]],
+        name: [
+          '',
+          [
+            Validators.required,
+            Validators.maxLength(150),
+            CustomValidators.alphanumericValidator(),
+          ],
+        ],
         documentType: [null, [Validators.required]],
         documentNumber: ['', [Validators.required, Validators.maxLength(13)]],
         cellPhone: [

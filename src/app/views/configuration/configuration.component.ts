@@ -29,6 +29,7 @@ import { OwnerService } from 'src/app/services/owner.service';
 import { DriverService } from 'src/app/services/driver.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
+import { AlphanumericDirective } from 'src/app/directives/alphanumeric.directive';
 
 interface CategoryConfig {
   id: number;
@@ -37,6 +38,9 @@ interface CategoryConfig {
   typeStr: string;
   icon: string;
   colorClass: string;
+  /** Se puede abrir a editar: las propias del propietario y, para el
+   *  administrador, todas. Las transversales quedan de solo lectura. */
+  canEdit: boolean;
 }
 
 @Component({
@@ -47,6 +51,7 @@ interface CategoryConfig {
     ReactiveFormsModule,
     FormsModule,
     GExpenseCategoryCardComponent,
+    AlphanumericDirective,
   ],
   templateUrl: './configuration.component.html',
   styleUrls: ['./configuration.component.scss'],
@@ -106,7 +111,10 @@ export class ConfigurationComponent implements OnInit {
       name: [
         '',
         {
-          validators: [Validators.required],
+          validators: [
+            Validators.required,
+            CustomValidators.alphanumericValidator(),
+          ],
           asyncValidators: [this.duplicateNameValidator()],
           updateOn: 'blur',
         },
@@ -231,9 +239,20 @@ export class ConfigurationComponent implements OnInit {
             results.global;
           const oData =
             results.own?.data?.content || results.own?.data || results.own;
+          /* Cual es propia y cual del catalogo comun se sabe aqui, por la
+             consulta de la que salio cada una, y no leyendo el `ownerId` del
+             registro: ese campo puede no venir serializado en la respuesta, y
+             si faltara, el propietario se quedaria sin poder editar ni las
+             suyas. La procedencia, en cambio, siempre es cierta. */
           const combined = [
-            ...(Array.isArray(gData) ? gData : []),
-            ...(Array.isArray(oData) ? oData : []),
+            ...(Array.isArray(gData) ? gData : []).map((c: any) => ({
+              ...c,
+              __isOwn: false,
+            })),
+            ...(Array.isArray(oData) ? oData : []).map((c: any) => ({
+              ...c,
+              __isOwn: true,
+            })),
           ];
           this.handleCategoriesResponse({ data: { content: combined } });
         },
@@ -263,6 +282,11 @@ export class ConfigurationComponent implements OnInit {
           typeStr: typeObj ? typeObj.label : 'Otro',
           icon: uiConfig.icon,
           colorClass: uiConfig.colorClass,
+          /* Solo se editan las propias. Una transversal es del catalogo comun
+             —la comparten todos los propietarios—, asi que cambiarle el nombre
+             a una se lo cambiaria a todos. El administrador si las mantiene,
+             que para eso las ve todas y es el unico que las crea. */
+          canEdit: this.userRole === 'ADMINISTRADOR' || cat.__isOwn === true,
         };
       });
       this.updateCounts();
@@ -431,6 +455,15 @@ export class ConfigurationComponent implements OnInit {
   }
 
   toggleOffcanvas(category?: CategoryConfig): void {
+    /* Una transversal no abre el formulario. La tarjeta se deja con su aspecto
+       de siempre —no se marca como deshabilitada—, asi que este cierre es lo
+       unico que separa una categoria del catalogo comun de su formulario: si
+       se quita de aqui, se puede editar.
+
+       Va antes de tocar `isOffcanvasOpen`: si no, el panel se abriria en
+       blanco y el siguiente clic lo cerraria en vez de abrirlo. */
+    if (category && !category.canEdit) return;
+
     this.isOffcanvasOpen = !this.isOffcanvasOpen;
 
     if (this.isOffcanvasOpen) {

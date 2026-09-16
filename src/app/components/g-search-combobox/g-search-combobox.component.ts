@@ -10,6 +10,7 @@ import {
   forwardRef,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { CustomValidators } from 'src/app/utils/custom-validators';
 
 /** Una fila de la lista: lo que se elige. */
 export interface ComboOption {
@@ -391,7 +392,25 @@ export class GSearchComboboxComponent
   // ── Búsqueda ───────────────────────────────────────────────────────
 
   onBuscar(evento: Event): void {
-    this.query = (evento.target as HTMLInputElement).value;
+    const input = evento.target as HTMLInputElement;
+
+    /* Se limpia aqui y no con la directiva `gAlphanumeric`, que es lo que usan
+       los demas campos: este buscador ya escucha `input` y se repinta desde
+       `[value]="query"`. Si la directiva corriera despues de este metodo,
+       `query` se quedaria con el texto sucio y el repintado lo devolveria a la
+       caja, deshaciendo la limpieza. La regla es la misma —sale de
+       `CustomValidators`—; lo unico que cambia es quien la aplica.
+
+       El cursor se repone donde estaba menos lo que se quito. */
+    const limpio = CustomValidators.cleanAlphanumeric(input.value);
+    if (limpio !== input.value) {
+      const quitados = input.value.length - limpio.length;
+      const cursor = (input.selectionStart ?? input.value.length) - quitados;
+      input.value = limpio;
+      input.setSelectionRange(cursor, cursor);
+    }
+
+    this.query = limpio;
     this.filtrar();
     /* Con algo escrito se deja marcada la primera coincidencia: así "Enter"
        elige lo que se está viendo arriba sin bajar con las flechas, que en el

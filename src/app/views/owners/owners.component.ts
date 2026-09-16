@@ -20,6 +20,8 @@ import { SecurityService } from 'src/app/services/security/security.service';
 import { ToastService } from 'src/app/services/toast.service';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
 
+import { AlphanumericDirective } from 'src/app/directives/alphanumeric.directive';
+
 @Component({
   selector: 'app-owners',
   standalone: true,
@@ -29,6 +31,7 @@ import { PaginationUtils } from 'src/app/utils/pagination-utils';
     GPasswordCardComponent,
     GOwnerFormComponent,
     GVehicleDocumentsComponent,
+    AlphanumericDirective,
   ],
   templateUrl: './owners.component.html',
   styleUrls: ['./owners.component.scss'],

@@ -46,6 +46,7 @@ import {
 } from '../g-search-combobox/g-search-combobox.component';
 import { isUrbanTrip } from '../../utils/urban-trip';
 import { ownerComboOptions } from 'src/app/utils/owner-options';
+import { AlphanumericDirective } from 'src/app/directives/alphanumeric.directive';
 
 @Component({
   selector: 'g-trip-form',
@@ -58,6 +59,7 @@ import { ownerComboOptions } from 'src/app/utils/owner-options';
     NgClass,
     PlatePipe,
     GSearchComboboxComponent,
+    AlphanumericDirective,
   ],
   templateUrl: './g-trip-form.component.html',
   styleUrls: ['./g-trip-form.component.scss'],
@@ -141,7 +143,10 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     this.tripForm = this.fb.group(
       {
         numberTrip: ['', [Validators.required]],
-        manifestNumber: ['', [Validators.required]],
+        manifestNumber: [
+          '',
+          [Validators.required, CustomValidators.alphanumericValidator()],
+        ],
         originId: ['', [Validators.required]],
         destinationId: ['', [Validators.required]],
         freight: [
@@ -157,8 +162,8 @@ export class GTripFormComponent implements OnInit, OnDestroy {
         ownerId: [null, [Validators.required]],
         vehicleId: [null, [Validators.required]],
         driverId: [null, [Validators.required]],
-        loadType: [''],
-        company: [''],
+        loadType: ['', [CustomValidators.alphanumericValidator()]],
+        company: ['', [CustomValidators.alphanumericValidator()]],
         status: ['En Curso'],
         tripType: ['CARGADO', [Validators.required]],
         returnDestinationId: [null],

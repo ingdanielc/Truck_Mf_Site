@@ -24,6 +24,8 @@ import { ToastService } from '../../services/toast.service';
 import { CustomValidators } from '../../utils/custom-validators';
 import { PaginationUtils } from 'src/app/utils/pagination-utils';
 
+import { AlphanumericDirective } from 'src/app/directives/alphanumeric.directive';
+
 @Component({
   selector: 'app-security',
   standalone: true,
@@ -32,6 +34,7 @@ import { PaginationUtils } from 'src/app/utils/pagination-utils';
     GPasswordCardComponent,
     ReactiveFormsModule,
     FormsModule,
+    AlphanumericDirective,
   ],
   templateUrl: './security.component.html',
   styleUrls: ['./security.component.scss'],
@@ -74,7 +77,10 @@ export class SecurityComponent implements OnInit, OnDestroy {
   ) {
     this.userForm = this.fb.group(
       {
-        name: ['', [Validators.required]],
+        name: [
+          '',
+          [Validators.required, CustomValidators.alphanumericValidator()],
+        ],
         email: [
           '',
           {

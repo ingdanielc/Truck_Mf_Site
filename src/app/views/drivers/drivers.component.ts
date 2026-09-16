@@ -28,6 +28,8 @@ export interface DriverOwnerGroup {
   drivers: ModelDriver[];
 }
 
+import { AlphanumericDirective } from 'src/app/directives/alphanumeric.directive';
+
 @Component({
   selector: 'app-drivers',
   standalone: true,
@@ -38,6 +40,7 @@ export interface DriverOwnerGroup {
     GPasswordCardComponent,
     GDriverFormComponent,
     GVehicleDocumentsComponent,
+    AlphanumericDirective,
   ],
   templateUrl: './drivers.component.html',
   styleUrls: ['./drivers.component.scss'],

@@ -28,6 +28,7 @@
               type="text"
               class="form-control ps-5 py-2 rounded-3 w-100"
               placeholder="Buscar por placa o marca..."
+              gAlphanumeric="-"
               [(ngModel)]="searchTerm"
               (blur)="applyFilter()"
               (keydown.enter)="applyFilter()"
@@ -691,6 +692,7 @@
               class="form-control rounded-3 py-2 px-3"
               formControlName="model"
               placeholder="Escribe"
+              gAlphanumeric
               [class.is-invalid]="
                 vehicleForm.get('model')?.invalid &&
                 vehicleForm.get('model')?.touched
@@ -740,6 +742,7 @@
               class="form-control rounded-3 py-2 px-3"
               formControlName="color"
               placeholder="Escribe"
+              gAlphanumeric
               [class.is-invalid]="
                 vehicleForm.get('color')?.invalid &&
                 vehicleForm.get('color')?.touched
@@ -774,6 +777,7 @@
               class="form-control rounded-3 py-2 px-3 text-uppercase"
               formControlName="plate"
               placeholder="XXX-999"
+              gAlphanumeric="-"
               [class.is-invalid]="
                 vehicleForm.get('plate')?.invalid &&
                 vehicleForm.get('plate')?.touched
@@ -805,6 +809,7 @@
               class="form-control rounded-3 py-2 px-3"
               formControlName="motorNumber"
               placeholder="Escribe"
+              gAlphanumeric
             />
           </div>
 
@@ -818,6 +823,7 @@
               class="form-control rounded-3 py-2 px-3"
               formControlName="chassisNumber"
               placeholder="Escribe"
+              gAlphanumeric
             />
           </div>
 

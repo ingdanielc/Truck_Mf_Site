@@ -28,6 +28,7 @@
             type="text"
             class="form-control ps-5 py-2 rounded-3 w-100"
             placeholder="Buscar por nombre..."
+            gAlphanumeric
             (input)="applyFilter()"
             [(ngModel)]="searchTerm"
           />
@@ -191,10 +192,15 @@
     <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3 mb-4">
       @for (cat of paginatedCategories; track cat.id) {
         <div class="col">
+          <!-- Las transversales son del catálogo común y las mantiene el
+               administrador: no abren el formulario —el cierre está en
+               `toggleOffcanvas`— y lo anuncian con el círculo del icono en
+               gris, que es la única diferencia visible con las propias. -->
           <g-expense-category-card
             [icon]="cat.icon"
             [name]="cat.name"
             [colorClass]="cat.colorClass"
+            [iconMuted]="!cat.canEdit"
             (cardClick)="toggleOffcanvas(cat)"
             class="h-100"
           ></g-expense-category-card>
@@ -354,6 +360,7 @@
               class="form-control rounded-3 py-2 px-3"
               formControlName="name"
               placeholder="Escribe"
+              gAlphanumeric
               [class.is-invalid]="
                 categoryForm.get('name')?.invalid &&
                 categoryForm.get('name')?.touched
@@ -367,6 +374,8 @@
             <div class="text-danger small mt-1">
               @if (categoryForm.get("name")?.hasError("required")) {
                 Este campo es obligatorio para continuar
+              } @else if (categoryForm.get("name")?.hasError("invalidChars")) {
+                Solo se permiten letras, números y espacios
               } @else if (categoryForm.get("name")?.hasError("duplicate")) {
                 Esta categoría ya se encuentra registrada
               }
