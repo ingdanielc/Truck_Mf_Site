@@ -11,10 +11,7 @@
 >
   <div
     class="icon-shape rounded-circle d-flex align-items-center justify-content-center mb-1"
-    [ngClass]="{
-      'bg-primary bg-opacity-10 text-primary': !selected || isNew,
-      'bg-white text-primary': selected && !isNew,
-    }"
+    [ngClass]="iconClasses"
   >
     <i [class]="icon"></i>
   </div>

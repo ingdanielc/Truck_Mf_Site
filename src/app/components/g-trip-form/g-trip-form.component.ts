@@ -777,7 +777,20 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     );
     this.driverService.getDriverFilter(filter).subscribe({
       next: (response: any) => {
-        this.drivers = response?.data?.content ?? [];
+        /* Un conductor deshabilitado no sale de viaje, asi que no se ofrece.
+           La regla de "activo" es la misma del listado y de las tarjetas: sin
+           usuario tambien cuenta como activo, porque quien no tiene cuenta
+           nunca se deshabilito.
+
+           Se conserva el del viaje que se esta editando aunque hoy este
+           inactivo, como ya se hace con el vehiculo: sin su opcion el select
+           se veria en blanco sobre un viaje que si lo tiene asignado. */
+        const todos: any[] = response?.data?.content ?? [];
+        this.drivers = todos.filter((d: any) => {
+          const activo = !d.user || d.user.status === 'Activo';
+          const esElDelViaje = this.trip && d.id === this.trip.driverId;
+          return activo || esElDelViaje;
+        });
         this.loadingDrivers = false;
         if (this._pendingDriverId != null) {
           this.tripForm.get('driverId')?.setValue(this._pendingDriverId);

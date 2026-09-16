@@ -66,6 +66,18 @@
               <ul
                 class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 d-block"
               >
+                <!-- Documentos. Mismo icono y mismo rotulo que en el detalle
+                     del propietario, y primero en la lista como alli: es el
+                     mismo gesto en las dos pantallas. -->
+                <li>
+                  <button
+                    class="dropdown-item d-flex align-items-center gap-2 py-2"
+                    (click)="onManageDocumentsClick($event)"
+                  >
+                    <i class="fa-solid fa-folder-open text-secondary"></i>
+                    <span>Gestionar documentos</span>
+                  </button>
+                </li>
                 <li>
                   <button
                     class="dropdown-item d-flex align-items-center gap-2 py-2"
