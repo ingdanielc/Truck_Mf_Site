@@ -80,7 +80,18 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
   isAdmin: boolean = false;
   isConductor: boolean = false;
   userRole: string = '';
-  now: Date = new Date();
+  /**
+   * La licencia ya vencio: pinta su fecha en rojo.
+   *
+   * Antes se comparaba `licenseExpiry < now` en la plantilla, pero la API
+   * manda la fecha como texto y `now` era un `Date`: esa comparacion en
+   * JavaScript da siempre `false`, asi que el rojo no salia nunca. Se usa la
+   * misma regla que la suscripcion: solo el dia, en hora de Bogota, y el
+   * propio dia del vencimiento todavia cuenta como vigente.
+   */
+  get isLicenseExpired(): boolean {
+    return SubscriptionUtils.isExpired(this.owner?.licenseExpiry);
+  }
 
   // Offcanvas variables
   isOffcanvasOpen: boolean = false;

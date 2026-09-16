@@ -484,7 +484,7 @@
               </p>
               <h6
                 class="fw-bold mb-0"
-                [class.text-danger]="$any(owner).licenseExpiry < now"
+                [class.text-danger]="isLicenseExpired"
               >
                 {{ (owner.licenseExpiry | date: "longDate") || "---" }}
               </h6>

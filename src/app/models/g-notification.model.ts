@@ -25,6 +25,12 @@ export const EVENT_TRANSLATIONS: { [key: string]: string } = {
   EXPENSE_INACTIVITY_ALERT: 'VIAJE SIN GASTOS',
   TRIP_INACTIVITY_ALERT: 'SIN VIAJE EN CURSO',
   TRIP_STALLED_ALERT: 'VIAJE SIN CERRAR',
+
+  /* Avisos de vencimiento y cobro. Sin rótulo propio, la tarjeta mostraba el
+     nombre técnico tal cual llegaba del backend. */
+  DOCUMENT_EVENT: 'DOCUMENTO POR VENCER',
+  SUBSCRIPTION_EXPIRATION: 'SUSCRIPCIÓN POR VENCER',
+  PENDING_BALANCE_ALERT: 'SALDO PENDIENTE',
 };
 
 export interface GNotification {

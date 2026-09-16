@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { Formatters } from '../../utils/formatters';
+import { SubscriptionUtils } from '../../utils/subscription';
 
 @Component({
   selector: 'app-g-driver-card',
@@ -104,6 +105,17 @@ export class GDriverCardComponent {
   onViewProfile(): void {
     if (this.isMenuOpen) return;
     this.viewDetail.emit(this.driver);
+  }
+
+  /**
+   * La licencia ya vencio: pinta el vencimiento en rojo.
+   *
+   * La misma regla que el detalle del conductor —solo el dia, en hora de
+   * Bogota, y el propio dia del vencimiento todavia cuenta como vigente—, para
+   * que la tarjeta y la ficha no digan cosas distintas del mismo conductor.
+   */
+  get isLicenseExpired(): boolean {
+    return SubscriptionUtils.isExpired(this.driver?.licenseExpiry);
   }
 
   get isActive(): boolean {

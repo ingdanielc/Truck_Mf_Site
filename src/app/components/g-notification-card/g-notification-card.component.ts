@@ -18,21 +18,34 @@ export class GNotificationCardComponent {
   @Output() remove = new EventEmitter<number>();
 
   /**
-   * Ícono de las alertas de inactividad, por nombre exacto.
+   * Ícono por nombre exacto del evento.
    *
    * Se resuelve antes que la búsqueda por texto de abajo, y ese orden es lo que
-   * hace falta: las tres llevan TRIP o EXPENSE en el nombre y caerían en el
-   * ícono del evento normal —el camión andando, el dinero moviéndose—, que es
-   * justo lo contrario de lo que avisan. Van en ámbar porque las tres son lo
-   * mismo: algo que lleva demasiado tiempo quieto y hay que mirar.
+   * hace falta: las alertas de inactividad llevan TRIP o EXPENSE en el nombre y
+   * caerían en el ícono del evento normal —el camión andando, el dinero
+   * moviéndose—, que es justo lo contrario de lo que avisan. Los tipos que no
+   * se parecen a ningún otro también van aquí: la búsqueda por texto les daría
+   * el ícono genérico, o uno que depende del orden de sus reglas.
    */
   private static readonly ALERT_ICONS: Record<string, string> = {
+    /* Inactividad, en ámbar: algo que lleva demasiado tiempo quieto. */
     /* El camión parado, frente al `fa-truck-fast` del viaje en curso. */
     TRIP_INACTIVITY_ALERT: 'fa-truck text-warning',
     /* Un viaje que arrancó y no ha registrado un solo gasto. */
     EXPENSE_INACTIVITY_ALERT: 'fa-receipt text-warning',
     /* El viaje sigue abierto mucho después de lo que debía durar. */
     TRIP_STALLED_ALERT: 'fa-clock-rotate-left text-warning',
+
+    /* Un documento que está por vencer: en rojo, como el resto de vencimientos. */
+    DOCUMENT_EVENT: 'fa-file-circle-exclamation text-danger',
+    /* Ya lo tomaba la regla de EXPIRATION, pero solo porque va antes que la de
+       SUBSCRIPTION, que le daría el signo de pesos. Por nombre no depende de
+       ese orden. */
+    SUBSCRIPTION_EXPIRATION: 'fa-calendar-xmark text-danger',
+    /* Dinero que falta por cobrar: ámbar, pendiente pero no vencido. */
+    PENDING_BALANCE_ALERT: 'fa-hand-holding-dollar text-warning',
+    /* Ningún texto de abajo lo reconocía y caía en el ícono genérico. */
+    OWNER_EVENT: 'fa-user-tie text-info',
   };
 
   getIconClass(): string {

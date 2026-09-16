@@ -387,7 +387,7 @@
                 </p>
                 <h6
                   class="fw-bold mb-0"
-                  [class.text-danger]="$any(driver).licenseExpiry < now"
+                  [class.text-danger]="isLicenseExpired"
                 >
                   {{ (driver.licenseExpiry | date: "longDate") || "---" }}
                 </h6>

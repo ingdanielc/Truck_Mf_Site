@@ -16,6 +16,7 @@ import { ModelOwner } from 'src/app/models/owner-model';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
 import { Formatters } from '../../../utils/formatters';
+import { SubscriptionUtils } from '../../../utils/subscription';
 import { GDriverFormComponent } from 'src/app/components/g-driver-form/g-driver-form.component';
 import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
 import {
@@ -72,7 +73,18 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
   loadingCities: boolean = true;
   loadingBrands: boolean = true;
   tripCount: number = 0;
-  now: Date = new Date();
+  /**
+   * La licencia ya vencio: pinta su fecha en rojo.
+   *
+   * Antes se comparaba `licenseExpiry < now` en la plantilla, pero la API
+   * manda la fecha como texto y `now` era un `Date`: esa comparacion en
+   * JavaScript da siempre `false`, asi que el rojo no salia nunca. Se usa la
+   * misma regla que la suscripcion: solo el dia, en hora de Bogota, y el
+   * propio dia del vencimiento todavia cuenta como vigente.
+   */
+  get isLicenseExpired(): boolean {
+    return SubscriptionUtils.isExpired(this.driver?.licenseExpiry);
+  }
   showCamera: boolean = false;
   photoPreview: string = '';
 

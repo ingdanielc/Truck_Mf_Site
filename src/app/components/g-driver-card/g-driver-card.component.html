@@ -176,8 +176,13 @@
             <span class="fw-medium">
               {{ driver.licenseCategory | uppercase }}
               @if (driver.licenseExpiry) {
-                — <span class="d-none d-sm-inline">Vence:</span>
-                {{ driver.licenseExpiry | date: "d MMM, yyyy" }}
+                <!-- En rojo solo el vencimiento, no la categoría: es lo que
+                     está mal, igual que en el detalle del conductor. -->
+                —
+                <span [class.text-danger]="isLicenseExpired">
+                  <span class="d-none d-sm-inline">Vence:</span>
+                  {{ driver.licenseExpiry | date: "d MMM, yyyy" }}
+                </span>
               }
             </span>
           </div>
