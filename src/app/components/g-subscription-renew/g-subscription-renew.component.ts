@@ -66,6 +66,12 @@ export class GSubscriptionRenewComponent {
   public readonly methods: PaymentMethod[] = PAYMENT_METHODS;
   public readonly maxFileSizeMb = MAX_FILE_SIZE_MB;
 
+  /** Lo que ofrece el selector de archivos. Sale de la misma lista que valida
+   *  la elección, para que no puedan separarse. */
+  public readonly acceptedFiles = ALLOWED_EXTENSIONS.map(
+    (ext) => `.${ext}`,
+  ).join(',');
+
   /* ---- Años ---------------------------------------------------------------
      Se puede renovar de uno en uno o dejar la suscripción pagada por varios.
      El tope son tres: más allá el propietario estaría pagando por adelantado
@@ -267,6 +273,25 @@ export class GSubscriptionRenewComponent {
   public removeFile(): void {
     this.selectedFile = null;
     this.selectedFileName = '';
+  }
+
+  /**
+   * Abre el comprobante elegido para revisarlo antes de mandarlo.
+   *
+   * Aquí el archivo solo existe en el navegador —se sube al reportar el pago,
+   * no antes—, así que no hay URL que abrir y se arma una sobre el propio
+   * archivo. En las otras dos pantallas este botón abre el que ya está
+   * guardado; el gesto es el mismo, lo que cambia es de dónde sale.
+   *
+   * La URL se revoca con holgura y no enseguida: revocarla al momento le corta
+   * la carga a la pestaña que se acaba de abrir.
+   */
+  public openFile(): void {
+    if (!this.selectedFile) return;
+
+    const url = URL.createObjectURL(this.selectedFile);
+    globalThis.open(url, '_blank', 'noopener');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
   get canSend(): boolean {

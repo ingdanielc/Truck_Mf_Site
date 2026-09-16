@@ -61,7 +61,7 @@ export interface SubscriptionPayment {
   ownerName: string | null;
   amount: number;
   status: SubscriptionPaymentStatus;
-  /** Con qué se pagó: Nequi o Bancolombia. */
+  /** Con qué se pagó: Nequi */
   method: string;
   /** El comprobante, tal como quedó subido. */
   receiptUrl: string | null;

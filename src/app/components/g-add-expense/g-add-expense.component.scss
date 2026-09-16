@@ -210,3 +210,37 @@ textarea.expense-field {
     border-color: rgba(255, 255, 255, 0.1) !important;
   }
 }
+
+/* ---- La ficha en el teléfono --------------------------------------------
+   Con el nombre y los tres botones repartiéndose una fila de 62px, al nombre
+   le quedaban unos pocos caracteres antes del recorte: los botones se llevan
+   más de 130px de un ancho que en un móvil ya es escaso. Ahí la ficha crece y
+   las acciones bajan a su propia línea, bajo el nombre y pegadas a la derecha:
+   siguen donde estaban antes de bajar, así que el gesto no se muda de sitio.
+
+   Solo la ficha. La zona de carga no lleva botones y se queda en los 62px, y
+   el salto al elegir el archivo se asume: es la única forma de que el nombre
+   se lea entero.
+
+   `flex: 0 0 100%` es lo que garantiza el salto de línea. Dejarlo al
+   desbordamiento haría que un nombre corto se quedara arriba y uno largo
+   bajara, que es justo la inconsistencia que se quería quitar. */
+@media (max-width: 575.98px) {
+  .file-chip.expense-field {
+    height: auto;
+    flex-wrap: wrap;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+
+    /* Entre el texto y los botones basta con la mitad de lo que separa al
+       icono del nombre: es un salto de fila, no una columna aparte. El
+       `!important` es para ganarle al de `.gap-3`, que fija las dos
+       separaciones de una vez y sin el que el hueco se queda en 1rem. */
+    row-gap: 0.5rem !important;
+  }
+
+  .file-chip-actions {
+    flex: 0 0 100%;
+    justify-content: flex-end;
+  }
+}

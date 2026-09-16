@@ -304,7 +304,7 @@
   <!-- Mobile Floating Action Button -->
   <button
     class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
-    [class.d-none]="showAddExpense || !selectedTrip || isTripCancelled"
+    [class.btn-fab-hidden]="showAddExpense || !selectedTrip || isTripCancelled"
     [attr.aria-label]="
       isMaintenance ? 'Agregar Mantenimiento' : 'Agregar Gasto'
     "

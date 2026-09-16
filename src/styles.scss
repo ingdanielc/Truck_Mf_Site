@@ -42,6 +42,26 @@
 }
 
 /**
+ * Esconder el boton mientras hay un panel abierto encima.
+ *
+ * No con `d-none`, que es lo que se usaba: `display: none` cancela la
+ * animacion de presentacion de la etiqueta. Al cerrar el panel el elemento se
+ * vuelve a mostrar, la animacion arranca de cero y la etiqueta se despliega
+ * otra vez, como si se acabara de entrar a la vista.
+ *
+ * Con `visibility` el elemento nunca deja de renderizarse para la animacion:
+ * corre una sola vez al cargar y el boton reaparece recogido, que es como se
+ * dejo. Los tres a la vez: `visibility` y `pointer-events` lo sacan del
+ * alcance del tacto y del lector de pantalla, y `opacity` lo desvanece con la
+ * transicion que el boton ya tiene.
+ */
+.btn-fab-hidden {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/**
  * El boton flotante se presenta solo. Al entrar a la vista aparece como
  * "+ Agregar" y a los pocos segundos se recoge al circulo de siempre: quien
  * no lo ubica alcanza a leer para que sirve, y quien ya lo conoce lo

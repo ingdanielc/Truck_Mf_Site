@@ -278,38 +278,46 @@
               }
             </p>
           </div>
-          @if (canViewReceipt) {
+          <!-- Las acciones van agrupadas para poder bajarlas enteras bajo el
+               nombre en el teléfono. En escritorio la separación es la misma
+               que tenían sueltas, así que ahí no cambia nada. -->
+          <div class="file-chip-actions d-flex align-items-center gap-3">
+            @if (canViewReceipt) {
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none draft-btn"
+                (click)="openReceipt()"
+                title="Abrir comprobante"
+                aria-label="Abrir comprobante"
+              >
+                <i
+                  class="fa-solid fa-arrow-up-right-from-square"
+                  style="font-size: 0.75rem"
+                ></i>
+              </button>
+            }
             <button
               type="button"
-              class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none draft-btn"
-              (click)="openReceipt()"
-              title="Abrir comprobante"
-              aria-label="Abrir comprobante"
+              class="btn btn-outline-secondary btn-sm rounded-3 p-1 shadow-none draft-btn"
+              (click)="receiptInput.click()"
+              title="Reemplazar comprobante"
+              aria-label="Reemplazar comprobante"
             >
               <i
-                class="fa-solid fa-arrow-up-right-from-square"
+                class="fa-solid fa-arrows-rotate"
                 style="font-size: 0.75rem"
               ></i>
             </button>
-          }
-          <button
-            type="button"
-            class="btn btn-outline-secondary btn-sm rounded-3 p-1 shadow-none draft-btn"
-            (click)="receiptInput.click()"
-            title="Reemplazar comprobante"
-            aria-label="Reemplazar comprobante"
-          >
-            <i class="fa-solid fa-arrows-rotate" style="font-size: 0.75rem"></i>
-          </button>
-          <button
-            type="button"
-            class="btn btn-outline-danger btn-sm rounded-3 p-1 shadow-none draft-btn"
-            (click)="removeReceipt()"
-            title="Quitar comprobante"
-            aria-label="Quitar comprobante"
-          >
-            <i class="fa-solid fa-trash" style="font-size: 0.75rem"></i>
-          </button>
+            <button
+              type="button"
+              class="btn btn-outline-danger btn-sm rounded-3 p-1 shadow-none draft-btn"
+              (click)="removeReceipt()"
+              title="Quitar comprobante"
+              aria-label="Quitar comprobante"
+            >
+              <i class="fa-solid fa-trash" style="font-size: 0.75rem"></i>
+            </button>
+          </div>
         </div>
       } @else {
         <!-- Misma estructura que la ficha de arriba —icono, dos líneas y los

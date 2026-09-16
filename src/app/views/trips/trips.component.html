@@ -809,7 +809,7 @@
   <!-- Mobile Floating Action Button -->
   <button
     class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
-    [class.d-none]="isOffcanvasOpen || isTripInfoOpen"
+    [class.btn-fab-hidden]="isOffcanvasOpen || isTripInfoOpen"
     aria-label="Nuevo Viaje"
     (click)="toggleOffcanvas()"
   >

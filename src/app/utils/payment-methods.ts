@@ -11,7 +11,7 @@ import { Formatters } from './formatters';
 /** Un medio de pago con su cuenta. */
 export interface PaymentMethod {
   /** Con lo que se identifica el pago al reportarlo. */
-  id: 'NEQUI' | 'BANCOLOMBIA';
+  id: 'NEQUI';
   name: string;
   /**
    * Enlace que abre la aplicación en el celular.
@@ -65,9 +65,6 @@ export function accountDigits(method: PaymentMethod | null): string {
 /**
  * El método por su `id`, para nombrarlo en el histórico de pagos.
  *
- * El histórico puede traer métodos que ya no se ofrecen —un pago viejo por
- * Bancolombia—, así que un `id` desconocido se muestra tal cual y no se
- * descarta: es lo que el propietario transfirió.
  */
 export function paymentMethodName(id: string | null | undefined): string {
   const clave = (id ?? '').toUpperCase();

@@ -109,7 +109,13 @@
             </div>
 
             <div class="col-6 col-md-3">
-              <p class="field-label mb-1">Vehículos incluidos</p>
+              <!-- En el teléfono son dos columnas y "Vehículos incluidos" se
+                   parte en dos líneas: el rótulo se queda en "Vehículos", que
+                   es lo que nombra la cifra de abajo. -->
+              <p class="field-label mb-1">
+                <span class="d-none d-sm-inline">Vehículos incluidos</span>
+                <span class="d-sm-none">Vehículos</span>
+              </p>
               <p class="field-value mb-0">
                 {{ vehicleCount }}
                 {{ vehicleCount === 1 ? "vehículo" : "vehículos" }}
@@ -235,7 +241,7 @@
   @if (canRenew) {
     <button
       class="btn btn-primary d-flex d-sm-none btn-fab shadow-lg align-items-center justify-content-center"
-      [class.d-none]="showRenew"
+      [class.btn-fab-hidden]="showRenew"
       [attr.aria-label]="renewLabel"
       (click)="showRenew = true"
     >

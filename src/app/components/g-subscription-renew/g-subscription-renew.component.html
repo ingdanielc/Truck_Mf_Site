@@ -14,7 +14,7 @@
     </button>
   </div>
   <p class="text-secondary small mb-0 mt-1">
-    Paga por Nequi o Bancolombia y envía el comprobante.
+    Paga por Nequi y envía el comprobante.
   </p>
 </div>
 
@@ -92,7 +92,7 @@
       @for (option of yearOptions; track option) {
         <button
           type="button"
-          class="btn btn-sm rounded-pill px-3 year-chip"
+          class="btn rounded-pill px-3 fw-medium text-nowrap year-chip"
           [class.btn-primary]="option === years"
           [class.btn-outline-secondary]="option !== years"
           [attr.aria-pressed]="option === years"
@@ -199,7 +199,7 @@
           <p class="text-body-secondary smaller mb-1">
             {{ method.accountLabel }}
           </p>
-          <p class="account-number fw-bold mb-1">{{ method.account }}</p>
+          <p class="account-number fw-bold mb-0">{{ method.account }}</p>
           <p class="text-body-secondary smaller mb-2">{{ method.holder }}</p>
 
           <p class="text-primary smaller mb-1">
@@ -224,9 +224,12 @@
     </p>
 
     @if (!reporting) {
+      <!-- Del alto del «Enviar comprobante» que lo sustituye al abrir el
+           formulario: es el mismo botón en dos momentos y ocupa el mismo
+           sitio, así que medir distinto se veía como un salto. -->
       <button
         type="button"
-        class="btn btn-primary rounded-3 w-100 py-2"
+        class="btn btn-primary btn-lg rounded-3 w-100 py-3 fw-bold"
         (click)="startReport()"
       >
         <i class="fa-solid fa-paper-plane me-2"></i>Enviar comprobante
@@ -246,39 +249,95 @@
         />
       </div>
 
+      <!-- Comprobante. Es la misma ficha de la carga de documentos y del
+           comprobante de un gasto, con sus mismas acciones e iconos: es el
+           mismo gesto en tres pantallas y no debería verse ni comportarse
+           distinto. -->
       <div class="mb-3">
-        <span class="form-label fw-bold small mb-1 d-block">Comprobante*</span>
+        <label for="subscriptionReceipt" class="form-label fw-bold small mb-1 d-block">
+          Comprobante*
+        </label>
+        <input
+          id="subscriptionReceipt"
+          type="file"
+          #receiptInput
+          class="d-none"
+          [accept]="acceptedFiles"
+          (change)="onFileSelected($event)"
+        />
+
         @if (selectedFileName) {
           <div
-            class="file-chip d-flex align-items-center gap-2 rounded-3 px-3 py-2"
+            class="file-chip field-height border rounded-3 px-3 d-flex align-items-center gap-3"
           >
-            <i class="fa-solid fa-file-lines text-primary"></i>
-            <span class="text-truncate flex-grow-1">{{
-              selectedFileName
-            }}</span>
-            <button
-              type="button"
-              class="btn btn-link btn-sm p-0 text-danger shadow-none"
-              (click)="removeFile()"
-              aria-label="Quitar el archivo"
-            >
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+            <i class="fa-solid fa-file-lines fs-4 text-primary"></i>
+            <div class="flex-grow-1 overflow-hidden">
+              <p class="mb-0 small fw-bold text-truncate">
+                {{ selectedFileName }}
+              </p>
+              <p class="mb-0 text-secondary" style="font-size: 0.72rem">
+                Se enviará al reportar
+              </p>
+            </div>
+            <!-- Las acciones van agrupadas para poder bajarlas enteras bajo el
+                 nombre en el teléfono. -->
+            <div class="file-chip-actions d-flex align-items-center gap-3">
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none draft-btn"
+                (click)="openFile()"
+                title="Abrir comprobante"
+                aria-label="Abrir comprobante"
+              >
+                <i
+                  class="fa-solid fa-arrow-up-right-from-square"
+                  style="font-size: 0.75rem"
+                ></i>
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm rounded-3 p-1 shadow-none draft-btn"
+                (click)="receiptInput.click()"
+                title="Reemplazar comprobante"
+                aria-label="Reemplazar comprobante"
+              >
+                <i
+                  class="fa-solid fa-arrows-rotate"
+                  style="font-size: 0.75rem"
+                ></i>
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-danger btn-sm rounded-3 p-1 shadow-none draft-btn"
+                (click)="removeFile()"
+                title="Quitar comprobante"
+                aria-label="Quitar comprobante"
+              >
+                <i class="fa-solid fa-trash" style="font-size: 0.75rem"></i>
+              </button>
+            </div>
           </div>
         } @else {
-          <label class="file-drop rounded-3 w-100 text-center py-3 mb-0">
-            <input
-              type="file"
-              class="d-none"
-              accept=".pdf,.jpg,.jpeg,.png,.webp"
-              (change)="onFileSelected($event)"
-            />
-            <i class="fa-solid fa-cloud-arrow-up fs-4 d-block mb-1"></i>
-            <span class="small">Toca para adjuntar</span>
-          </label>
-          <p class="text-body-secondary smaller mb-0 mt-1">
-            PDF o imagen, hasta {{ maxFileSizeMb }} MB.
-          </p>
+          <!-- Misma estructura que la ficha —icono, dos líneas y los mismos
+               rellenos—, para que al elegir el archivo una ocupe el sitio de la
+               otra sin que el formulario dé un salto. Es un `button` y no el
+               `label` de antes para que llegue por teclado sin inventar roles. -->
+          <button
+            type="button"
+            class="file-dropzone field-height btn w-100 rounded-3 px-3 d-flex align-items-center text-start gap-3"
+            (click)="receiptInput.click()"
+          >
+            <i class="fa-solid fa-cloud-arrow-up fs-4 text-primary"></i>
+            <span class="flex-grow-1 overflow-hidden">
+              <span class="mb-0 small fw-bold d-block">Seleccionar archivo</span>
+              <span
+                class="mb-0 text-secondary d-block"
+                style="font-size: 0.72rem"
+              >
+                PDF o imagen, hasta {{ maxFileSizeMb }} MB
+              </span>
+            </span>
+          </button>
         }
       </div>
 
@@ -288,9 +347,11 @@
         </p>
       }
 
+      <!-- Del alto de «Guardar documento» en la carga de documentos: es el
+           botón grande con el que se cierra el panel, igual que allí. -->
       <button
         type="button"
-        class="btn btn-primary rounded-3 w-100 py-2"
+        class="btn btn-primary btn-lg rounded-3 w-100 py-3 fw-bold"
         [disabled]="!canSend"
         (click)="sendReceipt()"
       >

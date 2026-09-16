@@ -145,6 +145,47 @@
   border-color: var(--bs-form-invalid-border-color, #dc3545) !important;
 }
 
+/* ---- La ficha en el teléfono --------------------------------------------
+   Lo mismo que hacen las acciones de la tarjeta de un documento guardado, unas
+   líneas más arriba: con el nombre y los tres botones repartiéndose una fila
+   de 62px, al nombre le quedaban unos pocos caracteres antes del recorte. Aquí
+   la ficha crece y las acciones bajan bajo el nombre, pegadas a la derecha:
+   siguen donde estaban antes de bajar, así que el gesto no se muda de sitio.
+
+   Solo la ficha. La zona de carga no lleva botones y se queda en los 62px.
+
+   `flex: 0 0 100%` es lo que garantiza el salto de línea: dejarlo al
+   desbordamiento haría que un nombre corto se quedara arriba y uno largo
+   bajara. */
+@media (max-width: 575.98px) {
+  .file-chip.field-height {
+    height: auto;
+    flex-wrap: wrap;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+
+    /* Entre el texto y los botones basta con la mitad de lo que separa al
+       icono del nombre: es un salto de fila, no una columna aparte. El
+       `!important` es para ganarle al de `.gap-3`, que fija las dos
+       separaciones de una vez y sin el que el hueco se queda en 1rem. */
+    row-gap: 0.5rem !important;
+  }
+
+  .file-chip-actions {
+    flex: 0 0 100%;
+    justify-content: flex-end;
+  }
+
+  /* Descartar y guardar, en la misma fila. El 20% es para el que se descarta:
+     con una X por todo rótulo no necesita más ancho, y lo que le sobra se lo
+     queda el principal. Sigue por encima del blanco mínimo que se puede tocar
+     con comodidad. Desde `sm` manda `flex-sm-fill` y vuelven a medir lo
+     mismo. */
+  .discard-btn {
+    flex: 0 0 20%;
+  }
+}
+
 /* En el telefono, Safari centra el contenido de un campo de fecha y lo deja
    descolgado del resto del formulario. Expedicion y vencimiento van a la
    izquierda con la misma regla del formulario del conductor. */
