@@ -1,0 +1,16 @@
+.min-w-0 {
+  min-width: 0;
+}
+
+.detail-chevron {
+  font-size: 0.75em;
+  transition: transform 0.2s ease;
+
+  &.open {
+    transform: rotate(90deg);
+  }
+}
+
+.detail-panel {
+  border-top: 1px solid rgba(var(--bs-emphasis-color-rgb), 0.1);
+}

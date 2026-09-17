@@ -15,7 +15,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Subscription, of } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 import { ModelTrip } from 'src/app/models/trip-model';
 import { TripService } from 'src/app/services/trip.service';
 import { NotificationsService } from 'src/app/services/notifications.service';
@@ -47,6 +47,19 @@ import {
 import { isUrbanTrip } from '../../utils/urban-trip';
 import { ownerComboOptions } from 'src/app/utils/owner-options';
 import { AlphanumericDirective } from 'src/app/directives/alphanumeric.directive';
+import { ModelDocumentFile } from 'src/app/models/document-model';
+import {
+  findLinkedOwner,
+  loadHolderDocuments,
+} from 'src/app/utils/holder-documents';
+import {
+  DocumentAlertGroup,
+  REQUIRED_VEHICLE_DOCUMENTS,
+  buildDocumentAlertGroup,
+  buildDriverAlertGroup,
+} from 'src/app/utils/document-alerts';
+import { Formatters } from 'src/app/utils/formatters';
+import { GDocumentAlertComponent } from '../g-document-alert/g-document-alert.component';
 
 @Component({
   selector: 'g-trip-form',
@@ -60,6 +73,7 @@ import { AlphanumericDirective } from 'src/app/directives/alphanumeric.directive
     PlatePipe,
     GSearchComboboxComponent,
     AlphanumericDirective,
+    GDocumentAlertComponent,
   ],
   templateUrl: './g-trip-form.component.html',
   styleUrls: ['./g-trip-form.component.scss'],
@@ -106,6 +120,29 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     number,
     { allVehicles: ModelVehicle[]; activeTrips: any[] }
   >();
+
+  /**
+   * Aviso de documentos requeridos sin agregar, vencidos o por vencer del
+   * vehículo y del conductor elegidos. Sus documentos se piden al elegirlos,
+   * una vez por vehículo y por conductor. `null` mientras no se tienen: no se
+   * sabe aún qué falta.
+   */
+  documentAlertGroups: DocumentAlertGroup[] = [];
+  private vehicleDocuments: ModelDocumentFile[] | null = null;
+  private driverDocuments: ModelDocumentFile[] | null = null;
+  private readonly vehicleDocumentsCache = new Map<
+    number,
+    ModelDocumentFile[]
+  >();
+  private readonly driverDocumentsCache = new Map<
+    number,
+    ModelDocumentFile[]
+  >();
+  /** Conductor cuyos documentos ya se tienen o se están pidiendo. */
+  private driverDocumentsId: number | null = null;
+  private vehicleDocumentsSub?: Subscription;
+  private driverDocumentsSub?: Subscription;
+  private documentAlertSubs?: Subscription;
 
   private readonly defaultLoadTypes: string[] = [
     'General',
@@ -441,6 +478,9 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     this.ownerChangeSub?.unsubscribe();
     this.vehicleChangeSub?.unsubscribe();
     this.tripTypeChangeSub?.unsubscribe();
+    this.vehicleDocumentsSub?.unsubscribe();
+    this.driverDocumentsSub?.unsubscribe();
+    this.documentAlertSubs?.unsubscribe();
   }
 
   private setupFormSubscriptions(): void {
@@ -491,6 +531,23 @@ export class GTripFormComponent implements OnInit, OnDestroy {
         if (this.isPatching) return;
         this.applyTripTypeRules(type);
       });
+
+    // Sin mirar `isPatching`: al editar, el aviso también debe salir con el
+    // vehículo y el conductor que ya trae el viaje.
+    const toId = (value: any): number | null => (value ? Number(value) : null);
+    this.documentAlertSubs = new Subscription();
+    this.documentAlertSubs.add(
+      this.tripForm
+        .get('vehicleId')!
+        .valueChanges.pipe(map(toId), distinctUntilChanged())
+        .subscribe((vehicleId) => this.loadVehicleDocuments(vehicleId)),
+    );
+    this.documentAlertSubs.add(
+      this.tripForm
+        .get('driverId')!
+        .valueChanges.pipe(map(toId), distinctUntilChanged())
+        .subscribe((driverId) => this.loadDriverDocuments(driverId)),
+    );
 
     this.tripForm.valueChanges.subscribe((values) => {
       const freight = Number(values.freight) || 0;
@@ -730,6 +787,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
 
     this.mapBrandNames();
     this.loadingVehicles = false;
+    this.updateDocumentAlerts();
 
     // NEW: If CONDUCTOR, auto-select their vehicle
     if (!this.trip && this.userRole === 'CONDUCTOR' && this.loggedInDriverId) {
@@ -797,6 +855,9 @@ export class GTripFormComponent implements OnInit, OnDestroy {
           return activo || esElDelViaje;
         });
         this.loadingDrivers = false;
+        // El conductor pudo quedar elegido antes de tener el listado.
+        const driverId = this.tripForm.get('driverId')?.value;
+        this.loadDriverDocuments(driverId ? Number(driverId) : null);
         if (this._pendingDriverId != null) {
           this.tripForm.get('driverId')?.setValue(this._pendingDriverId);
           this._pendingDriverId = null;
@@ -807,6 +868,104 @@ export class GTripFormComponent implements OnInit, OnDestroy {
       },
       error: () => (this.loadingDrivers = false),
     });
+  }
+
+  /**
+   * Documentos del vehículo elegido. Cambiar de vehículo cancela la consulta
+   * anterior, así que no llega tarde la respuesta de otro. Si falla, el
+   * formulario sigue igual y sin aviso: es informativo.
+   */
+  private loadVehicleDocuments(vehicleId: number | null): void {
+    this.vehicleDocumentsSub?.unsubscribe();
+    const cached = vehicleId ? this.vehicleDocumentsCache.get(vehicleId) : null;
+    this.vehicleDocuments = cached ?? null;
+    this.updateDocumentAlerts();
+    if (!vehicleId || cached) return;
+
+    this.vehicleDocumentsSub = loadHolderDocuments(this.vehicleService, {
+      vehicleId,
+    }).subscribe({
+      next: (documents) => {
+        this.vehicleDocumentsCache.set(vehicleId, documents);
+        this.vehicleDocuments = documents;
+        this.updateDocumentAlerts();
+      },
+      error: (err) => console.error('Error loading vehicle documents:', err),
+    });
+  }
+
+  /**
+   * Documentos del conductor elegido y, si también es propietario, los de ese
+   * registro, donde puede estar su licencia. Necesita el conductor del listado:
+   * si aún no llega, se vuelve a llamar al cargarlo.
+   */
+  private loadDriverDocuments(driverId: number | null): void {
+    if (driverId && driverId === this.driverDocumentsId) return;
+
+    this.driverDocumentsSub?.unsubscribe();
+    this.driverDocumentsId = null;
+    const cached = driverId ? this.driverDocumentsCache.get(driverId) : null;
+    this.driverDocuments = cached ?? null;
+    this.updateDocumentAlerts();
+
+    const driver = driverId
+      ? this.drivers.find((d) => String(d.id) === String(driverId))
+      : null;
+    if (!driverId || !driver) return;
+    this.driverDocumentsId = driverId;
+    if (cached) return;
+
+    this.driverDocumentsSub = findLinkedOwner(this.ownerService, driver)
+      .pipe(
+        switchMap((owner) =>
+          loadHolderDocuments(this.vehicleService, {
+            driverId,
+            ownerId: owner?.id,
+          }),
+        ),
+      )
+      .subscribe({
+        next: (documents) => {
+          this.driverDocumentsCache.set(driverId, documents);
+          this.driverDocuments = documents;
+          this.updateDocumentAlerts();
+        },
+        error: (err) => console.error('Error loading driver documents:', err),
+      });
+  }
+
+  private updateDocumentAlerts(): void {
+    const { vehicleId, driverId } = this.tripForm.getRawValue();
+
+    const vehicle = vehicleId
+      ? (this.vehicles.find((v) => String(v.id) === String(vehicleId)) ??
+        (String(this.trip?.vehicleId) === String(vehicleId)
+          ? this.trip?.vehicle
+          : null))
+      : null;
+    const driver = driverId
+      ? this.drivers.find((d) => String(d.id) === String(driverId))
+      : null;
+
+    const groups = [
+      vehicleId && this.vehicleDocuments
+        ? buildDocumentAlertGroup(
+            `Vehículo ${Formatters.formatPlate(vehicle?.plate)}`.trim(),
+            this.vehicleDocuments,
+            REQUIRED_VEHICLE_DOCUMENTS,
+          )
+        : null,
+      driver
+        ? buildDriverAlertGroup(
+            `Conductor ${driver.name ?? ''}`.trim(),
+            this.driverDocuments,
+            driver.licenseExpiry,
+          )
+        : null,
+    ];
+    this.documentAlertGroups = groups.filter(
+      (group): group is DocumentAlertGroup => group !== null,
+    );
   }
 
   loadBrands(): void {

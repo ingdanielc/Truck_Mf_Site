@@ -104,6 +104,16 @@
       </div>
     </div>
 
+    <!-- Documentos vencidos o por vencer. Fuera de la sección de arriba, que
+         el conductor no ve, y oculto en un viaje ya finalizado. -->
+    @if (!isStatusLocked && documentAlertGroups.length) {
+      <g-document-alert
+        class="d-block mb-4"
+        [groups]="documentAlertGroups"
+        hint="Puedes guardar el viaje, pero te recomendamos ponerlos al día."
+      ></g-document-alert>
+    }
+
     <!-- Trip Details -->
     <div class="mb-1">
       <h6 class="text-primary fw-bold mb-3 d-flex align-items-center">

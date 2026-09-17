@@ -1,0 +1,61 @@
+@if (summary) {
+  <div
+    class="alert border-0 rounded-4 shadow-sm small mb-0"
+    [class.alert-danger]="summary.isCritical"
+    [class.alert-warning]="!summary.isCritical"
+    role="alert"
+  >
+    <div class="d-flex align-items-center gap-3">
+      <i class="fa-solid fa-triangle-exclamation fs-5 flex-shrink-0"></i>
+      <div class="flex-grow-1 min-w-0">
+        <div class="fw-bold">Documentos con novedades</div>
+        @if (summary.text) {
+          <div>{{ summary.text }}</div>
+        }
+        @if (summary.missingText) {
+          <div>{{ summary.missingText }}</div>
+        }
+      </div>
+      <button
+        type="button"
+        class="btn btn-link btn-sm p-0 text-reset fw-semibold text-decoration-none flex-shrink-0 d-flex align-items-center gap-1"
+        [attr.aria-expanded]="expanded"
+        [attr.aria-label]="expanded ? 'Ocultar detalle' : 'Ver detalle'"
+        (click)="toggle()"
+      >
+        <span class="d-none d-sm-inline">{{
+          expanded ? "Ocultar detalle" : "Ver detalle"
+        }}</span>
+        <i
+          class="fa-solid fa-chevron-right detail-chevron"
+          [class.open]="expanded"
+        ></i>
+      </button>
+    </div>
+
+    <!-- Fuera de la fila del encabezado: arranca en el borde del ícono. -->
+    @if (expanded) {
+      <div class="detail-panel mt-2 pt-2">
+        @for (group of groups; track group.label) {
+          <div class="fw-semibold mt-1">{{ group.label }}</div>
+          <ul class="mb-1 ps-3">
+            @for (item of group.items; track $index) {
+              <li>
+                {{ item.name }} —
+                <span class="fw-semibold">{{ item.label }}</span>
+                @if (item.expiryDate) {
+                  <span class="opacity-75 d-none d-sm-inline">
+                    ({{ item.expiryDate }})</span
+                  >
+                }
+              </li>
+            }
+          </ul>
+        }
+        @if (hint) {
+          <div class="mt-2 opacity-75">{{ hint }}</div>
+        }
+      </div>
+    }
+  </div>
+}
