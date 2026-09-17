@@ -38,6 +38,8 @@ import {
   TripStatusConfirmation,
   tripStatusConfirmation,
   isCancelledTrip,
+  TripStatusTheme,
+  tripStatusTheme,
 } from 'src/app/utils/trip-status';
 import { PlatePipe } from '../../../pipes/plate.pipe';
 
@@ -1043,14 +1045,14 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   /**
    * Titulo de la cifra grande. Solo un viaje Completado tiene rentabilidad:
-   * En Curso o Pendiente el ingreso es lo recibido hasta ahora (flete menos
-   * saldo por cobrar), asi que la cifra dice si eso alcanza para los gastos.
+   * En Curso o Pendiente el ingreso es el anticipo (flete menos saldo por
+   * cobrar), asi que la cifra dice si el anticipo alcanza para los gastos.
    */
   get netProfitTitle(): string {
     if (!this.isCashView) return 'Rentabilidad neta';
     return this.netProfit < 0
-      ? 'Faltante para cubrir gastos'
-      : 'Sobrante del flete recibido';
+      ? 'Faltante del anticipo'
+      : 'Sobrante del anticipo';
   }
 
   /** Con faltante el titulo ya dice que falta: la cifra va sin signo. */
@@ -1058,7 +1060,8 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return this.isCashView ? Math.abs(this.netProfit) : this.netProfit;
   }
 
-  private get isCashView(): boolean {
+  /** En Curso o Pendiente: el ingreso es el anticipo, no el flete entero. */
+  get isCashView(): boolean {
     const status = this.trip?.status;
     return status === 'En Curso' || status === 'Pendiente';
   }
@@ -1066,6 +1069,12 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   get profitMargin(): number {
     if (!this.trip || !this.totalIncome) return 0;
     return (this.netProfit / this.totalIncome) * 100;
+  }
+
+  /** Color del estado para la tarjeta de progreso, el mismo de la tarjeta de
+   *  viaje del listado. */
+  get statusTheme(): TripStatusTheme {
+    return tripStatusTheme(this.trip?.status);
   }
 
   /** Devuelve la navegación, para avisar cuando ya terminó. */

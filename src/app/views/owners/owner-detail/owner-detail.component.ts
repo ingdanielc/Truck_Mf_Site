@@ -521,6 +521,16 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
 
     if (role === 'ADMINISTRADOR') {
       switch (this.fromSource) {
+        /* Desde un reporte del tablero (Suscripciones): se vuelve a esa
+           pestaña y no a la de por omisión. */
+        case 'dashboard': {
+          const tab = this.route.snapshot.queryParamMap.get('tab');
+          this.router.navigate(
+            ['/site/dashboard'],
+            tab ? { queryParams: { tab } } : {},
+          );
+          break;
+        }
         case 'trips':
           this.router.navigate(['/site/trips']);
           break;

@@ -220,6 +220,7 @@
         @for (r of pagedTripRows; track $index) {
           <div
             class="trip-card trip-card-link"
+            [ngClass]="themeOf(r)"
             role="link"
             tabindex="0"
             [attr.aria-label]="'Ver detalle del viaje ' + r.label"
@@ -260,8 +261,9 @@
                 </span>
               </div>
             </div>
+            <!-- La linea que separa el pie lleva el color del estado del viaje. -->
             <div
-              class="d-flex justify-content-between gap-3 mt-2 pt-2 border-top route-text"
+              class="status-line d-flex justify-content-between gap-3 mt-2 pt-2 border-top route-text"
             >
               <span class="text-body-secondary">
                 Ingreso
@@ -370,6 +372,7 @@
             @for (r of pagedTripRows; track $index) {
               <tr
                 class="trip-row-link"
+                [ngClass]="themeOf(r)"
                 role="link"
                 tabindex="0"
                 [attr.aria-label]="'Ver detalle del viaje ' + r.label"

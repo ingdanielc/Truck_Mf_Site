@@ -20,11 +20,16 @@ import { TripService } from '../../services/trip.service';
 import { OwnerService } from '../../services/owner.service';
 import { CommonService } from '../../services/common.service';
 import { VehicleService } from '../../services/vehicle.service';
+import { DriverService } from '../../services/driver.service';
 import { ToastService } from '../../services/toast.service';
 import { NotificationsService } from '../../services/notifications.service';
 import { Formatters } from '../../utils/formatters';
 import { PaginationUtils } from '../../utils/pagination-utils';
-import { applyTripStatusChange } from '../../utils/trip-status';
+import {
+  applyTripStatusChange,
+  TripStatusTheme,
+  tripStatusTheme,
+} from '../../utils/trip-status';
 import { buildXlsx, SHEET_COLORS, xlsxFileName } from '../../utils/xlsx';
 import { shareOrDownloadFile } from '../../utils/file-share';
 import { GConfirmSheetComponent } from '../g-confirm-sheet/g-confirm-sheet.component';
@@ -32,11 +37,19 @@ import { GConfirmSheetComponent } from '../g-confirm-sheet/g-confirm-sheet.compo
 /** Por qué columna se ordena la lista. */
 type SortField = 'company' | 'trip' | 'date' | 'balance';
 
-/** Un viaje entregado y sin cobrar: una deuda de la empresa que lo contrató. */
+/** Un viaje con saldo sin cobrar: una deuda de la empresa que lo contrató. */
 interface BalanceRow {
   /** El viaje entero: es lo que se manda a guardar al marcarlo pagado. */
   trip: ModelTrip;
   id: number;
+  status: string;
+  /** Color del estado: la línea de la tarjeta y el hover de la fila. */
+  theme: TripStatusTheme;
+  /**
+   * Se puede marcar pagado. Solo el Pendiente: el viaje En Curso todavía no ha
+   * llegado, y marcarlo pagado lo completaría antes de tiempo.
+   */
+  canSettle: boolean;
   /** Con qué camión se hizo. Es lo que atiende el filtro de vehículo. */
   vehicleId: number | null;
   company: string;
@@ -51,10 +64,12 @@ interface BalanceRow {
 
 /**
  * Saldos pendientes por cobrar: los del propietario, mirados por él mismo o
- * por el administrador que lo eligió en el panel de periodo.
+ * por el administrador que lo eligió en el panel de periodo; o los de los
+ * camiones asignados al conductor en sesión.
  *
  * Un viaje en "Pendiente" llegó a destino pero no se ha cobrado el saldo del
- * flete: la carga está entregada y la plata sin recibir. Esta pestaña es esa
+ * flete: la carga está entregada y la plata sin recibir. Un viaje "En Curso"
+ * con saldo también entra: es plata que se deberá, y así se ve venir. Esta pestaña es esa
  * lista de cobro —a quién hay que llamar, desde cuándo y por cuánto— y el
  * sitio donde se cierra: marcar uno como pagado lo pasa a "Completado" con su
  * saldo cobrado, que es justo lo que significa completar un viaje.
@@ -94,6 +109,12 @@ export class GBalancesReportComponent implements OnChanges {
    * cuenta en sesion no pinta nada.
    */
   @Input() ownerId: number | null = null;
+
+  /**
+   * Quien mira es conductor: los saldos son los de los camiones que tiene
+   * asignados (`currentDriverId`), no los de un propietario.
+   */
+  @Input() asDriver = false;
 
   /**
    * La pestaña está abierta.
@@ -150,6 +171,7 @@ export class GBalancesReportComponent implements OnChanges {
     private readonly toastService: ToastService,
     private readonly notificationsService: NotificationsService,
     private readonly router: Router,
+    private readonly driverService: DriverService,
   ) {}
 
   /**
@@ -166,7 +188,9 @@ export class GBalancesReportComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     /* Solo cambiar de propietario invalida lo cargado. El camión elegido no:
        se resuelve filtrando lo que ya está en memoria. */
-    if (changes['userId'] || changes['ownerId']) this.pending = true;
+    if (changes['userId'] || changes['ownerId'] || changes['asDriver']) {
+      this.pending = true;
+    }
     if (changes['vehicleId']) this.page = 0;
 
     if (!this.active || !this.pending) return;
@@ -186,7 +210,8 @@ export class GBalancesReportComponent implements OnChanges {
    * de viajes para acotar lo que ve un propietario.
    *
    * Con el administrador son dos: la ficha llega elegida en `ownerId` y el
-   * primer salto sobra.
+   * primer salto sobra. Con el conductor los camiones son los que tiene
+   * asignados — ver `driverVehicleIds`.
    *
    * Sin filtro de fechas, y a proposito: una deuda no deja de deberse porque
    * el tablero este mirando otro mes. Aqui salen todos los pendientes, del
@@ -196,7 +221,7 @@ export class GBalancesReportComponent implements OnChanges {
     const token = ++this.token;
 
     /* Sin dueño del que hablar no hay lista: ni la ficha que manda el
-       administrador ni la cuenta en sesión del propietario. */
+       administrador ni la cuenta en sesión del propietario o del conductor. */
     if (this.ownerId == null && this.userId == null) {
       this.apply([]);
       return;
@@ -206,80 +231,54 @@ export class GBalancesReportComponent implements OnChanges {
     this.loadError = false;
 
     try {
-      /* La ficha ya resuelta ahorra la primera consulta: es el caso del
-         administrador, que elige al propietario en el panel de periodo. */
-      const [ownerResp, citiesResp]: any[] = await Promise.all([
-        this.ownerId != null
-          ? Promise.resolve(null)
-          : lastValueFrom(
-              this.ownerService.getOwnerFilter(
-                new ModelFilterTable(
-                  [
-                    new Filter(
-                      'user.id',
-                      '=',
-                      (this.userId as number).toString(),
-                    ),
-                  ],
-                  new Pagination(1, 0),
-                  new Sort('id', true),
-                ),
-              ),
-            ),
-        lastValueFrom(this.commonService.getCities()),
-      ]);
+      const [vehicleIds, citiesResp]: [number[] | null, any] =
+        await Promise.all([
+          this.asDriver ? this.driverVehicleIds() : this.ownerVehicleIds(),
+          lastValueFrom(this.commonService.getCities()),
+        ]);
       if (token !== this.token) return;
 
       this.cityNames = new Map(
         (citiesResp?.data ?? []).map((c: any) => [String(c?.id), c?.name]),
       );
 
-      const ownerId: number | null =
-        this.ownerId ?? ownerResp?.data?.content?.[0]?.id ?? null;
-      if (ownerId == null) {
-        this.apply([]);
-        return;
-      }
-
-      const vehiclesResp: any = await lastValueFrom(
-        this.vehicleService.getVehicleOwnerFilter(
-          new ModelFilterTable(
-            [new Filter('owner.id', '=', ownerId.toString())],
-            new Pagination(100, 0),
-            new Sort('owner.id', true),
-          ),
-        ),
-      );
-      if (token !== this.token) return;
-
-      const vehicleIds: number[] = (vehiclesResp?.data?.content ?? [])
-        .map((v: any) => v?.id)
-        .filter((id: any): id is number => id != null);
-
-      if (!vehicleIds.length) {
+      if (!vehicleIds?.length) {
         this.apply([]);
         return;
       }
 
       /* Sin paginar en el servidor: el total del pie es de toda la deuda y no
          de la página que se está viendo, y pedir página a página lo dejaría
-         sin calcular. Son los viajes sin cobrar de un propietario, no un
-         histórico. */
-      const tripsResp: any = await lastValueFrom(
-        this.tripService.getTripFilter(
-          new ModelFilterTable(
-            [
-              new Filter('vehicle.id', 'in', vehicleIds.join(',')),
-              new Filter('status', '=', 'Pendiente'),
-            ],
-            new Pagination(1000, 0),
-            new Sort('id', true),
+         sin calcular. Son los viajes sin cobrar de unos camiones, no un
+         histórico.
+
+         Dos consultas y no un `in` sobre el estado: "En Curso" lleva espacio y
+         no hay garantía de cómo lo parte el servidor. Del En Curso solo cuenta
+         el que tiene saldo. */
+      const [pendientes, enCurso]: any[] = await Promise.all(
+        ['Pendiente', 'En Curso'].map((estado) =>
+          lastValueFrom(
+            this.tripService.getTripFilter(
+              new ModelFilterTable(
+                [
+                  new Filter('vehicle.id', 'in', vehicleIds.join(',')),
+                  new Filter('status', '=', estado),
+                ],
+                new Pagination(1000, 0),
+                new Sort('id', true),
+              ),
+            ),
           ),
         ),
       );
       if (token !== this.token) return;
 
-      this.apply(tripsResp?.data?.content ?? []);
+      this.apply([
+        ...(pendientes?.data?.content ?? []),
+        ...(enCurso?.data?.content ?? []).filter(
+          (t: ModelTrip) => (t?.balance ?? 0) > 0,
+        ),
+      ]);
     } catch (error) {
       if (token !== this.token) return;
       console.error('Error loading pending balances:', error);
@@ -290,12 +289,85 @@ export class GBalancesReportComponent implements OnChanges {
     }
   }
 
+  /**
+   * Camiones del propietario: de la cuenta a su ficha y de la ficha a sus
+   * camiones. Con el administrador la ficha llega elegida en `ownerId` y el
+   * primer salto sobra.
+   */
+  private async ownerVehicleIds(): Promise<number[] | null> {
+    let ownerId = this.ownerId;
+    if (ownerId == null) {
+      const ownerResp: any = await lastValueFrom(
+        this.ownerService.getOwnerFilter(
+          new ModelFilterTable(
+            [new Filter('user.id', '=', String(this.userId))],
+            new Pagination(1, 0),
+            new Sort('id', true),
+          ),
+        ),
+      );
+      ownerId = ownerResp?.data?.content?.[0]?.id ?? null;
+    }
+    if (ownerId == null) return null;
+
+    const vehiclesResp: any = await lastValueFrom(
+      this.vehicleService.getVehicleOwnerFilter(
+        new ModelFilterTable(
+          [new Filter('owner.id', '=', ownerId.toString())],
+          new Pagination(100, 0),
+          new Sort('owner.id', true),
+        ),
+      ),
+    );
+    return GBalancesReportComponent.idsOf(vehiclesResp);
+  }
+
+  /**
+   * Camiones del conductor: de la cuenta a su ficha de conductor y de la ficha
+   * a los camiones que lo tienen asignado. Es el mismo camino que el inicio y
+   * los gastos usan para acotar lo que ve un conductor.
+   */
+  private async driverVehicleIds(): Promise<number[] | null> {
+    if (this.userId == null) return null;
+    const driverResp: any = await lastValueFrom(
+      this.driverService.getDriverFilter(
+        new ModelFilterTable(
+          [new Filter('user.id', '=', this.userId.toString())],
+          new Pagination(1, 0),
+          new Sort('id', true),
+        ),
+      ),
+    );
+    const driverId = driverResp?.data?.content?.[0]?.id;
+    if (driverId == null) return null;
+
+    const vehiclesResp: any = await lastValueFrom(
+      this.vehicleService.getVehicleFilter(
+        new ModelFilterTable(
+          [new Filter('currentDriverId', '=', driverId.toString())],
+          new Pagination(100, 0),
+          new Sort('id', true),
+        ),
+      ),
+    );
+    return GBalancesReportComponent.idsOf(vehiclesResp);
+  }
+
+  private static idsOf(resp: any): number[] {
+    return (resp?.data?.content ?? [])
+      .map((v: any) => v?.id)
+      .filter((id: any): id is number => id != null);
+  }
+
   private apply(trips: ModelTrip[]): void {
     this.rows = (trips ?? [])
       .filter((t) => t?.id != null)
       .map((t) => ({
         trip: t,
         id: t.id as number,
+        status: t.status,
+        theme: tripStatusTheme(t.status),
+        canSettle: t.status === 'Pendiente',
         vehicleId: t.vehicleId ?? t.vehicle?.id ?? null,
         company: Formatters.titleCase(t.company) || 'Sin empresa',
         tripNumber: t.numberTrip ? `#${t.numberTrip}` : '',
@@ -408,7 +480,7 @@ export class GBalancesReportComponent implements OnChanges {
           this.total,
         ],
         notes: [
-          'Viajes entregados y sin cobrar.',
+          'Viajes pendientes y en curso con saldo sin cobrar.',
           `Generado el ${new Date().toLocaleString('es-CO')}`,
         ],
       });
@@ -543,7 +615,13 @@ export class GBalancesReportComponent implements OnChanges {
     return this.visibleRows.reduce((suma, r) => suma + r.balance, 0);
   }
 
+  /** Cuántos de la lista siguen en ruta: los demás ya se entregaron. */
+  get inProgressCount(): number {
+    return this.visibleRows.filter((r) => !r.canSettle).length;
+  }
+
   public askPaid(row: BalanceRow): void {
+    if (!row.canSettle) return;
     this.pendingPaid = row;
   }
 

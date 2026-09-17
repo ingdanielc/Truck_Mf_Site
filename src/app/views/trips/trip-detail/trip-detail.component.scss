@@ -33,6 +33,42 @@
   }
 }
 
+/* Progreso del viaje en el color de su estado, los mismos de la tarjeta de
+   viaje del listado: azul en curso, verde completado, amarillo pendiente y
+   rojo cancelado. Tiñe el porcentaje, la barra y los iconos alcanzados. */
+.trip-progress {
+  --status-color: var(--bs-primary);
+  --status-color-rgb: var(--bs-primary-rgb);
+
+  &.status-completed {
+    --status-color: #10b981;
+    --status-color-rgb: 16, 185, 129;
+  }
+
+  /* El amarillo puro no contrasta: el mismo tono de enfasis de la tarjeta. */
+  &.status-pending {
+    --status-color: var(--bs-warning-text-emphasis);
+    --status-color-rgb: var(--bs-warning-rgb);
+  }
+
+  &.status-cancelled {
+    --status-color: #dc3545;
+    --status-color-rgb: 220, 53, 69;
+  }
+
+  .status-text {
+    color: var(--status-color) !important;
+  }
+
+  .status-fill {
+    background-color: var(--status-color) !important;
+  }
+
+  .status-shadow {
+    box-shadow: 0 4px 12px rgba(var(--status-color-rgb), 0.25);
+  }
+}
+
 .progress-stepper {
   .step-point {
     width: 140px;

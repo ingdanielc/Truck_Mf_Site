@@ -32,6 +32,32 @@ export function excludeCancelledFilter(): Filter {
   return new Filter('status', '!=', CANCELLED_TRIP_STATUS);
 }
 
+/** Clase de color de un estado, con los nombres que usa la tarjeta de viaje. */
+export type TripStatusTheme =
+  | 'status-completed'
+  | 'status-pending'
+  | 'status-cancelled'
+  | 'status-in-progress';
+
+/**
+ * El color con el que se pinta un viaje según su estado: verde completado,
+ * amarillo pendiente, rojo cancelado y azul en curso. Un estado vacío o
+ * desconocido cuenta como en curso, igual que en la tarjeta del listado.
+ */
+export function tripStatusTheme(status?: string | null): TripStatusTheme {
+  if (isCancelledTrip(status)) return 'status-cancelled';
+  switch ((status || '').toUpperCase()) {
+    case 'COMPLETADO':
+    case 'COMPLETED':
+      return 'status-completed';
+    case 'PENDIENTE':
+    case 'PENDING':
+      return 'status-pending';
+    default:
+      return 'status-in-progress';
+  }
+}
+
 /** Los cuatro estados de un viaje, en el orden en que se ofrecen. */
 export const TRIP_STATUSES = [
   'En Curso',

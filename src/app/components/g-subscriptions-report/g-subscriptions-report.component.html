@@ -323,7 +323,14 @@
     <!-- Movil: una tarjeta por propietario, para no desplazar de lado. -->
     <div class="owner-cards d-md-none">
       @for (r of pagedRows; track r.id) {
-        <div class="owner-card">
+        <div
+          class="owner-card owner-card-link"
+          role="link"
+          tabindex="0"
+          [attr.aria-label]="'Ver detalle de ' + r.name"
+          (click)="openOwner(r)"
+          (keydown.enter)="openOwner(r)"
+        >
           <div class="d-flex justify-content-between align-items-start gap-2">
             <span class="fw-semibold text-truncate">{{ r.name }}</span>
             <span
@@ -460,7 +467,14 @@
         </thead>
         <tbody>
           @for (r of pagedRows; track r.id) {
-            <tr>
+            <tr
+              class="owner-row-link"
+              role="link"
+              tabindex="0"
+              [attr.aria-label]="'Ver detalle de ' + r.name"
+              (click)="openOwner(r)"
+              (keydown.enter)="openOwner(r)"
+            >
               <td class="fw-semibold">{{ r.name }}</td>
               <td>
                 <span

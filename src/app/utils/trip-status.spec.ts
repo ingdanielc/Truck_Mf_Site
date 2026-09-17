@@ -9,6 +9,7 @@ import {
   isCancelledTrip,
   statusNeedsConfirmation,
   tripStatusConfirmation,
+  tripStatusTheme,
 } from './trip-status';
 
 const viaje = (extra: Partial<ModelTrip> = {}): ModelTrip =>
@@ -271,5 +272,18 @@ describe('canSetTripStatus', () => {
      conductor tendría la mitad del camino abierto. */
   it('reconoce la variante en inglés', () => {
     expect(canSetTripStatus('CANCELLED', 'CONDUCTOR')).toBeFalse();
+  });
+});
+
+describe('tripStatusTheme', () => {
+  it('asigna un color por estado', () => {
+    expect(tripStatusTheme('Completado')).toBe('status-completed');
+    expect(tripStatusTheme('Pendiente')).toBe('status-pending');
+    expect(tripStatusTheme('Cancelado')).toBe('status-cancelled');
+    expect(tripStatusTheme('En Curso')).toBe('status-in-progress');
+  });
+
+  it('un estado vacío cuenta como en curso', () => {
+    expect(tripStatusTheme(undefined)).toBe('status-in-progress');
   });
 });

@@ -7,6 +7,7 @@ import {
   Output,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ModelOwner } from '../../models/owner-model';
@@ -149,7 +150,20 @@ export class GSubscriptionsReportComponent implements OnInit, OnChanges {
   constructor(
     private readonly subscriptionService: SubscriptionService,
     private readonly toastService: ToastService,
+    private readonly router: Router,
   ) {}
+
+  /**
+   * Abre el detalle del propietario. `from` y `tab` hacen que la flecha de
+   * regresar del detalle vuelva a Suscripciones y no al listado de
+   * propietarios.
+   */
+  public openOwner(row: SubscriptionRow): void {
+    if (row?.id == null) return;
+    this.router.navigate(['/site/owners', row.id], {
+      queryParams: { from: 'dashboard', tab: 'suscripciones' },
+    });
+  }
 
   ngOnInit(): void {
     void this.loadPending();

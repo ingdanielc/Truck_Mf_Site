@@ -112,6 +112,51 @@
   }
 }
 
+/* ---- Color del estado del viaje ------------------------------------------
+   Verde completado, amarillo pendiente, rojo cancelado y azul en curso, en
+   tonos pastel: en movil tiñe la linea que separa el pie de la tarjeta y en
+   escritorio el hover de la fila. `--status-rgb` lo fija la clase que pone
+   `tripStatusTheme`. */
+.status-completed {
+  --status-rgb: 16, 185, 129;
+}
+
+.status-pending {
+  --status-rgb: 255, 193, 7;
+}
+
+.status-cancelled {
+  --status-rgb: 220, 53, 69;
+}
+
+.status-in-progress {
+  --status-rgb: var(--bs-primary-rgb);
+}
+
+/* `border-top` de Bootstrap lleva `!important`: sin el suyo no se veria. */
+.balance-card .status-line {
+  border-top: 2px solid rgba(var(--status-rgb), 0.45) !important;
+}
+
+/* El tinte de `table-hover` se pasa por la variable de Bootstrap, como el
+   de la tabla: definida en la fila, gana a la de la tabla en sus celdas. */
+.balance-table tbody tr[class*="status-"] {
+  --bs-table-hover-bg: rgba(var(--status-rgb), 0.16);
+}
+
+/* Lo que ocupa el boton "Pagado" en un viaje que sigue en ruta. Lleva las
+   clases `btn btn-sm` para tener su misma caja —alto, relleno y borde— y que
+   la fila no cambie de alto; no es un boton, asi que no reacciona al puntero y
+   el toque pasa a la fila, que abre el detalle. */
+.btn.status-badge {
+  --bs-btn-color: rgb(var(--status-rgb));
+  --bs-btn-bg: rgba(var(--status-rgb), 0.14);
+  --bs-btn-border-color: transparent;
+  font-weight: 600;
+  pointer-events: none;
+  cursor: default;
+}
+
 /* Tarjeta y fila abren el detalle del viaje. */
 .balance-card-link,
 .balance-row-link {

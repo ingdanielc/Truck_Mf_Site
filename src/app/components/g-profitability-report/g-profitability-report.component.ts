@@ -30,6 +30,7 @@ import { xlsxFileName } from '../../utils/xlsx';
 import { buildTripsSheet } from '../../utils/trips-sheet';
 import { shareOrDownloadFile } from '../../utils/file-share';
 import { GConfirmSheetComponent } from '../g-confirm-sheet/g-confirm-sheet.component';
+import { TripStatusTheme, tripStatusTheme } from '../../utils/trip-status';
 
 /** Un vehículo del selector. */
 interface VehicleOption {
@@ -236,6 +237,15 @@ export class GProfitabilityReportComponent implements OnChanges {
    * Abre el detalle del viaje. `from` y `tab` hacen que la flecha de regresar
    * del detalle vuelva a esta pestaña del tablero y no al listado de viajes.
    */
+  /**
+   * Color del estado del viaje para la tarjeta y la fila. Vacío mientras no
+   * llega el estado: mejor sin color que con uno que no es.
+   */
+  public themeOf(row: TripRow): TripStatusTheme | '' {
+    const status = this.tripStatuses.get(row.id);
+    return status ? tripStatusTheme(status) : '';
+  }
+
   public openTrip(row: TripRow): void {
     if (row?.id == null) return;
     this.router.navigate(['/site/trips', row.id], {
@@ -480,6 +490,10 @@ export class GProfitabilityReportComponent implements OnChanges {
   /** Destino de regreso por `id` de viaje, para los redondos. */
   private returnLegs = new Map<number, string>();
 
+  /** Estado por `id` de viaje. Tampoco viene en el reporte agregado: llega en
+   *  la misma consulta que el tramo de regreso. */
+  private tripStatuses = new Map<number, string>();
+
   /** Viajes cuyo tramo de regreso ya se preguntó, se haya encontrado o no.
    *  Sin esto, un viaje sin regreso se volvería a pedir en cada repintado. */
   private readonly askedReturnLegs = new Set<number>();
@@ -514,7 +528,8 @@ export class GProfitabilityReportComponent implements OnChanges {
    * `returnDestinationId` existe en `trip` pero no en el reporte agregado, así
    * que sale del endpoint que sí lo tiene: `/trip/filter`, acotado por `id in`
    * a los viajes que ya están en la tabla. Es una petición por tabla, no una
-   * por fila, y solo por los viajes que aún no se han preguntado.
+   * por fila, y solo por los viajes que aún no se han preguntado. De la misma
+   * respuesta sale el estado de cada viaje, que colorea tarjeta y fila.
    *
    * Si falla, la ruta se queda en origen → destino: el tramo que falta es el
    * de vuelta, y las cifras no dependen de él.
@@ -538,9 +553,11 @@ export class GProfitabilityReportComponent implements OnChanges {
       );
       const viajes: ModelTrip[] = resp?.data?.content || [];
       viajes.forEach((t) => {
-        if (t?.id != null && t.returnDestinationId) {
+        if (t?.id == null) return;
+        if (t.returnDestinationId) {
           this.returnLegs.set(t.id, t.returnDestinationId);
         }
+        if (t.status) this.tripStatuses.set(t.id, t.status);
       });
       this.buildRoutes();
     } catch (error) {

@@ -46,7 +46,8 @@
     </div>
     <!-- Progress Section -->
     <div
-      class="card border-0 rounded-4 shadow-sm bg-body-tertiary mb-4 overflow-hidden hover-scale"
+      class="trip-progress card border-0 rounded-4 shadow-sm bg-body-tertiary mb-4 overflow-hidden hover-scale"
+      [ngClass]="statusTheme"
       [class.cursor-pointer]="!isUrbanTrip"
       (click)="openTripInfo()"
       onkeypress
@@ -60,7 +61,7 @@
               class="d-flex justify-content-between align-items-center mb-1 mb-md-0"
             >
               <h5 class="fw-bold mb-0 mb-md-1">Progreso del Viaje</h5>
-              <div class="text-primary h2 fw-bold mb-0 d-md-none">
+              <div class="status-text h2 fw-bold mb-0 d-md-none">
                 {{ progressPercentage }}%
               </div>
             </div>
@@ -68,7 +69,7 @@
               <p class="text-secondary small mb-0">
                 <span class="d-none d-md-inline">Ubicación actual: </span
                 ><i
-                  class="fa-solid fa-location-dot d-inline d-md-none me-1 text-primary"
+                  class="fa-solid fa-location-dot d-inline d-md-none me-1 status-text"
                 ></i
                 >{{ currentLocationName }}
                 <span class="d-none d-md-inline"> - Punto de control</span>
@@ -86,7 +87,7 @@
             </div>
           </div>
           <div class="text-end ms-3 d-none d-md-block">
-            <div class="text-primary h1 fw-bold mb-0">
+            <div class="status-text h1 fw-bold mb-0">
               {{ progressPercentage }}%
             </div>
             @if (trip.status === "Completado" || trip.status === "Pendiente") {
@@ -105,7 +106,7 @@
             style="height: 4px; top: 50%; transform: translateY(-50%)"
           ></div>
           <div
-            class="progress-line-active bg-primary position-absolute"
+            class="progress-line-active status-fill position-absolute"
             [style.width.%]="progressPercentage"
             style="height: 4px; top: 50%; transform: translateY(-50%)"
           ></div>
@@ -116,7 +117,7 @@
               style="width: 120px; margin-left: -20px"
             >
               <div
-                class="icon-circle bg-primary text-white rounded-3 shadow-primary mb-2 mx-auto d-flex align-items-center justify-content-center"
+                class="icon-circle status-fill text-white rounded-3 status-shadow mb-2 mx-auto d-flex align-items-center justify-content-center"
                 style="width: 40px; height: 40px"
               >
                 <i class="fa-solid fa-warehouse"></i>
@@ -137,7 +138,7 @@
                   class="icon-circle rounded-3 mb-2 mx-auto d-flex align-items-center justify-content-center transition-all"
                   [ngClass]="
                     trip.status === 'Completado' || trip.status === 'Pendiente'
-                      ? 'bg-primary text-white shadow-primary'
+                      ? 'status-fill text-white status-shadow'
                       : 'bg-secondary bg-opacity-25 text-secondary'
                   "
                   style="width: 40px; height: 40px"
@@ -171,7 +172,7 @@
                 class="icon-circle rounded-3 mb-2 mx-auto d-flex align-items-center justify-content-center transition-all"
                 [ngClass]="
                   trip.status === 'Completado' || trip.status === 'Pendiente'
-                    ? 'bg-primary text-white shadow-primary'
+                    ? 'status-fill text-white status-shadow'
                     : 'bg-secondary bg-opacity-25 text-secondary'
                 "
                 style="width: 40px; height: 40px"
@@ -213,12 +214,12 @@
               "
             >
               <div
-                class="icon-circle bg-primary text-white rounded-3 shadow-primary mb-2 mx-auto d-flex align-items-center justify-content-center"
+                class="icon-circle status-fill text-white rounded-3 status-shadow mb-2 mx-auto d-flex align-items-center justify-content-center"
                 style="width: 40px; height: 40px; pointer-events: auto"
               >
                 <i class="fa-solid fa-truck-fast"></i>
               </div>
-              <div class="fw-bold small pt-3 text-primary">En Ruta</div>
+              <div class="fw-bold small pt-3 status-text">En Ruta</div>
               <div
                 class="text-secondary rounded-2 px-1 d-inline-block"
                 style="font-size: 0.7rem"
@@ -471,7 +472,7 @@
                 <div class="d-flex justify-content-between">
                   <div>
                     <p class="text-secondary small mb-1 fw-bold text-uppercase">
-                      Total Ingresos
+                      {{ isCashView ? "Anticipo" : "Total Ingresos" }}
                     </p>
                     <h3 class="fw-bold mb-1">
                       ${{ totalIncome | number: "1.0-0" }}

@@ -190,13 +190,6 @@
 }
 
 /* ---- Viajes en móvil: una tarjeta por fila ------------------------------- */
-.trip-cards {
-  /* El mismo tope que la tabla: una lista de un año se desplaza dentro de la
-     sección, no estira la página. */
-  max-height: 26rem;
-  overflow-y: auto;
-}
-
 .trip-card {
   padding: 0.75rem;
   border-radius: 0.6rem;
@@ -223,6 +216,38 @@
   }
 }
 
+/* ---- Color del estado del viaje ------------------------------------------
+   Verde completado, amarillo pendiente, rojo cancelado y azul en curso, en
+   tonos pastel: en movil tiñe la linea que separa el pie de la tarjeta y en
+   escritorio el hover de la fila. `--status-rgb` lo fija la clase que pone
+   `tripStatusTheme`. */
+.status-completed {
+  --status-rgb: 16, 185, 129;
+}
+
+.status-pending {
+  --status-rgb: 255, 193, 7;
+}
+
+.status-cancelled {
+  --status-rgb: 220, 53, 69;
+}
+
+.status-in-progress {
+  --status-rgb: var(--bs-primary-rgb);
+}
+
+/* `border-top` de Bootstrap lleva `!important`: sin el suyo no se veria. */
+.trip-card .status-line {
+  border-top: 2px solid rgba(var(--status-rgb), 0.45) !important;
+}
+
+/* El tinte de `table-hover` se pasa por la variable de Bootstrap, como el
+   de la tabla: definida en la fila, gana a la de la tabla en sus celdas. */
+.trip-table tbody tr[class*="status-"] {
+  --bs-table-hover-bg: rgba(var(--status-rgb), 0.16);
+}
+
 /* El pie no es un viaje más: cierra la lista y por eso lleva otra superficie. */
 .trip-card-total {
   background-color: var(--bs-tertiary-bg);
@@ -234,11 +259,8 @@
 
 /* ---- Tabla de viajes ----------------------------------------------------- */
 .trip-table {
-  /* Muchos viajes en un año: la tabla se desplaza dentro de la tarjeta en vez
-     de estirar la pagina. El encabezado se queda fijo para que las columnas
-     sigan teniendo nombre al bajar. */
-  max-height: 26rem;
-
+  /* Sin tope de alto ni desplazamiento propio: la lista va paginada, y un
+     scroll dentro de la pagina obligaba a desplazar dos cosas a la vez. */
   table {
     font-size: 0.925rem;
     /* El tinte de `table-hover`, en el primario de la app en vez del gris de
@@ -250,9 +272,6 @@
   }
 
   thead th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
     background-color: var(--bs-body-bg);
     font-size: 0.82rem;
     font-weight: 600;

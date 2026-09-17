@@ -122,6 +122,21 @@
   line-height: 1.25;
 }
 
+/* Tarjeta y fila abren el detalle del propietario. */
+.owner-card-link,
+.owner-row-link {
+  cursor: pointer;
+}
+
+.owner-card-link {
+  transition: background-color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--bs-tertiary-bg);
+  }
+}
+
 .owner-card {
   padding: 0.75rem;
   border-radius: 0.6rem;

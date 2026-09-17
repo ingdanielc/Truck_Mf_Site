@@ -2574,8 +2574,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /**
    * Los saldos por cobrar son del dueño de la plata: quien entregó la carga y
-   * no ha visto el dinero. El conductor gestiona el viaje pero no cobra, así
-   * que la pestaña no existe para él.
+   * no ha visto el dinero. El conductor también la ve, acotada a los viajes
+   * de los camiones que tiene asignados.
    *
    * El administrador la ve con el mismo criterio que la rentabilidad y el
    * gasto: solo tras elegir un propietario en el panel de periodo. Sin filtro
@@ -2584,17 +2584,26 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
    * administrador necesita para hacerle seguimiento.
    */
   get showBalancesReport(): boolean {
-    if (this.userRole === 'PROPIETARIO') return true;
+    /* El conductor ve los saldos de los camiones que tiene asignados. */
+    if (this.userRole === 'PROPIETARIO' || this.userRole === 'CONDUCTOR') {
+      return true;
+    }
     return this.groupByOwner && this.selectedOwnerId != null;
   }
 
-  /** El usuario del que son los saldos. Solo lo manda el propietario, que mira
-   *  los suyos: el reporte resuelve por su cuenta la ficha de propietario, que
-   *  es otro registro con otro `id`. Con el administrador la ficha ya viene
-   *  elegida y este `id` sobra — ver `balancesOwnerId`. */
+  /** El usuario del que son los saldos. Solo lo mandan el propietario y el
+   *  conductor, que miran los suyos: el reporte resuelve por su cuenta la ficha
+   *  de propietario o de conductor, que es otro registro con otro `id`. Con el
+   *  administrador la ficha ya viene elegida y este `id` sobra — ver
+   *  `balancesOwnerId`. */
   get balancesUserId(): number | null {
     if (this.groupByOwner) return null;
     return this.showBalancesReport ? (this.currentUser?.id ?? null) : null;
+  }
+
+  /** Los saldos se resuelven por los camiones asignados, no por propietario. */
+  get balancesAsDriver(): boolean {
+    return this.userRole === 'CONDUCTOR';
   }
 
   /** La ficha de propietario elegida por el administrador. Es lo mismo que
