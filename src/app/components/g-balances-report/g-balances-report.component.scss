@@ -112,6 +112,21 @@
   }
 }
 
+/* Tarjeta y fila abren el detalle del viaje. */
+.balance-card-link,
+.balance-row-link {
+  cursor: pointer;
+}
+
+.balance-card-link {
+  transition: background-color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--bs-tertiary-bg);
+  }
+}
+
 .balance-card {
   padding: 0.75rem;
   border-radius: 0.6rem;

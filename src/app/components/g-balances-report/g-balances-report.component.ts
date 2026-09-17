@@ -7,6 +7,7 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { lastValueFrom } from 'rxjs';
 import {
   Filter,
@@ -148,7 +149,19 @@ export class GBalancesReportComponent implements OnChanges {
     private readonly vehicleService: VehicleService,
     private readonly toastService: ToastService,
     private readonly notificationsService: NotificationsService,
+    private readonly router: Router,
   ) {}
+
+  /**
+   * Abre el detalle del viaje. `from` y `tab` hacen que la flecha de regresar
+   * del detalle vuelva a Saldos y no al listado de viajes.
+   */
+  public openTrip(row: BalanceRow): void {
+    if (row?.id == null) return;
+    this.router.navigate(['/site/trips', row.id], {
+      queryParams: { from: 'dashboard', tab: 'saldos' },
+    });
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     /* Solo cambiar de propietario invalida lo cargado. El camión elegido no:

@@ -8,6 +8,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { TripService } from '../../services/trip.service';
 import { VehicleService as ExpenseService } from '../../services/expense.service';
 import { VehicleService } from '../../services/vehicle.service';
@@ -1313,9 +1314,26 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly ownerService: OwnerService,
     private readonly reportService: ReportService,
     private readonly commonService: CommonService,
+    private readonly route: ActivatedRoute,
   ) {}
 
+  /** Pestañas que se pueden pedir por `?tab=` al volver de un detalle. */
+  private static readonly TABS = [
+    'rentabilidad',
+    'gastos',
+    'suscripciones',
+    'graficos',
+    'saldos',
+    'viajes',
+  ] as const;
+
   ngOnInit(): void {
+    /* Al volver del detalle de un viaje abierto desde un reporte, se regresa a
+       esa pestaña. Si el rol no la tiene, `loadData` la corrige. */
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+    if (tab && (DashboardComponent.TABS as readonly string[]).includes(tab)) {
+      this.activeTab = tab as DashboardComponent['activeTab'];
+    }
     this.setupThemeObserver();
     this.loadBrands();
     this.updateCurrentMonthName();

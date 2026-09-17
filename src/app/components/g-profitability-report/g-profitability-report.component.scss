@@ -208,6 +208,21 @@
   }
 }
 
+/* Tarjeta y fila abren el detalle del viaje. */
+.trip-card-link,
+.trip-row-link {
+  cursor: pointer;
+}
+
+.trip-card-link {
+  transition: background-color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--bs-tertiary-bg);
+  }
+}
+
 /* El pie no es un viaje más: cierra la lista y por eso lleva otra superficie. */
 .trip-card-total {
   background-color: var(--bs-tertiary-bg);

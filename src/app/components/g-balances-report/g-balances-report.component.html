@@ -100,7 +100,16 @@
     <!-- Movil: una tarjeta por viaje, para no desplazar de lado. -->
     <div class="balance-cards d-md-none">
       @for (r of pagedRows; track r.id) {
-        <div class="balance-card">
+        <div
+          class="balance-card balance-card-link"
+          role="link"
+          tabindex="0"
+          [attr.aria-label]="
+            'Ver detalle del viaje ' + (r.tripNumber || r.company)
+          "
+          (click)="openTrip(r)"
+          (keydown.enter)="openTrip(r)"
+        >
           <div class="d-flex justify-content-between align-items-start gap-2">
             <span class="fw-semibold text-truncate">{{ r.company }}</span>
             <span class="fw-bold text-warning text-nowrap flex-shrink-0">
@@ -124,10 +133,12 @@
               <i class="fa-solid fa-calendar-day me-1 opacity-75"></i>
               {{ r.date ? (r.date | date: "d MMM, yyyy") : "Sin fecha" }}
             </span>
+            <!-- El boton no abre el detalle: el toque es para marcar pagado. -->
             <button
               type="button"
               class="btn btn-sm btn-outline-success rounded-3 text-nowrap"
-              (click)="askPaid(r)"
+              (click)="$event.stopPropagation(); askPaid(r)"
+              (keydown.enter)="$event.stopPropagation()"
             >
               <i class="fa-solid fa-check me-1"></i>Pagado
             </button>
@@ -178,7 +189,16 @@
         </thead>
         <tbody>
           @for (r of pagedRows; track r.id) {
-            <tr>
+            <tr
+              class="balance-row-link"
+              role="link"
+              tabindex="0"
+              [attr.aria-label]="
+                'Ver detalle del viaje ' + (r.tripNumber || r.company)
+              "
+              (click)="openTrip(r)"
+              (keydown.enter)="openTrip(r)"
+            >
               <td class="fw-semibold">{{ r.company }}</td>
               <td class="trip-cell text-body-secondary">
                 @if (r.tripNumber) {
@@ -198,7 +218,8 @@
                 <button
                   type="button"
                   class="btn btn-sm btn-outline-success rounded-3 text-nowrap"
-                  (click)="askPaid(r)"
+                  (click)="$event.stopPropagation(); askPaid(r)"
+                  (keydown.enter)="$event.stopPropagation()"
                 >
                   <i class="fa-solid fa-check me-1"></i>Pagado
                 </button>

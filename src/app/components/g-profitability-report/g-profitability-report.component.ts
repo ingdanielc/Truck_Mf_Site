@@ -7,6 +7,7 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { lastValueFrom } from 'rxjs';
 import { ReportService } from '../../services/report.service';
 import { TripService } from '../../services/trip.service';
@@ -228,7 +229,19 @@ export class GProfitabilityReportComponent implements OnChanges {
     private readonly reportService: ReportService,
     private readonly tripService: TripService,
     private readonly commonService: CommonService,
+    private readonly router: Router,
   ) {}
+
+  /**
+   * Abre el detalle del viaje. `from` y `tab` hacen que la flecha de regresar
+   * del detalle vuelva a esta pestaña del tablero y no al listado de viajes.
+   */
+  public openTrip(row: TripRow): void {
+    if (row?.id == null) return;
+    this.router.navigate(['/site/trips', row.id], {
+      queryParams: { from: 'dashboard', tab: 'rentabilidad' },
+    });
+  }
 
   /**
    * Reacciona al periodo del tablero. Es también la carga inicial: `ngOnChanges`

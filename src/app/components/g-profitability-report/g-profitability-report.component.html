@@ -218,7 +218,14 @@
            pertenece la columna que se esta mirando. Mismos datos, apilados. -->
       <div class="trip-cards d-md-none">
         @for (r of pagedTripRows; track $index) {
-          <div class="trip-card">
+          <div
+            class="trip-card trip-card-link"
+            role="link"
+            tabindex="0"
+            [attr.aria-label]="'Ver detalle del viaje ' + r.label"
+            (click)="openTrip(r)"
+            (keydown.enter)="openTrip(r)"
+          >
             <div class="d-flex justify-content-between align-items-start gap-2">
               <div class="min-w-0">
                 <span class="fw-semibold">{{ r.label }}</span>
@@ -361,7 +368,14 @@
           </thead>
           <tbody>
             @for (r of pagedTripRows; track $index) {
-              <tr>
+              <tr
+                class="trip-row-link"
+                role="link"
+                tabindex="0"
+                [attr.aria-label]="'Ver detalle del viaje ' + r.label"
+                (click)="openTrip(r)"
+                (keydown.enter)="openTrip(r)"
+              >
                 <td>
                   <span class="fw-semibold">{{ r.label }}</span>
                   @if (month === ANIO && r.monthLabel) {

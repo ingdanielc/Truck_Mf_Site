@@ -534,6 +534,18 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     );
   }
 
+  /**
+   * El detalle muestra el saldo junto a ingresos y gastos cuando hay algo por
+   * cobrar: siempre en un viaje Pendiente, y en uno En Curso solo si tiene
+   * saldo. Sigue al estado en pantalla, igual que `totalIncome`, para que el
+   * saldo y el ingreso cambien juntos al mover el selector.
+   */
+  get showBalanceCard(): boolean {
+    const status = this.trip?.status;
+    if (status === 'Pendiente') return true;
+    return status === 'En Curso' && (this.trip?.balance || 0) > 0;
+  }
+
   get totalIncome(): number {
     if (!this.trip) return 0;
     if (this.trip.paidBalance) {
@@ -1029,6 +1041,28 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     return this.totalIncome - this.totalExpenses;
   }
 
+  /**
+   * Titulo de la cifra grande. Solo un viaje Completado tiene rentabilidad:
+   * En Curso o Pendiente el ingreso es lo recibido hasta ahora (flete menos
+   * saldo por cobrar), asi que la cifra dice si eso alcanza para los gastos.
+   */
+  get netProfitTitle(): string {
+    if (!this.isCashView) return 'Rentabilidad neta';
+    return this.netProfit < 0
+      ? 'Faltante para cubrir gastos'
+      : 'Sobrante del flete recibido';
+  }
+
+  /** Con faltante el titulo ya dice que falta: la cifra va sin signo. */
+  get netProfitDisplay(): number {
+    return this.isCashView ? Math.abs(this.netProfit) : this.netProfit;
+  }
+
+  private get isCashView(): boolean {
+    const status = this.trip?.status;
+    return status === 'En Curso' || status === 'Pendiente';
+  }
+
   get profitMargin(): number {
     if (!this.trip || !this.totalIncome) return 0;
     return (this.netProfit / this.totalIncome) * 100;
@@ -1039,7 +1073,13 @@ export class TripDetailComponent implements OnInit, OnDestroy {
     if (this.originView === 'vehicles') {
       return this.router.navigate(['/site/vehicles']);
     } else if (this.originView === 'dashboard') {
-      return this.router.navigate(['/site/dashboard']);
+      /* La pestaña del tablero desde la que se abrió (Rentabilidad, Saldos):
+         sin ella se volvía a la de por omisión. */
+      const tab = this.route.snapshot.queryParamMap.get('tab');
+      return this.router.navigate(
+        ['/site/dashboard'],
+        tab ? { queryParams: { tab } } : {},
+      );
     }
     return this.router.navigate(['/site/trips']);
   }

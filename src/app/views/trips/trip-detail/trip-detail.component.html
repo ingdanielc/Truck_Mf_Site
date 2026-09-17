@@ -457,7 +457,13 @@
       <!-- Financial Column -->
       <div class="col-12 col-xl-8">
         <div class="row g-4">
-          <div class="col-12 col-md-6">
+          <!-- Con saldo por cobrar (Pendiente, o En Curso con saldo) se suma
+               una tercera tarjeta, y las tres se reparten la fila. -->
+          <div
+            class="col-12"
+            [class.col-md-6]="!showBalanceCard"
+            [class.col-md-4]="showBalanceCard"
+          >
             <div
               class="card border-0 rounded-4 shadow-sm bg-body-tertiary hover-scale"
             >
@@ -471,7 +477,7 @@
                       ${{ totalIncome | number: "1.0-0" }}
                     </h3>
                     <small class="text-secondary"
-                      >Facturado al cliente: {{ trip.company || "N/A" }}</small
+                      >Facturado a: {{ trip.company || "N/A" }}</small
                     >
                   </div>
                   <div
@@ -484,7 +490,40 @@
               </div>
             </div>
           </div>
-          <div class="col-12 col-md-6">
+          @if (showBalanceCard) {
+            <div class="col-12 col-md-4">
+              <div
+                class="card border-0 rounded-4 shadow-sm bg-body-tertiary hover-scale"
+              >
+                <div class="card-body p-4">
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <p
+                        class="text-secondary small mb-1 fw-bold text-uppercase"
+                      >
+                        Saldo
+                      </p>
+                      <h3 class="fw-bold mb-1">
+                        ${{ trip.balance || 0 | number: "1.0-0" }}
+                      </h3>
+                      <small class="text-secondary">Pendiente por cobrar</small>
+                    </div>
+                    <div
+                      class="bg-warning bg-opacity-10 text-warning rounded-3 p-2"
+                      style="height: fit-content"
+                    >
+                      <i class="fa-solid fa-hand-holding-dollar"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+          <div
+            class="col-12"
+            [class.col-md-6]="!showBalanceCard"
+            [class.col-md-4]="showBalanceCard"
+          >
             <div
               class="card border-0 rounded-4 shadow-sm bg-body-tertiary hover-scale cursor-pointer"
               (click)="onExpensesClick()"
@@ -530,10 +569,10 @@
             >
               <div class="card-body text-white">
                 <p class="text-white small fw-bold text-uppercase mb-3">
-                  Rentabilidad neta
+                  {{ netProfitTitle }}
                 </p>
                 <h1 class="display-4 fw-bold text-white mb-3">
-                  ${{ netProfit | number: "1.0-0" }}
+                  ${{ netProfitDisplay | number: "1.0-0" }}
                   <span class="h6">COP</span>
                 </h1>
                 <div
