@@ -876,6 +876,8 @@ export class GTripFormComponent implements OnInit, OnDestroy {
    * formulario sigue igual y sin aviso: es informativo.
    */
   private loadVehicleDocuments(vehicleId: number | null): void {
+    // Un viaje finalizado no muestra el aviso: no hay para qué pedirlos.
+    if (this.isStatusLocked) return;
     this.vehicleDocumentsSub?.unsubscribe();
     const cached = vehicleId ? this.vehicleDocumentsCache.get(vehicleId) : null;
     this.vehicleDocuments = cached ?? null;
@@ -900,6 +902,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
    * si aún no llega, se vuelve a llamar al cargarlo.
    */
   private loadDriverDocuments(driverId: number | null): void {
+    if (this.isStatusLocked) return;
     if (driverId && driverId === this.driverDocumentsId) return;
 
     this.driverDocumentsSub?.unsubscribe();
