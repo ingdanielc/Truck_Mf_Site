@@ -1525,11 +1525,41 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  /** El conductor solo consulta mes a mes: el año completo es de los demás
+   *  roles. Sin la opción, su tablero nunca sale del alcance `'mes'`. */
+  get canSelectFullYear(): boolean {
+    return this.userRole !== 'CONDUCTOR';
+  }
+
+  /** Meses que el conductor puede consultar, contando el mes en curso. */
+  private static readonly DRIVER_HISTORY_MONTHS = 3;
+
+  /**
+   * El mes cae antes de la ventana del conductor. Se compara como
+   * `año * 12 + mes` para que la ventana cruce el cambio de año: en febrero
+   * incluye diciembre del año anterior.
+   */
+  private isBeforeDriverHistory(month: number, year: number): boolean {
+    if (this.userRole !== 'CONDUCTOR') return false;
+    const primero =
+      this.systemYear * 12 +
+      this.systemMonth -
+      (DashboardComponent.DRIVER_HISTORY_MONTHS - 1);
+    return year * 12 + month < primero;
+  }
+
+  /** Hay algo que ver en el año anterior al que se hojea. */
+  get canBrowsePreviousYear(): boolean {
+    return !this.isBeforeDriverHistory(11, this.browsingYear - 1);
+  }
+
   public changeBrowsingYear(delta: number): void {
+    if (delta < 0 && !this.canBrowsePreviousYear) return;
     this.browsingYear += delta;
   }
 
   public isMonthDisabled(month: number): boolean {
+    if (this.isBeforeDriverHistory(month, this.browsingYear)) return true;
     const now = new Date();
     if (this.browsingYear < now.getFullYear()) return false;
     if (this.browsingYear > now.getFullYear()) return true;
@@ -1589,6 +1619,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
    * cuesta ninguna petición.
    */
   public setPeriod(month: number | null, year: number): void {
+    if (month == null && !this.canSelectFullYear) return;
+    if (month != null && this.isBeforeDriverHistory(month, year)) return;
     const nuevoScope: 'mes' | 'anio' = month == null ? 'anio' : 'mes';
     const cambioAnio = year !== this.selectedYear;
 

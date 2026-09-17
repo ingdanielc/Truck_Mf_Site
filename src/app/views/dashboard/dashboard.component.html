@@ -1138,6 +1138,7 @@
         type="button"
         class="btn btn-outline-secondary btn-sm rounded-circle"
         (click)="changeBrowsingYear(-1)"
+        [disabled]="!canBrowsePreviousYear"
         aria-label="year"
       >
         <i class="fa-solid fa-chevron-left"></i>
@@ -1158,15 +1159,17 @@
          elegir el alcance y elegir el mes son la misma decisión —qué periodo
          se mira—, y separarlas en dos controles dejaba estados que no se
          podían leer de un vistazo. -->
-    <button
-      type="button"
-      class="btn w-100 py-2 rounded-3 month-btn shadow-sm mb-2"
-      [class.btn-primary]="scope === 'anio' && browsingYear === selectedYear"
-      [class.btn-light]="!(scope === 'anio' && browsingYear === selectedYear)"
-      (click)="setPeriod(null, browsingYear); showHistoryPanel = false"
-    >
-      <span class="fw-bold">TODO EL AÑO {{ browsingYear }}</span>
-    </button>
+    @if (canSelectFullYear) {
+      <button
+        type="button"
+        class="btn w-100 py-2 rounded-3 month-btn shadow-sm mb-2"
+        [class.btn-primary]="scope === 'anio' && browsingYear === selectedYear"
+        [class.btn-light]="!(scope === 'anio' && browsingYear === selectedYear)"
+        (click)="setPeriod(null, browsingYear); showHistoryPanel = false"
+      >
+        <span class="fw-bold">TODO EL AÑO {{ browsingYear }}</span>
+      </button>
+    }
 
     <!-- Month Grid (3x4) -->
     <div class="row g-2">
@@ -1223,7 +1226,11 @@
     } @else {
       <div class="mt-4 p-3 bg-body-tertiary rounded-3 small text-secondary">
         <i class="fa-solid fa-circle-info me-2 text-info"></i>
-        Selecciona un mes o todo el año para visualizar los reportes históricos.
+        {{
+          canSelectFullYear
+            ? "Selecciona un mes o todo el año para visualizar los reportes históricos."
+            : "Selecciona un mes para visualizar los reportes. Puedes consultar los últimos tres meses."
+        }}
       </div>
     }
   </div>
