@@ -22,6 +22,7 @@ import {
   Sort,
 } from '../../models/model-filter-table';
 import { ExpenseShortcut } from '../../utils/expense-shortcuts';
+import { expenseDay, expenseDayTime } from '../../utils/expense-date';
 
 export interface ExpenseShortcutEvent {
   typeId: number;
@@ -295,7 +296,7 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
     for (const group of result) {
       group.items.sort(
         (a, b) =>
-          new Date(a.expenseDate).getTime() - new Date(b.expenseDate).getTime(),
+          expenseDayTime(a.expenseDate) - expenseDayTime(b.expenseDate),
       );
     }
     return result.sort((a, b) => b.total - a.total);
@@ -308,8 +309,10 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
 
     return this.maintenanceExpenses
       .filter((e) => {
-        const d = new Date(e.expenseDate);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        const d = expenseDay(e.expenseDate);
+        return (
+          d?.getMonth() === currentMonth && d?.getFullYear() === currentYear
+        );
       })
       .reduce((sum, e) => sum + e.amount, 0);
   }
@@ -322,8 +325,8 @@ export class GExpensesTripComponent implements OnInit, OnChanges {
 
     return this.maintenanceExpenses
       .filter((e) => {
-        const d = new Date(e.expenseDate);
-        return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
+        const d = expenseDay(e.expenseDate);
+        return d?.getMonth() === prevMonth && d?.getFullYear() === prevYear;
       })
       .reduce((sum, e) => sum + e.amount, 0);
   }

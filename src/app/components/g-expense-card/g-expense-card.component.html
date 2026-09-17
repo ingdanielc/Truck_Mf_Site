@@ -95,7 +95,7 @@
       @for (item of group.items; track item.id) {
         <li class="group-detail-row d-flex align-items-center gap-2 gap-sm-3">
           <span class="detail-date small text-secondary flex-shrink-0">
-            {{ item.expenseDate | date: "d MMM, y" }}
+            {{ dayOf(item) | date: "d MMM, y" }}
           </span>
           <span
             class="small text-secondary text-truncate flex-grow-1 min-width-0"
@@ -111,7 +111,7 @@
               class="btn btn-link text-primary p-0 text-decoration-none flex-shrink-0 detail-edit"
               (click)="edit.emit(item)"
               [attr.aria-label]="
-                'Editar gasto del ' + (item.expenseDate | date: 'd MMM, y')
+                'Editar gasto del ' + (dayOf(item) | date: 'd MMM, y')
               "
             >
               <i class="fa-solid fa-pen-to-square"></i>

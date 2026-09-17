@@ -1063,7 +1063,11 @@ export class GAddExpenseComponent implements OnInit {
       : '';
     if (elegida) return GAddExpenseComponent.fromInputDate(elegida);
     if (this.editingExpense) return this.editingExpense.expenseDate;
-    return new Date().toISOString();
+    /* Hoy, al mediodia local: `new Date().toISOString()` despues de las siete
+       de la noche en Bogota ya es el dia siguiente en UTC. */
+    return GAddExpenseComponent.fromInputDate(
+      GAddExpenseComponent.toInputDate(new Date()),
+    );
   }
 
   dismiss(): void {

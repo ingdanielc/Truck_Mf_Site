@@ -13,6 +13,7 @@ import {
   getCategoryConfigById,
   getCategoryConfigByName,
 } from '../../utils/category-config';
+import { expenseDay, expenseDayTime } from '../../utils/expense-date';
 
 /**
  * Gastos de una misma categoría dentro de un viaje (o del rango consultado en
@@ -92,7 +93,7 @@ export class GExpenseCardComponent {
 
   private get dateRange(): string {
     const times = this.group.items
-      .map((e) => new Date(e.expenseDate).getTime())
+      .map((e) => expenseDayTime(e.expenseDate))
       .filter((t) => !Number.isNaN(t));
     if (times.length === 0) return '';
 
@@ -113,6 +114,11 @@ export class GExpenseCardComponent {
       formatDate(last, 'y', this.locale);
     const start = sameYear ? formatDate(first, 'd MMM', this.locale) : from;
     return `${start} – ${to}`;
+  }
+
+  /** Dia del gasto para el pipe `date`, sin que la zona horaria lo corra. */
+  dayOf(expense: ModelExpense): Date | null {
+    return expenseDay(expense.expenseDate);
   }
 
   toggle(): void {
