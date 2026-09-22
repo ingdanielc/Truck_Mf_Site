@@ -261,7 +261,52 @@
         (change)="onReceiptSelected($event)"
       />
 
-      @if (hasReceipt) {
+      <!-- El archivo rechazado ocupa la misma ficha, en rojo: no se adjunto y
+           mientras siga ahi el boton de guardar esta apagado. Se cambia por
+           otro o se elimina, y la ficha vuelve a lo que hubiera antes. -->
+      @if (receiptError) {
+        <div
+          class="file-chip expense-field is-invalid border rounded-3 px-3 d-flex align-items-center gap-3"
+        >
+          <i class="fa-solid fa-triangle-exclamation fs-4 text-danger"></i>
+          <div class="flex-grow-1 overflow-hidden">
+            @if (rejectedReceiptName) {
+              <p
+                class="mb-0 small fw-bold text-truncate"
+                [title]="rejectedReceiptName"
+              >
+                {{ rejectedReceiptName }}
+              </p>
+            }
+            <p class="mb-0 text-danger" style="font-size: 0.72rem">
+              {{ receiptError }}
+            </p>
+          </div>
+          <div class="file-chip-actions d-flex align-items-center gap-3">
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-sm rounded-3 p-1 shadow-none draft-btn"
+              (click)="receiptInput.click()"
+              title="Cambiar el archivo"
+              aria-label="Cambiar el archivo"
+            >
+              <i
+                class="fa-solid fa-arrows-rotate"
+                style="font-size: 0.75rem"
+              ></i>
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-danger btn-sm rounded-3 p-1 shadow-none draft-btn"
+              (click)="discardRejectedReceipt()"
+              title="Eliminar el archivo"
+              aria-label="Eliminar el archivo"
+            >
+              <i class="fa-solid fa-trash" style="font-size: 0.75rem"></i>
+            </button>
+          </div>
+        </div>
+      } @else if (hasReceipt) {
         <div
           class="file-chip expense-field border rounded-3 px-3 d-flex align-items-center gap-3"
         >
@@ -339,10 +384,6 @@
             </span>
           </span>
         </button>
-      }
-
-      @if (receiptError) {
-        <div class="text-danger small mt-2">{{ receiptError }}</div>
       }
     </div>
 

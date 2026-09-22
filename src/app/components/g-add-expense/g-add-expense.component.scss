@@ -263,3 +263,11 @@ textarea.expense-field {
     justify-content: flex-end;
   }
 }
+
+/* La ficha con el archivo rechazado. Va al final para ganarle al tono que el
+   tema oscuro le da a `.file-chip`. */
+.file-chip.is-invalid,
+[data-bs-theme="dark"] .file-chip.is-invalid {
+  background-color: rgba(var(--bs-danger-rgb), 0.06);
+  border-color: rgba(var(--bs-danger-rgb), 0.35) !important;
+}

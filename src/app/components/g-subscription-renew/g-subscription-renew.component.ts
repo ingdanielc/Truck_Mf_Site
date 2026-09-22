@@ -101,6 +101,8 @@ export class GSubscriptionRenewComponent {
   public selectedFile: File | null = null;
   public selectedFileName = '';
   public formError = '';
+  /** Nombre del archivo rechazado, para nombrarlo en su ficha. */
+  public rejectedFileName = '';
   public isSaving = false;
 
   constructor(
@@ -230,6 +232,7 @@ export class GSubscriptionRenewComponent {
     input.value = '';
     if (!file) return;
 
+    this.rejectedFileName = file.name;
     const extension = (file.name.split('.').pop() || '').toLowerCase();
     if (!ALLOWED_EXTENSIONS.includes(extension)) {
       this.formError =
@@ -237,18 +240,32 @@ export class GSubscriptionRenewComponent {
       return;
     }
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      this.formError = `El archivo supera los ${MAX_FILE_SIZE_MB} MB permitidos.`;
+      this.formError = `El archivo supera los ${MAX_FILE_SIZE_MB} MB permitidos y no se adjuntó.`;
       return;
     }
 
     this.selectedFile = file;
     this.selectedFileName = file.name;
+    this.rejectedFileName = '';
     this.formError = '';
   }
 
   public removeFile(): void {
     this.selectedFile = null;
     this.selectedFileName = '';
+    this.discardRejectedFile();
+  }
+
+  /**
+   * Descarta el archivo rechazado y con él su aviso. La ficha vuelve a lo que
+   * hubiera antes: el comprobante ya elegido, o la zona de carga.
+   *
+   * Aquí el comprobante es obligatorio, así que esto no habilita nada: el
+   * botón de reportar sigue apagado mientras no haya un archivo válido.
+   */
+  public discardRejectedFile(): void {
+    this.rejectedFileName = '';
+    this.formError = '';
   }
 
   /**

@@ -433,6 +433,7 @@
                 [fileName]="slotFileName(slot)"
                 currentHint="Manifiesto actual"
                 (fileSelected)="onManifestSelected(slot, $event)"
+                (invalid)="onManifestInvalid(slot, $event)"
                 (removed)="onManifestRemoved(slot, $index)"
                 (opened)="openManifest(slot, $index)"
               ></g-file-field>

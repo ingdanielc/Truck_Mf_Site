@@ -45,8 +45,16 @@ export class GFileFieldComponent {
   @Output() fileSelected = new EventEmitter<File>();
   @Output() removed = new EventEmitter<void>();
   @Output() opened = new EventEmitter<void>();
+  /**
+   * Hay un archivo rechazado a la vista. Quien use el campo puede apagar su
+   * botón de guardar mientras tanto: el archivo no se adjuntó, y guardar sin
+   * enterarse es justo lo que el aviso quiere evitar.
+   */
+  @Output() invalid = new EventEmitter<boolean>();
 
   error = '';
+  /** Nombre del archivo rechazado, para nombrarlo en su ficha. */
+  rejectedName = '';
 
   readonly accepted = MANIFEST_ALLOWED_EXTENSIONS.map((ext) => '.' + ext).join(
     ',',
@@ -75,12 +83,32 @@ export class GFileFieldComponent {
     if (!file) return;
 
     const error = validateManifestFile(file);
-    this.error = error ?? '';
+    this.rejectedName = error ? file.name : '';
+    this.setError(error ?? '');
     if (!error) this.fileSelected.emit(file);
   }
 
   remove(): void {
-    this.error = '';
+    this.rejectedName = '';
+    this.setError('');
     this.removed.emit();
+  }
+
+  /**
+   * Descarta el archivo rechazado y con él el aviso.
+   *
+   * El archivo es opcional: quien no consigue uno que cumpla tiene que poder
+   * seguir sin él. Lo rechazado nunca se adjuntó, así que esto no toca el
+   * archivo que hubiera antes.
+   */
+  dismissError(): void {
+    this.rejectedName = '';
+    this.setError('');
+  }
+
+  private setError(message: string): void {
+    if (this.error === message) return;
+    this.error = message;
+    this.invalid.emit(!!message);
   }
 }

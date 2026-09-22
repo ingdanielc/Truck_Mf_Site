@@ -254,7 +254,10 @@
            mismo gesto en tres pantallas y no debería verse ni comportarse
            distinto. -->
       <div class="mb-3">
-        <label for="subscriptionReceipt" class="form-label fw-bold small mb-1 d-block">
+        <label
+          for="subscriptionReceipt"
+          class="form-label fw-bold small mb-1 d-block"
+        >
           Comprobante*
         </label>
         <input
@@ -266,9 +269,53 @@
           (change)="onFileSelected($event)"
         />
 
-        @if (selectedFileName) {
+        <!-- El archivo rechazado ocupa la misma ficha, en rojo: no se adjunto
+             y se cambia o se elimina desde el mismo sitio, como en gastos y en
+             la carga de documentos. -->
+        @if (rejectedFileName) {
+          <div
+            class="file-chip field-height is-invalid border rounded-3 px-3 d-flex align-items-center gap-3"
+          >
+            <i class="fa-solid fa-triangle-exclamation fs-4 text-danger"></i>
+            <div class="flex-grow-1 overflow-hidden">
+              <p
+                class="mb-0 small fw-bold text-truncate"
+                [title]="rejectedFileName"
+              >
+                {{ rejectedFileName }}
+              </p>
+              <p class="mb-0 text-danger" style="font-size: 0.72rem">
+                {{ formError }}
+              </p>
+            </div>
+            <div class="file-chip-actions d-flex align-items-center gap-3">
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm rounded-3 p-1 shadow-none draft-btn"
+                (click)="receiptInput.click()"
+                title="Cambiar el archivo"
+                aria-label="Cambiar el archivo"
+              >
+                <i
+                  class="fa-solid fa-arrows-rotate"
+                  style="font-size: 0.75rem"
+                ></i>
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-danger btn-sm rounded-3 p-1 shadow-none draft-btn"
+                (click)="discardRejectedFile()"
+                title="Eliminar el archivo"
+                aria-label="Eliminar el archivo"
+              >
+                <i class="fa-solid fa-trash" style="font-size: 0.75rem"></i>
+              </button>
+            </div>
+          </div>
+        } @else if (selectedFileName) {
           <div
             class="file-chip field-height border rounded-3 px-3 d-flex align-items-center gap-3"
+            [class.is-invalid]="!!formError"
           >
             <i class="fa-solid fa-file-lines fs-4 text-primary"></i>
             <div class="flex-grow-1 overflow-hidden">
@@ -325,11 +372,14 @@
           <button
             type="button"
             class="file-dropzone field-height btn w-100 rounded-3 px-3 d-flex align-items-center text-start gap-3"
+            [class.is-invalid]="!!formError"
             (click)="receiptInput.click()"
           >
             <i class="fa-solid fa-cloud-arrow-up fs-4 text-primary"></i>
             <span class="flex-grow-1 overflow-hidden">
-              <span class="mb-0 small fw-bold d-block">Seleccionar archivo</span>
+              <span class="mb-0 small fw-bold d-block"
+                >Seleccionar archivo</span
+              >
               <span
                 class="mb-0 text-secondary d-block"
                 style="font-size: 0.72rem"
@@ -339,13 +389,16 @@
             </span>
           </button>
         }
-      </div>
 
-      @if (formError) {
-        <p class="text-danger small mb-3">
-          <i class="fa-solid fa-triangle-exclamation me-2"></i>{{ formError }}
-        </p>
-      }
+        <!-- Lo que no es un archivo rechazado —falta el comprobante al
+             reportar— no tiene ficha donde ir: va pegado al campo del que
+             habla, como en la carga de documentos. -->
+        @if (formError && !rejectedFileName) {
+          <p class="text-danger small mt-1 mb-0">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>{{ formError }}
+          </p>
+        }
+      </div>
 
       <!-- Del alto de «Guardar documento» en la carga de documentos: es el
            botón grande con el que se cierra el panel, igual que allí. -->

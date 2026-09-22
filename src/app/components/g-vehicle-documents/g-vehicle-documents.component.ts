@@ -131,6 +131,8 @@ export class GVehicleDocumentsComponent implements OnInit {
   showForm: boolean = false;
   /** Archivo rechazado por formato o tamaño; se muestra bajo la zona de carga. */
   fileError: string = '';
+  /** Nombre del archivo rechazado, para nombrarlo en su ficha. */
+  rejectedFileName: string = '';
   selectedFile: File | null = null;
   selectedFileName: string = '';
   /** URL del escaneo ya guardado, cuando se edita sin reemplazarlo. */
@@ -582,6 +584,7 @@ export class GVehicleDocumentsComponent implements OnInit {
     input.value = '';
     if (!file) return;
 
+    this.rejectedFileName = file.name;
     const extension = (file.name.split('.').pop() || '').toLowerCase();
     if (!ALLOWED_EXTENSIONS.includes(extension)) {
       this.fileError =
@@ -590,12 +593,27 @@ export class GVehicleDocumentsComponent implements OnInit {
     }
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
       this.fileError =
-        'El archivo supera los ' + MAX_FILE_SIZE_MB + ' MB permitidos.';
+        'El archivo supera los ' +
+        MAX_FILE_SIZE_MB +
+        ' MB permitidos y no se adjuntó.';
       return;
     }
 
     this.selectedFile = file;
     this.selectedFileName = file.name;
+    this.rejectedFileName = '';
+    this.fileError = '';
+  }
+
+  /**
+   * Descarta el archivo rechazado y con él su aviso.
+   *
+   * El archivo es opcional: quien no consigue uno que cumpla tiene que poder
+   * guardar el documento sin él. Lo rechazado nunca se adjuntó, así que esto
+   * no toca el archivo que hubiera antes.
+   */
+  discardRejectedFile(): void {
+    this.rejectedFileName = '';
     this.fileError = '';
   }
 

@@ -30,19 +30,24 @@ export function maxTripManifests(tripType: string | null | undefined): number {
 
 /** "Manifiesto de Carga" para el primero, "Manifiesto de Carga 2" después. */
 export function manifestLabel(index: number): string {
-  return index === 0 ? TRIP_MANIFEST_NAME : `${TRIP_MANIFEST_NAME} ${index + 1}`;
+  return index === 0
+    ? TRIP_MANIFEST_NAME
+    : `${TRIP_MANIFEST_NAME} ${index + 1}`;
 }
 
 /** Lo que acepta `/common/upload-document`. */
-export const MANIFEST_ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
+export const MANIFEST_ALLOWED_EXTENSIONS = [
+  'pdf',
+  'jpg',
+  'jpeg',
+  'png',
+  'webp',
+];
 /** `spring.servlet.multipart.max-file-size` del backend. */
 export const MANIFEST_MAX_SIZE_MB = 5;
 
 const sinTildes = (texto: string): string =>
-  texto
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
+  texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /**
  * El tipo "Manifiesto de Carga" del catálogo del viaje. Se busca por nombre
@@ -85,7 +90,7 @@ export function validateManifestFile(file: File): string | null {
     );
   }
   if (file.size > MANIFEST_MAX_SIZE_MB * 1024 * 1024) {
-    return `El archivo supera los ${MANIFEST_MAX_SIZE_MB} MB permitidos.`;
+    return `El archivo supera los ${MANIFEST_MAX_SIZE_MB} MB permitidos y no se adjuntó.`;
   }
   return null;
 }

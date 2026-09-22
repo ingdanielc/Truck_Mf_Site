@@ -90,6 +90,70 @@ describe('GAddExpenseComponent · comprobante', () => {
     }
   });
 
+  /* ---- Guardar bloqueado ---------------------------------------------- */
+
+  describe('un archivo rechazado apaga Guardar', () => {
+    /* El archivo invalido no se adjunta, asi que guardar habria funcionado
+       —sin soporte— y el usuario se iba creyendo que quedo adjunto. */
+    it('por pasarse del tope', () => {
+      c.expenseForm.patchValue({ description: 'Peaje' });
+      expect(c.canSave).toBeTrue();
+
+      c.onReceiptSelected(evento(archivo('factura.jpg', 6)));
+
+      expect(c.canSave).toBeFalse();
+    });
+
+    it('por un formato que el backend no acepta', () => {
+      c.expenseForm.patchValue({ description: 'Peaje' });
+
+      c.onReceiptSelected(evento(archivo('factura.docx')));
+
+      expect(c.canSave).toBeFalse();
+    });
+
+    it('elegir uno valido vuelve a encenderlo', () => {
+      c.onReceiptSelected(evento(archivo('factura.jpg', 6)));
+
+      c.onReceiptSelected(evento(archivo('factura.jpg')));
+
+      expect(c.receiptError).toBe('');
+      expect(c.canSave).toBeTrue();
+    });
+
+    it('quitar el comprobante tambien lo enciende', () => {
+      c.onReceiptSelected(evento(archivo('factura.jpg', 6)));
+
+      c.removeReceipt();
+
+      expect(c.canSave).toBeTrue();
+    });
+
+    /* El comprobante es opcional: quien no consigue una foto mas liviana
+       tiene que poder registrar el gasto sin ella. */
+    it('eliminar el archivo rechazado lo enciende y guarda sin soporte', () => {
+      c.onReceiptSelected(evento(archivo('enorme.jpg', 6)));
+
+      c.discardRejectedReceipt();
+
+      expect(c.receiptError).toBe('');
+      expect(c.canSave).toBeTrue();
+      c.onSave();
+      expect(emitido!.receipt).toBeNull();
+    });
+
+    it('eliminarlo no borra el comprobante que ya estaba', () => {
+      const bueno = archivo('buena.jpg');
+      c.onReceiptSelected(evento(bueno));
+      c.onReceiptSelected(evento(archivo('enorme.jpg', 6)));
+
+      c.discardRejectedReceipt();
+
+      expect(c.receiptFile).toBe(bueno);
+      expect(c.canSave).toBeTrue();
+    });
+  });
+
   /* ---- Reemplazar ----------------------------------------------------- */
 
   describe('reemplazar', () => {

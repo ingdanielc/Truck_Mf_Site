@@ -135,6 +135,13 @@
   }
 }
 
+/* La ficha con el archivo rechazado: el mismo rojo en los dos temas. Va
+   después de la regla del tema oscuro para ganarle. */
+.file-chip.is-invalid,
+[data-bs-theme="dark"] .file-chip.is-invalid {
+  background-color: rgba(var(--bs-danger-rgb), 0.06);
+}
+
 /* Falta archivo o vencimiento, o el archivo elegido se rechazó: la zona —o la
    ficha del archivo— se marca como un campo con error. Va después de la regla
    del tema oscuro para ganarle en los dos temas. */
@@ -174,6 +181,15 @@
   .file-chip-actions {
     flex: 0 0 100%;
     justify-content: flex-end;
+  }
+
+  /* «Guardar documento» junto al icono no cabía de una línea y el rótulo se
+     partía en dos. Se recorta el relleno lateral, que en un botón que ya se
+     estira con `flex-fill` no hace ninguna falta: lo que sobra se lo queda el
+     texto. Se hace con la variable de Bootstrap y no con `padding` a secas
+     para no pelear con la suya. */
+  .submit-btn {
+    --bs-btn-padding-x: 0.5rem;
   }
 
   /* Descartar y guardar, en la misma fila. El 20% es para el que se descarta:

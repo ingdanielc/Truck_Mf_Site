@@ -111,6 +111,8 @@ export class GAddExpenseComponent implements OnInit {
   /** Soporte ya guardado, al editar. `null` si se quitó o no había. */
   currentReceiptUrl: string | null = null;
   receiptError = '';
+  /** Nombre del archivo rechazado, para nombrarlo en su ficha. */
+  rejectedReceiptName = '';
   /** Soporte abierto en el visor; `null` cuando no hay ninguno. */
   receiptViewerUrl: string | null = null;
 
@@ -270,7 +272,6 @@ export class GAddExpenseComponent implements OnInit {
     return isNaN(fecha.getTime()) ? null : fecha;
   }
 
-
   /** La fecha del viaje, solo si es de un dia anterior a hoy. `null` si el
    *  viaje es de hoy, si no hay viaje o si la fecha no se entiende. */
   private get pastTripDate(): Date | null {
@@ -379,7 +380,9 @@ export class GAddExpenseComponent implements OnInit {
    * para todo lo que escribe esta pantalla: `fromInputDate` fija el mediodia
    * local, y a esa hora el dia es el mismo se mire desde donde se mire.
    */
-  private static toInputDateFrom(raw: string | Date | null | undefined): string {
+  private static toInputDateFrom(
+    raw: string | Date | null | undefined,
+  ): string {
     if (!raw) return '';
 
     /* El dia se toma tal como esta escrito, sin construir ningun `Date`.
@@ -977,6 +980,7 @@ export class GAddExpenseComponent implements OnInit {
    * usuario sin el comprobante que ya tenía.
    */
   private setReceipt(file: File): void {
+    this.rejectedReceiptName = file.name;
     const extension = (file.name.split('.').pop() || '').toLowerCase();
     if (!ALLOWED_RECEIPT_EXTENSIONS.includes(extension)) {
       this.receiptError =
@@ -985,14 +989,29 @@ export class GAddExpenseComponent implements OnInit {
       return;
     }
     if (file.size > MAX_RECEIPT_SIZE_MB * 1024 * 1024) {
-      this.receiptError = `El archivo supera los ${MAX_RECEIPT_SIZE_MB} MB permitidos.`;
+      this.receiptError = `El archivo supera los ${MAX_RECEIPT_SIZE_MB} MB permitidos y no se adjuntó.`;
       return;
     }
 
     this.receiptFile = file;
     this.receiptFileName = file.name;
+    this.rejectedReceiptName = '';
     this.receiptError = '';
     this.receiptTouched = true;
+  }
+
+  /**
+   * Descarta el archivo rechazado y con él el aviso, que es lo que mantiene
+   * apagado el botón de guardar.
+   *
+   * El comprobante es opcional: quien no consigue una foto más liviana tiene
+   * que poder registrar el gasto igual. El archivo nunca llegó a adjuntarse,
+   * así que no hay nada que borrar salvo el aviso; si había un comprobante
+   * antes, ese se queda.
+   */
+  discardRejectedReceipt(): void {
+    this.rejectedReceiptName = '';
+    this.receiptError = '';
   }
 
   /** Quita el soporte. Al editar, guardar sin soporte lo desvincula. */
@@ -1000,6 +1019,7 @@ export class GAddExpenseComponent implements OnInit {
     this.receiptFile = null;
     this.receiptFileName = '';
     this.currentReceiptUrl = null;
+    this.rejectedReceiptName = '';
     this.receiptError = '';
     this.receiptTouched = true;
   }
@@ -1074,7 +1094,18 @@ export class GAddExpenseComponent implements OnInit {
     this.close.emit(null);
   }
 
+  /**
+   * Un comprobante rechazado apaga el botón hasta que se cambie o se descarte.
+   *
+   * El archivo inválido no llega a adjuntarse, así que guardar en ese momento
+   * habría funcionado —solo que sin el soporte—, y el usuario se iba creyendo
+   * que quedó adjunto. Con el botón apagado, el aviso en rojo tiene que
+   * atenderse: elegir otro archivo, o quitar el comprobante.
+   *
+   * Vale igual para el mantenimiento: es el mismo formulario.
+   */
   get canSave(): boolean {
+    if (this.receiptError) return false;
     return this.expenseForm.valid && (this.isModified || this.receiptTouched);
   }
 

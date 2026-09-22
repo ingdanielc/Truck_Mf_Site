@@ -146,6 +146,9 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   manifestViewerName: string = '';
   /** Los manifiestos cambiaron aunque no se haya tocado ningún campo. */
   private manifestTouched: boolean = false;
+  /** Casillas con un archivo rechazado a la vista. Mientras haya alguna, el
+   *  botón de guardar queda apagado. */
+  private readonly invalidManifests = new Set<ManifestSlot>();
   private manifestSub?: Subscription;
 
   private _pendingVehicleId: number | null = null;
@@ -537,6 +540,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   private loadManifests(tripId: number | null | undefined): void {
     this.manifestSub?.unsubscribe();
     this.manifestSlots = [emptyManifestSlot()];
+    this.invalidManifests.clear();
     if (!tripId) return;
     this.manifestSub = loadTripManifests(this.commonService, tripId).subscribe({
       next: (documents) => {
@@ -595,6 +599,19 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * El archivo elegido no sirve —pesa de más o no es del formato— y el campo
+   * lo está avisando.
+   *
+   * El manifiesto es opcional, así que esto no impide crear el viaje sin
+   * archivo: solo impide guardarlo creyendo que el que se eligió quedó
+   * adjunto. El propio campo trae el botón para eliminarlo y seguir.
+   */
+  onManifestInvalid(slot: ManifestSlot, invalid: boolean): void {
+    if (invalid) this.invalidManifests.add(slot);
+    else this.invalidManifests.delete(slot);
+  }
+
+  /**
    * Quita el manifiesto. Al editar, guardar sin él lo borra del viaje. Un
    * segundo manifiesto que todavía no existía desaparece del todo, para no
    * dejar una zona de carga suelta.
@@ -606,6 +623,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     } else if (index > 0) {
       this.manifestSlots.splice(index, 1);
     }
+    this.invalidManifests.delete(slot);
     this.manifestTouched = true;
   }
 
@@ -1410,6 +1428,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   }
 
   get canSave(): boolean {
+    if (this.invalidManifests.size) return false;
     return this.tripForm.valid && (this.isModified || this.manifestTouched);
   }
 

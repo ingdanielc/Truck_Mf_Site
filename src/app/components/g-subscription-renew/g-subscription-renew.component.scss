@@ -152,6 +152,16 @@
   }
 }
 
+/* El archivo elegido se rechazó: el borde —punteado en la zona de carga— se
+   marca en rojo, igual que en la carga de documentos. Va después de la regla
+   del tema oscuro para ganarle en los dos temas. */
+.file-dropzone.is-invalid,
+.file-chip.is-invalid,
+[data-bs-theme="dark"] .file-dropzone.is-invalid,
+[data-bs-theme="dark"] .file-chip.is-invalid {
+  border-color: var(--bs-form-invalid-border-color, #dc3545) !important;
+}
+
 /* ---- La ficha en el teléfono --------------------------------------------
    Con el nombre y los tres botones repartiéndose una fila de 62px, al nombre
    le quedaban unos pocos caracteres antes del recorte. Ahí la ficha crece y
