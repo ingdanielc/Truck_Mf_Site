@@ -60,6 +60,8 @@ import {
   GSearchComboboxComponent,
 } from 'src/app/components/g-search-combobox/g-search-combobox.component';
 import { ownerComboOptions } from 'src/app/utils/owner-options';
+import { documentUploadErrorMessage } from 'src/app/utils/document-image';
+import { MAINTENANCE_EXPENSE_TYPE } from 'src/app/models/dashboard-report-model';
 
 /**
  * El parque de vehículos que le corresponde al usuario: con qué se filtra y
@@ -1532,7 +1534,18 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     this.isSavingExpense = true;
     const receipt = event.receipt;
     this.commonService
-      .uploadDocument(receipt, receipt.name, { type: 'expense' })
+      .uploadDocument(receipt, receipt.name, {
+        type: 'expense',
+        /* El gasto va con su viaje; el mantenimiento no tiene viaje y va
+           con el vehículo, y lo avisa con su tipo de gasto: el mismo número
+           puede ser de un viaje y de un vehículo. */
+        ...(this.isMaintenance
+          ? {
+              id: event.expense.vehicleId,
+              expenseTypeId: Number(MAINTENANCE_EXPENSE_TYPE),
+            }
+          : { id: event.expense.tripId }),
+      })
       .subscribe({
         next: (resp: any) => {
           /* La subida devuelve la URL en `data`, como texto. Ver los documentos
@@ -1553,7 +1566,10 @@ export class ExpensesComponent implements OnInit, OnDestroy {
           console.error('Error uploading receipt:', err);
           this.toastService.showError(
             'Error',
-            'No se pudo adjuntar el comprobante',
+            documentUploadErrorMessage(
+              err,
+              'No se pudo adjuntar el comprobante',
+            ),
           );
           this.isSavingExpense = false;
         },

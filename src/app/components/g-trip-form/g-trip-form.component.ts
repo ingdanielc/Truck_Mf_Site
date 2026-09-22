@@ -70,6 +70,10 @@ import {
   saveTripManifest,
   uploadManifestFile,
 } from 'src/app/utils/trip-manifest';
+import {
+  DocumentFileTooLargeError,
+  documentUploadErrorMessage,
+} from 'src/app/utils/document-image';
 
 /**
  * Un manifiesto del formulario: el que ya tenía el viaje, el recién elegido o
@@ -534,20 +538,18 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     this.manifestSub?.unsubscribe();
     this.manifestSlots = [emptyManifestSlot()];
     if (!tripId) return;
-    this.manifestSub = loadTripManifests(this.commonService, tripId).subscribe(
-      {
-        next: (documents) => {
-          this.manifestSlots = documents.length
-            ? documents.map((document) => ({
-                document,
-                file: null,
-                removed: false,
-              }))
-            : [emptyManifestSlot()];
-        },
-        error: (err) => console.error('Error loading trip manifests:', err),
+    this.manifestSub = loadTripManifests(this.commonService, tripId).subscribe({
+      next: (documents) => {
+        this.manifestSlots = documents.length
+          ? documents.map((document) => ({
+              document,
+              file: null,
+              removed: false,
+            }))
+          : [emptyManifestSlot()];
       },
-    );
+      error: (err) => console.error('Error loading trip manifests:', err),
+    });
   }
 
   /** Cuántos admite el tipo de viaje elegido: dos en el redondo. */
@@ -620,21 +622,20 @@ export class GTripFormComponent implements OnInit, OnDestroy {
 
   /**
    * Deja los manifiestos como quedaron en el formulario, con el viaje ya
-   * guardado. Devuelve false si alguno falló: el viaje quedó guardado igual,
-   * así que solo se avisa y se reintenta desde la edición. Que falle uno no
-   * impide intentar el otro.
+   * guardado. Devuelve los errores de los que fallaron: el viaje quedó
+   * guardado igual, así que solo se avisa y se reintenta desde la edición.
+   * Que falle uno no impide intentar el otro.
    */
   private async syncManifests(
     tripId: number | null,
     manifestNumber: string | null | undefined,
-  ): Promise<boolean> {
-    let ok = true;
+  ): Promise<unknown[]> {
+    const errores: unknown[] = [];
     for (const slot of this.visibleManifestSlots) {
-      if (!(await this.syncManifestSlot(slot, tripId, manifestNumber))) {
-        ok = false;
-      }
+      const error = await this.syncManifestSlot(slot, tripId, manifestNumber);
+      if (error) errores.push(error);
     }
-    return ok;
+    return errores;
   }
 
   /**
@@ -643,12 +644,14 @@ export class GTripFormComponent implements OnInit, OnDestroy {
    *
    * Aunque no se elija archivo, el número se mantiene al día con el del
    * campo "Manifiesto": es el mismo número y no debe quedar uno viejo.
+   *
+   * Devuelve null si salió bien, o el error.
    */
   private async syncManifestSlot(
     slot: ManifestSlot,
     tripId: number | null,
     manifestNumber: string | null | undefined,
-  ): Promise<boolean> {
+  ): Promise<unknown> {
     const existing = slot.document;
     const file = slot.file;
     const numeroCambio =
@@ -657,8 +660,8 @@ export class GTripFormComponent implements OnInit, OnDestroy {
 
     const toDelete = slot.removed && !file && !!existing?.id;
     const toSave = !!file || (!slot.removed && numeroCambio);
-    if (!toDelete && !toSave) return true;
-    if (!tripId) return false;
+    if (!toDelete && !toSave) return null;
+    if (!tripId) return new Error('El viaje guardado no trae su id.');
 
     try {
       if (toDelete) {
@@ -674,10 +677,10 @@ export class GTripFormComponent implements OnInit, OnDestroy {
           existing,
         });
       }
-      return true;
+      return null;
     } catch (err) {
       console.error('Error saving trip manifest:', err);
-      return false;
+      return err;
     }
   }
 
@@ -1322,9 +1325,9 @@ export class GTripFormComponent implements OnInit, OnDestroy {
           this.vehiclesByOwnerCache.clear();
 
           const tripId = this.trip?.id ?? response?.data?.id ?? null;
-          const manifestOk = conManifiesto
+          const manifestErrors = conManifiesto
             ? await this.syncManifests(tripId, tripData.manifestNumber)
-            : true;
+            : [];
           /* El formulario puede seguir abierto mientras se calcula la ruta:
              lo guardado pasa a ser el punto de partida, haya salido bien o no
              el manifiesto. Si quedara pendiente, "Crear viaje" seguiría
@@ -1333,15 +1336,23 @@ export class GTripFormComponent implements OnInit, OnDestroy {
           this.manifestTouched = false;
           this.loadManifests(tripId);
 
-          if (manifestOk) {
+          if (!manifestErrors.length) {
             this.toastService.showSuccess(
               'Gestión de Viajes',
               `Viaje ${this.trip ? 'actualizado' : 'creado'} exitosamente!`,
             );
           } else {
+            /* Si alguno pasó de los 5 MB, se dice: reintentar con el mismo
+               archivo volvería a fallar. */
+            const demasiadoGrande = manifestErrors.find(
+              (error) => error instanceof DocumentFileTooLargeError,
+            );
             this.toastService.showError(
               'Manifiesto',
-              'Viaje guardado, pero no se pudo cargar el manifiesto. Puedes reintentarlo editando el viaje.',
+              'Viaje guardado, pero no se pudo cargar el manifiesto. ' +
+                (demasiadoGrande
+                  ? documentUploadErrorMessage(demasiadoGrande, '')
+                  : 'Puedes reintentarlo editando el viaje.'),
             );
           }
           this.notificationsService.refreshNotifications();

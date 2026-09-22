@@ -13,6 +13,7 @@ import {
   REPORTED_PAYMENT_METHOD,
   accountDigits,
 } from '../../utils/payment-methods';
+import { documentUploadErrorMessage } from '../../utils/document-image';
 
 /** Lo mismo que acepta `/common/upload-document`. */
 const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
@@ -323,7 +324,7 @@ export class GSubscriptionRenewComponent {
         this.commonService.uploadDocument(
           this.selectedFile,
           this.selectedFileName,
-          { type: 'subscription' },
+          { type: 'subscription', id: this.ownerId },
         ),
       );
       const receiptUrl = subida?.data || null;
@@ -349,8 +350,13 @@ export class GSubscriptionRenewComponent {
       this.close.emit(true);
     } catch (error) {
       console.error('Error reportando el pago de la suscripción:', error);
-      this.formError =
-        'No se pudo enviar el comprobante. Revisa tu conexión e inténtalo de nuevo.';
+      this.toastService.showError(
+        'Error',
+        documentUploadErrorMessage(
+          error,
+          'No se pudo enviar el comprobante. Revisa tu conexión e inténtalo de nuevo.',
+        ),
+      );
     } finally {
       this.isSaving = false;
     }

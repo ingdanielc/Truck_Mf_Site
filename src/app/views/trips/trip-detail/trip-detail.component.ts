@@ -55,6 +55,7 @@ import {
   uploadManifestFile,
 } from 'src/app/utils/trip-manifest';
 import { shareDocumentFiles } from 'src/app/utils/document-share';
+import { documentUploadErrorMessage } from 'src/app/utils/document-image';
 import { Formatters } from 'src/app/utils/formatters';
 
 declare var globalThis: any;
@@ -1279,7 +1280,10 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       this.loadManifests();
     } catch (err) {
       console.error('Error saving trip manifest:', err);
-      this.toastService.showError('Error', 'No se pudo cargar el manifiesto');
+      this.toastService.showError(
+        'Error',
+        documentUploadErrorMessage(err, 'No se pudo cargar el manifiesto'),
+      );
     } finally {
       this.uploadingManifestIndex = null;
     }

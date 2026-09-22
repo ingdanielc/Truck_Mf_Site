@@ -1,11 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
-import { Observable, shareReplay } from 'rxjs';
-import {
-  DocumentAppliesTo,
-  ModelDocumentFile,
-} from '../models/document-model';
+import { Observable, from, shareReplay, switchMap } from 'rxjs';
+import { prepareDocumentFile } from '../utils/document-image';
+import { DocumentAppliesTo, ModelDocumentFile } from '../models/document-model';
 
 /**
  * Valores de `type` que acepta `/common/upload-document`. Los cuatro primeros
@@ -124,20 +122,46 @@ export class CommonService {
    * el documento. No recibe el id del documento: se puede subir antes de que la
    * fila exista. Acepta pdf, jpg, jpeg, png y webp.
    *
-   * `type` decide la carpeta. Con `driver` va el driverId: el backend lo usa
-   * para guardar en `/owner` cuando el conductor es el mismo propietario. Sin
-   * `type` el backend responde 400.
+   * `type` decide la carpeta e `id` es el de quien lo lleva: el vehículo, el
+   * conductor, el propietario, el viaje, o en un comprobante el viaje del
+   * gasto (el vehículo si es mantenimiento) o el propietario de la
+   * suscripción. Con `driver` el backend lo usa además para guardar en
+   * `/owner` cuando el conductor es el mismo propietario.
+   *
+   * En `expense` el id puede ser de un viaje o de un vehículo, y el mismo
+   * número existe en las dos tablas: `expenseTypeId` es lo que los separa. Con
+   * el de mantenimiento (4) el id es del vehículo; sin él, del viaje.
+   *
+   * Las imágenes pasan antes por el canvas para fijar el giro del EXIF; ver
+   * `prepareDocumentFile`. Si la imagen procesada pasa del límite, el error es
+   * `DocumentFileTooLargeError` y no se llega a subir.
    */
   uploadDocument(
     file: File | Blob,
     fileName: string | undefined,
-    holder: { type: DocumentUploadType; id?: number | null },
+    holder: {
+      type: DocumentUploadType;
+      id?: number | null;
+      expenseTypeId?: number | null;
+    },
   ) {
-    const formData = new FormData();
-    formData.append('file', file, fileName || (file as File).name);
-    formData.append('type', holder.type);
-    if (holder.id != null) formData.append('id', holder.id.toString());
-    return this.http.post<any>(`${this.basePath}/upload-document`, formData);
+    return from(
+      prepareDocumentFile(file, fileName || (file as File).name || 'documento'),
+    ).pipe(
+      switchMap(({ blob, name }) => {
+        const formData = new FormData();
+        formData.append('file', blob, name);
+        formData.append('type', holder.type);
+        if (holder.id != null) formData.append('id', holder.id.toString());
+        if (holder.expenseTypeId != null) {
+          formData.append('expenseTypeId', holder.expenseTypeId.toString());
+        }
+        return this.http.post<any>(
+          `${this.basePath}/upload-document`,
+          formData,
+        );
+      }),
+    );
   }
 
   /**

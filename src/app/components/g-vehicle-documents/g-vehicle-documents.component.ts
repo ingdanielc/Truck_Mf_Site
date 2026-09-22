@@ -29,6 +29,7 @@ import {
   loadHolderDocuments,
 } from 'src/app/utils/holder-documents';
 import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
+import { documentUploadErrorMessage } from 'src/app/utils/document-image';
 import { PlatePipe } from '../../pipes/plate.pipe';
 import { ModelDriver } from 'src/app/models/driver-model';
 import { ModelOwner } from 'src/app/models/owner-model';
@@ -682,15 +683,17 @@ export class GVehicleDocumentsComponent implements OnInit {
 
   /**
    * El `type` de la subida sale del mismo portador con el que se guarda la
-   * fila, para que el archivo quede en la carpeta de quien lo lleva.
+   * fila, para que el archivo quede en la carpeta de quien lo lleva. Va
+   * siempre con el id del portador: el backend lo exige al menos para el
+   * conductor y el propietario.
    */
   private uploadHolder(ids: DocumentHolderIds): {
     type: DocumentUploadType;
     id?: number | null;
   } {
     if (ids.driverId != null) return { type: 'driver', id: ids.driverId };
-    if (ids.ownerId != null) return { type: 'owner' };
-    return { type: 'vehicle' };
+    if (ids.ownerId != null) return { type: 'owner', id: ids.ownerId };
+    return { type: 'vehicle', id: ids.vehicleId };
   }
 
   async saveDocument(): Promise<void> {
@@ -764,7 +767,10 @@ export class GVehicleDocumentsComponent implements OnInit {
       this.toastService.showError(
         'Error',
         err?.error?.message ||
-          'No se pudo guardar el documento. Intenta de nuevo.',
+          documentUploadErrorMessage(
+            err,
+            'No se pudo guardar el documento. Intenta de nuevo.',
+          ),
       );
     }
   }
