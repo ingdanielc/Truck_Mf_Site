@@ -43,6 +43,7 @@ import {
 } from 'src/app/utils/trip-status';
 import { PlatePipe } from '../../../pipes/plate.pipe';
 import { GFileFieldComponent } from '../../../components/g-file-field/g-file-field.component';
+import { GRouteMapComponent } from 'src/app/components/g-route-map/g-route-map.component';
 import { GDocumentViewerComponent } from '../../../components/g-document-viewer/g-document-viewer.component';
 import { ModelDocumentFile } from 'src/app/models/document-model';
 import {
@@ -71,6 +72,7 @@ declare var globalThis: any;
     PlatePipe,
     GFileFieldComponent,
     GDocumentViewerComponent,
+    GRouteMapComponent,
   ],
   templateUrl: './trip-detail.component.html',
   styleUrls: ['./trip-detail.component.scss'],
@@ -893,8 +895,10 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       next: (resp: any) => {
         if (resp?.data?.content && resp.data.content.length > 0) {
           this.lastLocation = resp.data.content[0];
-          this.loadVehicleRouteHistory(vehicleId);
-        } else {
+          /* El historico son hasta 2000 puntos y solo alimenta al mapa del
+             recorrido: si en pantalla esta el del trayecto, no se pide. */
+          if (!this.showRouteMap) this.loadVehicleRouteHistory(vehicleId);
+        } else if (!this.showRouteMap) {
           this.initMap();
         }
         this.calculateETA();
@@ -1069,6 +1073,19 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         }
       }
     }, 100);
+  }
+
+  /**
+   * El mapa muestra el trayecto planeado y no el recorrido del GPS.
+   *
+   * Solo un viaje En Curso se esta moviendo: en uno Completado, Pendiente o
+   * Cancelado la ultima ubicacion reportada es la que quedo, y puede ser de
+   * cualquier parte —el camion siguio andando, o el viaje se cancelo antes de
+   * salir—, asi que no dice nada del trayecto de este viaje. Planeado tampoco
+   * tiene recorrido: todavia no arranca.
+   */
+  get showRouteMap(): boolean {
+    return this.trip?.status !== 'En Curso';
   }
 
   get netProfit(): number {

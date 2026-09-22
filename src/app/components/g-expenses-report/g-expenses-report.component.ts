@@ -28,6 +28,19 @@ export interface ExpenseSlice {
   textClass: string;
   /** `bg-warning` — el segmento de la barra. */
   bgClass: string;
+  /** Solo en la fila "Otros": las categorías que agrupa, de mayor a menor.
+   *  Su `share` también es sobre el total del bloque, para que se lea en la
+   *  misma escala que las filas de arriba. */
+  details?: ExpenseDetail[];
+}
+
+/** Una categoría dentro de "Otros". No lleva color: no tiene tramo propio en
+ *  la barra. */
+export interface ExpenseDetail {
+  name: string;
+  amount: number;
+  share: number;
+  icon: string;
 }
 
 /** Un bloque del reporte: los gastos de viaje o los de mantenimiento. */
@@ -56,36 +69,48 @@ export function isMaintenanceExpense(expense: ModelExpense): boolean {
   return !expense.tripId;
 }
 
+/** El gris de "Otros". Ninguna categoría con nombre lo usa en la barra: así
+ *  el tramo del resto se reconoce sin leer la lista. */
+export const OTHERS_COLOR_CLASS = 'text-secondary bg-secondary';
+
 /**
- * Separa los colores repetidos de una serie que se pinta seguida.
+ * Los tonos de la barra: los de las categorías más dos propios del reporte
+ * —verde azulado y rosa—, que no usa ninguna categoría. Sin contar el gris de
+ * "Otros" quedan ocho, uno por categoría con nombre.
+ */
+export const REPORT_COLOR_CLASSES: string[] = [
+  ...new Set([
+    ...CATEGORY_COLOR_CLASSES,
+    'text-teal bg-teal',
+    'text-pink bg-pink',
+  ]),
+].filter((c) => c !== OTHERS_COLOR_CLASS);
+
+/**
+ * Da a cada categoría de la barra un tono que ninguna otra tenga.
  *
  * Las categorías comparten color —siete tonos para más de cuarenta—, así que
- * dos contiguas caían del mismo y en la barra se leían como un solo tramo. A la
- * segunda de un par igual se le da otro tono de la paleta.
+ * dos de la misma barra caían del mismo y no había forma de saber qué tramo
+ * era cuál. Cada una conserva el suyo si sigue libre; si no, toma el primero
+ * libre de la paleta. Las filas van ordenadas por importe, así que el desvío
+ * recae siempre en la más pequeña.
  *
- * Solo se desvía la que choca: el color de cada categoría se respeta siempre
- * que se pueda, y las filas se ordenan por importe, así que el desvío recae en
- * la más pequeña de las dos. Al elegir el sustituto se mira también la fila
- * siguiente, para no resolver un choque creando el de después.
+ * Con más filas que tonos, las que sobran repiten; con el tope de categorías
+ * del reporte no pasa.
  */
-export function separateAdjacentColors(colors: string[]): string[] {
-  const resultado: string[] = [];
+export function assignDistinctColors(colors: string[]): string[] {
+  const usados = new Set<string>();
 
-  colors.forEach((color, i) => {
-    const anterior = resultado[i - 1];
-    if (color !== anterior) {
-      resultado.push(color);
-      return;
-    }
-
-    const siguiente = colors[i + 1];
-    const libres = CATEGORY_COLOR_CLASSES.filter((c) => c !== anterior);
-    /* El que además no choque con el siguiente; si no hay ninguno, basta con
-       no repetir el anterior —el de después ya se resolverá en su turno. */
-    resultado.push(libres.find((c) => c !== siguiente) ?? libres[0] ?? color);
+  return colors.map((color) => {
+    const propio = REPORT_COLOR_CLASSES.includes(color) ? color : null;
+    const elegido =
+      propio && !usados.has(propio)
+        ? propio
+        : (REPORT_COLOR_CLASSES.find((c) => !usados.has(c)) ??
+          REPORT_COLOR_CLASSES[0]);
+    usados.add(elegido);
+    return elegido;
   });
-
-  return resultado;
 }
 
 /**
@@ -143,15 +168,20 @@ export class GExpensesReportComponent implements OnChanges {
   public total = 0;
   public count = 0;
 
+  /** Bloques con el detalle de "Otros" abierto. Se cierra al cambiar de
+   *  periodo: el "Otros" de otro mes agrupa otras categorías. */
+  public openOthers = new Set<ExpenseGroup['key']>();
+
   /**
    * Cuántas categorías se nombran antes de agrupar el resto en "Otros". Cuenta
    * por bloque, porque cada bloque pinta su propia barra.
    *
-   * No es un tope estético: la paleta de categorías tiene siete tonos, y a
-   * partir de ahí dos porciones distintas se pintarían del mismo color. Las
-   * pequeñas tampoco se leen en la barra — juntas sí.
+   * No es un tope estético: la barra tiene ocho tonos más el gris de "Otros"
+   * (`REPORT_COLOR_CLASSES`), y a partir de ahí dos porciones distintas se
+   * pintarían del mismo color. Las pequeñas tampoco se leen en la barra —
+   * juntas sí.
    */
-  private static readonly MAX_CATEGORIAS = 6;
+  private static readonly MAX_CATEGORIAS = 8;
 
   private token = 0;
 
@@ -267,6 +297,7 @@ export class GExpensesReportComponent implements OnChanges {
 
     this.total = total;
     this.count = enPeriodo.length;
+    this.openOthers.clear();
 
     this.groups = [
       this.buildGroup(
@@ -325,24 +356,38 @@ export class GExpensesReportComponent implements OnChanges {
     const configs: CategoryConfig[] = filas.map((c) =>
       getCategoryConfigByName(c.name),
     );
-    /* El desvío se aplica a la fila entera, no solo a su tramo de la barra: el
-       punto de la lista lleva el mismo color, y si difirieran no habría forma
-       de saber qué tramo es cuál. */
-    const colores = separateAdjacentColors(
-      configs.map((cfg) => cfg.colorClass),
-    );
+    /* El color se aplica a la fila entera, no solo a su tramo de la barra: el
+       punto de la lista lleva el mismo, y si difirieran no habría forma de
+       saber qué tramo es cuál. "Otros" va siempre en gris. */
+    const colores = [
+      ...assignDistinctColors(
+        configs.slice(0, nombradas.length).map((cfg) => cfg.colorClass),
+      ),
+      ...(resto.length ? [OTHERS_COLOR_CLASS] : []),
+    ];
 
-    const slices = filas.map((c, i) => {
+    const parte = (monto: number) => (total > 0 ? (monto / total) * 100 : 0);
+
+    const slices: ExpenseSlice[] = filas.map((c, i) => {
       const [textClass, bgClass] = colores[i].split(' ');
       return {
         name: Formatters.titleCase(c.name),
         amount: c.amount,
-        share: total > 0 ? (c.amount / total) * 100 : 0,
+        share: parte(c.amount),
         icon: configs[i].icon,
         textClass,
         bgClass,
       };
     });
+
+    if (resto.length) {
+      slices[slices.length - 1].details = resto.map((c) => ({
+        name: Formatters.titleCase(c.name),
+        amount: c.amount,
+        share: parte(c.amount),
+        icon: getCategoryConfigByName(c.name).icon,
+      }));
+    }
 
     return {
       key,
@@ -364,6 +409,12 @@ export class GExpensesReportComponent implements OnChanges {
    */
   public segmentWidth(slice: ExpenseSlice): string {
     return `${Math.max(slice.share, 1.5)}%`;
+  }
+
+  /** Abre o cierra el detalle de "Otros" de un bloque. */
+  public toggleOthers(key: ExpenseGroup['key']): void {
+    if (this.openOthers.has(key)) this.openOthers.delete(key);
+    else this.openOthers.add(key);
   }
 
   get hasData(): boolean {

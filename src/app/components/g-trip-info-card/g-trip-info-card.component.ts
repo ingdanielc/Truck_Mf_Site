@@ -12,8 +12,8 @@ import {
   routeDistanceKm,
   routeDurationSeconds,
   routeTollCost,
+  routeWaypoints,
 } from 'src/app/utils/google-routes';
-import { createPinMarker, removeMarker } from 'src/app/utils/google-markers';
 import { locationQuery } from 'src/app/utils/city-geo';
 import { encodeRoutePath } from 'src/app/utils/polyline';
 import { toIsoDate } from 'src/app/utils/toll-context';
@@ -24,16 +24,13 @@ import {
   TollPoint,
   TollTripContext,
 } from 'src/app/models/toll-model';
-import { environment } from 'src/environments/environment';
-
-declare var globalThis: any;
+import { GRouteMapComponent } from '../g-route-map/g-route-map.component';
 
 @Component({
   selector: 'g-trip-info-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, GRouteMapComponent],
   templateUrl: './g-trip-info-card.component.html',
-  styleUrls: ['./g-trip-info-card.component.scss'],
 })
 export class GTripInfoCardComponent implements OnChanges {
   @Input() isOpen: boolean = false;
@@ -72,9 +69,6 @@ export class GTripInfoCardComponent implements OnChanges {
   duration: string = '';
   durationInTraffic: string = '';
   tollsCount: number = 0;
-  mapInstance: any = null;
-  private routePolylines: any[] = [];
-  private routeMarkers: any[] = [];
 
   // New features
   tollsList: { name: string; price: number }[] = [];
@@ -130,9 +124,11 @@ export class GTripInfoCardComponent implements OnChanges {
       this.isVisible = false;
       this.calculateRoute();
     } else {
+      /* La ruta se conserva: el panel se cierra deslizándose y vaciarlo ahora
+         lo dejaría en blanco durante la animación. Se reemplaza en la próxima
+         apertura, que siempre vuelve a calcularla. */
       this.requestId++;
       this.isVisible = false;
-      this.clearRouteOverlays();
     }
   }
 
@@ -240,10 +236,11 @@ export class GTripInfoCardComponent implements OnChanges {
 
       this.collectTolls(route);
 
+      /* El mapa lo dibuja `g-route-map` con esta misma ruta: se le pasa hecha
+         para no pedir una segunda a Google. */
       this.routeData = route;
       this.isVisible = true;
       this.routeReady.emit();
-      this.renderRouteOnMap(route);
 
       // Va al final y sin await: el panel ya está abierto, así que la segunda
       // fuente llega cuando llegue y nunca demora la apertura
@@ -263,7 +260,6 @@ export class GTripInfoCardComponent implements OnChanges {
   private markRouteUnavailable(): void {
     this.isVisible = false;
     this.routeData = null;
-    this.clearRouteOverlays();
     this.routeUnavailable.emit();
   }
 
@@ -354,7 +350,7 @@ export class GTripInfoCardComponent implements OnChanges {
    * backend no puede responder.
    */
   private buildTollRequest(route: any): TollEstimateRequest | null {
-    const positions = this.waypointPositions(route);
+    const positions = routeWaypoints(route);
     if (positions.length < 2) return null;
 
     const context = this.tripContext ?? {};
@@ -457,125 +453,5 @@ export class GTripInfoCardComponent implements OnChanges {
 
   onClose(): void {
     this.close.emit();
-  }
-
-  private clearRouteOverlays(): void {
-    this.routePolylines.forEach((polyline) => polyline.setMap(null));
-    this.routePolylines = [];
-    this.routeMarkers.forEach((marker) => removeMarker(marker));
-    this.routeMarkers = [];
-  }
-
-  /** Normaliza cualquier forma de ubicación que devuelva la API a `{lat, lng}`. */
-  private toLatLng(location: any): { lat: number; lng: number } | null {
-    const point = location?.latLng ?? location;
-    if (!point) return null;
-
-    const lat = typeof point.lat === 'function' ? point.lat() : point.lat;
-    const lng = typeof point.lng === 'function' ? point.lng() : point.lng;
-    const latitude = lat ?? point.latitude;
-    const longitude = lng ?? point.longitude;
-
-    if (latitude === null || latitude === undefined) return null;
-    if (longitude === null || longitude === undefined) return null;
-    return { lat: Number(latitude), lng: Number(longitude) };
-  }
-
-  /**
-   * Puntos donde va un globo: origen y el final de cada tramo. En el viaje
-   * redondo son tres (A origen, B destino de ida, C destino de regreso).
-   */
-  private waypointPositions(route: any): { lat: number; lng: number }[] {
-    const legs = route?.legs ?? [];
-    const positions: ({ lat: number; lng: number } | null)[] = [];
-
-    if (legs.length > 0) {
-      positions.push(this.toLatLng(legs[0].startLocation));
-      for (const leg of legs) positions.push(this.toLatLng(leg.endLocation));
-    }
-
-    let resolved = positions.filter((p) => p !== null) as {
-      lat: number;
-      lng: number;
-    }[];
-
-    // Si los tramos no traen ubicaciones, se usan los extremos del trazado
-    if (resolved.length < 2 && route?.path?.length > 1) {
-      const first = this.toLatLng(route.path[0]);
-      const last = this.toLatLng(route.path.at(-1));
-      resolved = [first, last].filter((p) => p !== null) as {
-        lat: number;
-        lng: number;
-      }[];
-    }
-
-    return resolved;
-  }
-
-  /**
-   * Globos rojos con letra blanca (A, B, C), como los que dibujaba el
-   * DirectionsRenderer anterior.
-   *
-   * Se construyen con `PinElement` en vez de `createWaypointAdvancedMarkers`
-   * porque las opciones de estilo de ese método (`CreateWaypointMarkersOptions`)
-   * solo existen en el canal `v=alpha`.
-   */
-  private async renderRouteMarkers(route: any): Promise<void> {
-    const positions = this.waypointPositions(route);
-    if (positions.length === 0) return;
-
-    const labels = 'ABCDEFGHIJ';
-    const markers = await Promise.all(
-      positions.map((position, index) =>
-        createPinMarker({
-          map: this.mapInstance,
-          position: position,
-          glyphText: labels[index] ?? String(index + 1),
-          background: '#dc3545',
-          glyphColor: '#ffffff',
-        }),
-      ),
-    );
-
-    this.routeMarkers = markers.filter((marker) => marker !== null);
-  }
-
-  /**
-   * Dibuja la ruta con `createPolylines`, que reemplaza al `DirectionsRenderer`
-   * anterior. El `div` del mapa se vuelve a crear en cada apertura, así que el
-   * mapa se instancia de nuevo cada vez.
-   */
-  private renderRouteOnMap(route: any): void {
-    setTimeout(async () => {
-      const mapElement = document.getElementById('tripMap');
-      if (!mapElement || !globalThis.google?.maps?.Map || !route) return;
-
-      this.clearRouteOverlays();
-
-      this.mapInstance = new globalThis.google.maps.Map(mapElement, {
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-        // Sin `mapId` los marcadores avanzados no se dibujan
-        mapId: environment.googleMapsMapId,
-      });
-
-      // Mismo trazo azul que dibujaba el DirectionsRenderer anterior
-      this.routePolylines = route.createPolylines?.() ?? [];
-      this.routePolylines.forEach((polyline) => {
-        polyline.setOptions({
-          strokeColor: '#0d6efd',
-          strokeWeight: 5,
-          strokeOpacity: 0.8,
-        });
-        polyline.setMap(this.mapInstance);
-      });
-
-      if (route.viewport) {
-        this.mapInstance.fitBounds(route.viewport, 50);
-      }
-
-      await this.renderRouteMarkers(route);
-    }, 100);
   }
 }

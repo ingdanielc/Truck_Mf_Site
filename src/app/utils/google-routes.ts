@@ -122,3 +122,58 @@ export function routeTollCost(route: any): number {
   }
   return Math.round(legLevel);
 }
+
+/** Un punto del mapa, ya normalizado. */
+export interface RoutePoint {
+  lat: number;
+  lng: number;
+}
+
+/**
+ * Normaliza cualquier forma de ubicación que devuelva la API a `{lat, lng}`.
+ *
+ * La respuesta mezcla formas: `latLng` anidado, `lat`/`lng` como función —así
+ * los devuelve `LatLng`— o `latitude`/`longitude` en crudo.
+ */
+export function toRoutePoint(location: any): RoutePoint | null {
+  const point = location?.latLng ?? location;
+  if (!point) return null;
+
+  const lat = typeof point.lat === 'function' ? point.lat() : point.lat;
+  const lng = typeof point.lng === 'function' ? point.lng() : point.lng;
+  const latitude = lat ?? point.latitude;
+  const longitude = lng ?? point.longitude;
+
+  if (latitude == null || longitude == null) return null;
+  return { lat: Number(latitude), lng: Number(longitude) };
+}
+
+/**
+ * Los puntos donde va un globo: el origen y el final de cada tramo. En el
+ * viaje redondo son tres (A origen, B destino de ida, C destino de regreso).
+ *
+ * Son también los extremos que necesita la estimación de peajes, así que el
+ * mapa y el cálculo hablan siempre de los mismos puntos.
+ */
+export function routeWaypoints(route: any): RoutePoint[] {
+  const legs = route?.legs ?? [];
+  const positions: (RoutePoint | null)[] = [];
+
+  if (legs.length > 0) {
+    positions.push(toRoutePoint(legs[0].startLocation));
+    for (const leg of legs) positions.push(toRoutePoint(leg.endLocation));
+  }
+
+  const resolved = positions.filter((p) => p !== null) as RoutePoint[];
+  if (resolved.length >= 2) return resolved;
+
+  /* Si los tramos no traen ubicaciones, quedan los extremos del trazado. */
+  if (route?.path?.length > 1) {
+    return [
+      toRoutePoint(route.path[0]),
+      toRoutePoint(route.path.at(-1)),
+    ].filter((p) => p !== null) as RoutePoint[];
+  }
+
+  return resolved;
+}

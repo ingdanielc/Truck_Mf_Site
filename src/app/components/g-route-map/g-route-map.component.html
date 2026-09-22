@@ -1,0 +1,37 @@
+<!-- El mapa siempre está en el DOM: Google necesita un `div` con tamaño para
+     instanciarse, así que se tapa con el aviso en vez de quitarlo. -->
+<div class="route-map-wrapper position-relative">
+  <div #map class="route-map rounded-4"></div>
+
+  @if (loading || unavailable) {
+    <div
+      class="route-map-overlay rounded-4 bg-secondary bg-opacity-10 d-flex flex-column align-items-center justify-content-center text-center p-4"
+    >
+      @if (loading) {
+        <span class="spinner-border text-secondary mb-3" aria-hidden="true">
+        </span>
+        <p class="small text-secondary fw-bold mb-0">Trazando la ruta...</p>
+      } @else {
+        <i
+          class="fa-solid fa-map-location-dot fs-1 text-secondary opacity-50 mb-3"
+        ></i>
+        <p class="small text-secondary fw-bold mb-1">Ruta no disponible</p>
+        <p class="small text-secondary fw-normal mb-0">
+          No se pudo trazar el recorrido entre las ciudades del viaje.
+        </p>
+      }
+    </div>
+  }
+</div>
+
+@if (stops.length) {
+  <!-- Las paradas, en el mismo orden que las letras de los globos. -->
+  <p class="route-map-stops small text-secondary mb-0 mt-2 px-1">
+    @for (stop of stops; track $index; let last = $last) {
+      <span class="fw-bold">{{ stop }}</span>
+      @if (!last) {
+        <span class="mx-1">→</span>
+      }
+    }
+  </p>
+}

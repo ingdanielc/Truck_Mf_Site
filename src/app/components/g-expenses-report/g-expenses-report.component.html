@@ -39,9 +39,9 @@
          lista da el dato. Los porcentajes de la lista son sobre el bloque, igual
          que la barra.
 
-         Dos categorias contiguas nunca comparten tono: los 2 px de separacion
-         no bastaban, asi que el color se desempata al armar las filas. Ver
-         `separateAdjacentColors`. -->
+         Dos categorias de la misma barra nunca comparten tono, y "Otros" va
+         siempre en gris: el color se asigna al armar las filas. Ver
+         `assignDistinctColors`. -->
     @for (group of groups; track group.key; let last = $last) {
       <section class="expense-group" [class.mb-4]="!last">
         <div class="group-header mb-2">
@@ -79,17 +79,78 @@
 
         <ul class="category-list list-unstyled mb-0">
           @for (s of group.slices; track s.name) {
-            <li class="category-row">
-              <span class="category-dot" [ngClass]="s.bgClass"></span>
-              <i class="category-icon" [ngClass]="[s.icon, s.textClass]"></i>
-              <span class="category-name">{{ s.name }}</span>
-              <span class="category-share">
-                {{ s.share | number: "1.0-0" }}%
-              </span>
-              <span class="category-amount">
-                {{ s.amount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
-              </span>
-            </li>
+            @if (s.details) {
+              <!-- "Otros" se abre para ver que agrupa. Los porcentajes del
+                   detalle son sobre el bloque, como los de las demas filas. -->
+              <li>
+                <button
+                  type="button"
+                  class="category-row category-toggle"
+                  [attr.aria-expanded]="openOthers.has(group.key)"
+                  [attr.aria-controls]="'otros-' + group.key"
+                  (click)="toggleOthers(group.key)"
+                >
+                  <span class="category-dot" [ngClass]="s.bgClass"></span>
+                  <i
+                    class="category-icon"
+                    [ngClass]="[s.icon, s.textClass]"
+                  ></i>
+                  <span class="category-name">
+                    {{ s.name }}
+                    <span class="others-count">({{ s.details.length }})</span>
+                    <i
+                      class="fa-solid fa-chevron-down others-chevron ms-1"
+                      [class.open]="openOthers.has(group.key)"
+                      aria-hidden="true"
+                    ></i>
+                  </span>
+                  <span class="category-share">
+                    {{ s.share | number: "1.0-0" }}%
+                  </span>
+                  <span class="category-amount">
+                    {{ s.amount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+                  </span>
+                </button>
+                @if (openOthers.has(group.key)) {
+                  <ul
+                    class="others-list list-unstyled mb-0"
+                    [id]="'otros-' + group.key"
+                  >
+                    @for (d of s.details; track $index) {
+                      <li class="category-row others-row">
+                        <span class="category-dot"></span>
+                        <i
+                          class="category-icon text-body-secondary"
+                          [ngClass]="d.icon"
+                        ></i>
+                        <span class="category-name">{{ d.name }}</span>
+                        <span class="category-share">
+                          {{ d.share | number: "1.0-1" }}%
+                        </span>
+                        <span class="category-amount">
+                          {{
+                            d.amount
+                              | currency: "COP" : "symbol-narrow" : "1.0-0"
+                          }}
+                        </span>
+                      </li>
+                    }
+                  </ul>
+                }
+              </li>
+            } @else {
+              <li class="category-row">
+                <span class="category-dot" [ngClass]="s.bgClass"></span>
+                <i class="category-icon" [ngClass]="[s.icon, s.textClass]"></i>
+                <span class="category-name">{{ s.name }}</span>
+                <span class="category-share">
+                  {{ s.share | number: "1.0-0" }}%
+                </span>
+                <span class="category-amount">
+                  {{ s.amount | currency: "COP" : "symbol-narrow" : "1.0-0" }}
+                </span>
+              </li>
+            }
           }
         </ul>
       </section>

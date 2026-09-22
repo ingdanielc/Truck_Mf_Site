@@ -53,6 +53,8 @@ interface TripRow {
   /** Tercera parada del viaje redondo. La trae `/trip/filter`: el reporte
    *  agregado no la devuelve. */
   returnDestinationId?: string;
+  /** Mes del viaje (0-11), tal como lo imputa el reporte. */
+  month: number;
   monthLabel: string;
   income: number;
   expenses: number;
@@ -61,7 +63,7 @@ interface TripRow {
   margin: number | null;
 }
 
-type SortField = 'label' | 'income' | 'expenses' | 'profit' | 'margin';
+type SortField = 'date' | 'label' | 'income' | 'expenses' | 'profit' | 'margin';
 
 /**
  * Reporte de rentabilidad de un vehículo. Solo para propietario y conductor.
@@ -216,7 +218,7 @@ export class GProfitabilityReportComponent implements OnChanges {
    *  que imputarlos — y sin mostrarlos la tabla no cerraría en la utilidad. */
   public unassignedExpenses = 0;
 
-  public sortField: SortField = 'profit';
+  public sortField: SortField = 'date';
   public sortAsc = false;
 
   /** Respuestas del Endpoint B ya recibidas, por vehículo y periodo. */
@@ -462,6 +464,7 @@ export class GProfitabilityReportComponent implements OnChanges {
           route: '',
           originId: t.originId,
           destinationId: t.destinationId,
+          month: t.month,
           monthLabel: this.monthNamesShort[t.month] ?? '',
           income,
           expenses: gasto,
@@ -493,6 +496,10 @@ export class GProfitabilityReportComponent implements OnChanges {
   /** Estado por `id` de viaje. Tampoco viene en el reporte agregado: llega en
    *  la misma consulta que el tramo de regreso. */
   private tripStatuses = new Map<number, string>();
+
+  /** Fecha de inicio (`startDate`, en ms) por `id` de viaje, para ordenar la
+   *  lista. Llega en la misma consulta que el estado. */
+  private tripStartTimes = new Map<number, number>();
 
   /** Viajes cuyo tramo de regreso ya se preguntó, se haya encontrado o no.
    *  Sin esto, un viaje sin regreso se volvería a pedir en cada repintado. */
@@ -558,8 +565,13 @@ export class GProfitabilityReportComponent implements OnChanges {
           this.returnLegs.set(t.id, t.returnDestinationId);
         }
         if (t.status) this.tripStatuses.set(t.id, t.status);
+        const inicio = t.startDate ? new Date(t.startDate).getTime() : NaN;
+        if (!isNaN(inicio)) this.tripStartTimes.set(t.id, inicio);
       });
       this.buildRoutes();
+      /* La lista ya se pintó ordenada por mes; con las fechas a la mano se
+         afina el orden dentro de cada mes. */
+      if (this.sortField === 'date') this.applySort();
     } catch (error) {
       console.error('Error cargando el destino de regreso:', error);
       /* Se desmarcan: si quedaran como preguntados, el tramo de vuelta no se
@@ -712,9 +724,9 @@ export class GProfitabilityReportComponent implements OnChanges {
   /* ---- Orden de la tabla ------------------------------------------------ */
 
   /**
-   * La tabla abre por utilidad descendente —lo que más dejó arriba, lo que
-   * costó plata abajo—, que es la lectura que motiva el reporte. Tocar una
-   * columna reordena; tocar la misma invierte el sentido.
+   * La lista abre por fecha del viaje descendente —el más reciente arriba—. En
+   * móvil es el único orden: las tarjetas no tienen encabezados que tocar. En
+   * escritorio, tocar una columna reordena; tocar la misma invierte el sentido.
    */
   public sortBy(field: SortField): void {
     if (this.sortField === field) {
@@ -774,6 +786,18 @@ export class GProfitabilityReportComponent implements OnChanges {
     const dir = this.sortAsc ? 1 : -1;
     const f = this.sortField;
     this.tripRows = [...this.tripRows].sort((a, b) => {
+      if (f === 'date') {
+        /* El mes viene en el reporte; la fecha exacta llega después, con
+           `/trip/filter`. Dentro del mes, los viajes sin fecha van al final
+           y entre ellos decide el `id`. */
+        if (a.month !== b.month) return dir * (a.month - b.month);
+        const at = this.tripStartTimes.get(a.id);
+        const bt = this.tripStartTimes.get(b.id);
+        if (at != null && bt != null && at !== bt) return dir * (at - bt);
+        if (at == null && bt != null) return 1;
+        if (bt == null && at != null) return -1;
+        return dir * (a.id - b.id);
+      }
       if (f === 'label') {
         return dir * a.label.localeCompare(b.label, 'es-CO', { numeric: true });
       }

@@ -1,7 +1,8 @@
-import { CATEGORY_COLOR_CLASSES } from '../../utils/category-config';
 import {
+  assignDistinctColors,
   isMaintenanceExpense,
-  separateAdjacentColors,
+  OTHERS_COLOR_CLASS,
+  REPORT_COLOR_CLASSES,
 } from './g-expenses-report.component';
 
 describe('isMaintenanceExpense', () => {
@@ -9,15 +10,18 @@ describe('isMaintenanceExpense', () => {
     ({ vehicleId: 1, categoryId: 1, amount: 1000, ...extra }) as any;
 
   it('el tipo 4 es mantenimiento', () => {
-    expect(isMaintenanceExpense(gasto({ category: { expenseTypeId: 4 } })))
-      .toBeTrue();
+    expect(
+      isMaintenanceExpense(gasto({ category: { expenseTypeId: 4 } })),
+    ).toBeTrue();
   });
 
   it('los tipos de viaje no lo son, aunque no traigan viaje', () => {
-    expect(isMaintenanceExpense(gasto({ category: { expenseTypeId: 1 } })))
-      .toBeFalse();
-    expect(isMaintenanceExpense(gasto({ category: { expenseTypeId: 2 } })))
-      .toBeFalse();
+    expect(
+      isMaintenanceExpense(gasto({ category: { expenseTypeId: 1 } })),
+    ).toBeFalse();
+    expect(
+      isMaintenanceExpense(gasto({ category: { expenseTypeId: 2 } })),
+    ).toBeFalse();
   });
 
   it('sin tipo, decide si cuelga de un viaje', () => {
@@ -26,57 +30,49 @@ describe('isMaintenanceExpense', () => {
   });
 });
 
-/** Ningún par contiguo comparte tono. */
-const sinRepetidosSeguidos = (colores: string[]): boolean =>
-  colores.every((c, i) => i === 0 || c !== colores[i - 1]);
+/** Ningún tono se repite en la serie. */
+const sinRepetidos = (colores: string[]): boolean =>
+  new Set(colores).size === colores.length;
 
-describe('separateAdjacentColors', () => {
-  const [A, B, C] = CATEGORY_COLOR_CLASSES;
+describe('assignDistinctColors', () => {
+  const [A, B, C] = REPORT_COLOR_CLASSES;
 
-  it('no toca una serie que ya alterna', () => {
-    expect(separateAdjacentColors([A, B, C])).toEqual([A, B, C]);
+  it('hay ocho tonos para las categorías con nombre, sin el gris', () => {
+    expect(REPORT_COLOR_CLASSES.length).toBe(8);
+    expect(REPORT_COLOR_CLASSES).not.toContain(OTHERS_COLOR_CLASS);
+  });
+
+  it('respeta el color propio cuando no choca', () => {
+    expect(assignDistinctColors([A, B, C])).toEqual([A, B, C]);
   });
 
   it('desvía la segunda de un par igual, no la primera', () => {
-    const resultado = separateAdjacentColors([A, A]);
+    const resultado = assignDistinctColors([A, A]);
 
     expect(resultado[0]).toBe(A);
     expect(resultado[1]).not.toBe(A);
   });
 
-  /* Las filas van ordenadas por importe, así que resolver hacia adelante deja
-     el color propio a la categoría más grande de las dos. */
-  it('separa una serie entera del mismo tono', () => {
-    const resultado = separateAdjacentColors([A, A, A, A]);
-
-    expect(sinRepetidosSeguidos(resultado)).toBeTrue();
-    expect(resultado[0]).toBe(A);
-  });
-
-  /* Un choque no debe resolverse creando el siguiente. */
-  it('mira la fila de después al elegir el sustituto', () => {
-    const resultado = separateAdjacentColors([A, A, B]);
-
-    expect(sinRepetidosSeguidos(resultado)).toBeTrue();
-    expect(resultado[1]).not.toBe(B);
+  /* Antes solo se separaban las contiguas: A, B, A pintaba dos tramos iguales. */
+  it('no repite un tono aunque las filas no sean contiguas', () => {
+    expect(sinRepetidos(assignDistinctColors([A, B, A]))).toBeTrue();
   });
 
   it('aguanta la barra más larga que se pinta', () => {
-    /* Siete filas: las seis categorías con nombre más "Otros". */
-    const todasIguales = Array.from({ length: 7 }, () => A);
+    /* Ocho categorías con nombre, todas del mismo tono de origen. */
+    const todasIguales = Array.from({ length: 8 }, () => A);
 
-    expect(
-      sinRepetidosSeguidos(separateAdjacentColors(todasIguales)),
-    ).toBeTrue();
+    expect(sinRepetidos(assignDistinctColors(todasIguales))).toBeTrue();
   });
 
-  it('devuelve un color válido de la paleta', () => {
-    separateAdjacentColors([A, A, A]).forEach((c) => {
-      expect(CATEGORY_COLOR_CLASSES).toContain(c);
-    });
+  it('el gris de origen se cambia: queda para "Otros"', () => {
+    const [color] = assignDistinctColors([OTHERS_COLOR_CLASS]);
+
+    expect(color).not.toBe(OTHERS_COLOR_CLASS);
+    expect(REPORT_COLOR_CLASSES).toContain(color);
   });
 
   it('no falla con la lista vacía', () => {
-    expect(separateAdjacentColors([])).toEqual([]);
+    expect(assignDistinctColors([])).toEqual([]);
   });
 });

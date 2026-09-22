@@ -1,0 +1,19 @@
+@if (position) {
+  <div #map class="location-map rounded-4"></div>
+
+  <!-- La dirección y cuándo se reportó. El punto solo dice dónde; sin la fecha
+       no se sabe si es de hoy o de hace un mes. -->
+  <div class="d-flex align-items-start gap-2 mt-3 px-1">
+    <i class="fa-solid fa-location-dot text-primary mt-1"></i>
+    <div class="flex-grow-1 overflow-hidden">
+      <p class="fw-bold small mb-0 text-truncate" [title]="addressText">
+        {{ addressText }}
+      </p>
+      @if (location?.creationDate) {
+        <p class="text-secondary small mb-0">
+          Reportada el {{ location!.creationDate | date: "dd/MM/yyyy HH:mm" }}
+        </p>
+      }
+    </div>
+  </div>
+}

@@ -30,8 +30,12 @@
   <div class="offcanvas-body p-4">
     @if (routeData) {
       <div class="d-flex flex-column gap-3">
-        <!-- Mapa de la Ruta -->
-        <div id="tripMap" class="animate__animated animate__fadeIn"></div>
+        <!-- Mapa de la Ruta. La ruta ya esta calculada aqui arriba: se le
+             pasa hecha para que el mapa no pida otra. -->
+        <g-route-map
+          class="animate__animated animate__fadeIn d-block mb-2"
+          [route]="routeData"
+        ></g-route-map>
 
         <!-- Distancia -->
         <div
@@ -230,9 +234,7 @@
               <div>
                 <i
                   class="fa-solid"
-                  [ngClass]="
-                    showApiTolls ? 'fa-chevron-up' : 'fa-chevron-down'
-                  "
+                  [ngClass]="showApiTolls ? 'fa-chevron-up' : 'fa-chevron-down'"
                 ></i>
               </div>
             </div>

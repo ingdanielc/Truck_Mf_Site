@@ -34,6 +34,7 @@ import { GCameraComponent } from 'src/app/components/g-camera/g-camera.component
 import { GTripMiniCardComponent } from 'src/app/components/g-trip-mini-card/g-trip-mini-card.component';
 import { GVehicleDocumentsComponent } from 'src/app/components/g-vehicle-documents/g-vehicle-documents.component';
 import { GDocumentViewerComponent } from 'src/app/components/g-document-viewer/g-document-viewer.component';
+import { GLocationMapComponent } from 'src/app/components/g-location-map/g-location-map.component';
 import { shareDocumentFiles } from 'src/app/utils/document-share';
 import { PlatePipe } from '../../../pipes/plate.pipe';
 import { GConfirmSheetComponent } from '../../../components/g-confirm-sheet/g-confirm-sheet.component';
@@ -60,6 +61,7 @@ interface DocumentRow {
     GTripMiniCardComponent,
     GVehicleDocumentsComponent,
     GDocumentViewerComponent,
+    GLocationMapComponent,
     PlatePipe,
     GConfirmSheetComponent,
   ],
@@ -86,6 +88,14 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
   sharingDocuments: boolean = false;
   /** Identificación del conductor asignado; el filtro de vehículos no la trae. */
   driverDocumentNumber: string = '';
+
+  /** Hay un punto que pintar en el mapa: el conductor reporto ubicacion y
+   *  vino con coordenadas. Sin esto la tarjeta del mapa no se muestra. */
+  get hasMappableLocation(): boolean {
+    const lat = Number(this.lastLocation?.latitude);
+    const lng = Number(this.lastLocation?.longitude);
+    return !!this.lastLocation && !Number.isNaN(lat) && !Number.isNaN(lng);
+  }
 
   /** Documento abierto en el visor; null cuando no hay ninguno. */
   viewerUrl: string | null = null;

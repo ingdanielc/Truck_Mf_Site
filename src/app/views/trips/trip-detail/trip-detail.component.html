@@ -692,33 +692,51 @@
                 >
                   <h6 class="fw-bold mb-0">Mapa del Trayecto</h6>
                 </div>
-                <!-- Map Container -->
-                <div
-                  id="vehicleMap"
-                  class="rounded-4 bg-secondary bg-opacity-10 d-flex flex-column align-items-center justify-content-center position-relative overflow-hidden w-100"
-                  style="height: 250px"
-                  [class.d-none]="!lastLocation"
-                ></div>
 
-                <!-- Fallback when no location is found -->
-                @if (!lastLocation) {
-                  <div
-                    class="map-placeholder rounded-4 bg-secondary bg-opacity-10 d-flex flex-column align-items-center justify-content-center position-relative overflow-hidden"
-                    style="height: 250px"
-                  >
-                    <div class="text-center p-4">
-                      <i
-                        class="fa-solid fa-location-dot fs-1 text-secondary opacity-50 mb-3"
-                      ></i>
-                      <p class="small text-secondary fw-bold mb-1">
-                        Ubicación no disponible
-                      </p>
-                      <p class="small text-secondary fw-normal mb-0">
-                        El conductor aún no ha reportado su ubicación en este
-                        viaje.
-                      </p>
-                    </div>
+                @if (showRouteMap) {
+                  <!-- Viaje que ya no se mueve: el trayecto planeado, igual que
+                       en el panel de ruta. El recorrido del GPS solo dice donde
+                       quedo el camion, que en un viaje terminado o cancelado no
+                       tiene por que ser parte de este viaje. -->
+                  <div class="px-4 px-md-0 pb-4 pb-md-0">
+                    <g-route-map
+                      [originName]="originName"
+                      [destinationName]="destinationName"
+                      [returnDestinationName]="returnDestinationName"
+                      [originQuery]="originQuery"
+                      [destinationQuery]="destinationQuery"
+                      [returnDestinationQuery]="returnDestinationQuery"
+                    ></g-route-map>
                   </div>
+                } @else {
+                  <!-- Map Container -->
+                  <div
+                    id="vehicleMap"
+                    class="rounded-4 bg-secondary bg-opacity-10 d-flex flex-column align-items-center justify-content-center position-relative overflow-hidden w-100"
+                    style="height: 250px"
+                    [class.d-none]="!lastLocation"
+                  ></div>
+
+                  <!-- Fallback when no location is found -->
+                  @if (!lastLocation) {
+                    <div
+                      class="map-placeholder rounded-4 bg-secondary bg-opacity-10 d-flex flex-column align-items-center justify-content-center position-relative overflow-hidden"
+                      style="height: 250px"
+                    >
+                      <div class="text-center p-4">
+                        <i
+                          class="fa-solid fa-location-dot fs-1 text-secondary opacity-50 mb-3"
+                        ></i>
+                        <p class="small text-secondary fw-bold mb-1">
+                          Ubicación no disponible
+                        </p>
+                        <p class="small text-secondary fw-normal mb-0">
+                          El conductor aún no ha reportado su ubicación en este
+                          viaje.
+                        </p>
+                      </div>
+                    </div>
+                  }
                 }
               </div>
             </div>

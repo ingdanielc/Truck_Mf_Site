@@ -66,9 +66,9 @@
 }
 
 /* ---- La barra de proporciones -------------------------------------------
-   Una sola línea con el gasto entero, partida por categoría. El hueco de 2 px
-   entre segmentos no es decorativo: la paleta de categorías tiene siete tonos
-   y dos contiguas pueden coincidir; sin separación se leerían como una sola. */
+   Una sola línea con el gasto entero, partida por categoría. Cada tramo tiene
+   su propio tono (`assignDistinctColors`); el hueco de 2 px los separa además
+   para quien no distingue bien dos colores cercanos. */
 .storage-bar {
   display: flex;
   gap: 2px;
@@ -104,6 +104,56 @@
 
   &:hover {
     background-color: rgba(var(--bs-primary-rgb), 0.06);
+  }
+}
+
+/* ---- "Otros", desplegable ------------------------------------------------
+   Es un botón con la misma rejilla que las demás filas, para que su cifra
+   siga alineada en la columna. */
+.category-toggle {
+  width: 100%;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.others-count {
+  color: var(--bs-secondary-color);
+  font-size: 0.85rem;
+}
+
+.others-chevron {
+  font-size: 0.7rem;
+  color: var(--bs-secondary-color);
+  transition: transform 0.2s ease;
+
+  &.open {
+    transform: rotate(180deg);
+  }
+}
+
+/* El detalle cuelga de "Otros": sangrado y con una línea a la izquierda que
+   lo ata a su fila, y en letra algo menor para que no compita con las
+   categorías que sí tienen tramo en la barra. */
+.others-list {
+  display: grid;
+  gap: 0.1rem;
+  margin-left: 0.6rem;
+  padding-left: 0.5rem;
+  border-left: 2px solid var(--bs-border-color);
+}
+
+.others-row {
+  font-size: 0.85rem;
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+
+  /* Sin punto de color, pero conserva su columna para que el icono y el
+     nombre queden alineados con los de arriba. */
+  .category-dot {
+    visibility: hidden;
   }
 }
 
@@ -152,4 +202,34 @@
 
 :host-context([data-bs-theme="dark"]) .bg-indigo {
   background-color: #a370f7;
+}
+
+/* Los dos tonos que el reporte suma a la paleta de categorías (ver
+   `REPORT_COLOR_CLASSES`). Son los de Bootstrap, que no trae sus utilidades. */
+.text-teal {
+  color: #20c997;
+}
+.bg-teal {
+  background-color: #20c997;
+}
+.text-pink {
+  color: #d63384;
+}
+.bg-pink {
+  background-color: #d63384;
+}
+
+:host-context([data-bs-theme="dark"]) {
+  .text-teal {
+    color: #79dfc1;
+  }
+  .bg-teal {
+    background-color: #79dfc1;
+  }
+  .text-pink {
+    color: #e685b5;
+  }
+  .bg-pink {
+    background-color: #e685b5;
+  }
 }
