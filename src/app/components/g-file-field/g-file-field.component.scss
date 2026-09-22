@@ -1,0 +1,64 @@
+/* Las mismas medidas y tonos que la ficha del comprobante del gasto
+   (`g-add-expense`): es el mismo gesto y no debería verse distinto. */
+:host {
+  display: block;
+}
+
+.file-field {
+  height: 62px;
+  box-sizing: border-box;
+}
+
+.draft-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.file-chip {
+  background-color: rgba(var(--bs-emphasis-color-rgb), 0.03);
+  border-color: rgba(var(--bs-emphasis-color-rgb), 0.1) !important;
+}
+
+/* Es un `button` para que llegue por teclado sin inventar roles. */
+.file-dropzone {
+  background-color: rgba(var(--bs-emphasis-color-rgb), 0.02);
+  border: 1px dashed rgba(var(--bs-emphasis-color-rgb), 0.2) !important;
+  color: var(--bs-body-color);
+  transition: all 0.2s ease;
+
+  &:hover,
+  &:focus-visible {
+    background-color: rgba(var(--bs-primary-rgb), 0.04);
+    border-color: rgba(var(--bs-primary-rgb), 0.4) !important;
+    color: var(--bs-body-color);
+  }
+}
+
+:host-context([data-bs-theme="dark"]) {
+  .file-chip,
+  .file-dropzone {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+}
+
+/* En el teléfono las acciones bajan a su propia línea, bajo el nombre y
+   pegadas a la derecha, para que el nombre se lea entero. */
+@media (max-width: 575.98px) {
+  .file-chip.file-field {
+    height: auto;
+    flex-wrap: wrap;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    row-gap: 0.5rem !important;
+  }
+
+  .file-chip-actions {
+    flex: 0 0 100%;
+    justify-content: flex-end;
+  }
+}

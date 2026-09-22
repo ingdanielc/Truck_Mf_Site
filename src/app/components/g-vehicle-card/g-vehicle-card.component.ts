@@ -5,7 +5,7 @@ import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { LocationService } from 'src/app/services/location.service';
 import { SecurityService } from 'src/app/services/security/security.service';
 import { ModelDriverLocation } from 'src/app/models/location-model';
-import { VehicleService } from 'src/app/services/vehicle.service';
+import { CommonService } from 'src/app/services/common.service';
 import { ModelDocumentFile } from 'src/app/models/document-model';
 import { Formatters } from 'src/app/utils/formatters';
 import {
@@ -78,7 +78,7 @@ export class GVehicleCardComponent implements OnInit {
     private readonly router: Router,
     private readonly locationService: LocationService,
     private readonly securityService: SecurityService,
-    private readonly vehicleService: VehicleService,
+    private readonly commonService: CommonService,
   ) {}
 
   ngOnInit(): void {
@@ -111,7 +111,7 @@ export class GVehicleCardComponent implements OnInit {
     );
 
     this.loadingDocuments = true;
-    this.vehicleService.getVehicleDocuments(filter).subscribe({
+    this.commonService.getDocuments(filter).subscribe({
       next: (resp: any) => {
         // `isActive` se descarta aquí y no en el filtro: la comparación del
         // backend castea a texto y un booleano no sobrevive ese casteo.

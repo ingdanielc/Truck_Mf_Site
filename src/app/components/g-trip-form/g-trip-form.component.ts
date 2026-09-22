@@ -14,7 +14,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Subscription, of } from 'rxjs';
+import { Subscription, firstValueFrom, of } from 'rxjs';
 import { distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 import { ModelTrip } from 'src/app/models/trip-model';
 import { TripService } from 'src/app/services/trip.service';
@@ -60,6 +60,35 @@ import {
 } from 'src/app/utils/document-alerts';
 import { Formatters } from 'src/app/utils/formatters';
 import { GDocumentAlertComponent } from '../g-document-alert/g-document-alert.component';
+import { GFileFieldComponent } from '../g-file-field/g-file-field.component';
+import { GDocumentViewerComponent } from '../g-document-viewer/g-document-viewer.component';
+import {
+  loadTripManifests,
+  manifestFileNameOf,
+  manifestLabel,
+  maxTripManifests,
+  saveTripManifest,
+  uploadManifestFile,
+} from 'src/app/utils/trip-manifest';
+
+/**
+ * Un manifiesto del formulario: el que ya tenía el viaje, el recién elegido o
+ * los dos, cuando se reemplaza.
+ */
+interface ManifestSlot {
+  /** El que ya está guardado, si se está editando. */
+  document: ModelDocumentFile | null;
+  /** Recién elegido, pendiente de subir. */
+  file: File | null;
+  /** Se quitó el que tenía: al guardar se borra. */
+  removed: boolean;
+}
+
+const emptyManifestSlot = (): ManifestSlot => ({
+  document: null,
+  file: null,
+  removed: false,
+});
 
 @Component({
   selector: 'g-trip-form',
@@ -74,6 +103,8 @@ import { GDocumentAlertComponent } from '../g-document-alert/g-document-alert.co
     GSearchComboboxComponent,
     AlphanumericDirective,
     GDocumentAlertComponent,
+    GFileFieldComponent,
+    GDocumentViewerComponent,
   ],
   templateUrl: './g-trip-form.component.html',
   styleUrls: ['./g-trip-form.component.scss'],
@@ -100,6 +131,18 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   loadingVehicles: boolean = false;
   loadingDrivers: boolean = false;
   isSaving: boolean = false;
+
+  /* -- Manifiesto de carga ----------------------------------------------
+     Opcional: uno por viaje, o dos en el redondo. Elegirlo solo lo deja en
+     memoria: se sube después de guardar el viaje, porque la subida va con su
+     id. Todos llevan el número del campo "Manifiesto", que es uno solo. */
+  readonly manifestLabel = manifestLabel;
+  manifestSlots: ManifestSlot[] = [emptyManifestSlot()];
+  manifestViewerUrl: string | null = null;
+  manifestViewerName: string = '';
+  /** Los manifiestos cambiaron aunque no se haya tocado ningún campo. */
+  private manifestTouched: boolean = false;
+  private manifestSub?: Subscription;
 
   private _pendingVehicleId: number | null = null;
   private _pendingDriverId: number | null = null;
@@ -341,6 +384,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
 
     if (this.trip) {
       this.patchForm(this.trip);
+      this.loadManifests(this.trip.id);
     } else {
       this.resetForm();
     }
@@ -481,6 +525,160 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     this.vehicleDocumentsSub?.unsubscribe();
     this.driverDocumentsSub?.unsubscribe();
     this.documentAlertSubs?.unsubscribe();
+    this.manifestSub?.unsubscribe();
+  }
+
+  /* -- Manifiesto de carga ----------------------------------------------- */
+
+  private loadManifests(tripId: number | null | undefined): void {
+    this.manifestSub?.unsubscribe();
+    this.manifestSlots = [emptyManifestSlot()];
+    if (!tripId) return;
+    this.manifestSub = loadTripManifests(this.commonService, tripId).subscribe(
+      {
+        next: (documents) => {
+          this.manifestSlots = documents.length
+            ? documents.map((document) => ({
+                document,
+                file: null,
+                removed: false,
+              }))
+            : [emptyManifestSlot()];
+        },
+        error: (err) => console.error('Error loading trip manifests:', err),
+      },
+    );
+  }
+
+  /** Cuántos admite el tipo de viaje elegido: dos en el redondo. */
+  get maxManifests(): number {
+    return maxTripManifests(this.tripForm.get('tripType')?.value);
+  }
+
+  /**
+   * Los que se ven y se guardan. Si el viaje deja de ser redondo, el segundo
+   * se oculta y no se toca: pasar de tipo no debería borrar un archivo.
+   */
+  get visibleManifestSlots(): ManifestSlot[] {
+    return this.manifestSlots.slice(0, this.maxManifests);
+  }
+
+  /** Otro manifiesto solo cuando cabe y los que hay ya tienen archivo. */
+  get canAddManifest(): boolean {
+    const visibles = this.visibleManifestSlots;
+    return (
+      visibles.length < this.maxManifests &&
+      visibles.every((slot) => !!this.slotUrl(slot) || !!slot.file)
+    );
+  }
+
+  addManifestSlot(): void {
+    if (this.canAddManifest) this.manifestSlots.push(emptyManifestSlot());
+  }
+
+  /** URL del que está guardado, mientras no se haya quitado. */
+  slotUrl(slot: ManifestSlot): string | null {
+    if (slot.removed) return null;
+    return slot.document?.fileUrl || null;
+  }
+
+  slotFileName(slot: ManifestSlot): string {
+    if (slot.file) return slot.file.name;
+    return manifestFileNameOf(this.slotUrl(slot));
+  }
+
+  onManifestSelected(slot: ManifestSlot, file: File): void {
+    slot.file = file;
+    this.manifestTouched = true;
+  }
+
+  /**
+   * Quita el manifiesto. Al editar, guardar sin él lo borra del viaje. Un
+   * segundo manifiesto que todavía no existía desaparece del todo, para no
+   * dejar una zona de carga suelta.
+   */
+  onManifestRemoved(slot: ManifestSlot, index: number): void {
+    slot.file = null;
+    if (slot.document) {
+      slot.removed = true;
+    } else if (index > 0) {
+      this.manifestSlots.splice(index, 1);
+    }
+    this.manifestTouched = true;
+  }
+
+  openManifest(slot: ManifestSlot, index: number): void {
+    const url = this.slotUrl(slot);
+    if (!url) return;
+    this.manifestViewerUrl = url;
+    this.manifestViewerName = manifestLabel(index);
+  }
+
+  closeManifest(): void {
+    this.manifestViewerUrl = null;
+  }
+
+  /**
+   * Deja los manifiestos como quedaron en el formulario, con el viaje ya
+   * guardado. Devuelve false si alguno falló: el viaje quedó guardado igual,
+   * así que solo se avisa y se reintenta desde la edición. Que falle uno no
+   * impide intentar el otro.
+   */
+  private async syncManifests(
+    tripId: number | null,
+    manifestNumber: string | null | undefined,
+  ): Promise<boolean> {
+    let ok = true;
+    for (const slot of this.visibleManifestSlots) {
+      if (!(await this.syncManifestSlot(slot, tripId, manifestNumber))) {
+        ok = false;
+      }
+    }
+    return ok;
+  }
+
+  /**
+   * Un manifiesto: sube el archivo con el id del viaje y registra el
+   * documento, o lo borra si se quitó.
+   *
+   * Aunque no se elija archivo, el número se mantiene al día con el del
+   * campo "Manifiesto": es el mismo número y no debe quedar uno viejo.
+   */
+  private async syncManifestSlot(
+    slot: ManifestSlot,
+    tripId: number | null,
+    manifestNumber: string | null | undefined,
+  ): Promise<boolean> {
+    const existing = slot.document;
+    const file = slot.file;
+    const numeroCambio =
+      !!existing &&
+      (existing.documentNumber || '') !== (manifestNumber?.trim() || '');
+
+    const toDelete = slot.removed && !file && !!existing?.id;
+    const toSave = !!file || (!slot.removed && numeroCambio);
+    if (!toDelete && !toSave) return true;
+    if (!tripId) return false;
+
+    try {
+      if (toDelete) {
+        await firstValueFrom(this.commonService.deleteDocument(existing!.id!));
+      } else {
+        const fileUrl = file
+          ? await uploadManifestFile(this.commonService, file, tripId)
+          : null;
+        await saveTripManifest(this.commonService, {
+          tripId,
+          manifestNumber,
+          fileUrl,
+          existing,
+        });
+      }
+      return true;
+    } catch (err) {
+      console.error('Error saving trip manifest:', err);
+      return false;
+    }
   }
 
   private setupFormSubscriptions(): void {
@@ -884,7 +1082,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     this.updateDocumentAlerts();
     if (!vehicleId || cached) return;
 
-    this.vehicleDocumentsSub = loadHolderDocuments(this.vehicleService, {
+    this.vehicleDocumentsSub = loadHolderDocuments(this.commonService, {
       vehicleId,
     }).subscribe({
       next: (documents) => {
@@ -921,7 +1119,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
     this.driverDocumentsSub = findLinkedOwner(this.ownerService, driver)
       .pipe(
         switchMap((owner) =>
-          loadHolderDocuments(this.vehicleService, {
+          loadHolderDocuments(this.commonService, {
             driverId,
             ownerId: owner?.id,
           }),
@@ -1112,14 +1310,40 @@ export class GTripFormComponent implements OnInit, OnDestroy {
         tripData.distanceKm = distanceKm;
       }
 
+      /* El viaje va primero: la subida del manifiesto lleva su id, que en un
+         viaje nuevo solo existe cuando `/trip/save` responde. Si luego falla
+         el manifiesto, el viaje ya quedó guardado y no se pierde por un
+         problema con el archivo. El viaje vacío no lleva manifiesto. */
+      const conManifiesto = !this.isEmptyTrip;
+
       this.tripService.createTrip(tripData).subscribe({
-        next: () => {
+        next: async (response: any) => {
           // Guardar cambia la disponibilidad: la cache deja de ser valida.
           this.vehiclesByOwnerCache.clear();
-          this.toastService.showSuccess(
-            'Gestión de Viajes',
-            `Viaje ${this.trip ? 'actualizado' : 'creado'} exitosamente!`,
-          );
+
+          const tripId = this.trip?.id ?? response?.data?.id ?? null;
+          const manifestOk = conManifiesto
+            ? await this.syncManifests(tripId, tripData.manifestNumber)
+            : true;
+          /* El formulario puede seguir abierto mientras se calcula la ruta:
+             lo guardado pasa a ser el punto de partida, haya salido bien o no
+             el manifiesto. Si quedara pendiente, "Crear viaje" seguiría
+             habilitado y un segundo clic crearía el viaje otra vez; el
+             reintento va por la edición del viaje. */
+          this.manifestTouched = false;
+          this.loadManifests(tripId);
+
+          if (manifestOk) {
+            this.toastService.showSuccess(
+              'Gestión de Viajes',
+              `Viaje ${this.trip ? 'actualizado' : 'creado'} exitosamente!`,
+            );
+          } else {
+            this.toastService.showError(
+              'Manifiesto',
+              'Viaje guardado, pero no se pudo cargar el manifiesto. Puedes reintentarlo editando el viaje.',
+            );
+          }
           this.notificationsService.refreshNotifications();
           this.saved.emit(tripData);
           this.isSaving = false;
@@ -1175,7 +1399,7 @@ export class GTripFormComponent implements OnInit, OnDestroy {
   }
 
   get canSave(): boolean {
-    return this.tripForm.valid && this.isModified;
+    return this.tripForm.valid && (this.isModified || this.manifestTouched);
   }
 
   private captureInitialState(): void {

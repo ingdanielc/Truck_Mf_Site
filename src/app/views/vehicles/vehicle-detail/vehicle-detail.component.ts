@@ -303,7 +303,7 @@ export class VehicleDetailComponent implements OnInit, OnDestroy {
       new Pagination(50, 0),
       new Sort('expiryDate', true),
     );
-    this.vehicleService.getVehicleDocuments(filter).subscribe({
+    this.commonService.getDocuments(filter).subscribe({
       next: (response: any) => {
         // `isActive` se descarta aquí y no en el filtro: la comparación del
         // backend castea a texto y un booleano no sobrevive ese casteo.

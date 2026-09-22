@@ -323,6 +323,7 @@ export class GSubscriptionRenewComponent {
         this.commonService.uploadDocument(
           this.selectedFile,
           this.selectedFileName,
+          { type: 'subscription' },
         ),
       );
       const receiptUrl = subida?.data || null;

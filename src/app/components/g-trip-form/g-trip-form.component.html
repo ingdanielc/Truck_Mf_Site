@@ -413,6 +413,42 @@
               }
             </datalist>
           </div>
+
+          <!-- Manifiesto de carga. Opcional: uno por viaje, o dos en el
+               redondo. Se sube al guardar, como el comprobante del gasto, y
+               todos llevan el número del campo "Manifiesto" de arriba, que es
+               uno solo. -->
+          @for (slot of visibleManifestSlots; track $index) {
+            <div class="col-12 mb-3">
+              <label
+                [for]="'manifestFile' + $index"
+                class="form-label small fw-bold mb-2"
+                >{{ manifestLabel($index) }}</label
+              >
+              <g-file-field
+                [inputId]="'manifestFile' + $index"
+                subject="manifiesto"
+                [file]="slot.file"
+                [currentUrl]="slotUrl(slot)"
+                [fileName]="slotFileName(slot)"
+                currentHint="Manifiesto actual"
+                (fileSelected)="onManifestSelected(slot, $event)"
+                (removed)="onManifestRemoved(slot, $index)"
+                (opened)="openManifest(slot, $index)"
+              ></g-file-field>
+            </div>
+          }
+          @if (canAddManifest) {
+            <div class="col-12 mb-3" style="margin-top: -0.5rem">
+              <button
+                type="button"
+                class="btn btn-link text-primary p-0 text-decoration-none small fw-bold d-flex align-items-center gap-1"
+                (click)="addManifestSlot()"
+              >
+                <i class="fa-solid fa-plus"></i> Agregar otro manifiesto
+              </button>
+            </div>
+          }
         }
         <div class="col-6 mb-3 d-none">
           <label for="status" class="form-label small fw-bold mb-2"
@@ -461,3 +497,11 @@
     </div>
   </div>
 </form>
+
+@if (manifestViewerUrl) {
+  <g-document-viewer
+    [url]="manifestViewerUrl"
+    [name]="manifestViewerName"
+    (close)="closeManifest()"
+  ></g-document-viewer>
+}

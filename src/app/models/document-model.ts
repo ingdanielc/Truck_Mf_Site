@@ -6,11 +6,15 @@
 
 export type DocumentHolder = 'VEHICLE' | 'DRIVER' | 'OWNER';
 
+/** Todo lo que puede llevar documentos: los portadores y el viaje, que lleva
+ *  su manifiesto de carga. */
+export type DocumentAppliesTo = DocumentHolder | 'TRIP';
+
 /** Catálogo de `/common/getDocumentFileTypes?appliesTo=VEHICLE` */
 export interface ModelDocumentFileType {
   id: number;
   name: string;
-  appliesTo: DocumentHolder;
+  appliesTo: DocumentAppliesTo;
   /** Cuando es true el backend exige `expiryDate` al guardar. */
   requiresExpiry: boolean;
   isActive: boolean;
@@ -26,6 +30,7 @@ export interface ModelDocumentFile {
   vehicleId?: number | null;
   driverId?: number | null;
   ownerId?: number | null;
+  tripId?: number | null;
   documentNumber?: string | null;
   /** Aseguradora o CDA que lo expide. */
   issuer?: string | null;

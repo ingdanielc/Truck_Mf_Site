@@ -13,8 +13,10 @@ import {
   ModelDocumentFile,
   ModelDocumentFileType,
 } from 'src/app/models/document-model';
-import { CommonService } from 'src/app/services/common.service';
-import { VehicleService } from 'src/app/services/vehicle.service';
+import {
+  CommonService,
+  DocumentUploadType,
+} from 'src/app/services/common.service';
 import { ToastService } from 'src/app/services/toast.service';
 import {
   DocumentValidity,
@@ -153,7 +155,6 @@ export class GVehicleDocumentsComponent implements OnInit {
   constructor(
     private readonly fb: FormBuilder,
     private readonly commonService: CommonService,
-    private readonly vehicleService: VehicleService,
     private readonly toastService: ToastService,
   ) {}
 
@@ -277,7 +278,7 @@ export class GVehicleDocumentsComponent implements OnInit {
 
   private loadDocuments(): void {
     this.loading = true;
-    loadHolderDocuments(this.vehicleService, this.holderIds).subscribe({
+    loadHolderDocuments(this.commonService, this.holderIds).subscribe({
       next: (actives) => {
         this.rows = actives.map((item) => ({
           document: item,
@@ -679,6 +680,19 @@ export class GVehicleDocumentsComponent implements OnInit {
     }
   }
 
+  /**
+   * El `type` de la subida sale del mismo portador con el que se guarda la
+   * fila, para que el archivo quede en la carpeta de quien lo lleva.
+   */
+  private uploadHolder(ids: DocumentHolderIds): {
+    type: DocumentUploadType;
+    id?: number | null;
+  } {
+    if (ids.driverId != null) return { type: 'driver', id: ids.driverId };
+    if (ids.ownerId != null) return { type: 'owner' };
+    return { type: 'vehicle' };
+  }
+
   async saveDocument(): Promise<void> {
     if (this.isSaving) return;
 
@@ -696,19 +710,20 @@ export class GVehicleDocumentsComponent implements OnInit {
     this.isSaving = true;
 
     try {
+      const { documentFileTypeId, holderIds } = this.resolveTypeAndHolder();
       let fileUrl = this.currentFileUrl;
       if (this.selectedFile) {
         const uploadRes = await firstValueFrom(
           this.commonService.uploadDocument(
             this.selectedFile,
             this.selectedFileName,
+            this.uploadHolder(holderIds),
           ),
         );
         fileUrl = uploadRes?.data || null;
       }
 
       const value = this.documentForm.getRawValue();
-      const { documentFileTypeId, holderIds } = this.resolveTypeAndHolder();
       const payload: ModelDocumentFile = {
         documentFileTypeId,
         ...holderIds,
@@ -726,7 +741,7 @@ export class GVehicleDocumentsComponent implements OnInit {
 
       // Vehículo, conductor y propietario comparten endpoint: el portador lo
       // dice el id que lleva el documento.
-      await firstValueFrom(this.vehicleService.saveVehicleDocuments([payload]));
+      await firstValueFrom(this.commonService.saveDocuments([payload]));
 
       let message = 'Documento cargado exitosamente!';
       if (this.renewingFrom) {
@@ -767,7 +782,7 @@ export class GVehicleDocumentsComponent implements OnInit {
     if (id == null || this.deletingId != null) return;
 
     this.deletingId = id;
-    this.vehicleService.deleteVehicleDocument(id).subscribe({
+    this.commonService.deleteDocument(id).subscribe({
       next: () => {
         this.toastService.showSuccess(
           'Documentos',

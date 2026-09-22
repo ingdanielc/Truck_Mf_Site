@@ -674,7 +674,7 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
       .pipe(
         switchMap((owner) => {
           this.linkedOwner = owner;
-          return loadHolderDocuments(this.vehicleService, {
+          return loadHolderDocuments(this.commonService, {
             driverId: driver.id,
             ownerId: owner?.id,
           });

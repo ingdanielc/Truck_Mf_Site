@@ -2,6 +2,23 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { Observable, shareReplay } from 'rxjs';
+import {
+  DocumentAppliesTo,
+  ModelDocumentFile,
+} from '../models/document-model';
+
+/**
+ * Valores de `type` que acepta `/common/upload-document`. Los cuatro primeros
+ * son los de `appliesTo`; `expense` y `subscription` van fijos porque esos
+ * comprobantes no se guardan como documento, solo su URL.
+ */
+export type DocumentUploadType =
+  | 'vehicle'
+  | 'driver'
+  | 'owner'
+  | 'trip'
+  | 'expense'
+  | 'subscription';
 
 @Injectable({
   providedIn: 'root',
@@ -86,9 +103,10 @@ export class CommonService {
 
   /**
    * Tipos de documento archivado acotados por portador (VEHICLE, DRIVER,
-   * OWNER). Es un catálogo, así que se cachea por portador igual que el resto.
+   * OWNER) o por viaje (TRIP). Es un catálogo, así que se cachea por portador
+   * igual que el resto.
    */
-  getDocumentFileTypes(appliesTo: 'VEHICLE' | 'DRIVER' | 'OWNER') {
+  getDocumentFileTypes(appliesTo: DocumentAppliesTo) {
     let cached = this.documentFileTypesCache.get(appliesTo);
     if (!cached) {
       cached = this.http
@@ -105,11 +123,47 @@ export class CommonService {
    * Sube el escaneo y devuelve su URL, que luego viaja en `fileUrl` al guardar
    * el documento. No recibe el id del documento: se puede subir antes de que la
    * fila exista. Acepta pdf, jpg, jpeg, png y webp.
+   *
+   * `type` decide la carpeta. Con `driver` va el driverId: el backend lo usa
+   * para guardar en `/owner` cuando el conductor es el mismo propietario. Sin
+   * `type` el backend responde 400.
    */
-  uploadDocument(file: File | Blob, fileName?: string) {
+  uploadDocument(
+    file: File | Blob,
+    fileName: string | undefined,
+    holder: { type: DocumentUploadType; id?: number | null },
+  ) {
     const formData = new FormData();
     formData.append('file', file, fileName || (file as File).name);
+    formData.append('type', holder.type);
+    if (holder.id != null) formData.append('id', holder.id.toString());
     return this.http.post<any>(`${this.basePath}/upload-document`, formData);
+  }
+
+  /**
+   * Alta y actualización de documentos en una sola llamada: se manda la lista
+   * completa y el backend crea los que no traen id y actualiza los que sí.
+   * Sirve para cualquier portador: vehículo, conductor o propietario.
+   */
+  saveDocuments(documents: ModelDocumentFile[]) {
+    const headers = { 'content-type': 'application/json' };
+    const body = JSON.stringify(documents);
+    return this.http.post<any>(`${this.basePath}/saveDocuments`, body, {
+      headers: headers,
+    });
+  }
+
+  getDocuments(filter: any) {
+    const headers = { 'content-type': 'application/json' };
+    const body = JSON.stringify(filter);
+    return this.http.post<any>(`${this.basePath}/filterDocuments`, body, {
+      headers: headers,
+    });
+  }
+
+  /** Borrado real, para el documento cargado por error. */
+  deleteDocument(id: number) {
+    return this.http.delete<any>(`${this.basePath}/documents/${id}`);
   }
 
   uploadPhoto(

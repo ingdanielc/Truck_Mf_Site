@@ -131,26 +131,26 @@ describe('holder-documents · propietario y conductor', () => {
 
   describe('loadHolderDocuments', () => {
     it('un conductor sin propietario enlazado solo pide sus documentos', async () => {
-      const vehicleService = jasmine.createSpyObj('VehicleService', [
-        'getVehicleDocuments',
+      const commonService = jasmine.createSpyObj('CommonService', [
+        'getDocuments',
       ]);
-      vehicleService.getVehicleDocuments.and.returnValue(pagina([]));
+      commonService.getDocuments.and.returnValue(pagina([]));
 
       await firstValueFrom(
-        loadHolderDocuments(vehicleService, { driverId: 7, ownerId: null }),
+        loadHolderDocuments(commonService, { driverId: 7, ownerId: null }),
       );
 
-      expect(vehicleService.getVehicleDocuments).toHaveBeenCalledTimes(1);
-      const filtro = vehicleService.getVehicleDocuments.calls.argsFor(0)[0];
+      expect(commonService.getDocuments).toHaveBeenCalledTimes(1);
+      const filtro = commonService.getDocuments.calls.argsFor(0)[0];
       expect(JSON.stringify(filtro)).toContain('driverId');
       expect(JSON.stringify(filtro)).not.toContain('ownerId');
     });
 
     it('con los dos portadores junta sus documentos sin repetir', async () => {
-      const vehicleService = jasmine.createSpyObj('VehicleService', [
-        'getVehicleDocuments',
+      const commonService = jasmine.createSpyObj('CommonService', [
+        'getDocuments',
       ]);
-      vehicleService.getVehicleDocuments.and.returnValues(
+      commonService.getDocuments.and.returnValues(
         pagina([{ id: 1, documentFileTypeId: 1, driverId: 7 }]),
         pagina([
           { id: 1, documentFileTypeId: 1, driverId: 7 },
@@ -159,7 +159,7 @@ describe('holder-documents · propietario y conductor', () => {
       );
 
       const documentos = await firstValueFrom(
-        loadHolderDocuments(vehicleService, { driverId: 7, ownerId: 3 }),
+        loadHolderDocuments(commonService, { driverId: 7, ownerId: 3 }),
       );
 
       expect(documentos.map((d) => d.id).sort()).toEqual([1, 2]);

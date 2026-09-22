@@ -1531,31 +1531,33 @@ export class ExpensesComponent implements OnInit, OnDestroy {
 
     this.isSavingExpense = true;
     const receipt = event.receipt;
-    this.commonService.uploadDocument(receipt, receipt.name).subscribe({
-      next: (resp: any) => {
-        /* La subida devuelve la URL en `data`, como texto. Ver los documentos
-           del vehículo y la renovación de suscripción, que la leen igual. */
-        const url = resp?.data;
-        if (!url) {
-          console.error('Respuesta sin URL al subir el comprobante:', resp);
+    this.commonService
+      .uploadDocument(receipt, receipt.name, { type: 'expense' })
+      .subscribe({
+        next: (resp: any) => {
+          /* La subida devuelve la URL en `data`, como texto. Ver los documentos
+             del vehículo y la renovación de suscripción, que la leen igual. */
+          const url = resp?.data;
+          if (!url) {
+            console.error('Respuesta sin URL al subir el comprobante:', resp);
+            this.toastService.showError(
+              'Error',
+              'No se pudo adjuntar el comprobante',
+            );
+            this.isSavingExpense = false;
+            return;
+          }
+          this.saveExpense({ ...event.expense, receiptImageUrl: url });
+        },
+        error: (err) => {
+          console.error('Error uploading receipt:', err);
           this.toastService.showError(
             'Error',
             'No se pudo adjuntar el comprobante',
           );
           this.isSavingExpense = false;
-          return;
-        }
-        this.saveExpense({ ...event.expense, receiptImageUrl: url });
-      },
-      error: (err) => {
-        console.error('Error uploading receipt:', err);
-        this.toastService.showError(
-          'Error',
-          'No se pudo adjuntar el comprobante',
-        );
-        this.isSavingExpense = false;
-      },
-    });
+        },
+      });
   }
 
   private saveExpense(event: ModelExpense): void {

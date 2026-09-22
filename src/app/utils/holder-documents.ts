@@ -9,7 +9,7 @@ import {
 } from '../models/model-filter-table';
 import { ModelDriver } from '../models/driver-model';
 import { ModelOwner } from '../models/owner-model';
-import { VehicleService } from '../services/vehicle.service';
+import { CommonService } from '../services/common.service';
 import { DriverService } from '../services/driver.service';
 import { OwnerService } from '../services/owner.service';
 
@@ -26,14 +26,14 @@ export interface DocumentHolderIds {
  * Cada documento se guarda con un solo portador, pero una persona puede ser
  * propietario y conductor a la vez: sus documentos se reparten entre los dos y
  * tienen que verse juntos desde cualquiera de las dos fichas. Aquí se piden por
- * separado —vehículo, conductor y propietario comparten el endpoint de
- * vehículo— y se juntan sin repetidos.
+ * separado —vehículo, conductor y propietario comparten el mismo endpoint—
+ * y se juntan sin repetidos.
  *
  * Con dos portadores, que falle uno no deja sin los documentos del otro: su
  * parte llega vacía y el error queda en la consola.
  */
 export function loadHolderDocuments(
-  vehicleService: VehicleService,
+  commonService: CommonService,
   holders: DocumentHolderIds,
 ): Observable<ModelDocumentFile[]> {
   const consultas = (
@@ -49,8 +49,8 @@ export function loadHolderDocuments(
 
   return forkJoin(
     consultas.map(([campo, id]) => {
-      const peticion = vehicleService
-        .getVehicleDocuments(
+      const peticion = commonService
+        .getDocuments(
           new ModelFilterTable(
             [new Filter(campo, '=', String(id))],
             new Pagination(50, 0),

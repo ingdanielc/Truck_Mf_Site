@@ -1,0 +1,103 @@
+<input
+  [id]="inputId"
+  #fileInput
+  type="file"
+  class="d-none"
+  [accept]="accepted"
+  [disabled]="disabled || busy"
+  (change)="onSelected($event)"
+/>
+
+@if (hasFile) {
+  <div
+    class="file-chip file-field border rounded-3 px-3 d-flex align-items-center gap-3"
+  >
+    @if (busy) {
+      <output
+        class="spinner-border spinner-border-sm text-primary"
+        aria-hidden="true"
+      ></output>
+    } @else {
+      <i class="fa-solid fa-file-lines fs-4 text-primary"></i>
+    }
+    <div class="flex-grow-1 overflow-hidden">
+      <p class="mb-0 small fw-bold text-truncate" [title]="fileName">
+        {{ fileName }}
+      </p>
+      <p class="mb-0 text-secondary" style="font-size: 0.72rem">
+        @if (busy) {
+          Subiendo…
+        } @else if (file) {
+          {{ pendingHint }}
+        } @else {
+          {{ currentHint }}
+        }
+      </p>
+    </div>
+    <!-- Agrupadas para poder bajarlas enteras bajo el nombre en el teléfono. -->
+    <div class="file-chip-actions d-flex align-items-center gap-3">
+      @if (canOpen) {
+        <button
+          type="button"
+          class="btn btn-outline-primary btn-sm rounded-3 p-1 shadow-none draft-btn"
+          (click)="opened.emit()"
+          [disabled]="busy"
+          [title]="'Abrir ' + subject"
+          [attr.aria-label]="'Abrir ' + subject"
+        >
+          <i
+            class="fa-solid fa-arrow-up-right-from-square"
+            style="font-size: 0.75rem"
+          ></i>
+        </button>
+      }
+      @if (!disabled) {
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm rounded-3 p-1 shadow-none draft-btn"
+          (click)="fileInput.click()"
+          [disabled]="busy"
+          [title]="'Reemplazar ' + subject"
+          [attr.aria-label]="'Reemplazar ' + subject"
+        >
+          <i class="fa-solid fa-arrows-rotate" style="font-size: 0.75rem"></i>
+        </button>
+        @if (removable) {
+          <button
+            type="button"
+            class="btn btn-outline-danger btn-sm rounded-3 p-1 shadow-none draft-btn"
+            (click)="remove()"
+            [disabled]="busy"
+            [title]="'Quitar ' + subject"
+            [attr.aria-label]="'Quitar ' + subject"
+          >
+            <i class="fa-solid fa-trash" style="font-size: 0.75rem"></i>
+          </button>
+        }
+      }
+    </div>
+  </div>
+} @else {
+  <!-- Misma estructura que la ficha —icono, dos líneas, mismos rellenos—
+       para que al elegir el archivo una ocupe el sitio de la otra. -->
+  <button
+    type="button"
+    class="file-dropzone file-field btn w-100 rounded-3 px-3 d-flex align-items-center text-start gap-3"
+    (click)="fileInput.click()"
+    [disabled]="disabled || busy"
+  >
+    <i class="fa-solid fa-cloud-arrow-up fs-4 text-primary"></i>
+    <span class="flex-grow-1 overflow-hidden">
+      <span class="mb-0 small fw-bold d-block">Seleccionar archivo</span>
+      <span class="mb-0 text-secondary d-block" style="font-size: 0.72rem">
+        PDF o imagen, hasta {{ maxSizeMb }} MB{{
+          optional ? " · opcional" : ""
+        }}
+      </span>
+    </span>
+  </button>
+}
+
+@if (error) {
+  <div class="text-danger small mt-2">{{ error }}</div>
+}

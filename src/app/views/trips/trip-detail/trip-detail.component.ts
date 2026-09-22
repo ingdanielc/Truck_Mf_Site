@@ -42,6 +42,20 @@ import {
   tripStatusTheme,
 } from 'src/app/utils/trip-status';
 import { PlatePipe } from '../../../pipes/plate.pipe';
+import { GFileFieldComponent } from '../../../components/g-file-field/g-file-field.component';
+import { GDocumentViewerComponent } from '../../../components/g-document-viewer/g-document-viewer.component';
+import { ModelDocumentFile } from 'src/app/models/document-model';
+import {
+  TRIP_MANIFEST_NAME,
+  loadTripManifests,
+  manifestFileNameOf,
+  manifestLabel,
+  maxTripManifests,
+  saveTripManifest,
+  uploadManifestFile,
+} from 'src/app/utils/trip-manifest';
+import { shareDocumentFiles } from 'src/app/utils/document-share';
+import { Formatters } from 'src/app/utils/formatters';
 
 declare var globalThis: any;
 
@@ -54,6 +68,8 @@ declare var globalThis: any;
     GConfirmSheetComponent,
     GTripInfoCardComponent,
     PlatePipe,
+    GFileFieldComponent,
+    GDocumentViewerComponent,
   ],
   templateUrl: './trip-detail.component.html',
   styleUrls: ['./trip-detail.component.scss'],
@@ -92,6 +108,20 @@ export class TripDetailComponent implements OnInit, OnDestroy {
 
   // Expenses
   totalExpenses: number = 0;
+
+  // Manifiesto de carga: opcional, uno por viaje o dos en el redondo.
+  readonly manifestName = TRIP_MANIFEST_NAME;
+  readonly manifestLabel = manifestLabel;
+  manifestDocuments: ModelDocumentFile[] = [];
+  loadingManifest: boolean = false;
+  /** Cuál se está subiendo; null si ninguno. */
+  uploadingManifestIndex: number | null = null;
+  /** Se pidió la zona de carga del segundo manifiesto. */
+  addingManifest: boolean = false;
+  sharingManifest: boolean = false;
+  manifestViewerUrl: string | null = null;
+  manifestViewerName: string = '';
+  private manifestSub?: Subscription;
 
   // Location
   lastLocation: ModelDriverLocation | null = null;
@@ -147,6 +177,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.manifestSub?.unsubscribe();
     this.routeSub?.unsubscribe();
     this.userSub?.unsubscribe();
     this.stopDurationTimer();
@@ -232,6 +263,7 @@ export class TripDetailComponent implements OnInit, OnDestroy {
         this.arrivalDate = this.maxArrivalDate;
       }
       this.originalArrivalDate = this.arrivalDate;
+      this.loadManifests();
       if (this.trip.id && this.trip.vehicleId) {
         this.loadExpenses(this.trip.id, this.trip.vehicleId);
         if (
@@ -1127,6 +1159,169 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       return;
     }
     this.toggleOffcanvas();
+  }
+
+  /* -- Manifiesto de carga ---------------------------------------------- */
+
+  /** El viaje vacío no lleva carga, así que tampoco manifiesto. */
+  get showManifestCard(): boolean {
+    return !!this.trip?.id && !this.isEmptyTrip;
+  }
+
+  /** Quien puede editar el viaje puede cargar o reemplazar sus manifiestos. */
+  get canEditManifest(): boolean {
+    return (
+      !this.isTripCancelled &&
+      (this.originalStatus !== 'Completado' ||
+        this.userRole === 'ADMINISTRADOR')
+    );
+  }
+
+  /**
+   * Lo que se pinta: cada manifiesto guardado y, para quien puede editar,
+   * una zona de carga vacía (`null`) cuando no hay ninguno o cuando pidió
+   * agregar el segundo del viaje redondo.
+   */
+  get manifestSlots(): (ModelDocumentFile | null)[] {
+    const slots: (ModelDocumentFile | null)[] = [...this.manifestDocuments];
+    if (
+      this.canEditManifest &&
+      (slots.length === 0 ||
+        (this.addingManifest &&
+          slots.length < maxTripManifests(this.trip?.tripType)))
+    ) {
+      slots.push(null);
+    }
+    return slots;
+  }
+
+  /** El segundo manifiesto: solo en el redondo y con el primero ya cargado. */
+  get canAddManifest(): boolean {
+    const docs = this.manifestDocuments;
+    return (
+      this.canEditManifest &&
+      !this.addingManifest &&
+      docs.length > 0 &&
+      docs.length < maxTripManifests(this.trip?.tripType) &&
+      docs.every((doc) => !!doc.fileUrl)
+    );
+  }
+
+  get hasManifestFiles(): boolean {
+    return this.manifestDocuments.some((doc) => !!doc.fileUrl);
+  }
+
+  manifestUrlOf(document: ModelDocumentFile | null): string | null {
+    return document?.fileUrl || null;
+  }
+
+  manifestFileName(document: ModelDocumentFile | null): string {
+    return manifestFileNameOf(document?.fileUrl);
+  }
+
+  private loadManifests(): void {
+    this.manifestSub?.unsubscribe();
+    this.addingManifest = false;
+    if (!this.trip?.id || this.isEmptyTrip) {
+      this.manifestDocuments = [];
+      return;
+    }
+    this.loadingManifest = true;
+    this.manifestSub = loadTripManifests(
+      this.commonService,
+      this.trip.id,
+    ).subscribe({
+      next: (documents) => {
+        this.manifestDocuments = documents;
+        this.loadingManifest = false;
+      },
+      error: (err) => {
+        console.error('Error loading trip manifests:', err);
+        this.loadingManifest = false;
+      },
+    });
+  }
+
+  addManifest(): void {
+    if (this.canAddManifest) this.addingManifest = true;
+  }
+
+  /**
+   * Aquí no hay formulario que guardar: el archivo elegido se sube y se
+   * registra en el acto, con el número del campo "Manifiesto" del viaje.
+   * `existing` es el manifiesto que se reemplaza, o null si es uno nuevo.
+   */
+  async onManifestSelected(
+    file: File,
+    existing: ModelDocumentFile | null,
+    index: number,
+  ): Promise<void> {
+    if (!this.trip?.id || this.uploadingManifestIndex !== null) return;
+    this.uploadingManifestIndex = index;
+    try {
+      const fileUrl = await uploadManifestFile(
+        this.commonService,
+        file,
+        this.trip.id,
+      );
+      await saveTripManifest(this.commonService, {
+        tripId: this.trip.id,
+        manifestNumber: this.trip.manifestNumber,
+        fileUrl,
+        existing,
+      });
+      this.toastService.showSuccess(
+        'Manifiesto',
+        existing?.fileUrl
+          ? 'Manifiesto reemplazado exitosamente!'
+          : 'Manifiesto cargado exitosamente!',
+      );
+      this.loadManifests();
+    } catch (err) {
+      console.error('Error saving trip manifest:', err);
+      this.toastService.showError('Error', 'No se pudo cargar el manifiesto');
+    } finally {
+      this.uploadingManifestIndex = null;
+    }
+  }
+
+  openManifest(document: ModelDocumentFile | null, index: number): void {
+    if (!document?.fileUrl) return;
+    this.manifestViewerUrl = document.fileUrl;
+    this.manifestViewerName = manifestLabel(index);
+  }
+
+  closeManifest(): void {
+    this.manifestViewerUrl = null;
+  }
+
+  /** Comparte los manifiestos por WhatsApp; ver `shareDocumentFiles`. */
+  async shareManifest(): Promise<void> {
+    if (!this.hasManifestFiles || this.sharingManifest) return;
+
+    const plate = this.trip?.vehicle?.plate || this.trip?.vehiclePlate;
+    const header = [
+      this.trip?.numberTrip
+        ? `*${this.manifestName} · Viaje ${this.trip.numberTrip}*`
+        : `*${this.manifestName}*`,
+      [
+        this.trip?.manifestNumber ? `N.° ${this.trip.manifestNumber}` : '',
+        plate ? Formatters.formatPlate(plate) : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    ];
+
+    const rows = this.manifestDocuments
+      .map((document, index) => ({ document, name: manifestLabel(index) }))
+      .filter((row) => !!row.document.fileUrl);
+
+    await shareDocumentFiles(
+      rows,
+      header,
+      this.trip?.numberTrip ? `Viaje ${this.trip.numberTrip}` : null,
+      (preparing) => (this.sharingManifest = preparing),
+    );
   }
 
   onTripSaved(savedTrip?: ModelTrip): void {
