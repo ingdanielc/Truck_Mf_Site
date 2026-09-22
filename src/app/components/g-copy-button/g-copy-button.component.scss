@@ -1,0 +1,39 @@
+/* Dentro de un título grande. `align-middle` lo deja sobre la línea base, y
+   con una letra de 2,5 rem eso queda muy abajo: el margen negativo lo sube a
+   la altura del nombre. Lo usa el encabezado del perfil de propietario y el
+   de conductor. */
+:host(.on-title) {
+  display: inline-block;
+  margin-top: -0.75rem;
+  vertical-align: middle;
+}
+
+/* Discreto al lado del dato y con área de toque de sobra: el icono mide poco
+   más de 10 px y en el celular eso no se acierta. */
+.copy-button {
+  /* Hereda el color del texto que acompaña: en la tarjeta va sobre fondo claro
+     y en el encabezado del perfil, sobre el azul con letra blanca. Un color
+     fijo se perdería en uno de los dos. */
+  color: inherit;
+  opacity: 0.55;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0.25rem !important;
+  margin: -0.25rem;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    color: inherit;
+    opacity: 1;
+  }
+
+  &.copied {
+    color: var(--bs-success);
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}

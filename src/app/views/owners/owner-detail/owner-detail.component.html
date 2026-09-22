@@ -191,8 +191,16 @@
             <div
               class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-3 mb-2"
             >
+              <!-- El boton va dentro del titulo: en movil el nombre se
+                   centra y puede ocupar dos renglones, y como hermano del
+                   titulo quedaba suelto en vez de junto al nombre. -->
               <h1 class="display-6 fw-bold mb-0 text-white">
                 {{ owner.name }}
+                <g-copy-button
+                  class="text-white ms-2 on-title"
+                  [value]="owner.name"
+                  label="Nombre"
+                ></g-copy-button>
               </h1>
             </div>
             <div
@@ -417,7 +425,13 @@
             <p class="text-secondary small fw-bold mb-1 text-uppercase">
               Nombre Completo
             </p>
-            <h6 class="fw-bold mb-0">{{ owner.name }}</h6>
+            <div class="d-flex align-items-center gap-2">
+              <h6 class="fw-bold mb-0">{{ owner.name }}</h6>
+              <g-copy-button
+                [value]="owner.name"
+                label="Nombre"
+              ></g-copy-button>
+            </div>
           </div>
           <div class="col-12 col-sm-6 col-lg-4">
             <p class="text-secondary small fw-bold mb-1 text-uppercase">
@@ -437,9 +451,17 @@
             <p class="text-secondary small fw-bold mb-1 text-uppercase">
               Celular
             </p>
-            <h6 class="fw-bold mb-0">
-              {{ formatPhone(owner.cellPhone) || "---" }}
-            </h6>
+            <div class="d-flex align-items-center gap-2">
+              <h6 class="fw-bold mb-0">
+                {{ formatPhone(owner.cellPhone) || "---" }}
+              </h6>
+              <!-- Se copia sin espacios: en pantalla se lee mejor separado,
+                   pero pegado hace falta el numero seguido. -->
+              <g-copy-button
+                [value]="phoneToCopy(owner.cellPhone)"
+                label="Celular"
+              ></g-copy-button>
+            </div>
           </div>
           <div class="col-12 col-sm-6 col-lg-4">
             <p class="text-secondary small fw-bold mb-1 text-uppercase">
@@ -482,10 +504,7 @@
               <p class="text-secondary small fw-bold mb-1 text-uppercase">
                 Vencimiento
               </p>
-              <h6
-                class="fw-bold mb-0"
-                [class.text-danger]="isLicenseExpired"
-              >
+              <h6 class="fw-bold mb-0" [class.text-danger]="isLicenseExpired">
                 {{ (owner.licenseExpiry | date: "longDate") || "---" }}
               </h6>
             </div>

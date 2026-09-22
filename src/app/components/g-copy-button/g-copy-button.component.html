@@ -1,0 +1,16 @@
+@if (hasValue) {
+  <button
+    type="button"
+    class="copy-button btn btn-link p-0 border-0 shadow-none"
+    [class.copied]="copied"
+    [attr.aria-label]="'Copiar ' + label.toLowerCase()"
+    [title]="'Copiar ' + label.toLowerCase()"
+    (click)="copy(); $event.stopPropagation()"
+  >
+    <i
+      class="fa-solid"
+      [ngClass]="copied ? 'fa-check' : 'fa-copy'"
+      aria-hidden="true"
+    ></i>
+  </button>
+}

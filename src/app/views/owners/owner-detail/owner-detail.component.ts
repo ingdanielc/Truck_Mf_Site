@@ -15,6 +15,8 @@ import { SecurityService } from 'src/app/services/security/security.service';
 import { CustomValidators } from 'src/app/utils/custom-validators';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
 import { Formatters } from '../../../utils/formatters';
+import { phoneDigits } from 'src/app/utils/clipboard';
+import { GCopyButtonComponent } from 'src/app/components/g-copy-button/g-copy-button.component';
 import { SubscriptionUtils } from '../../../utils/subscription';
 import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
 import { GOwnerFormComponent } from 'src/app/components/g-owner-form/g-owner-form.component';
@@ -54,6 +56,7 @@ import {
     GOwnerFormComponent,
     GVehicleDocumentsComponent,
     GDocumentViewerComponent,
+    GCopyButtonComponent,
   ],
   templateUrl: './owner-detail.component.html',
   styleUrls: ['./owner-detail.component.scss'],
@@ -567,6 +570,11 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
 
   formatPhone(phone: string | undefined): string {
     return Formatters.formatPhone(phone);
+  }
+
+  /** El celular como se pega: sin los espacios con que se muestra. */
+  phoneToCopy(phone: string | undefined): string {
+    return phoneDigits(phone);
   }
 
   triggerPhotoInput(photoInput: HTMLInputElement): void {

@@ -16,6 +16,8 @@ import { ModelOwner } from 'src/app/models/owner-model';
 import { ModelVehicle } from 'src/app/models/vehicle-model';
 import { GVehicleMiniCardComponent } from 'src/app/components/g-vehicle-mini-card/g-vehicle-mini-card.component';
 import { Formatters } from '../../../utils/formatters';
+import { phoneDigits } from 'src/app/utils/clipboard';
+import { GCopyButtonComponent } from 'src/app/components/g-copy-button/g-copy-button.component';
 import { SubscriptionUtils } from '../../../utils/subscription';
 import { GDriverFormComponent } from 'src/app/components/g-driver-form/g-driver-form.component';
 import { GPasswordCardComponent } from 'src/app/components/g-password-card/g-password-card.component';
@@ -54,6 +56,7 @@ import {
     GPasswordCardComponent,
     GVehicleDocumentsComponent,
     GDocumentViewerComponent,
+    GCopyButtonComponent,
   ],
   templateUrl: './driver-detail.component.html',
   styleUrls: ['./driver-detail.component.scss'],
@@ -243,7 +246,8 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
    * pantalla a veces lo tapaba.
    */
   private denyAccess(message: string): void {
-    const avisar = () => this.toastService.showError('Acceso denegado', message);
+    const avisar = () =>
+      this.toastService.showError('Acceso denegado', message);
 
     this.securityService.userData$
       .pipe(
@@ -484,6 +488,11 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
 
   formatPhone(phone: string | undefined): string {
     return Formatters.formatPhone(phone);
+  }
+
+  /** El celular como se pega: sin los espacios con que se muestra. */
+  phoneToCopy(phone: string | undefined): string {
+    return phoneDigits(phone);
   }
 
   // ─── Context Menu ────────────────────────────────────────────────────────────

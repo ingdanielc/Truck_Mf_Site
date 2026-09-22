@@ -14,6 +14,7 @@ import {
   accountDigits,
 } from '../../utils/payment-methods';
 import { documentUploadErrorMessage } from '../../utils/document-image';
+import { copyToClipboard } from '../../utils/clipboard';
 
 /** Lo mismo que acepta `/common/upload-document`. */
 const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
@@ -195,41 +196,15 @@ export class GSubscriptionRenewComponent {
     const numero = accountDigits(method);
     if (!numero) return;
 
-    const avisar = () =>
+    /* Sin `await`: el portapapeles se pide dentro del gesto y el aviso llega
+       cuando llegue, para no demorar la apertura de la aplicación. */
+    void copyToClipboard(numero).then((copiado) => {
+      if (!copiado) return;
       this.toastService.showSuccess(
         'Número copiado',
         `${numero} · pégalo en ${method.name} para transferir.`,
       );
-
-    /* `clipboard` no existe fuera de contexto seguro ni en algunos WebView:
-       de ahí el respaldo con el campo oculto, que es lo que funciona ahí. */
-    const clipboard = globalThis.navigator?.clipboard;
-    if (clipboard?.writeText) {
-      clipboard.writeText(numero).then(avisar, () => {
-        if (GSubscriptionRenewComponent.copyFallback(numero)) avisar();
-      });
-      return;
-    }
-    if (GSubscriptionRenewComponent.copyFallback(numero)) avisar();
-  }
-
-  /** Copia con un campo oculto. `execCommand` está obsoleto pero es el único
-   *  camino cuando no hay API de portapapeles. */
-  private static copyFallback(text: string): boolean {
-    try {
-      const campo = document.createElement('textarea');
-      campo.value = text;
-      campo.setAttribute('readonly', '');
-      campo.style.position = 'fixed';
-      campo.style.opacity = '0';
-      document.body.appendChild(campo);
-      campo.select();
-      const copiado = document.execCommand('copy');
-      document.body.removeChild(campo);
-      return copiado;
-    } catch {
-      return false;
-    }
+    });
   }
 
   private static isMobile(): boolean {
