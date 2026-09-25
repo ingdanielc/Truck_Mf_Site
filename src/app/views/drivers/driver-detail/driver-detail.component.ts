@@ -840,7 +840,9 @@ export class DriverDetailComponent implements OnInit, OnDestroy {
           'Fotografía actualizada exitosamente!',
         );
         if (this.driver)
-          this.driver.photo = `${photoUrl.split('?')[0]}?t=${Date.now()}`;
+          this.driver.photo = photoUrl
+            ? `${photoUrl.split('?')[0]}?t=${Date.now()}`
+            : '';
       },
       error: (err) => {
         console.error('Error saving photo:', err);

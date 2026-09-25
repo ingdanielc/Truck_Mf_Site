@@ -575,26 +575,17 @@ export class GDriverFormComponent implements OnInit, OnChanges {
             next: async (response: any) => {
               const savedDriver = response?.data;
               const newId = savedDriver?.id;
+              // El backend guarda la URL de la foto en el conductor al subirla,
+              // así se evita un segundo guardado (y un push de actualización)
               if (this.photoFile && newId) {
                 try {
-                  const uploadRes = await firstValueFrom(
+                  await firstValueFrom(
                     this.commonService.uploadPhoto(
                       'driver',
                       newId,
                       this.photoFile,
                     ),
                   );
-                  const photoUrl = uploadRes?.data || '';
-                  if (photoUrl) {
-                    // Remove password before re-saving to avoid double hashing on backend
-                    const { password, ...driverWithPhoto } = {
-                      ...savedDriver,
-                      photo: photoUrl,
-                    };
-                    this.driverService
-                      .createDriver(driverWithPhoto as ModelDriver)
-                      .subscribe();
-                  }
                 } catch (uploadErr) {
                   console.error(
                     'Error uploading photo after create:',

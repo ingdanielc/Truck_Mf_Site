@@ -1082,29 +1082,17 @@ export class VehiclesComponent implements OnInit, AfterViewInit, OnDestroy {
               const savedVehicle = response?.data;
               const newId: number | null = savedVehicle?.id ?? null;
 
+              // El backend guarda la URL de la foto en el vehículo al subirla,
+              // así se evita un segundo guardado (y un push de actualización)
               if (this.photoFile && newId) {
                 try {
-                  const uploadRes = await firstValueFrom(
+                  await firstValueFrom(
                     this.commonService.uploadPhoto(
                       'vehicle',
                       newId,
                       this.photoFile,
                     ),
                   );
-                  const photoUrl = uploadRes?.data || '';
-
-                  if (photoUrl) {
-                    const vehicleWithPhoto: ModelVehicle = {
-                      ...savedVehicle,
-                      photo: photoUrl,
-                    };
-                    this.vehicleService
-                      .createVehicle(vehicleWithPhoto)
-                      .subscribe({
-                        error: (err) =>
-                          console.error('Error updating photo URL:', err),
-                      });
-                  }
                 } catch (uploadErr) {
                   console.error(
                     'Error uploading photo after create:',

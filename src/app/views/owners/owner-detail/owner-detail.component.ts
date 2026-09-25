@@ -624,7 +624,9 @@ export class OwnerDetailComponent implements OnInit, OnDestroy {
           'Perfil',
           'Foto actualizada exitosamente!',
         );
-        this.owner!.photo = `${photoUrl.split('?')[0]}?t=${Date.now()}`;
+        this.owner!.photo = photoUrl
+          ? `${photoUrl.split('?')[0]}?t=${Date.now()}`
+          : '';
       },
       error: (err) => {
         console.error('Error updating owner photo:', err);

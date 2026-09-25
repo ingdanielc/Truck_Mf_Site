@@ -525,31 +525,17 @@ export class GOwnerFormComponent implements OnInit, OnChanges {
               const savedOwner = response?.data;
               const newId: number | null = savedOwner?.id ?? null;
 
-              // Subir foto si hay archivo y se obtuvo el ID
+              // Subir foto si hay archivo y se obtuvo el ID. El backend guarda
+              // la URL en el owner, así se evita un segundo guardado (y push)
               if (this.photoFile && newId) {
                 try {
-                  const uploadRes = await firstValueFrom(
+                  await firstValueFrom(
                     this.commonService.uploadPhoto(
                       'owner',
                       newId,
                       this.photoFile,
                     ),
                   );
-                  const photoUrl = uploadRes?.data || '';
-
-                  if (photoUrl) {
-                    // Actualizar owner con la URL de la foto (sin enviar password de nuevo)
-                    const { password, ...ownerWithPhoto } = {
-                      ...savedOwner,
-                      photo: photoUrl,
-                    };
-                    this.ownerService
-                      .createOwner(ownerWithPhoto as ModelOwner)
-                      .subscribe({
-                        error: (err) =>
-                          console.error('Error updating photo URL:', err),
-                      });
-                  }
                 } catch (uploadErr) {
                   console.error(
                     'Error uploading photo after create:',
