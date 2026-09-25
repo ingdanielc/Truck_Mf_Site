@@ -180,6 +180,18 @@
               <i class="fa-solid fa-hand-holding-dollar me-2"></i>Saldos
             </button>
           </li>
+          <li class="nav-item" role="presentation">
+            <button
+              type="button"
+              class="nav-link"
+              role="tab"
+              [class.active]="activeTab === 'prestamos'"
+              [attr.aria-selected]="activeTab === 'prestamos'"
+              (click)="activeTab = 'prestamos'"
+            >
+              <i class="fa-solid fa-handshake me-2"></i>Préstamos
+            </button>
+          </li>
         }
         <li class="nav-item" role="presentation">
           <button
@@ -245,6 +257,7 @@
           [month]="reportMonth"
           [vehicleKey]="selectedVehicleKey"
           [ownerId]="reportOwnerId"
+          [returnParams]="reportReturnParams"
           (vehiclesLoaded)="onReportVehicles($event)"
         ></g-profitability-report>
       </div>
@@ -290,6 +303,7 @@
                 [vehicle]="item.vehicle"
                 [trip]="item.trip"
                 [expenses]="item.expenses"
+                [returnParams]="reportReturnParams"
               >
               </g-vehicle-trip-exp-card>
             </div>
@@ -332,9 +346,28 @@
           [ownerId]="balancesOwnerId"
           [asDriver]="balancesAsDriver"
           [vehicleId]="balancesVehicleId"
+          [returnParams]="reportReturnParams"
           [active]="activeTab === 'saldos'"
           (paid)="onBalancePaid()"
         ></g-balances-report>
+      </div>
+
+      <!-- Préstamos: viajes sin cobrar cuyos gastos pasaron del anticipo. Los
+           mismos roles, dueño y camión que Saldos; se recarga al cobrar ahí un
+           saldo, porque ese viaje deja de ser un préstamo. -->
+      <div
+        [class.d-none]="activeTab !== 'prestamos'"
+        class="animate__animated animate__fadeIn mb-4"
+      >
+        <g-loans-report
+          [userId]="balancesUserId"
+          [ownerId]="balancesOwnerId"
+          [asDriver]="balancesAsDriver"
+          [vehicleId]="balancesVehicleId"
+          [returnParams]="reportReturnParams"
+          [reloadKey]="loansReloadKey"
+          [active]="activeTab === 'prestamos'"
+        ></g-loans-report>
       </div>
     }
 

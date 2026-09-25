@@ -21,6 +21,12 @@ export class GVehicleTripExpCardComponent implements OnInit {
   @Input({ required: true }) expenses: ModelExpense[] = [];
   @Input() cities: any[] = [];
 
+  /**
+   * Lo que el tablero necesita para volver a quedar como estaba al regresar
+   * del detalle: periodo y, con el administrador, propietario.
+   */
+  @Input() returnParams: Record<string, number> | null = null;
+
   constructor(
     private readonly commonService: CommonService,
     private readonly router: Router,
@@ -28,12 +34,17 @@ export class GVehicleTripExpCardComponent implements OnInit {
 
   /**
    * Abre el detalle del viaje. `from: 'dashboard'` hace que la flecha de
-   * regresar del detalle vuelva al dashboard y no al listado de viajes.
+   * regresar del detalle vuelva al dashboard y no al listado de viajes, y
+   * `tab` a la pestaña En ruta.
    */
   navigateToDetail(): void {
     if (this.trip?.id) {
       this.router.navigate(['/site/trips', this.trip.id], {
-        queryParams: { from: 'dashboard' },
+        queryParams: {
+          from: 'dashboard',
+          tab: 'viajes',
+          ...(this.returnParams ?? {}),
+        },
       });
     }
   }

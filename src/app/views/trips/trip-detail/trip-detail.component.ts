@@ -1133,11 +1133,18 @@ export class TripDetailComponent implements OnInit, OnDestroy {
       return this.router.navigate(['/site/vehicles']);
     } else if (this.originView === 'dashboard') {
       /* La pestaña del tablero desde la que se abrió (Rentabilidad, Saldos):
-         sin ella se volvía a la de por omisión. */
-      const tab = this.route.snapshot.queryParamMap.get('tab');
+         sin ella se volvía a la de por omisión. `year` y `month` son el
+         periodo elegido, y `ownerId` el propietario del administrador: sin
+         él, esas pestañas no existen y la vista se pierde. */
+      const params = this.route.snapshot.queryParamMap;
+      const queryParams: Record<string, string> = {};
+      for (const key of ['tab', 'ownerId', 'year', 'month']) {
+        const value = params.get(key);
+        if (value) queryParams[key] = value;
+      }
       return this.router.navigate(
         ['/site/dashboard'],
-        tab ? { queryParams: { tab } } : {},
+        Object.keys(queryParams).length ? { queryParams } : {},
       );
     }
     return this.router.navigate(['/site/trips']);

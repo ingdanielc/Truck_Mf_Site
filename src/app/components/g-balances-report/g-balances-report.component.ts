@@ -55,6 +55,9 @@ interface BalanceRow {
   company: string;
   /** El número con el que se conoce el viaje, ya con almohadilla: "#2". */
   tripNumber: string;
+  /** Placa y número, como en Rentabilidad: "ABC123 #2". Ordena la columna
+   *  Viaje. */
+  label: string;
   /** "Cali → Barranquilla". Vacío si no se pudo resolver alguna ciudad. */
   route: string;
   /** Cuándo se creó el viaje. Ordena la lista por omisión. */
@@ -136,6 +139,13 @@ export class GBalancesReportComponent implements OnChanges {
    */
   @Input() vehicleId: number | null = null;
 
+  /**
+   * Lo que el tablero necesita para volver a quedar como estaba al regresar
+   * del detalle de un viaje: año y mes, y con el administrador también el
+   * propietario elegido.
+   */
+  @Input() returnParams: Record<string, number> | null = null;
+
   /** Se cobró un saldo. El tablero recalcula: la utilidad del periodo cambió. */
   @Output() paid = new EventEmitter<void>();
 
@@ -181,7 +191,11 @@ export class GBalancesReportComponent implements OnChanges {
   public openTrip(row: BalanceRow): void {
     if (row?.id == null) return;
     this.router.navigate(['/site/trips', row.id], {
-      queryParams: { from: 'dashboard', tab: 'saldos' },
+      queryParams: {
+        from: 'dashboard',
+        tab: 'saldos',
+        ...(this.returnParams ?? {}),
+      },
     });
   }
 
@@ -371,6 +385,12 @@ export class GBalancesReportComponent implements OnChanges {
         vehicleId: t.vehicleId ?? t.vehicle?.id ?? null,
         company: Formatters.titleCase(t.company) || 'Sin empresa',
         tripNumber: t.numberTrip ? `#${t.numberTrip}` : '',
+        label: [
+          Formatters.formatPlate(t.vehiclePlate ?? t.vehicle?.plate),
+          t.numberTrip ? `#${t.numberTrip}` : '',
+        ]
+          .filter(Boolean)
+          .join(' '),
         route: this.routeOf(t),
         date: GBalancesReportComponent.dateOf(t),
         balance: t.balance ?? 0,
@@ -578,8 +598,8 @@ export class GBalancesReportComponent implements OnChanges {
         return dir * (a.date.getTime() - b.date.getTime());
       }
 
-      const av = campo === 'company' ? a.company : a.tripNumber;
-      const bv = campo === 'company' ? b.company : b.tripNumber;
+      const av = campo === 'company' ? a.company : a.label;
+      const bv = campo === 'company' ? b.company : b.label;
       if (!av) return 1;
       if (!bv) return -1;
       /* `numeric` para que "#10" vaya después de "#9" y no antes. */

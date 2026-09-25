@@ -67,6 +67,7 @@ import { GProfitabilityReportComponent } from '../../components/g-profitability-
 import { GExpensesReportComponent } from '../../components/g-expenses-report/g-expenses-report.component';
 import { GSubscriptionsReportComponent } from '../../components/g-subscriptions-report/g-subscriptions-report.component';
 import { GBalancesReportComponent } from '../../components/g-balances-report/g-balances-report.component';
+import { GLoansReportComponent } from '../../components/g-loans-report/g-loans-report.component';
 import { findScroller, scrollToTop } from '../../utils/scroll';
 
 /* Solo lo que el tablero dibuja, en vez de `...registerables`.
@@ -113,6 +114,7 @@ interface ProfitStats {
     GExpensesReportComponent,
     GSubscriptionsReportComponent,
     GBalancesReportComponent,
+    GLoansReportComponent,
     GSearchComboboxComponent,
   ],
   templateUrl: './dashboard.component.html',
@@ -145,6 +147,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     | 'suscripciones'
     | 'graficos'
     | 'saldos'
+    | 'prestamos'
     | 'viajes' = 'rentabilidad';
   userRole: string = '';
   /**
@@ -1324,6 +1327,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     'suscripciones',
     'graficos',
     'saldos',
+    'prestamos',
     'viajes',
   ] as const;
 
@@ -1334,6 +1338,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     if (tab && (DashboardComponent.TABS as readonly string[]).includes(tab)) {
       this.activeTab = tab as DashboardComponent['activeTab'];
     }
+    /* Y al propietario que el administrador tenía elegido: sin él, las
+       pestañas que dependen de un propietario no existen y `loadData`
+       mandaría a otra. Solo lo manda el administrador; para los demás roles
+       el alcance sale del token y `selectedOwnerId` no se usa. */
+    this.restoreReturnParams();
     this.setupThemeObserver();
     this.loadBrands();
     this.updateCurrentMonthName();
@@ -2093,6 +2102,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
    * cuentan ese viaje, y quedarían contando el estado anterior.
    */
   onBalancePaid(): void {
+    /* El viaje cobrado deja de ser un préstamo pendiente. */
+    this.loansReloadKey++;
     if (this.currentUser) {
       this.loadData(this.currentUser);
     }
@@ -2583,6 +2594,65 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
    * uno elegido es la lista de cobro de ese propietario, que es lo que el
    * administrador necesita para hacerle seguimiento.
    */
+  /**
+   * El periodo elegido —y, con el administrador, el propietario—, para volver
+   * a dejarlos al regresar del detalle de un viaje abierto desde Rentabilidad,
+   * Saldos, Préstamos o En ruta. `month` es `-1` con el año completo, lo mismo
+   * que `reportMonth`.
+   *
+   * Se guarda el mismo objeto mientras no cambie: va por `@Input` a los
+   * reportes, y uno nuevo en cada detección de cambios dispararía su
+   * `ngOnChanges` sin motivo.
+   */
+  get reportReturnParams(): Record<string, number> {
+    const ownerId =
+      this.groupByOwner && this.selectedOwnerId != null
+        ? this.selectedOwnerId
+        : null;
+    const key = `${ownerId}|${this.selectedYear}|${this.reportMonth}`;
+    if (key !== this.returnParamsKey || !this.returnParamsCache) {
+      this.returnParamsKey = key;
+      this.returnParamsCache = {
+        ...(ownerId != null ? { ownerId } : {}),
+        year: this.selectedYear,
+        month: this.reportMonth,
+      };
+    }
+    return this.returnParamsCache;
+  }
+
+  private returnParamsKey = '';
+  private returnParamsCache: Record<string, number> | null = null;
+
+  /**
+   * Deja el periodo y el propietario que llegan por `?year=&month=&ownerId=`
+   * al volver del detalle de un viaje. `ownerId` solo lo manda el
+   * administrador; para los demás roles el alcance sale del token.
+   */
+  private restoreReturnParams(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const ownerId = Number(params.get('ownerId'));
+    if (Number.isFinite(ownerId) && ownerId > 0) {
+      this.selectedOwnerId = ownerId;
+    }
+
+    const year = Number(params.get('year'));
+    if (Number.isInteger(year) && year > 2000) this.selectedYear = year;
+
+    const month = Number(params.get('month') ?? NaN);
+    if (month === -1) {
+      this.scope = 'anio';
+      this.monthlyTripsType = 'line';
+      this.monthlyProfitType = 'line';
+    } else if (Number.isInteger(month) && month >= 0 && month <= 11) {
+      this.selectedMonth = month;
+    }
+    this.updateCurrentMonthName();
+  }
+
+  /** Sube al cobrar un saldo, para que Préstamos vuelva a cargar. */
+  public loansReloadKey = 0;
+
   get showBalancesReport(): boolean {
     /* El conductor ve los saldos de los camiones que tiene asignados. */
     if (this.userRole === 'PROPIETARIO' || this.userRole === 'CONDUCTOR') {
@@ -2637,7 +2707,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     if (tab === 'rentabilidad') return this.showProfitabilityReport;
     if (tab === 'gastos') return this.showExpensesReport;
     if (tab === 'suscripciones') return this.showSubscriptions;
-    if (tab === 'saldos') return this.showBalancesReport;
+    if (tab === 'saldos' || tab === 'prestamos') return this.showBalancesReport;
     return true;
   }
 

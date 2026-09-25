@@ -29,4 +29,6 @@ export interface ModelTrip {
   distanceKm?: number;
   tripType?: string;
   currentLeg?: 'IDA' | 'REGRESO';
+  /** Solo lectura, lo calcula `/trip/filter`: gastos de tipo 1, 2 y 3. */
+  totalExpenses?: number;
 }

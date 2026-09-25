@@ -138,6 +138,13 @@ export class GProfitabilityReportComponent implements OnChanges {
   @Input() ownerId: number | null = null;
 
   /**
+   * Lo que el tablero necesita para volver a quedar como estaba al regresar
+   * del detalle de un viaje: año y mes, y con el administrador también el
+   * propietario elegido.
+   */
+  @Input() returnParams: Record<string, number> | null = null;
+
+  /**
    * Los `id` de los vehículos que el reporte acaba de cargar.
    *
    * Existe por el administrador: su tablero agrupa por propietario, así que no
@@ -251,7 +258,11 @@ export class GProfitabilityReportComponent implements OnChanges {
   public openTrip(row: TripRow): void {
     if (row?.id == null) return;
     this.router.navigate(['/site/trips', row.id], {
-      queryParams: { from: 'dashboard', tab: 'rentabilidad' },
+      queryParams: {
+        from: 'dashboard',
+        tab: 'rentabilidad',
+        ...(this.returnParams ?? {}),
+      },
     });
   }
 
@@ -438,13 +449,13 @@ export class GProfitabilityReportComponent implements OnChanges {
    * El gasto viene imputado por `tripId` y acotado al periodo; lo que no cae en
    * ningún viaje llega aparte y va al pie, sumado entre los vehículos.
    *
-   * En "Todos" la placa entra en la etiqueta de cada fila: sin ella dos viajes
-   * "#12" de camiones distintos serían indistinguibles. Se toma del vehículo
+   * La placa entra siempre en la etiqueta de cada fila, como en Saldos y
+   * Préstamos: en "Todos" distingue dos viajes "#12" de camiones distintos, y
+   * con un solo camión dice de cuál es. Se toma del vehículo
    * cuyo grupo se pidió, no del campo `plate` del viaje, porque esa es la placa
    * que el reporte garantiza para ese grupo.
    */
   private applyDetail(keys: string[]): void {
-    const varios = keys.length > 1;
     let otros = 0;
     const filas: TripRow[] = [];
 
@@ -460,7 +471,7 @@ export class GProfitabilityReportComponent implements OnChanges {
         const numero = t.numberTrip ? `#${t.numberTrip}` : `#${t.id}`;
         filas.push({
           id: t.id,
-          label: varios ? `${placa} ${numero}` : numero,
+          label: placa ? `${placa} ${numero}` : numero,
           route: '',
           originId: t.originId,
           destinationId: t.destinationId,

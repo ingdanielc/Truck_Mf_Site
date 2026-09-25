@@ -1268,6 +1268,50 @@ export class ExpensesComponent implements OnInit, OnDestroy {
     this.ensureWindowLoaded();
   }
 
+  /** Dónde empezó el arrastre sobre las tarjetas, o `null` si no hay uno. */
+  swipeStart: { x: number; y: number } | null = null;
+
+  /** Recorrido mínimo, en píxeles, para que el arrastre cuente como gesto y
+   *  no como un toque que tembló. */
+  private static readonly SWIPE_MIN_PX = 40;
+
+  /**
+   * Arrastre sobre las tarjetas de vehículo. Solo en móvil, donde se ve una
+   * tarjeta a la vez y no hay flechas: en escritorio se ven tres y se navega
+   * con los botones, así que ahí no hace nada.
+   */
+  onVehiclesTouchStart(event: TouchEvent): void {
+    if (this.visibleCount !== 1 || this.totalVehicles < 2) return;
+    const touch = event.touches[0];
+    this.swipeStart = touch ? { x: touch.clientX, y: touch.clientY } : null;
+  }
+
+  /**
+   * Hacia la izquierda pasa al siguiente vehículo y hacia la derecha vuelve al
+   * anterior. Hace lo mismo que tocar el punto de ese vehículo —lo muestra y
+   * lo elige—, que es como se navegaba en móvil hasta ahora. Un gesto más
+   * vertical que horizontal es desplazamiento de la página y se ignora.
+   */
+  onVehiclesTouchEnd(event: TouchEvent): void {
+    const start = this.swipeStart;
+    this.swipeStart = null;
+    const touch = event.changedTouches[0];
+    if (!start || !touch) return;
+
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (
+      Math.abs(dx) < ExpensesComponent.SWIPE_MIN_PX ||
+      Math.abs(dx) <= Math.abs(dy)
+    ) {
+      return;
+    }
+
+    const target = this.carouselIndex + (dx < 0 ? 1 : -1);
+    if (target < 0 || target >= this.totalDots) return;
+    this.goToVehicle(target);
+  }
+
   get canPrev(): boolean {
     return this.carouselIndex > 0;
   }
